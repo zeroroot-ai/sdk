@@ -256,19 +256,6 @@ jobs:
       - name: Create branch
         run: git checkout -b chore/bump-sdk-${{ needs.resolve-tag.outputs.tag }}
 
-      - name: Configure go module auth for private deps
-        # Consumers like tenant-operator transitively depend on other
-        # private zeroroot-ai modules (e.g. github.com/zeroroot-ai/gibson).
-        # `go mod tidy` fetches those via HTTPS and would prompt for
-        # credentials interactively. Rewrite the URL to embed the App
-        # token, and set GOPRIVATE so Go bypasses the public proxy +
-        # checksum DB for our private modules.
-        env:
-          APP_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          git config --global url."https://x-access-token:${APP_TOKEN}@github.com/zeroroot-ai/".insteadOf "https://github.com/zeroroot-ai/"
-          echo "GOPRIVATE=github.com/zeroroot-ai/*" >> "$GITHUB_ENV"
-
       - name: Bump SDK
         working-directory: ${{ steps.paths.outputs.work_dir }}
         run: |
