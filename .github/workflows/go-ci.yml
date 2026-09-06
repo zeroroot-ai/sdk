@@ -51,7 +51,6 @@ jobs:
     uses: zeroroot-ai/.github/.github/workflows/reusable-go-ci.yml@cf1c48774b57e552ccdd17a2a4bba3f782587dbe # main, .github recreated 2026-09-06
     with:
       tier: fast
-      private-modules: false
       skip-lint: true # sdk runs its own pinned golangci-lint below (make lint)
 
   # ---- heavy tier (merge_group): reusable race + govulncheck ----
@@ -60,7 +59,6 @@ jobs:
     uses: zeroroot-ai/.github/.github/workflows/reusable-go-ci.yml@cf1c48774b57e552ccdd17a2a4bba3f782587dbe # main, .github recreated 2026-09-06
     with:
       tier: heavy
-      private-modules: false
 
   # ---- sdk-specific lint (fast tier / pull_request) ----
   # Kept native (not delegated to the reusable's golangci-lint step) so the
