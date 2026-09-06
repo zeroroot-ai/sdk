@@ -1,0 +1,216 @@
+syntax = "proto3";
+
+package gibson.types.v1;
+
+option go_package = "github.com/zeroroot-ai/sdk/api/gen/gibson/types/v1;typespb";
+option java_multiple_files = true;
+option csharp_namespace = "Gibson.Types";
+
+import "gibson/common/v1/gibson_common.proto";
+import "gibson/job/v1/job.proto";
+
+// ResultStatus represents the execution status of a task or operation.
+enum ResultStatus {
+  RESULT_STATUS_UNSPECIFIED = 0;
+  RESULT_STATUS_SUCCESS = 1;
+  RESULT_STATUS_FAILED = 2;
+  RESULT_STATUS_PARTIAL = 3;
+  RESULT_STATUS_CANCELLED = 4;
+  RESULT_STATUS_TIMEOUT = 5;
+}
+
+// FindingSeverity represents the severity level of a security finding.
+enum FindingSeverity {
+  FINDING_SEVERITY_UNSPECIFIED = 0;
+  FINDING_SEVERITY_CRITICAL = 1;
+  FINDING_SEVERITY_HIGH = 2;
+  FINDING_SEVERITY_MEDIUM = 3;
+  FINDING_SEVERITY_LOW = 4;
+  FINDING_SEVERITY_INFO = 5;
+}
+
+// FindingStatus represents the current status of a security finding.
+enum FindingStatus {
+  FINDING_STATUS_UNSPECIFIED = 0;
+  FINDING_STATUS_OPEN = 1;
+  FINDING_STATUS_CONFIRMED = 2;
+  FINDING_STATUS_CLOSED = 3;
+  FINDING_STATUS_FALSE_POSITIVE = 4;
+}
+
+// EvidenceType represents the type of evidence collected.
+enum EvidenceType {
+  EVIDENCE_TYPE_UNSPECIFIED = 0;
+  EVIDENCE_TYPE_REQUEST = 1;
+  EVIDENCE_TYPE_RESPONSE = 2;
+  EVIDENCE_TYPE_SCREENSHOT = 3;
+  EVIDENCE_TYPE_CODE = 4;
+  EVIDENCE_TYPE_LOG = 5;
+  EVIDENCE_TYPE_OTHER = 6;
+}
+
+// QueryScope represents the scope of a GraphRAG query.
+enum QueryScope {
+  QUERY_SCOPE_UNSPECIFIED = 0;
+  QUERY_SCOPE_MISSION_RUN = 1;
+  QUERY_SCOPE_MISSION = 2;
+  QUERY_SCOPE_GLOBAL = 3;
+}
+
+// Task represents a goal-oriented task with context and constraints.
+//
+// context is free-form: the daemon does not read it. Anything the daemon
+// must enforce lives in a declared field. Resources a dispatched task needs
+// (repositories, credential names, World inputs, acceptance) live in job,
+// because the daemon reads them before it mints the task grant.
+message Task {
+  string id = 1;
+  string goal = 2;
+  map<string, gibson.common.v1.TypedValue> context = 3;
+  TaskConstraints constraints = 4;
+  map<string, gibson.common.v1.TypedValue> metadata = 5;
+
+  // job names the typed resources this task needs and how it is judged
+  // (gibson#1706). It is set when the task opens or continues a job on a
+  // bank member. goal stays the goal; the spec's own goal is ignored on a
+  // dispatched task. Absent on a task that needs no repository, no
+  // credential and no acceptance step.
+  gibson.job.v1.JobSpec job = 6;
+}
+
+// TaskConstraints represents execution constraints for a task.
+message TaskConstraints {
+  int32 max_turns = 1;
+  int32 max_tokens = 2;
+  repeated string allowed_tools = 3;
+  repeated string blocked_tools = 4;
+}
+
+// Result represents the outcome of a task execution.
+message Result {
+  ResultStatus status = 1;
+  gibson.common.v1.TypedValue output = 2;
+  repeated string finding_ids = 3;
+  map<string, gibson.common.v1.TypedValue> metadata = 4;
+  ResultError error = 5;
+}
+
+// ResultError represents a structured error with retry information.
+message ResultError {
+  gibson.common.v1.ErrorCode code = 1;
+  string message = 2;
+  map<string, string> details = 3;
+  bool retryable = 4;
+}
+
+// Finding represents a security vulnerability or issue discovered during testing.
+message Finding {
+  string id = 1;
+  string mission_id = 2;
+  string agent_name = 3;
+  string delegated_from = 4;
+  string title = 5;
+  string description = 6;
+  string category = 7;
+  string subcategory = 8;
+  FindingSeverity severity = 9;
+  double confidence = 10;
+  FindingStatus status = 11;
+  MitreMapping mitre_attack = 12;
+  MitreMapping mitre_atlas = 13;
+  repeated Evidence evidence = 14;
+  repeated ReproStep reproduction = 15;
+  double cvss_score = 16;
+  double risk_score = 17;
+  string remediation = 18;
+  repeated string references = 19;
+  string target_id = 20;
+  string technique = 21;
+  repeated string tags = 22;
+  int64 created_at = 23;  // Unix timestamp in milliseconds
+  int64 updated_at = 24;  // Unix timestamp in milliseconds
+
+  // Compliance framework mappings — added by audit-finding-compliance-mappings.
+  // Links the finding to specific control IDs in compliance frameworks
+  // (SOC2, NIST AI RMF, MITRE ATLAS, MITRE ATT&CK). Multiple entries per
+  // framework allowed; downstream exporters (SARIF) surface them.
+  repeated ComplianceMapping compliance_mappings = 25;
+}
+
+// ComplianceMapping links a Finding to a compliance framework control.
+// See core/sdk/finding/compliance_mapping.go for the author-side Go type.
+message ComplianceMapping {
+  // Compliance framework identifier (e.g. SOC2, NIST_AI_RMF, MITRE_ATLAS,
+  // MITRE_ATTACK, PLATFORM).
+  string framework = 1;
+
+  // Control identifier within the framework.
+  string control_id = 2;
+
+  // Optional human-readable rationale.
+  string rationale = 3;
+
+  // Optional pointer to supporting evidence.
+  string evidence_ref = 4;
+}
+
+// MitreMapping represents a mapping to MITRE ATT&CK or ATLAS framework.
+message MitreMapping {
+  string matrix = 1;
+  string tactic_id = 2;
+  string tactic_name = 3;
+  string technique_id = 4;
+  string technique_name = 5;
+  repeated string sub_techniques = 6;
+}
+
+// Evidence represents supporting evidence for a finding.
+message Evidence {
+  string title = 1;
+  EvidenceType type = 2;
+  string content = 3;
+  map<string, string> metadata = 4;
+}
+
+// ReproStep represents a step in reproducing a finding.
+message ReproStep {
+  int32 order = 1;
+  string description = 2;
+  string input = 3;
+  string output = 4;
+}
+
+// GraphQuery represents a query against the knowledge graph.
+message GraphQuery {
+  string text = 1;
+  repeated float embedding = 2;
+  int32 top_k = 3;
+  repeated string node_types = 4;
+  double min_score = 5;
+  double max_score = 6;
+  string mission_id = 7;
+  string mission_run_id = 8;
+  QueryScope scope = 9;
+  map<string, string> filters = 10;
+  // Weights for hybrid scoring (must sum to 1.0)
+  double vector_weight = 11;
+  double graph_weight = 12;
+}
+
+// MissionRunSummary describes one run of a mission.
+//
+// Returned by the GetMissionRunHistory knowledge read. An agent lists the runs,
+// then pulls findings for a previous one with GetRunFindings — the two are
+// consumed together, which is why run history sits with the knowledge reads and
+// not with mission lifecycle control.
+message MissionRunSummary {
+  string mission_id = 1;
+  // run_number is sequential from 1.
+  int32 run_number = 2;
+  // status is the final status of this run.
+  string status = 3;
+  int32 findings_count = 4;
+  int64 created_at = 5;
+  // completed_at is 0 while the run is still in flight.
+  int64 completed_at = 6;
+}

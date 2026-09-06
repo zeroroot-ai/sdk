@@ -1,0 +1,286 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://zeroroot.ai/schemas/plugin-manifest/v1/schema.json",
+  "title": "Gibson Plugin Manifest",
+  "description": "Schema for plugin.gibson.zeroroot.ai/v1 plugin manifests. Use a YAML editor with yaml-language-server support to get autocomplete: # yaml-language-server: $schema=schema.json",
+  "type": "object",
+  "required": [
+    "apiVersion",
+    "kind",
+    "metadata",
+    "spec"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "description": "Must be 'plugin.gibson.zeroroot.ai/v1'.",
+      "enum": [
+        "plugin.gibson.zeroroot.ai/v1"
+      ]
+    },
+    "kind": {
+      "type": "string",
+      "description": "Must be 'Plugin'. Maps to gibson.identity.v1.PrincipalKind.PRINCIPAL_KIND_PLUGIN. Sister schemas exist for 'Agent' and 'Tool' manifests.",
+      "enum": [
+        "Plugin"
+      ]
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Plugin identity fields.",
+      "required": [
+        "name",
+        "version"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "DNS-label-style identifier for the plugin. Must match ^[a-z][a-z0-9-]{0,61}[a-z0-9]$.",
+          "pattern": "^[a-z][a-z0-9-]{0,61}[a-z0-9]$"
+        },
+        "version": {
+          "type": "string",
+          "description": "Semantic version of the plugin (e.g. '1.2.3' or '0.1.0-alpha').",
+          "pattern": "^v?([0-9]+)\\.([0-9]+)\\.([0-9]+)(-[a-zA-Z0-9.+\\-]+)?(\\+[a-zA-Z0-9.+]+)?$"
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional human-readable description of the plugin."
+        },
+        "author": {
+          "type": "string",
+          "description": "Optional identifier for the plugin's author."
+        }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "description": "Operational declaration for the plugin.",
+      "required": [
+        "workload_class"
+      ],
+      "anyOf": [
+        {
+          "required": [
+            "methods"
+          ],
+          "properties": {
+            "methods": {
+              "minItems": 1
+            }
+          }
+        },
+        {
+          "properties": {
+            "dynamic_methods": {
+              "const": true
+            }
+          },
+          "required": [
+            "dynamic_methods"
+          ]
+        }
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "workload_class": {
+          "type": "string",
+          "description": "Must be 'plugin'. Tool and agent manifests are out of scope for this schema.",
+          "enum": [
+            "plugin"
+          ]
+        },
+        "secrets": {
+          "type": "array",
+          "description": "Declared credential needs. May be empty when the plugin requires no credentials.",
+          "items": {
+            "$ref": "#/definitions/SecretDecl"
+          }
+        },
+        "methods": {
+          "type": "array",
+          "description": "RPC methods this plugin implements. Must contain at least one entry unless dynamic_methods is true.",
+          "items": {
+            "$ref": "#/definitions/MethodDecl"
+          }
+        },
+        "dynamic_methods": {
+          "type": "boolean",
+          "description": "When true, the plugin discovers some or all of its methods at startup via a method source (plugin.WithMethodSource); spec.methods may then be empty.",
+          "default": false
+        },
+        "runtime": {
+          "type": "string",
+          "description": "Execution environment. Defaults to 'process' when omitted. 'process' is local-dev only; 'pod' (default deploy) and 'setec' (hardened) are the deployed runtimes (ADR-0065 R5).",
+          "enum": [
+            "process",
+            "pod",
+            "setec"
+          ],
+          "default": "process"
+        },
+        "policy": {
+          "$ref": "#/definitions/ManifestPolicy"
+        },
+        "health": {
+          "$ref": "#/definitions/ManifestHealth"
+        },
+        "egress": {
+          "type": "array",
+          "description": "Declared external network targets. Informational in process/pod modes; enforced in setec mode.",
+          "items": {
+            "$ref": "#/definitions/EgressDecl"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "SecretDecl": {
+      "type": "object",
+      "description": "A single secret declaration.",
+      "required": [
+        "name",
+        "scope",
+        "rotation"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Broker-qualified secret name. Must match ^(cred|provider_config):[a-z0-9_/:.-]+$.",
+          "pattern": "^(cred|provider_config):[a-z0-9_/:.-]+$",
+          "examples": [
+            "cred:db_password",
+            "provider_config:anthropic:default"
+          ]
+        },
+        "scope": {
+          "type": "string",
+          "description": "When the secret is resolved: 'startup' (once at start) or 'per_call' (each invocation).",
+          "enum": [
+            "startup",
+            "per_call"
+          ]
+        },
+        "rotation": {
+          "type": "string",
+          "description": "How the plugin reacts to a rotation event: 'live' (cache invalidation) or 'restart' (exit 75).",
+          "enum": [
+            "live",
+            "restart"
+          ]
+        },
+        "required": {
+          "type": "boolean",
+          "description": "When true, missing secret blocks plugin startup.",
+          "default": false
+        }
+      }
+    },
+    "MethodDecl": {
+      "type": "object",
+      "description": "A single method declaration. Under the Go-first authoring model (ADR-0065 R4) the request/response contract is derived by the SDK from the typed Go structs registered with plugin.WithHandler and is not declared here.",
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Method identifier. Non-empty. Must match a handler registered via plugin.WithHandler.",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional human-readable description of the method, surfaced in the component catalog."
+        }
+      }
+    },
+    "ManifestPolicy": {
+      "type": "object",
+      "description": "Security policy overrides for this plugin.",
+      "additionalProperties": false,
+      "properties": {
+        "setec_required": {
+          "type": "boolean",
+          "description": "When true, the plugin refuses to start unless the runtime is 'setec'.",
+          "default": false
+        }
+      }
+    },
+    "ManifestHealth": {
+      "type": "object",
+      "description": "Lifecycle probe timeout configuration.",
+      "additionalProperties": false,
+      "properties": {
+        "startup_timeout": {
+          "type": "string",
+          "description": "Maximum duration before the startup probe fails. Go duration string (e.g. '30s'). Defaults to '30s'.",
+          "examples": [
+            "30s",
+            "1m",
+            "45s"
+          ],
+          "default": "30s"
+        },
+        "liveness_interval": {
+          "type": "string",
+          "description": "Interval at which the liveness probe is polled. Go duration string (e.g. '10s'). Defaults to '10s'.",
+          "examples": [
+            "10s",
+            "30s"
+          ],
+          "default": "10s"
+        }
+      }
+    },
+    "EgressDecl": {
+      "type": "object",
+      "description": "A single external network target the plugin contacts.",
+      "required": [
+        "host",
+        "protocol",
+        "port"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "host": {
+          "type": "string",
+          "description": "DNS name or wildcard pattern (e.g. '*.example.com'). IP addresses are not permitted.",
+          "examples": [
+            "api.github.com",
+            "*.example.com"
+          ]
+        },
+        "protocol": {
+          "type": "string",
+          "description": "Network protocol.",
+          "enum": [
+            "https",
+            "http",
+            "grpc",
+            "tcp",
+            "udp"
+          ]
+        },
+        "port": {
+          "type": "integer",
+          "description": "Destination port number. Must be in [1, 65535].",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "purpose": {
+          "type": "string",
+          "description": "Optional human-readable description of why this egress target is needed.",
+          "examples": [
+            "GitHub REST API",
+            "Internal cache service"
+          ]
+        }
+      }
+    }
+  }
+}

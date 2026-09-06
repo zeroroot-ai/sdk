@@ -1,0 +1,36 @@
+# alignments.yaml.example — Cross-vocabulary equivalence declarations
+#
+# This file shows the YAML format for asserting sameAs equivalences between
+# IRIs from different vocabularies. Rename it to alignments.yaml and populate
+# it with your cross-vocabulary mappings to enable cross-vocabulary reasoning
+# in the Gibson daemon.
+#
+# The daemon merges all *.yaml files in this directory at startup. Example
+# files (*.yaml.example) are skipped by the loader.
+
+version: "1.0"
+
+prefixes:
+  soc2:   "https://trust.aicpa.org/soc2#"
+  mitre:  "https://attack.mitre.org/techniques/"
+  nist:   "https://csrc.nist.gov/glossary/term/"
+  cwe:    "https://cwe.mitre.org/data/definitions/"
+
+hierarchies: []   # Alignments files typically contain only equivalences.
+
+equivalences:
+  # SOC2 CC6.1 (logical access controls) aligns with MITRE T1190 (exploit
+  # public-facing application) in the sense that a CC6.1 finding is often
+  # evidence of T1190. This is an approximate alignment, not a strict sameAs.
+  - [soc2:CC6.1, mitre:T1190]
+
+  # NIST AI RMF MAP 1.1 (identify AI risks) maps to MITRE ATLAS AML.T0000
+  # (reconnaissance) at a high level.
+  # - [nist:MAP-1.1, atlas:AML.T0000]
+
+  # CWE-79 (XSS) maps conceptually to the xss category in Gibson findings.
+  # The Gibson taxonomy IRI is expressed as a gibson: prefix when that prefix
+  # is added to this file's prefix block.
+  # - [cwe:79, gibson:xss]
+
+ifps: []

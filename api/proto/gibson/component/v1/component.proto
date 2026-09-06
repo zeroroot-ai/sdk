@@ -1,0 +1,1439 @@
+syntax = "proto3";
+
+package gibson.component.v1;
+
+option go_package = "github.com/zeroroot-ai/sdk/api/gen/gibson/component/v1;componentpb";
+option java_multiple_files = true;
+option csharp_namespace = "Gibson.Component";
+
+import "gibson/bank/v1/bank.proto";
+import "gibson/graphrag/v1/graphrag.proto";
+
+import "gibson/auth/v1/options.proto";
+// DispatchMode identifies how the Gibson daemon should dispatch calls to a
+// component registered in the ComponentRegistry. The enum lets one registry
+// serve tools (sandboxed microVM dispatch), plugins (long-running stateful
+// gRPC), and agents (long-running gRPC) uniformly — consumers look up by
+// name and switch on dispatch_mode to choose the route.
+enum DispatchMode {
+    DISPATCH_MODE_UNSPECIFIED = 0;
+    // DISPATCH_MODE_SANDBOXED: the component is a stateless tool executed in
+    // an ephemeral Setec microVM. The registry entry carries image/env/
+    // resources used to Launch the sandbox per call.
+    DISPATCH_MODE_SANDBOXED = 1;
+    // DISPATCH_MODE_PLUGIN: the component is a long-running plugin process
+    // that heartbeats to the registry and serves gRPC.
+    DISPATCH_MODE_PLUGIN = 2;
+    // DISPATCH_MODE_AGENT: the component is a long-running agent process that
+    // heartbeats to the registry and serves gRPC.
+    DISPATCH_MODE_AGENT = 3;
+}
+
+// ContentTrust classifies the trust level of input data a component will
+// process at call-time. The daemon's dispatch policy gate consults this
+// classification together with `dispatch_mode` to decide whether a call may
+// proceed: an UNTRUSTED component MUST be dispatched via DISPATCH_MODE_SANDBOXED
+// (microVM) — direct PLUGIN/AGENT execution against UNTRUSTED data is denied
+// unless a platform-operator override is active.
+//
+// The default zero value (CONTENT_TRUST_UNSPECIFIED) is treated as TRUSTED by
+// the gate for backward compatibility with descriptors registered before this
+// field existed; operators can flip the daemon's `strictDefaultUntrusted=true`
+// flag to invert that default during a phased rollout.
+enum ContentTrust {
+    CONTENT_TRUST_UNSPECIFIED = 0;
+    // CONTENT_TRUST_TRUSTED: input data is sourced from trusted, in-cluster
+    // origins (operator-installed plugins, internal services, vetted manifests)
+    // and may safely run in PLUGIN/AGENT processes.
+    CONTENT_TRUST_TRUSTED = 1;
+    // CONTENT_TRUST_UNTRUSTED: input data is sourced from external networks,
+    // user-supplied targets, or third-party feeds (DNS responses, scanned hosts,
+    // template downloads, etc.). MUST be dispatched via SANDBOXED execution.
+    CONTENT_TRUST_UNTRUSTED = 2;
+}
+
+// ParseQuality tags how richly a sandboxed-tool response populates its
+// field-100 DiscoveryResult. The taxonomy persistence layer uses this to
+// filter queries by data quality.
+enum ParseQuality {
+    PARSE_QUALITY_UNSPECIFIED = 0;
+    // PARSE_QUALITY_STRUCTURED: response includes fully populated taxonomy
+    // nodes (Host, Port, Service, Finding, ...).
+    PARSE_QUALITY_STRUCTURED = 1;
+    // PARSE_QUALITY_PARTIAL: response includes some taxonomy nodes plus raw
+    // output preserved in Evidence nodes.
+    PARSE_QUALITY_PARTIAL = 2;
+    // PARSE_QUALITY_RAW: response preserves stdout as an Evidence node only;
+    // no taxonomy-specific nodes were extracted.
+    PARSE_QUALITY_RAW = 3;
+    // PARSE_QUALITY_FAILED: a parser errored; stdout/stderr preserved for
+    // diagnostics, DiscoveryResult is nil.
+    PARSE_QUALITY_FAILED = 4;
+}
+
+// ComponentService is the central gRPC service that all Gibson components
+// (agents, tools, and plugins) connect to. Components register themselves,
+// receive work via long-polling, submit results, and access harness operations
+// (LLM completion, tool calls, plugin queries, findings, memory) through
+// the proxy RPCs defined here.
+service ComponentService {
+    // RegisterComponent announces a component to Gibson and receives connection
+    // configuration including heartbeat and poll intervals.
+    rpc RegisterComponent(RegisterComponentRequest) returns (RegisterComponentResponse) {
+      option (gibson.auth.v1.authz) = {
+        // Serve-side lifecycle RPC (a component announces itself + its methods),
+        // not a platform-drive RPC. Gated on can_poll_work so a plugin_principal
+        // (which holds can_receive_work, not can_execute) can register — the same
+        // relation as PollWork/SubmitResult. Existing can_execute holders
+        // (agents/tools) satisfy can_poll_work unchanged.
+        relation: "can_poll_work"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // Heartbeat sends a periodic health pulse. The response indicates whether
+    // the component is still considered registered and may carry config updates.
+    rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse) {
+      option (gibson.auth.v1.authz) = {
+        // Serve-side liveness pulse — gated on can_poll_work, same as the other
+        // serve-side RPCs (RegisterComponent/PollWork/SubmitResult), so a plugin
+        // can heartbeat without holding the platform-drive grant.
+        relation: "can_poll_work"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // PollWork long-polls for work items assigned to this component instance.
+    // Returns when a work item is available or the server-side timeout expires.
+    //
+    // Authorized by can_poll_work, not can_execute: PollWork/SubmitResult are
+    // the receive-side of dispatch (how a component gets its work), distinct
+    // from CallTool/RunMission's drive-side (how a component directs the
+    // platform). Sharing can_execute would let a poll-only grant also drive
+    // missions. can_poll_work is modeled as `can_execute or can_receive_work`,
+    // so existing can_execute holders keep polling unchanged.
+    rpc PollWork(PollWorkRequest) returns (PollWorkResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_poll_work"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // SubmitResult returns the execution result for a previously polled work item.
+    //
+    // Authorized by can_poll_work — see PollWork's comment for why this
+    // receive-side RPC does not share can_execute with the drive-side RPCs.
+    rpc SubmitResult(SubmitResultRequest) returns (SubmitResultResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_poll_work"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // Complete proxies an LLM completion request through the agent harness.
+    rpc Complete(CompleteRequest) returns (CompleteResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // CompleteStream proxies a streaming LLM completion request through the agent harness.
+    rpc CompleteStream(CompleteStreamRequest) returns (stream CompleteStreamResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // CallTool proxies a tool execution request through the agent harness.
+    rpc CallTool(CallToolRequest) returns (CallToolResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // QueryPlugin proxies a plugin query request through the agent harness.
+    rpc QueryPlugin(QueryPluginRequest) returns (QueryPluginResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // SubmitFinding submits a security finding through the agent harness.
+    rpc SubmitFinding(SubmitFindingRequest) returns (SubmitFindingResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // ListAvailablePlugins returns all plugins registered in the system along
+    // with their catalog metadata, health status, and configuration schema.
+    rpc ListAvailablePlugins(ListAvailablePluginsRequest) returns (ListAvailablePluginsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // EnablePlugin activates a plugin for the calling tenant, optionally
+    // supplying an initial configuration JSON blob.
+    rpc EnablePlugin(EnablePluginRequest) returns (EnablePluginResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_configure"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // DisablePlugin deactivates a plugin for the calling tenant.
+    rpc DisablePlugin(DisablePluginRequest) returns (DisablePluginResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_configure"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // UpdatePluginConfig replaces the configuration for an already-enabled plugin.
+    rpc UpdatePluginConfig(UpdatePluginConfigRequest) returns (UpdatePluginConfigResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_configure"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // GetPluginConfig retrieves the current configuration and schema for a plugin.
+    rpc GetPluginConfig(GetPluginConfigRequest) returns (GetPluginConfigResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // TestPluginConnection validates connectivity and credentials for a plugin
+    // without persisting any state changes.
+    rpc TestPluginConnection(TestPluginConnectionRequest) returns (TestPluginConnectionResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_configure"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // ListTenantPlugins returns the plugin access records for the calling tenant.
+    rpc ListTenantPlugins(ListTenantPluginsRequest) returns (ListTenantPluginsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // =========================================================================
+    // Harness Proxy — LLM (extended)
+    // =========================================================================
+
+    // CompleteWithTools proxies an LLM completion with tool definitions for
+    // function-calling support. Returns the response including any tool calls.
+    rpc CompleteWithTools(CompleteWithToolsRequest) returns (CompleteWithToolsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // CompleteStructured proxies an LLM completion requesting JSON output
+    // conforming to the supplied schema.
+    rpc CompleteStructured(CompleteStructuredRequest) returns (CompleteStructuredResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // =========================================================================
+    // Harness Proxy — Tools (extended)
+    // =========================================================================
+
+    // CallToolStream proxies a tool execution with server-side streaming of
+    // progress, partial results, warnings, and the final output.
+    rpc CallToolStream(CallToolStreamRequest) returns (stream CallToolStreamResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // QueueToolWork submits a batch of tool invocations for parallel execution
+    // and returns a job ID for tracking.
+    rpc QueueToolWork(QueueToolWorkRequest) returns (QueueToolWorkResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // ToolResults streams results for a previously queued tool batch as each
+    // invocation completes.
+    rpc ToolResults(ToolResultsRequest) returns (stream ToolResultsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // ListTools returns descriptors for all tools visible to the caller's tenant.
+    rpc ListTools(ListToolsRequest) returns (ListToolsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // =========================================================================
+    // Harness Proxy — Agent Delegation
+    // =========================================================================
+
+    // DelegateToAgent dispatches a sub-task to another agent and returns its result.
+    rpc DelegateToAgent(DelegateToAgentRequest) returns (DelegateToAgentResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // ListAgents returns descriptors for all agents visible to the caller's tenant.
+    rpc ListAgents(ListAgentsRequest) returns (ListAgentsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // =========================================================================
+    // Harness Proxy — GraphRAG
+    // =========================================================================
+
+    // QueryNodes searches the knowledge graph using hybrid vector + graph scoring.
+    rpc QueryNodes(QueryNodesRequest) returns (QueryNodesResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // FindSimilarAttacks returns attack patterns semantically similar to the given content.
+    rpc FindSimilarAttacks(FindSimilarAttacksRequest) returns (FindSimilarAttacksResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // GetAttackChains returns multi-hop attack paths from a starting technique.
+    rpc GetAttackChains(GetAttackChainsRequest) returns (GetAttackChainsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // FindSimilarFindings returns findings semantically similar to the given finding.
+    rpc FindSimilarFindings(FindSimilarFindingsRequest) returns (FindSimilarFindingsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // GetRelatedFindings returns findings related to the given finding via graph edges.
+    rpc GetRelatedFindings(GetRelatedFindingsRequest) returns (GetRelatedFindingsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // =========================================================================
+    // Harness Proxy — Findings (queries)
+    // =========================================================================
+
+    // GetFindings queries previously submitted findings with optional filters.
+    rpc GetFindings(GetFindingsRequest) returns (GetFindingsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // GetRunFindings queries findings scoped to a specific mission run or across all runs.
+    rpc GetRunFindings(GetRunFindingsRequest) returns (GetRunFindingsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // =========================================================================
+    // =========================================================================
+
+    // =========================================================================
+    // Harness Proxy — Mission Management
+    // =========================================================================
+
+    // CreateMission creates a new sub-mission.
+    rpc CreateMission(CreateMissionRequest) returns (CreateMissionResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // RunMission queues a mission for execution.
+    rpc RunMission(RunMissionRequest) returns (RunMissionResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // GetMissionStatus returns the current status of a mission.
+    rpc GetMissionStatus(GetMissionStatusRequest) returns (GetMissionStatusResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // WaitMission blocks until a mission completes or the timeout expires.
+    rpc WaitMission(WaitMissionRequest) returns (WaitMissionResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // ListMissions returns missions matching the given filter.
+    rpc ListMissions(ListMissionsRequest) returns (ListMissionsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // CancelMission requests cancellation of a running mission.
+    rpc CancelMission(CancelMissionRequest) returns (CancelMissionResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // GetMissionResults returns the final results of a completed mission.
+    rpc GetMissionResults(GetMissionResultsRequest) returns (GetMissionResultsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // =========================================================================
+    // Harness Proxy — Context & Metadata
+    // =========================================================================
+
+    // GetCredential retrieves a tenant-scoped credential by name.
+    rpc GetCredential(GetCredentialRequest) returns (GetCredentialResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_resolve"
+        object_type: "secret"
+        object_deriver: "tenant_and_field('Name')"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // GetTaxonomySchema returns the current taxonomy definition.
+    rpc GetTaxonomySchema(GetTaxonomySchemaRequest) returns (GetTaxonomySchemaResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // GetMissionRunHistory returns summaries of previous mission runs.
+    rpc GetMissionRunHistory(GetMissionRunHistoryRequest) returns (GetMissionRunHistoryResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // ReportStepHints reports planning step hints from an agent back to the orchestrator.
+    rpc ReportStepHints(ReportStepHintsRequest) returns (ReportStepHintsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+}
+
+// Resources declares the compute budget a sandboxed component requires per
+// call. Units mirror Kubernetes resource conventions (vcpu is whole CPUs;
+// memory is a quantity string like "256Mi" or "1Gi"). Only meaningful when
+// dispatch_mode == DISPATCH_MODE_SANDBOXED.
+message Resources {
+    int32 vcpu = 1;
+    string memory = 2;
+}
+
+// ComponentDescriptor is the unified persisted description of a component
+// registered in the Gibson ComponentRegistry, regardless of how it is
+// dispatched. Consumers (orchestrator, dashboard, CLI, authz) look up a
+// descriptor by name and switch on dispatch_mode to choose the routing.
+//
+// Legacy fields (name, version, kind, tags, metadata) describe every
+// component. Sandboxed-dispatch fields (image, command, env, resources,
+// default_timeout_seconds, input_schema_json, output_proto_type,
+// default_parse_quality) are populated by the daemon's catalog refresher
+// for sandboxed tools. Plugin/agent entries leave those fields zero.
+message ComponentDescriptor {
+    // Common metadata — populated for every dispatch_mode.
+    string name = 1;
+    string version = 2;
+    string kind = 3;  // "tool" | "plugin" | "agent"
+    string description = 4;
+    repeated string tags = 5;
+    map<string, string> metadata = 6;
+    DispatchMode dispatch_mode = 7;
+
+    // Sandboxed-dispatch fields (DISPATCH_MODE_SANDBOXED only).
+    // image is an OCI reference pinned by digest for reproducibility.
+    string image = 10;
+    // command is the argv the runner executes inside the microVM.
+    repeated string command = 11;
+    // env is static environment variables prepended to every Launch call.
+    // The daemon adds GIBSON_TOOL_INPUT_B64 and tracing headers on top.
+    map<string, string> env = 12;
+    // resources is the vCPU + memory budget per sandbox.
+    Resources resources = 13;
+    // default_timeout_seconds bounds the synchronous tool call.
+    int32 default_timeout_seconds = 14;
+    // input_schema_json is the JSON Schema document describing the tool's
+    // typed arguments (fed to the orchestrator LLM for tool_use selection).
+    bytes input_schema_json = 15;
+    // output_proto_type is the fully-qualified proto message name the tool's
+    // response conforms to, e.g. "gibson.tool.nmap.v1.ExecuteResponse".
+    string output_proto_type = 16;
+    // default_parse_quality advertises how richly the runner's parser will
+    // populate the response's field-100 DiscoveryResult for this tool.
+    ParseQuality default_parse_quality = 17;
+
+    // content_trust classifies the trust level of input data this component
+    // processes at call-time. Consumed by the daemon's dispatch policy gate
+    // together with `dispatch_mode` (see `ContentTrust` doc above).
+    //
+    // The default zero (CONTENT_TRUST_UNSPECIFIED) is treated as TRUSTED at
+    // gate-evaluation time for backward compatibility with descriptors
+    // registered before this field existed.
+    //
+    // NOTE: field 100 is reserved platform-wide for `gibson.graphrag.DiscoveryResult`
+    // on tool response messages (see `enterprise/docs/ARCHITECTURE.md`); do not
+    // assign new fields >= 100 on any component message without coordination.
+    ContentTrust content_trust = 18;
+}
+
+// RegisterComponentRequest is sent by a component on startup to announce
+// itself and declare its capabilities.
+message RegisterComponentRequest {
+    // kind identifies the component type: "agent", "tool", or "plugin".
+    string kind = 1;
+    string name = 2;
+    string version = 3;
+    map<string, string> metadata = 4;
+    // capabilities lists agent capabilities (used when kind == "agent").
+    repeated string capabilities = 5;
+    // methods lists plugin methods (used when kind == "plugin").
+    repeated string methods = 6;
+    // input_message_type is the fully-qualified proto message type for tool input
+    // (used when kind == "tool").
+    string input_message_type = 7;
+    // output_message_type is the fully-qualified proto message type for tool output
+    // (used when kind == "tool").
+    string output_message_type = 8;
+    // file_descriptor_set is the serialized proto FileDescriptorSet describing
+    // the tool's schema (used when kind == "tool").
+    bytes file_descriptor_set = 9;
+    // config_schema_json is the JSON Schema document describing the plugin's
+    // configuration surface (used when kind == "plugin").
+    string config_schema_json = 10;
+
+    // ontology_extension carries the component's contribution to the daemon's
+    // ontology reasoner (hierarchies, equivalences, IFPs, prefixes). Optional;
+    // components that do not author an `ontology.yaml` leave this unset and
+    // the daemon's reasoner is unaffected. Mirrors `graphrag.OntologyExtension`
+    // on the Go side; populated automatically by `serve.Tool` / `serve.Agent`
+    // when the component implements the optional `serve.OntologyContributor`
+    // interface.
+    gibson.graphrag.v1.OntologyExtension ontology_extension = 11;
+
+    // method_descriptors carries per-method metadata (name + human-readable
+    // description + optional JSON-Schema input) for plugin methods. It is the
+    // rich superset of `methods` (which stays for back-compat): `methods` carries
+    // names only; `method_descriptors` carries the descriptions an agent reads to
+    // disambiguate tools in the catalog (SearchTools). Used when kind == "plugin".
+    // Empty is valid (older SDKs populate only `methods`).
+    repeated ComponentMethod method_descriptors = 12;
+}
+
+// ComponentMethod is the rich, per-method descriptor for a plugin method,
+// carrying the metadata the connector catalog and SearchTools surface to agents.
+message ComponentMethod {
+    // name is the method identifier (matches an entry in
+    // RegisterComponentRequest.methods).
+    string name = 1;
+    // description is a human-readable explanation of the method, surfaced in the
+    // catalog so an agent can disambiguate similar tools.
+    string description = 2;
+    // input_schema_json is the JSON-Schema document describing the method's input,
+    // when the source provides one (e.g. an MCP vendor's tools/list inputSchema).
+    // Optional; empty when unknown.
+    string input_schema_json = 3;
+}
+
+// RegisterComponentResponse carries the assigned instance ID and connection
+// parameters for the component to use going forward.
+message RegisterComponentResponse {
+    // instance_id is the unique identifier assigned to this component instance.
+    string instance_id = 1;
+    // heartbeat_interval_ms is the recommended interval between Heartbeat calls.
+    int32 heartbeat_interval_ms = 2;
+    // poll_interval_ms is the recommended interval between PollWork calls
+    // when the previous poll returned no work.
+    int32 poll_interval_ms = 3;
+    // poll_timeout_ms is the server-side long-poll timeout the component should
+    // pass in PollWorkRequest.timeout_ms.
+    int32 poll_timeout_ms = 4;
+    // config carries initial configuration values for the component.
+    map<string, string> config = 5;
+}
+
+// HeartbeatRequest is the periodic health pulse sent by a registered component.
+message HeartbeatRequest {
+    string instance_id = 1;
+    // health_status is the component's self-reported health: "healthy", "degraded", or "unhealthy".
+    string health_status = 2;
+    // health_message provides optional human-readable detail about the health status.
+    string health_message = 3;
+    // member is the bank member status when this instance is a member of a
+    // bank (gibson#1706): busy or not busy, how many jobs it holds, which
+    // ones, and the coding-agent version it runs. The daemon routes a queued
+    // job to a member that reports a free slot. Absent for a component that
+    // is not a bank member. health_status and health_message stay: they
+    // report whether the process is well, not whether it is busy.
+    gibson.bank.v1.MemberStatus member = 4;
+}
+
+// HeartbeatResponse is returned by the server after each heartbeat.
+message HeartbeatResponse {
+    // registered indicates whether the server still considers this instance registered.
+    // A false value means the component must re-register before polling for work.
+    bool registered = 1;
+    // config_updates carries any configuration values that have changed since the
+    // last heartbeat. The component should merge these into its running config.
+    map<string, string> config_updates = 2;
+}
+
+// PollWorkRequest is sent by a component to request the next available work item.
+message PollWorkRequest {
+    string instance_id = 1;
+    // timeout_ms is the maximum duration the server should hold the request open
+    // waiting for work before returning an empty response. Should match the value
+    // received in RegisterComponentResponse.poll_timeout_ms.
+    int32 timeout_ms = 2;
+}
+
+// PollWorkResponse carries a single work item for the component to execute.
+// When work_id is empty the poll timed out without available work.
+message PollWorkResponse {
+    // work_id uniquely identifies this work item. Must be included in SubmitResult.
+    string work_id = 1;
+    // work_type describes what kind of work this is (e.g. "execute", "stream").
+    string work_type = 2;
+    // payload is the serialized work payload; interpretation depends on work_type.
+    bytes payload = 3;
+    // context carries arbitrary key-value metadata associated with this work item.
+    map<string, string> context = 4;
+    // timeout_ms is the maximum time allowed to complete and submit the result.
+    int64 timeout_ms = 5;
+}
+
+// SubmitResultRequest delivers the outcome of a completed work item back to Gibson.
+message SubmitResultRequest {
+    string work_id = 1;
+    // result is the serialized result payload.
+    bytes result = 2;
+    // error is set when the work item failed; leave unset on success.
+    ComponentError error = 3;
+}
+
+// SubmitResultResponse is returned after a result is accepted.
+message SubmitResultResponse {}
+
+// CompleteRequest is a harness proxy request for a non-streaming LLM completion.
+message CompleteRequest {
+    // work_id ties this request to the active work item for authorization and billing.
+    string work_id = 1;
+    // slot is the named LLM slot defined by the agent (e.g. "primary").
+    string slot = 2;
+    repeated LLMMessage messages = 3;
+    // timeout_ms is the maximum time to wait for the completion.
+    int64 timeout_ms = 4;
+}
+
+// LLMMessage represents a single message in an LLM conversation.
+//
+// Tool-call round trips are represented with two message shapes so a
+// multi-turn conversation can replay the full tool history structurally
+// (instead of flattening it into `content` text):
+//
+//   1. An assistant turn that requested tool calls sets `role` to
+//      "assistant" and carries the calls in `tool_calls` (typically copied
+//      verbatim from a prior `CompleteWithToolsResponse.tool_calls`).
+//      `content` holds any accompanying assistant text and may be empty.
+//   2. A tool-result turn sets `role` to "tool", `tool_call_id` to the
+//      `ToolCallResult.id` it answers, and `content` to the tool's output.
+//      One message per tool call; a turn with N tool calls is followed by
+//      N tool-result messages.
+//
+// Both fields are optional: plain role+content messages are unchanged.
+message LLMMessage {
+    // role is "system", "user", "assistant", or "tool".
+    string role = 1;
+    string content = 2;
+    // tool_calls carries the tool calls an assistant turn requested.
+    // Set only when role is "assistant"; empty for all other roles.
+    repeated ToolCallResult tool_calls = 3;
+    // tool_call_id identifies which requested tool call this message
+    // answers. Set only when role is "tool", in which case `content`
+    // carries the tool's output and this matches the `ToolCallResult.id`
+    // of the corresponding entry in the preceding assistant turn's
+    // `tool_calls`. Empty for all other roles.
+    string tool_call_id = 4;
+}
+
+// CompleteResponse carries the LLM's reply to a non-streaming completion.
+message CompleteResponse {
+    LLMMessage response = 1;
+    TokenUsage usage = 2;
+}
+
+// CompleteStreamRequest is a harness proxy request for a streaming LLM completion.
+message CompleteStreamRequest {
+    // work_id ties this request to the active work item for authorization and billing.
+    string work_id = 1;
+    // slot is the named LLM slot defined by the agent (e.g. "primary").
+    string slot = 2;
+    repeated LLMMessage messages = 3;
+    // timeout_ms is the maximum time to wait for the completion.
+    int64 timeout_ms = 4;
+}
+
+// CompleteStreamResponse is a single chunk in a streaming LLM completion response.
+message CompleteStreamResponse {
+    string content = 1;
+    // done is true on the final chunk; usage is only populated on the final chunk.
+    bool done = 2;
+    TokenUsage usage = 3;
+}
+
+// TokenUsage reports token consumption for an LLM call.
+message TokenUsage {
+    int32 input_tokens = 1;
+    int32 output_tokens = 2;
+}
+
+// CallToolRequest is a harness proxy request to execute a tool.
+message CallToolRequest {
+    string work_id = 1;
+    string tool_name = 2;
+    // input_json is the JSON-encoded tool input matching the tool's input schema.
+    string input_json = 3;
+    int64 timeout_ms = 4;
+}
+
+// CallToolResponse carries the tool execution result.
+message CallToolResponse {
+    // output_json is the JSON-encoded tool output matching the tool's output schema.
+    string output_json = 1;
+    ComponentError error = 2;
+}
+
+// QueryPluginRequest is a harness proxy request to invoke a plugin method.
+message QueryPluginRequest {
+    string work_id = 1;
+    string plugin_name = 2;
+    string method = 3;
+    // params_json is the JSON-encoded method parameters.
+    string params_json = 4;
+    int64 timeout_ms = 5;
+}
+
+// QueryPluginResponse carries the plugin method result.
+message QueryPluginResponse {
+    // result_json is the JSON-encoded method result.
+    string result_json = 1;
+    ComponentError error = 2;
+}
+
+// SubmitFindingRequest is a harness proxy request to record a security finding.
+message SubmitFindingRequest {
+    string work_id = 1;
+    // finding is the JSON encoding of the SDK `finding.Finding` struct
+    // (see finding/finding.go). NOT a proto-encoded message — the daemon
+    // reads it with `string(req.Finding)`. This is distinct from the typed
+    // HarnessCallbackService.SubmitFinding RPC, which carries a
+    // gibson.types.v1.Finding proto message.
+    bytes finding = 2;
+}
+
+// SubmitFindingResponse is returned after a finding is accepted.
+message SubmitFindingResponse {
+    // finding_id is the server-assigned identifier for the recorded finding.
+    string finding_id = 1;
+}
+
+// ComponentError represents a structured error returned by a component or harness operation.
+message ComponentError {
+    // code is a short machine-readable error identifier (e.g. "TOOL_NOT_FOUND").
+    string code = 1;
+    string message = 2;
+    // retryable indicates whether the caller should attempt to retry the operation.
+    bool retryable = 3;
+}
+
+// Plugin Access Messages
+
+// ListAvailablePluginsRequest is an empty request; filtering may be added in future fields.
+message ListAvailablePluginsRequest {}
+
+// ListAvailablePluginsResponse carries the full catalog of plugins visible to the caller.
+message ListAvailablePluginsResponse {
+    // plugins is the ordered list of catalog entries for every registered plugin.
+    repeated PluginCatalogEntryProto plugins = 1;
+}
+
+// PluginCatalogEntryProto describes a single plugin as it appears in the catalog.
+message PluginCatalogEntryProto {
+    // name is the unique identifier for the plugin (e.g. "gitlab").
+    string name = 1;
+    string version = 2;
+    string description = 3;
+    // methods lists the callable method names exposed by this plugin.
+    repeated string methods = 4;
+    // config_schema_json is the JSON Schema document describing the plugin's
+    // configurable fields.
+    string config_schema_json = 5;
+    // enabled indicates whether the plugin is currently active for the calling tenant.
+    bool enabled = 6;
+    // configured indicates whether the plugin has a non-empty configuration stored.
+    bool configured = 7;
+    // health_status is the last-known health of the plugin: "healthy", "degraded", or "unhealthy".
+    string health_status = 8;
+    // source identifies where this plugin was discovered (e.g. "registry", "local").
+    string source = 9;
+    // instance_count is the number of running instances currently registered.
+    int32 instance_count = 10;
+}
+
+// EnablePluginRequest activates a plugin and optionally supplies initial configuration.
+message EnablePluginRequest {
+    // plugin_name is the unique identifier of the plugin to enable.
+    string plugin_name = 1;
+    // config_json is an optional JSON-encoded configuration blob for the plugin.
+    string config_json = 2;
+}
+
+// EnablePluginResponse reports the outcome of an enable operation.
+message EnablePluginResponse {
+    // success is true when the plugin was enabled without error.
+    bool success = 1;
+    string message = 2;
+}
+
+// DisablePluginRequest deactivates the named plugin for the calling tenant.
+message DisablePluginRequest {
+    // plugin_name is the unique identifier of the plugin to disable.
+    string plugin_name = 1;
+}
+
+// DisablePluginResponse reports the outcome of a disable operation.
+message DisablePluginResponse {
+    // success is true when the plugin was disabled without error.
+    bool success = 1;
+    string message = 2;
+}
+
+// UpdatePluginConfigRequest replaces the stored configuration for an enabled plugin.
+message UpdatePluginConfigRequest {
+    // plugin_name is the unique identifier of the plugin whose config will be updated.
+    string plugin_name = 1;
+    // config_json is the JSON-encoded configuration blob to persist.
+    string config_json = 2;
+}
+
+// UpdatePluginConfigResponse reports the outcome of a config update operation.
+message UpdatePluginConfigResponse {
+    // success is true when the configuration was updated without error.
+    bool success = 1;
+    string message = 2;
+}
+
+// GetPluginConfigRequest requests the current configuration for a named plugin.
+message GetPluginConfigRequest {
+    // plugin_name is the unique identifier of the plugin to inspect.
+    string plugin_name = 1;
+}
+
+// GetPluginConfigResponse carries the stored configuration and its schema.
+message GetPluginConfigResponse {
+    // config_json is the JSON-encoded configuration currently stored for the plugin.
+    string config_json = 1;
+    // config_schema_json is the JSON Schema document describing the plugin's
+    // configurable fields.
+    string config_schema_json = 2;
+}
+
+// TestPluginConnectionRequest asks the daemon to validate plugin credentials and
+// connectivity without persisting any changes.
+message TestPluginConnectionRequest {
+    // plugin_name is the unique identifier of the plugin to test.
+    string plugin_name = 1;
+    // config_json is the JSON-encoded configuration to test; if empty the stored
+    // configuration is used.
+    string config_json = 2;
+}
+
+// TestPluginConnectionResponse reports the result of a connectivity test.
+message TestPluginConnectionResponse {
+    // success is true when the plugin endpoint was reachable and credentials were accepted.
+    bool success = 1;
+    string message = 2;
+    // latency_ms is the round-trip time of the test probe in milliseconds.
+    int64 latency_ms = 3;
+}
+
+// ListTenantPluginsRequest is an empty request for the calling tenant's plugin access records.
+message ListTenantPluginsRequest {}
+
+// ListTenantPluginsResponse carries all plugin access records belonging to the calling tenant.
+message ListTenantPluginsResponse {
+    // plugins is the ordered list of plugin access records for the calling tenant.
+    repeated PluginAccessProto plugins = 1;
+}
+
+// PluginAccessProto represents the access record linking a tenant to a specific plugin.
+message PluginAccessProto {
+    // tenant_id is the identifier of the tenant that owns this access record.
+    string tenant_id = 1;
+    // plugin_name is the unique identifier of the plugin.
+    string plugin_name = 2;
+    // enabled indicates whether the plugin is currently active for this tenant.
+    bool enabled = 3;
+    // source identifies how the tenant gained access to this plugin (e.g. "manual", "helm").
+    string source = 4;
+    // configured_at is the RFC 3339 timestamp of the last configuration change.
+    string configured_at = 5;
+    // configured_by is the identity (user or service account) that applied the last config.
+    string configured_by = 6;
+    // has_config indicates whether a non-empty configuration blob is stored for this record.
+    bool has_config = 7;
+}
+
+// =============================================================================
+// LLM Extended Messages
+// =============================================================================
+
+// ToolDefinition describes a tool available for LLM function calling.
+message ToolDefinition {
+    string name = 1;
+    string description = 2;
+    // input_schema is a JSON Schema describing the tool's input parameters.
+    string input_schema_json = 3;
+}
+
+// ToolCallResult represents a tool call made by the LLM.
+message ToolCallResult {
+    string id = 1;
+    string name = 2;
+    // arguments is the JSON-encoded arguments the LLM generated for this tool call.
+    string arguments_json = 3;
+}
+
+// CompleteWithToolsRequest is a harness proxy request for LLM completion with tool definitions.
+message CompleteWithToolsRequest {
+    string work_id = 1;
+    string slot = 2;
+    repeated LLMMessage messages = 3;
+    repeated ToolDefinition tools = 4;
+    int64 timeout_ms = 5;
+}
+
+// CompleteWithToolsResponse carries the LLM's reply including any tool calls.
+message CompleteWithToolsResponse {
+    LLMMessage response = 1;
+    TokenUsage usage = 2;
+    repeated ToolCallResult tool_calls = 3;
+    string finish_reason = 4;
+}
+
+// CompleteStructuredRequest is a harness proxy request for structured JSON output.
+message CompleteStructuredRequest {
+    string work_id = 1;
+    string slot = 2;
+    repeated LLMMessage messages = 3;
+    // schema_json is a JSON Schema the LLM output must conform to.
+    string schema_json = 4;
+    int64 timeout_ms = 5;
+}
+
+// CompleteStructuredResponse carries the validated structured output.
+message CompleteStructuredResponse {
+    // result_json is the JSON output conforming to the requested schema.
+    string result_json = 1;
+    TokenUsage usage = 2;
+}
+
+// =============================================================================
+// Tool Extended Messages
+// =============================================================================
+
+// CallToolStreamRequest is a harness proxy request for streaming tool execution.
+message CallToolStreamRequest {
+    string work_id = 1;
+    string tool_name = 2;
+    string input_json = 3;
+    int64 timeout_ms = 4;
+}
+
+// CallToolStreamResponse is a single event in a streaming tool execution.
+message CallToolStreamResponse {
+    // event_type: "progress", "partial", "warning", "error", "result".
+    string event_type = 1;
+    // payload_json carries event-specific data.
+    string payload_json = 2;
+    // done is true on the final event.
+    bool done = 3;
+    ComponentError error = 4;
+}
+
+// QueueToolWorkRequest submits a batch of tool invocations for parallel execution.
+message QueueToolWorkRequest {
+    string work_id = 1;
+    string tool_name = 2;
+    // inputs_json is a list of JSON-encoded tool inputs.
+    repeated string inputs_json = 3;
+}
+
+// QueueToolWorkResponse carries the assigned job ID for tracking results.
+message QueueToolWorkResponse {
+    string job_id = 1;
+}
+
+// ToolResultsRequest requests streaming results for a previously queued tool batch.
+message ToolResultsRequest {
+    string work_id = 1;
+    string job_id = 2;
+}
+
+// ToolResultsResponse is a single result from a queued tool batch.
+message ToolResultsResponse {
+    // index is the zero-based position in the original inputs array.
+    int32 index = 1;
+    // output_json is the JSON-encoded tool output.
+    string output_json = 2;
+    ComponentError error = 3;
+    // done is true on the final result.
+    bool done = 4;
+}
+
+// ListToolsRequest requests descriptors for all available tools.
+message ListToolsRequest {
+    string work_id = 1;
+}
+
+// ToolDescriptorProto describes a registered tool.
+message ToolDescriptorProto {
+    string name = 1;
+    string version = 2;
+    string description = 3;
+    repeated string tags = 4;
+    string input_message_type = 5;
+    string output_message_type = 6;
+}
+
+// ListToolsResponse carries all tool descriptors visible to the caller.
+message ListToolsResponse {
+    repeated ToolDescriptorProto tools = 1;
+}
+
+// =============================================================================
+// Agent Delegation Messages
+// =============================================================================
+
+// DelegateToAgentRequest dispatches a sub-task to another agent.
+message DelegateToAgentRequest {
+    string work_id = 1;
+    string agent_name = 2;
+    // task_json is the JSON-encoded agent.Task to delegate.
+    bytes task_json = 3;
+}
+
+// DelegateToAgentResponse carries the delegated agent's result.
+message DelegateToAgentResponse {
+    // result_json is the JSON-encoded agent.Result.
+    bytes result_json = 1;
+}
+
+// ListAgentsRequest requests descriptors for all available agents.
+message ListAgentsRequest {
+    string work_id = 1;
+}
+
+// AgentDescriptorProto describes a registered agent.
+message AgentDescriptorProto {
+    string name = 1;
+    string version = 2;
+    string description = 3;
+    repeated string capabilities = 4;
+    repeated string target_types = 5;
+}
+
+// ListAgentsResponse carries all agent descriptors visible to the caller.
+message ListAgentsResponse {
+    repeated AgentDescriptorProto agents = 1;
+}
+
+// =============================================================================
+// GraphRAG Messages
+// =============================================================================
+
+// QueryNodesRequest is a harness proxy request for knowledge graph queries.
+message QueryNodesRequest {
+    string work_id = 1;
+    gibson.graphrag.v1.GraphQuery query = 2;
+}
+
+// QueryNodesResponse carries knowledge graph query results.
+message QueryNodesResponse {
+    repeated gibson.graphrag.v1.QueryResult results = 1;
+}
+
+// FindSimilarAttacksRequest searches for attack patterns similar to the given content.
+message FindSimilarAttacksRequest {
+    string work_id = 1;
+    string content = 2;
+    int32 top_k = 3;
+}
+
+// FindSimilarAttacksResponse carries matching attack patterns.
+message FindSimilarAttacksResponse {
+    // results_json is a JSON-encoded []graphrag.AttackPattern.
+    bytes results_json = 1;
+}
+
+// GetAttackChainsRequest requests multi-hop attack paths from a technique.
+message GetAttackChainsRequest {
+    string work_id = 1;
+    string technique_id = 2;
+    int32 max_depth = 3;
+}
+
+// GetAttackChainsResponse carries attack chain results.
+message GetAttackChainsResponse {
+    // results_json is a JSON-encoded []graphrag.AttackChain.
+    bytes results_json = 1;
+}
+
+// FindSimilarFindingsRequest searches for findings similar to the given one.
+message FindSimilarFindingsRequest {
+    string work_id = 1;
+    string finding_id = 2;
+    int32 top_k = 3;
+}
+
+// FindSimilarFindingsResponse carries matching findings.
+message FindSimilarFindingsResponse {
+    // results_json is a JSON-encoded []graphrag.FindingNode.
+    bytes results_json = 1;
+}
+
+// GetRelatedFindingsRequest requests findings related via graph relationships.
+message GetRelatedFindingsRequest {
+    string work_id = 1;
+    string finding_id = 2;
+}
+
+// GetRelatedFindingsResponse carries related findings.
+message GetRelatedFindingsResponse {
+    // results_json is a JSON-encoded []graphrag.FindingNode.
+    bytes results_json = 1;
+}
+
+// =============================================================================
+// Finding Query Messages
+// =============================================================================
+
+// GetFindingsRequest queries previously submitted findings.
+message GetFindingsRequest {
+    string work_id = 1;
+    // filter_json is a JSON-encoded finding.Filter.
+    bytes filter_json = 2;
+}
+
+// GetFindingsResponse carries matching findings.
+message GetFindingsResponse {
+    // findings_json is a JSON-encoded []*finding.Finding.
+    bytes findings_json = 1;
+}
+
+// GetRunFindingsRequest queries findings scoped to mission runs.
+message GetRunFindingsRequest {
+    string work_id = 1;
+    // scope: "previous" for prior run, "all" for all runs.
+    string scope = 2;
+    // filter_json is a JSON-encoded finding.Filter.
+    bytes filter_json = 3;
+}
+
+// GetRunFindingsResponse carries matching run-scoped findings.
+message GetRunFindingsResponse {
+    // findings_json is a JSON-encoded []*finding.Finding.
+    bytes findings_json = 1;
+}
+
+// =============================================================================
+// =============================================================================
+
+// =============================================================================
+// Mission Management Messages
+// =============================================================================
+
+// CreateMissionRequest creates a new sub-mission.
+message CreateMissionRequest {
+    string work_id = 1;
+    // mission_definition_json is the JSON-encoded mission definition.
+    bytes mission_definition_json = 2;
+    string target_id = 3;
+    // opts_json is the JSON-encoded mission.CreateMissionOpts.
+    bytes opts_json = 4;
+
+    // workflow_json (field 2) was renamed to mission_definition_json under spec
+    // mission-api-only-cleanup (Phase 3); the old name is reserved.
+    reserved "workflow_json";
+}
+
+// CreateMissionResponse carries the created mission info.
+message CreateMissionResponse {
+    // mission_json is the JSON-encoded mission.MissionInfo.
+    bytes mission_json = 1;
+}
+
+// RunMissionRequest queues a mission for execution.
+message RunMissionRequest {
+    string work_id = 1;
+    string mission_id = 2;
+    // opts_json is the JSON-encoded mission.RunMissionOpts.
+    bytes opts_json = 3;
+}
+
+// RunMissionResponse is returned after a mission is queued.
+message RunMissionResponse {}
+
+// GetMissionStatusRequest requests the current status of a mission.
+message GetMissionStatusRequest {
+    string work_id = 1;
+    string mission_id = 2;
+}
+
+// GetMissionStatusResponse carries the mission status.
+message GetMissionStatusResponse {
+    // status_json is the JSON-encoded mission.MissionStatusInfo.
+    bytes status_json = 1;
+}
+
+// WaitMissionRequest blocks until a mission completes or the timeout expires.
+message WaitMissionRequest {
+    string work_id = 1;
+    string mission_id = 2;
+    // timeout_ms is the maximum time to wait. 0 means wait indefinitely.
+    int64 timeout_ms = 3;
+}
+
+// WaitMissionResponse carries the final mission result.
+message WaitMissionResponse {
+    // result_json is the JSON-encoded mission.MissionResult.
+    bytes result_json = 1;
+}
+
+// ListMissionsRequest returns missions matching the given filter.
+message ListMissionsRequest {
+    string work_id = 1;
+    // filter_json is the JSON-encoded mission.MissionFilter.
+    bytes filter_json = 2;
+}
+
+// ListMissionsResponse carries matching missions.
+message ListMissionsResponse {
+    // missions_json is the JSON-encoded []*mission.MissionInfo.
+    bytes missions_json = 1;
+}
+
+// CancelMissionRequest requests cancellation of a running mission.
+message CancelMissionRequest {
+    string work_id = 1;
+    string mission_id = 2;
+}
+
+// CancelMissionResponse is returned after cancellation is requested.
+message CancelMissionResponse {}
+
+// GetMissionResultsRequest requests the final results of a mission.
+message GetMissionResultsRequest {
+    string work_id = 1;
+    string mission_id = 2;
+}
+
+// GetMissionResultsResponse carries the mission results.
+message GetMissionResultsResponse {
+    // result_json is the JSON-encoded mission.MissionResult.
+    bytes result_json = 1;
+}
+
+// =============================================================================
+// Context & Metadata Messages
+// =============================================================================
+
+// GetCredentialRequest retrieves a tenant-scoped credential.
+message GetCredentialRequest {
+    string work_id = 1;
+    string name = 2;
+}
+
+// GetCredentialResponse carries the credential.
+message GetCredentialResponse {
+    // credential_json is the JSON-encoded types.Credential.
+    bytes credential_json = 1;
+}
+
+// GetTaxonomySchemaRequest requests the current taxonomy definition.
+message GetTaxonomySchemaRequest {
+    string work_id = 1;
+}
+
+// GetTaxonomySchemaResponse carries the taxonomy schema.
+message GetTaxonomySchemaResponse {
+    // schema_json is the JSON-encoded taxonomy definition.
+    bytes schema_json = 1;
+}
+
+// GetMissionRunHistoryRequest requests summaries of previous mission runs.
+message GetMissionRunHistoryRequest {
+    string work_id = 1;
+}
+
+// GetMissionRunHistoryResponse carries run summaries.
+message GetMissionRunHistoryResponse {
+    // runs_json is the JSON-encoded []types.MissionRunSummary.
+    bytes runs_json = 1;
+}
+
+// ReportStepHintsRequest reports planning step hints from an agent.
+message ReportStepHintsRequest {
+    string work_id = 1;
+    // hints_json is the JSON-encoded planning.StepHints.
+    bytes hints_json = 2;
+}
+
+// ReportStepHintsResponse is returned after hints are accepted.
+message ReportStepHintsResponse {}

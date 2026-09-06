@@ -1,0 +1,114 @@
+name: publish-mission-authoring
+
+# Publish the mission authoring bundle as a private OCI artifact at
+# ghcr.io/zeroroot-ai/mission-authoring:<tag>.
+#
+# Consumed by:
+# - The dashboard's vendor-bundle.sh prebuild step (oras pull) which
+#   extracts the JSON Schema, MDX docs, glossary, and templates into
+#   src/data/ + src/app/dashboard/(auth)/docs/.
+# - The `gibson` CLI's mission template cache (gibson mission new --from-template).
+#
+# Bundle layout:
+#   mission-authoring-bundle.tar.gz
+#     ├── mission-definition.schema.json   (JSON Schema for editor)
+#     ├── glossary.json                    (controlled-vocabulary)
+#     └── docs/
+#         ├── verbs.mdx
+#         ├── nouns.mdx
+#         ├── schema-ref.mdx
+#         └── templates.mdx
+#
+# Spec: mission-authoring-cue Requirement 2 (publish on tag).
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'SDK tag to publish the mission-authoring bundle for'
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      REGISTRY: ghcr.io
+      IMAGE: ghcr.io/${{ github.repository_owner }}/mission-authoring
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install oras
+        run: |
+          ORAS_VERSION=1.2.2
+          curl -sSL "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz" -o oras.tar.gz
+          tar -xzf oras.tar.gz oras
+          sudo mv oras /usr/local/bin/oras
+          oras version
+
+      - name: Resolve and validate tag
+        id: tag
+        run: |
+          TAG="${{ inputs.tag || github.ref_name }}"
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-.*)?$ ]]; then
+            echo "ERROR: tag '$TAG' does not match v<semver>" >&2
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Build mission-authoring bundle and assert no drift
+        # Runs make mission-authoring-bundle which depends on
+        # mission-jsonschema and mission-docs. After build, asserts
+        # the committed gen/ artifacts match what the generators
+        # would produce — drift means an engineer forgot to commit
+        # a regen.
+        env:
+          CGO_ENABLED: "0"
+        run: |
+          make mission-authoring-bundle
+          git diff --exit-code gen/mission-definition.schema.json gen/mission-docs/ || {
+            echo "ERROR: mission-authoring artifacts drifted from proto sources." >&2
+            echo "Run 'make mission-authoring-bundle' locally and commit the result." >&2
+            exit 1
+          }
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | oras login "${REGISTRY}" -u "${{ github.actor }}" --password-stdin
+
+      - name: Push mission-authoring artifact
+        run: |
+          cd gen
+          oras push \
+            "${IMAGE}:${{ steps.tag.outputs.tag }}" \
+            --artifact-type "application/vnd.zeroroot-ai.mission-authoring+gzip" \
+            --annotation "org.opencontainers.image.source=https://github.com/${{ github.repository }}" \
+            --annotation "org.opencontainers.image.revision=${{ github.sha }}" \
+            --annotation "org.opencontainers.image.version=${{ steps.tag.outputs.tag }}" \
+            --annotation "org.opencontainers.image.description=Gibson mission authoring bundle (JSON Schema, MDX docs, glossary, templates) generated from SDK proto sources" \
+            mission-authoring-bundle.tar.gz:application/gzip
+
+      - name: Tag as 'latest'
+        run: oras tag "${IMAGE}:${{ steps.tag.outputs.tag }}" latest
+
+      - name: Verify round-trip
+        run: |
+          mkdir /tmp/verify
+          cd /tmp/verify
+          oras pull "${IMAGE}:${{ steps.tag.outputs.tag }}"
+          test -s mission-authoring-bundle.tar.gz
+          tar -tzf mission-authoring-bundle.tar.gz | head -20
+          echo "round-trip OK"

@@ -1,0 +1,306 @@
+# Gibson Compliance Rules Catalog — v1.0.0
+#
+# Maps emitted compliance_signal properties to control IDs across multiple
+# frameworks. Every rule has a positive and negative fixture in
+# compliance_catalog_test.go; the CI `make compliance-rules-validate` target
+# runs those fixtures before merge.
+#
+# Matcher language:
+#   equals  — exact match (single value or map)
+#   in      — value must appear in a list
+#   not     — child matcher must NOT match
+#   any_of  — at least one child must match (OR)
+#   all_of  — every child must match (AND, also the default for siblings)
+#
+# Signal property paths (dotted paths into the compliance_signal proto):
+#   action, effect, decision, caller_component, resource_type, resource_uri,
+#   success, error_code, resource_tags.<key>, custom.<key>
+#
+# Reserved namespaces: PLATFORM.*, _system — tenants cannot extend these.
+
+version: "1.0.0"
+
+frameworks:
+  SOC2:
+    name: "SOC 2 Trust Services Criteria"
+    version: "2017"
+    reference: "https://www.aicpa.org/topic/audit-assurance/audit-and-assurance-greater-than-soc-2"
+    description: "AICPA Trust Services Criteria for Security, Availability, Processing Integrity, Confidentiality, and Privacy"
+
+  NIST_AI_RMF:
+    name: "NIST AI Risk Management Framework"
+    version: "1.0"
+    reference: "https://www.nist.gov/itl/ai-risk-management-framework"
+    description: "NIST AI RMF 1.0 — Govern, Map, Measure, Manage functions"
+
+  MITRE_ATLAS:
+    name: "MITRE ATLAS"
+    reference: "https://atlas.mitre.org/"
+    description: "Adversarial Threat Landscape for AI Systems"
+
+  MITRE_ATTACK:
+    name: "MITRE ATT&CK"
+    reference: "https://attack.mitre.org/"
+    description: "Adversarial Tactics, Techniques, and Common Knowledge"
+
+  PLATFORM:
+    name: "Gibson Platform Runtime Controls"
+    description: "Reserved namespace for Gibson's own internal runtime control attestation. Tenants cannot extend."
+
+rules:
+  # ==========================================================================
+  # SOC 2 — CC6 Logical Access Controls
+  # ==========================================================================
+  - id: SOC2.CC6.1
+    framework: SOC2
+    control_id: CC6.1
+    severity: info
+    notes: |
+      CC6.1 — Logical and physical access controls. Every authorized call
+      against a resource is evidence that the authorization decision was
+      recorded and checked. Match: any signal with decision=allow.
+    matcher:
+      equals:
+        decision: allow
+    references:
+      - "https://www.aicpa.org/topic/audit-assurance"
+
+  - id: SOC2.CC6.1.PROD_DENY
+    framework: SOC2
+    control_id: CC6.1
+    severity: critical
+    notes: |
+      CC6.1 — Denial of a write against a prod-tagged resource demonstrates
+      the authorization boundary held. Match: decision=deny AND
+      resource_tags.env=prod AND effect is write or both.
+    matcher:
+      all_of:
+        - equals:
+            decision: deny
+        - equals:
+            resource_tags.env: prod
+        - in:
+            effect: [write, both]
+
+  - id: SOC2.CC6.6
+    framework: SOC2
+    control_id: CC6.6
+    severity: info
+    notes: |
+      CC6.6 — Logical access controls over data in transit. Evidence that
+      authorization decisions are logged for every call touching a
+      data_class=pii resource. Match: resource_tags.data_class=pii.
+    matcher:
+      equals:
+        resource_tags.data_class: pii
+
+  # ==========================================================================
+  # SOC 2 — CC7 System Operations & Monitoring
+  # ==========================================================================
+  - id: SOC2.CC7.1
+    framework: SOC2
+    control_id: CC7.1
+    severity: info
+    notes: |
+      CC7.1 — System monitoring. Every compliance_signal itself is evidence
+      that the monitoring substrate is active. Match: action=tool_call OR
+      action=llm_call (the two highest-volume emit paths).
+    matcher:
+      in:
+        action: [tool_call, llm_call]
+
+  - id: SOC2.CC7.2
+    framework: SOC2
+    control_id: CC7.2
+    severity: warning
+    notes: |
+      CC7.2 — Monitoring for anomalies. A signal with success=false is
+      evidence that failure detection is active. Match: success=false
+      AND error_code is non-empty.
+    matcher:
+      all_of:
+        - equals:
+            success: "false"
+        - not:
+            equals:
+              error_code: ""
+
+  # ==========================================================================
+  # SOC 2 — CC8 Change Management
+  # ==========================================================================
+  - id: SOC2.CC8.1
+    framework: SOC2
+    control_id: CC8.1
+    severity: info
+    notes: |
+      CC8.1 — Change management. A signal carrying a change_ticket custom
+      tag demonstrates that the action was associated with a formal change
+      record. Match: custom.change_ticket is non-empty.
+    matcher:
+      not:
+        equals:
+          custom.change_ticket: ""
+
+  # ==========================================================================
+  # NIST AI Risk Management Framework
+  # ==========================================================================
+  - id: NIST_AI_RMF.GOVERN.1.1
+    framework: NIST_AI_RMF
+    control_id: GOVERN.1.1
+    severity: info
+    notes: |
+      GOVERN 1.1 — "Legal and regulatory requirements involving AI are
+      understood, managed, and documented." Signal evidence: every
+      authorized LLM call under a legal_hold-tagged mission.
+    matcher:
+      all_of:
+        - equals:
+            action: llm_call
+        - equals:
+            resource_tags.legal_hold: "true"
+
+  - id: NIST_AI_RMF.MEASURE.2.7
+    framework: NIST_AI_RMF
+    control_id: MEASURE.2.7
+    severity: info
+    notes: |
+      MEASURE 2.7 — "AI system security and resilience are evaluated and
+      documented." Signal evidence: successful LLM calls recorded with
+      full decision provenance.
+    matcher:
+      all_of:
+        - equals:
+            action: llm_call
+        - equals:
+            success: "true"
+        - equals:
+            decision: allow
+
+  - id: NIST_AI_RMF.MANAGE.1.1
+    framework: NIST_AI_RMF
+    control_id: MANAGE.1.1
+    severity: warning
+    notes: |
+      MANAGE 1.1 — "Risks are prioritized, categorized, treated,
+      documented, and communicated." Signal evidence: denied tool calls
+      against pii-classified resources.
+    matcher:
+      all_of:
+        - equals:
+            action: tool_call
+        - equals:
+            resource_tags.data_class: pii
+        - equals:
+            decision: deny
+
+  - id: NIST_AI_RMF.MANAGE.4.1
+    framework: NIST_AI_RMF
+    control_id: MANAGE.4.1
+    severity: info
+    notes: |
+      MANAGE 4.1 — "Post-deployment AI system monitoring plans are
+      implemented." Signal evidence: continuous emission of
+      mission_lifecycle signals.
+    matcher:
+      equals:
+        action: mission_lifecycle
+
+  # ==========================================================================
+  # MITRE ATLAS (Adversarial Threat Landscape for AI Systems)
+  # ==========================================================================
+  - id: MITRE_ATLAS.AML_T0051
+    framework: MITRE_ATLAS
+    control_id: AML.T0051
+    severity: warning
+    notes: |
+      AML.T0051 — LLM Prompt Injection. Signals emitting this technique ID
+      in custom.technique_id are evidence of prompt injection detection.
+    matcher:
+      equals:
+        custom.technique_id: AML.T0051
+
+  - id: MITRE_ATLAS.AML_T0024
+    framework: MITRE_ATLAS
+    control_id: AML.T0024
+    severity: warning
+    notes: |
+      AML.T0024 — Exfiltration via ML Inference API.
+    matcher:
+      equals:
+        custom.technique_id: AML.T0024
+
+  - id: MITRE_ATLAS.AML_T0040
+    framework: MITRE_ATLAS
+    control_id: AML.T0040
+    severity: warning
+    notes: |
+      AML.T0040 — ML Model Inference API Access.
+    matcher:
+      equals:
+        custom.technique_id: AML.T0040
+
+  # ==========================================================================
+  # MITRE ATT&CK (reference)
+  # ==========================================================================
+  - id: MITRE_ATTACK.T1190
+    framework: MITRE_ATTACK
+    control_id: T1190
+    severity: warning
+    notes: |
+      T1190 — Exploit Public-Facing Application. Reference rule matching
+      findings that carry this technique ID.
+    matcher:
+      equals:
+        custom.technique_id: T1190
+
+  # ==========================================================================
+  # PLATFORM.* — Gibson internal runtime control attestation (reserved)
+  # ==========================================================================
+  - id: PLATFORM.SCOPE_ENFORCEMENT_001
+    framework: PLATFORM
+    control_id: SCOPE_ENFORCEMENT_001
+    severity: critical
+    notes: |
+      Internal: every denied call that carries a valid decision=deny is
+      evidence that scope enforcement did not let the call through.
+    matcher:
+      equals:
+        decision: deny
+
+  - id: PLATFORM.TENANT_ISOLATION_001
+    framework: PLATFORM
+    control_id: TENANT_ISOLATION_001
+    severity: critical
+    notes: |
+      Internal: every successful call carrying a non-system actor_tenant_id
+      is evidence that tenant scoping is functioning.
+    matcher:
+      all_of:
+        - equals:
+            success: "true"
+        - not:
+            equals:
+              actor_tenant_id: _system
+
+  - id: PLATFORM.RATE_LIMIT_001
+    framework: PLATFORM
+    control_id: RATE_LIMIT_001
+    severity: info
+    notes: |
+      Internal: a quota_exceeded error_code is evidence that rate limiting
+      triggered correctly.
+    matcher:
+      equals:
+        error_code: quota_exceeded
+
+  - id: PLATFORM.APPROVAL_001
+    framework: PLATFORM
+    control_id: APPROVAL_001
+    severity: info
+    notes: |
+      Internal: signals with a custom.approval_id set demonstrate that
+      human-in-the-loop approval workflow was used.
+    matcher:
+      not:
+        equals:
+          custom.approval_id: ""

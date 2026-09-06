@@ -1,0 +1,15 @@
+# Shared toolchain pin (asdf / mise). One Go + one Node version for the repo.
+# - Go MUST match go.mod `go 1.26.4` and the mirror tag golang:1.26.4
+#   (ghcr.io/zeroroot-ai/mirror/golang, added in .github#189). Bump this file,
+#   go.mod, and the example Dockerfile base together or builds drift.
+# - Node matches the CI `setup-node` major (20) used to run the lint scripts
+#   under scripts/ (stdlib-only, no npm deps). buf is a go.mod tool dependency
+#   (`go tool buf`), not a node tool.
+# Quality bar: docs/architecture/open-core/RESTRUCTURE-QUALITY-BARS.md §1.
+#
+# golangci-lint is NOT pinned here: it is built from source at the version in
+# the Makefile (GOLANGCI_LINT_VERSION) by the `bootstrap`/`lint` targets, so its
+# embedded Go toolchain never trails go.mod's target (golangci v2 refuses to
+# load a config targeting a newer Go than the binary was built with).
+golang 1.26.4
+nodejs 20.20.2

@@ -1,0 +1,1100 @@
+# Gibson Taxonomy - Core Types
+# Version: 4.0.0
+# This file is the single source of truth for all taxonomy definitions.
+# Generated code is produced by taxonomy-gen from this file.
+#
+# v4.0.0 — audit-taxonomy-foundation cut.
+# Adds compliance_signal node type (meta category) for daemon-self-observation.
+# See docs/AUDIT-FEATURE.md for full design history.
+# BREAKING: tenant Neo4j databases and Redis mission state are wiped on this cut.
+
+# v4.1.0 — ecs-brain (epic #37, sdk#340): add scope / credential / account asset
+# node types and a per-property `volatile` marker (identity-vs-volatile drives the
+# brain's entity resolution, ADR-0002). Additive — no wipe.
+version: "4.1.0"
+kind: core
+
+# ==================== NODE TYPES ====================
+node_types:
+  # -------------------- EXECUTION TYPES --------------------
+  - name: mission
+    category: execution
+    description: "Top-level security assessment mission"
+    properties:
+      - name: name
+        type: string
+        required: true
+        description: "Mission name"
+      - name: target
+        type: string
+        required: true
+        description: "Primary target (URL, IP range, etc.)"
+      - name: status
+        type: string
+        enum: [pending, running, completed, failed, cancelled]
+        description: "Current mission status"
+      - name: description
+        type: string
+        description: "Mission description"
+      - name: started_at
+        type: timestamp
+        description: "When the mission started"
+      - name: completed_at
+        type: timestamp
+        description: "When the mission completed"
+    parent: null
+    identifying_properties: [name, target]
+    validations:
+      - rule: "size(self.name) > 0"
+        message: "mission name cannot be empty"
+      - rule: "size(self.target) > 0"
+        message: "mission target cannot be empty"
+
+  - name: mission_run
+    category: execution
+    description: "Single execution of a mission pipeline"
+    properties:
+      - name: run_number
+        type: int32
+        required: true
+        description: "Run number within the mission"
+      - name: status
+        type: string
+        enum: [pending, running, completed, failed]
+        description: "Current run status"
+      - name: started_at
+        type: timestamp
+        description: "When the run started"
+      - name: completed_at
+        type: timestamp
+        description: "When the run completed"
+      # --- IDENTITY (who triggered this mission run) ---
+      - name: actor_id
+        type: string
+        required: true
+        description: "Subject claim from auth identity of the user or service that triggered this run"
+      - name: actor_tenant_id
+        type: string
+        required: true
+        description: "Tenant the actor belongs to at the time this mission run was started"
+      - name: api_key_id
+        type: string
+        required: false
+        description: "API key used to authorise this mission run; empty for session auth"
+      # --- MISSION INTEGRITY ---
+      - name: mission_yaml_digest
+        type: string
+        required: true
+        description: "SHA-256 content hash of the mission YAML spec used for this run; enables tamper evidence"
+    parent:
+      type: mission
+      ref_field: mission_id
+      relationship: BELONGS_TO
+      required: true
+    identifying_properties: [run_number]
+
+  - name: agent_run
+    category: execution
+    description: "Single execution of an agent within a mission"
+    properties:
+      - name: agent_name
+        type: string
+        required: true
+        description: "Name of the agent"
+      - name: mission_run_id
+        type: string
+        description: "Mission run this agent belongs to (stored as property, not relationship)"
+      - name: status
+        type: string
+        enum: [pending, running, completed, failed]
+        description: "Current agent run status"
+      - name: started_at
+        type: timestamp
+        description: "When the agent run started"
+      - name: completed_at
+        type: timestamp
+        description: "When the agent run completed"
+      - name: error_message
+        type: string
+        description: "Error message if failed"
+      # --- IDENTITY (who initiated this agent run) ---
+      - name: actor_id
+        type: string
+        required: true
+        description: "Subject claim from auth identity (Keycloak user/service account UUID)"
+      - name: actor_tenant_id
+        type: string
+        required: true
+        description: "Tenant the actor belongs to at the time this agent run was started"
+      - name: api_key_id
+        type: string
+        required: false
+        description: "API key used to authorise this run; empty for session auth"
+      # --- CODE ORIGIN (which component version is running) ---
+      - name: component_name
+        type: string
+        required: true
+        description: "Registry name of the agent component (e.g. agent:gitlab-agent)"
+      - name: component_version
+        type: string
+        required: true
+        description: "Semver of the agent component at execution time"
+      - name: system_owned
+        type: bool
+        required: true
+        description: "True if this is a platform-owned agent; false if customer-provided"
+      # --- DELEGATION CHAIN ---
+      - name: parent_agent_run_id
+        type: string
+        required: false
+        description: "Agent run ID of the delegating parent; empty for top-level agents"
+      - name: delegation_depth
+        type: int32
+        required: false
+        default: 0
+        description: "Depth in the delegation chain; 0 for top-level agents, increments on each hop"
+    parent: null
+    identifying_properties: [agent_name, started_at]
+
+  - name: tool_execution
+    category: execution
+    description: "Execution of a security tool"
+    properties:
+      - name: tool_name
+        type: string
+        required: true
+        description: "Name of the tool"
+      - name: command
+        type: string
+        description: "Command that was executed"
+      - name: exit_code
+        type: int32
+        description: "Exit code of the tool"
+      - name: started_at
+        type: timestamp
+        description: "When the tool started"
+      - name: completed_at
+        type: timestamp
+        description: "When the tool completed"
+      - name: stdout
+        type: string
+        description: "Standard output"
+      - name: stderr
+        type: string
+        description: "Standard error"
+      # --- IDENTITY (who initiated this tool execution) ---
+      - name: actor_id
+        type: string
+        required: true
+        description: "Subject claim from auth identity of the agent that invoked this tool"
+      - name: actor_tenant_id
+        type: string
+        required: true
+        description: "Tenant the actor belongs to at the time this tool execution was started"
+      - name: api_key_id
+        type: string
+        required: false
+        description: "API key used to authorise the parent agent run; empty for session auth"
+      # --- CODE ORIGIN (which tool component version ran) ---
+      - name: component_name
+        type: string
+        required: true
+        description: "Registry name of the tool component (e.g. tool:mytool-a)"
+      - name: component_version
+        type: string
+        required: true
+        description: "Semver of the tool component at execution time"
+      - name: system_owned
+        type: bool
+        required: true
+        description: "True if this is a platform-owned tool; false if customer-provided"
+    parent:
+      type: agent_run
+      ref_field: agent_run_id
+      relationship: USED_TOOL
+      required: true
+    identifying_properties: [tool_name, started_at]
+
+  - name: llm_call
+    category: execution
+    description: "Call to a large language model"
+    properties:
+      - name: model
+        type: string
+        required: true
+        description: "Model identifier"
+      - name: provider
+        type: string
+        description: "LLM provider (anthropic, openai, etc.)"
+      - name: slot_name
+        type: string
+        description: "LLM slot name"
+      - name: agent_run_id
+        type: string
+        description: "Agent run this call belongs to (stored as property)"
+      - name: prompt_tokens
+        type: int32
+        description: "Number of prompt tokens"
+      - name: completion_tokens
+        type: int32
+        description: "Number of completion tokens"
+      - name: total_tokens
+        type: int32
+        description: "Total tokens used"
+      - name: latency_ms
+        type: int64
+        description: "Latency in milliseconds"
+      - name: started_at
+        type: timestamp
+        description: "When the call started"
+      # --- IDENTITY (who initiated this LLM call) ---
+      - name: actor_id
+        type: string
+        required: true
+        description: "Subject claim from auth identity of the agent that made this LLM call"
+      - name: actor_tenant_id
+        type: string
+        required: true
+        description: "Tenant the actor belongs to at the time this LLM call was made"
+      - name: api_key_id
+        type: string
+        required: false
+        description: "API key used to authorise the parent agent run; empty for session auth"
+      # --- CODE ORIGIN (which agent component made this call) ---
+      - name: component_name
+        type: string
+        required: true
+        description: "Registry name of the agent component that initiated this LLM call (e.g. agent:gitlab-agent)"
+      - name: component_version
+        type: string
+        required: true
+        description: "Semver of the calling agent component at execution time"
+      # --- LLM ROUTING ---
+      - name: model_id
+        type: string
+        required: true
+        description: "Resolved model identifier used for this call (e.g. claude-3-5-sonnet-20241022)"
+    parent: null
+    identifying_properties: [model, started_at]
+
+  # -------------------- ASSET TYPES --------------------
+  - name: domain
+    category: asset
+    description: "Root domain entity (e.g., example.com)"
+    properties:
+      - name: name
+        type: string
+        required: true
+        description: "Domain name"
+      - name: registrar
+        type: string
+        description: "Domain registrar"
+      - name: created_date
+        type: timestamp
+        description: "Domain creation date"
+      - name: expiry_date
+        type: timestamp
+        description: "Domain expiry date"
+      - name: nameservers
+        type: string
+        description: "Comma-separated nameservers"
+    parent: null
+    identifying_properties: [name]
+    validations:
+      - rule: "size(self.name) > 0"
+        message: "domain name cannot be empty"
+
+  - name: subdomain
+    category: asset
+    description: "Subdomain under a root domain"
+    properties:
+      - name: name
+        type: string
+        required: true
+        description: "Subdomain name (e.g., 'api' for api.example.com)"
+      - name: full_name
+        type: string
+        description: "Full subdomain (e.g., api.example.com)"
+    parent:
+      type: domain
+      ref_field: domain_id
+      relationship: HAS_SUBDOMAIN
+      required: true
+    identifying_properties: [name]
+    validations:
+      - rule: "size(self.name) > 0"
+        message: "subdomain name cannot be empty"
+
+  - name: host
+    category: asset
+    description: "IP address or hostname"
+    properties:
+      - name: ip
+        type: string
+        description: "IP address (IPv4 or IPv6)"
+      - name: hostname
+        type: string
+        description: "Hostname or FQDN"
+      - name: os
+        type: string
+        description: "Operating system"
+      - name: os_version
+        type: string
+        description: "OS version"
+      - name: mac_address
+        type: string
+        description: "MAC address"
+      - name: state
+        type: string
+        enum: [up, down, unknown]
+        description: "Host state"
+    parent: null
+    identifying_properties: [ip]
+    validations:
+      - rule: "has(self.ip) || has(self.hostname)"
+        message: "host requires either ip or hostname"
+
+  - name: port
+    category: asset
+    description: "Network port on a host"
+    properties:
+      - name: number
+        type: int32
+        required: true
+        description: "Port number"
+      - name: protocol
+        type: string
+        required: true
+        enum: [tcp, udp, sctp]
+        description: "Transport protocol"
+      - name: state
+        type: string
+        enum: [open, closed, filtered, "open|filtered", "closed|filtered", unknown]
+        description: "Port state"
+      - name: reason
+        type: string
+        description: "Reason for state determination"
+    parent:
+      type: host
+      ref_field: host_id
+      relationship: HAS_PORT
+      required: true
+    identifying_properties: [number, protocol]
+    validations:
+      - rule: "self.number >= 1 && self.number <= 65535"
+        message: "port number must be between 1 and 65535"
+
+  - name: service
+    category: asset
+    description: "Service running on a port"
+    properties:
+      - name: name
+        type: string
+        required: true
+        description: "Service name"
+      - name: product
+        type: string
+        description: "Product name"
+      - name: version
+        type: string
+        description: "Service version"
+      - name: extra_info
+        type: string
+        description: "Additional service info"
+      - name: banner
+        type: string
+        description: "Service banner"
+      - name: cpe
+        type: string
+        description: "CPE identifier"
+    parent:
+      type: port
+      ref_field: port_id
+      relationship: RUNS_SERVICE
+      required: true
+    identifying_properties: [name]
+
+  - name: endpoint
+    category: asset
+    description: "Web endpoint or URL"
+    properties:
+      - name: url
+        type: string
+        required: true
+        description: "Full URL"
+      - name: method
+        type: string
+        enum: [GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS]
+        description: "HTTP method"
+      - name: status_code
+        type: int32
+        description: "HTTP status code"
+      - name: content_type
+        type: string
+        description: "Response content type"
+      - name: content_length
+        type: int64
+        description: "Response content length"
+      - name: title
+        type: string
+        description: "Page title"
+    parent:
+      type: service
+      ref_field: service_id
+      relationship: HAS_ENDPOINT
+      required: true
+    identifying_properties: [url, method]
+    validations:
+      - rule: "size(self.url) > 0"
+        message: "endpoint URL cannot be empty"
+
+  - name: technology
+    category: asset
+    description: "Technology/framework detected"
+    properties:
+      - name: name
+        type: string
+        required: true
+        description: "Technology name"
+      - name: version
+        type: string
+        description: "Version"
+      - name: category
+        type: string
+        description: "Technology category"
+      - name: confidence
+        type: int32
+        description: "Detection confidence (0-100)"
+      - name: cpe
+        type: string
+        description: "CPE identifier"
+    parent: null
+    identifying_properties: [name, version]
+
+  - name: certificate
+    category: asset
+    description: "TLS/SSL certificate"
+    properties:
+      - name: subject
+        type: string
+        description: "Certificate subject"
+      - name: issuer
+        type: string
+        description: "Certificate issuer"
+      - name: serial_number
+        type: string
+        description: "Serial number"
+      - name: not_before
+        type: timestamp
+        description: "Valid from"
+      - name: not_after
+        type: timestamp
+        description: "Valid until"
+      - name: fingerprint_sha256
+        type: string
+        description: "SHA-256 fingerprint"
+      - name: san
+        type: string
+        description: "Subject Alternative Names (comma-separated)"
+    parent: null
+    identifying_properties: [fingerprint_sha256]
+
+  # -------------------- FINDING TYPES --------------------
+  - name: finding
+    category: finding
+    description: "Security vulnerability or issue"
+    properties:
+      - name: title
+        type: string
+        required: true
+        description: "Finding title"
+      - name: description
+        type: string
+        description: "Detailed description"
+      - name: severity
+        type: string
+        required: true
+        enum: [critical, high, medium, low, info]
+        description: "Severity level"
+      - name: confidence
+        type: float64
+        description: "Confidence score (0.0-1.0)"
+      - name: category
+        type: string
+        description: "Finding category"
+      - name: subcategory
+        type: string
+        description: "Finding subcategory"
+      - name: remediation
+        type: string
+        description: "Remediation advice"
+      - name: cvss_score
+        type: float64
+        description: "CVSS score (0.0-10.0)"
+      - name: cve_ids
+        type: string
+        description: "CVE IDs (comma-separated)"
+      - name: cwe_ids
+        type: string
+        description: "CWE IDs (comma-separated)"
+      # --- COMPLIANCE MAPPINGS ---
+      # Structured references to compliance framework controls this finding maps to.
+      # The runtime API (Go struct, helpers, SARIF wiring) ships in audit-finding-compliance-mappings.
+      # This field is the schema slot only — no runtime behavior is added in this spec.
+      - name: compliance_mappings
+        type: list<ComplianceMapping>
+        required: false
+        description: "List of compliance framework control mappings for this finding (EU AI Act, NIST AI RMF, SOC 2, etc.)"
+    parent: null
+    identifying_properties: [title]
+    validations:
+      - rule: "size(self.title) > 0"
+        message: "finding title cannot be empty"
+      - rule: "!has(self.confidence) || (self.confidence >= 0.0 && self.confidence <= 1.0)"
+        message: "confidence must be between 0.0 and 1.0"
+      - rule: "!has(self.cvss_score) || (self.cvss_score >= 0.0 && self.cvss_score <= 10.0)"
+        message: "CVSS score must be between 0.0 and 10.0"
+
+  - name: evidence
+    category: finding
+    description: "Supporting evidence for a finding"
+    properties:
+      - name: type
+        type: string
+        required: true
+        enum: [request, response, screenshot, log, code, config, other]
+        description: "Evidence type"
+      - name: content
+        type: string
+        description: "Evidence content"
+      - name: content_type
+        type: string
+        description: "MIME type of content"
+      - name: url
+        type: string
+        description: "URL related to evidence"
+    parent:
+      type: finding
+      ref_field: finding_id
+      relationship: HAS_EVIDENCE
+      required: true
+
+  # -------------------- ATTACK TYPES --------------------
+  - name: technique
+    category: attack
+    description: "Attack technique (MITRE/Gibson)"
+    properties:
+      - name: technique_id
+        type: string
+        required: true
+        description: "Technique ID (e.g., GIB-T1001)"
+      - name: name
+        type: string
+        required: true
+        description: "Technique name"
+      - name: taxonomy
+        type: string
+        enum: [mitre_attack, mitre_atlas, gibson]
+        description: "Source taxonomy"
+      - name: tactic
+        type: string
+        description: "Associated tactic"
+      - name: description
+        type: string
+        description: "Technique description"
+      - name: url
+        type: string
+        description: "Reference URL"
+    parent: null
+    identifying_properties: [technique_id]
+
+  # -------------------- META TYPES --------------------
+  # The meta category holds daemon-self-observation types: records of what Gibson
+  # did to itself and on whose behalf. These are append-only, immutable graph
+  # projections of the Redis Streams audit log. They are NOT security findings
+  # about external targets — they are compliance signals about platform behaviour.
+
+  - name: compliance_signal
+    category: meta
+    description: |
+      Daemon-emitted observation of a single harness call. Append-only. Immutable.
+      The graph projection of the Redis Streams audit log entry for one platform
+      action. Every compliance_signal is an objective observation; evidence,
+      violation, and attestation classifications are queries over the stream,
+      never stored types. No kind discriminator field exists on this node type.
+    parent:
+      type: agent_run
+      ref_field: agent_run_id
+      relationship: EMITTED_SIGNAL
+      required: false
+    identifying_properties: [signal_id]
+    properties:
+      # Identity key
+      - name: signal_id
+        type: string
+        required: true
+        description: "Globally unique signal identifier (UUID v4)"
+
+      # --- WHO ---
+      # The identity of the platform actor that triggered this harness call.
+
+      - name: actor_id
+        type: string
+        required: true
+        description: "Subject claim from the auth identity (Keycloak user/service account UUID)"
+      - name: actor_tenant_id
+        type: string
+        required: true
+        description: "Tenant the actor belongs to at the moment this signal was emitted"
+      - name: api_key_id
+        type: string
+        required: false
+        description: "API key used for this call, if auth was key-based; empty for session auth"
+      - name: on_behalf_of
+        type: string
+        required: false
+        description: "Subject this call is acting on behalf of (delegation / service account impersonation)"
+      - name: roles_snapshot
+        type: list<string>
+        required: false
+        description: "Roles held by the actor at call time, captured for point-in-time compliance queries"
+
+      # --- INVOCATION CHAIN ---
+      # Context IDs linking this signal to its orchestration ancestors.
+
+      - name: mission_id
+        type: string
+        required: false
+        description: "Mission this signal belongs to; empty for out-of-mission calls"
+      - name: mission_run_id
+        type: string
+        required: false
+        description: "Specific mission run this signal was emitted during"
+      - name: agent_run_id
+        type: string
+        required: false
+        description: "Agent run that emitted this signal; used as the parent relationship ref field"
+      - name: parent_agent_run_id
+        type: string
+        required: false
+        description: "Agent run ID of the delegating parent, if this call came from a delegated agent"
+      - name: delegation_depth
+        type: int32
+        required: false
+        description: "Depth in the delegation chain; 0 for top-level agents, increments on each hop"
+      - name: trace_id
+        type: string
+        required: false
+        description: "OpenTelemetry trace ID linking this signal to its Langfuse / OTEL trace"
+      - name: caller_chain
+        type: list<string>
+        required: false
+        description: "Ordered list of agent_run_ids from root to immediate parent; empty for top-level"
+
+      # --- CODE ORIGIN ---
+      # Identifies which component version emitted this signal.
+
+      - name: caller_component
+        type: string
+        required: true
+        description: "Component that made the harness call (e.g. agent:gitlab-agent, plugin:scope-ingestion)"
+      - name: caller_component_version
+        type: string
+        required: true
+        description: "Semver of the calling component at execution time"
+      - name: target_component
+        type: string
+        required: true
+        description: "Component or subsystem that received the call (e.g. tool:mytool-a, memory:working, llm:anthropic)"
+      - name: target_component_version
+        type: string
+        required: true
+        description: "Semver of the target component at execution time; empty string if the target is a platform subsystem"
+      - name: system_owned
+        type: bool
+        required: true
+        description: "True if both caller and target are platform-owned components; false if customer-provided"
+
+      # --- ACTION + EFFECT ---
+      # Load-bearing primitives: what was done and what kind of I/O it produced.
+      # These are the primary axes for compliance rule evaluation.
+
+      - name: action
+        type: string
+        required: true
+        enum: [tool_call, llm_call, memory_read, memory_write, graph_read, graph_write, plugin_query, delegate, finding_submit, authz_decision, mission_lifecycle]
+        description: "Harness operation that was performed"
+      - name: effect
+        type: string
+        required: true
+        enum: [read, write, both, execute, none]
+        description: "I/O effect classification of the action"
+
+      # --- WHAT WAS TOUCHED ---
+      # The resource that was the target of this action.
+
+      - name: resource_type
+        type: string
+        required: true
+        description: "Logical resource type the action operated on (e.g. tool_input, llm_prompt, graph_node, redis_key)"
+      - name: resource_node_id
+        type: string
+        required: false
+        description: "Neo4j node ID of the touched graph node, if action was graph_read or graph_write"
+      - name: resource_uri
+        type: string
+        required: false
+        description: "URI of the touched resource for non-graph resources (e.g. Redis key, S3 path)"
+
+      # --- AUTHORIZATION OUTCOME ---
+      # Result of the policy check that gated this action.
+
+      - name: decision
+        type: string
+        required: true
+        enum: [allow, deny, not_checked]
+        description: "Authorization decision for this action"
+      - name: policy_id
+        type: string
+        required: false
+        description: "ID of the policy rule that produced this decision; empty when decision is not_checked"
+      - name: decision_reason
+        type: string
+        required: false
+        description: "Human-readable explanation of the authorization decision"
+
+      # --- OUTCOME ---
+      # Whether the action succeeded and what it cost.
+
+      - name: success
+        type: bool
+        required: true
+        description: "True if the action completed without error"
+      - name: error_code
+        type: string
+        required: false
+        description: "Machine-readable error code if success is false; empty otherwise"
+      - name: latency_ms
+        type: int64
+        required: true
+        description: "Wall-clock duration of the action in milliseconds"
+      - name: bytes_in
+        type: int64
+        required: false
+        description: "Bytes received by this action (input payload size)"
+      - name: bytes_out
+        type: int64
+        required: false
+        description: "Bytes produced by this action (output payload size)"
+      - name: tokens_prompt
+        type: int32
+        required: false
+        description: "Prompt tokens consumed; populated only when action is llm_call"
+      - name: tokens_completion
+        type: int32
+        required: false
+        description: "Completion tokens produced; populated only when action is llm_call"
+
+      # --- TIMING ---
+      - name: occurred_at
+        type: timestamp
+        required: true
+        description: "Wall-clock time at which the harness call was initiated (Unix milliseconds)"
+
+      # --- BAGS ---
+      # Free-form key/value maps for extensible metadata.
+      # resource_tags carries reserved keys with closed vocabularies (see reserved_keys below).
+      # The generator (task 5 of audit-taxonomy-foundation) emits CEL validators for reserved keys.
+      # Non-reserved keys in resource_tags are free-form (Kubernetes labels pattern).
+      # custom is entirely free-form; never written by the foundation spec itself.
+
+      - name: resource_tags
+        type: map<string,string>
+        required: false
+        description: "Structured resource metadata; reserved keys have closed vocabularies enforced by the validator"
+        reserved_keys:
+          env:
+            closed_vocabulary: [prod, staging, dev, test]
+            description: "Deployment environment the resource lives in"
+          data_class:
+            closed_vocabulary: [public, internal, pii, phi, secret]
+            description: "Data classification of the touched resource"
+          residency:
+            closed_vocabulary: [US, EU, APAC, LATAM, AFR, MEA]
+            description: "Geographic data-residency region of the touched resource"
+          legal_hold:
+            closed_vocabulary: ["true", "false"]
+            description: "Whether the resource is under a legal hold order"
+      - name: custom
+        type: map<string,string>
+        required: false
+        description: "Free-form extensibility bag; no reserved keys; not written by the foundation spec"
+
+      # --- CONTROL IDs (audit-compliance-rules-catalog) ---
+      # Rule engine output: list of compliance control IDs that matched
+      # this signal. Populated by ComplianceMiddleware before persistence
+      # (see audit-compliance-rules-catalog task 8). Query surface for
+      # SOC2/NIST AI RMF/MITRE evidence reports.
+      - name: control_ids
+        type: list<string>
+        required: false
+        description: "Control IDs matched by the compliance rule evaluator (see audit-compliance-rules-catalog)"
+
+  # -------------------- ECS-BRAIN ADDITIONS (epic #37, sdk#340) --------------------
+  # Appended at the END of node_types so CoreNodeType enum values append (no renumber).
+  - name: scope
+    category: asset
+    description: "Network/addressing context (vantage) an observation was made within; declared in the mission (RoE) or minted on pivot. The coordinate of an asset is (scope, address)."
+    properties:
+      - name: scope_id
+        type: string
+        required: true
+        description: "Stable scope identifier (declared in the CUE mission, or minted on pivot)"
+      - name: name
+        type: string
+        description: "Human-readable label (e.g. 'Corp DMZ')"
+      - name: kind
+        type: string
+        enum: [declared, pivot]
+        description: "How the scope was established"
+      - name: cidrs
+        type: list<string>
+        description: "Address ranges this scope covers"
+      - name: gateway_fingerprint
+        type: string
+        description: "Landmark fingerprint (gateway / landmark host keys) to re-recognize the scope from a new vantage"
+      - name: reachable
+        type: bool
+        volatile: true
+        description: "Whether the scope is currently reachable from a foothold"
+    parent: null
+    identifying_properties: [scope_id]
+
+  - name: credential
+    category: asset
+    description: "A credential (secret material), identified by the hash of its secret. May work across scopes."
+    properties:
+      - name: hash
+        type: string
+        required: true
+        description: "Hash of the secret material (identity)"
+      - name: kind
+        type: string
+        enum: [password, ssh_key, api_key, token, hash, cert_key]
+        description: "Credential type"
+      - name: username
+        type: string
+        description: "Associated username, if any"
+      - name: source
+        type: string
+        description: "Where the credential was discovered"
+      - name: validated
+        type: bool
+        volatile: true
+        description: "Whether the credential has been confirmed to work"
+    parent: null
+    identifying_properties: [hash]
+
+  - name: account
+    category: asset
+    description: "A principal/account on a target system or identity provider."
+    properties:
+      - name: provider
+        type: string
+        required: true
+        description: "Identity provider or system the account belongs to (e.g. local, AD, zitadel)"
+      - name: subject
+        type: string
+        required: true
+        description: "Account identifier within the provider"
+      - name: username
+        type: string
+        description: "Human-readable username"
+      - name: status
+        type: string
+        enum: [active, disabled, locked, unknown]
+        volatile: true
+        description: "Current account status"
+      - name: roles
+        type: list<string>
+        volatile: true
+        description: "Roles/groups currently held"
+    parent: null
+    identifying_properties: [provider, subject]
+
+# ==================== NESTED TYPES ====================
+# Nested types are value-object schemas embedded within node properties.
+# They are NOT node types — they do not get Neo4j labels, constructors like domain.NewX,
+# or identifying_properties. They appear as embedded structs (Go) and sub-messages (proto).
+# The generator (task 6 of audit-taxonomy-foundation) emits support for this block.
+nested_types:
+  # ComplianceMapping — a single compliance framework control reference attached to a finding.
+  # Multiple mappings may appear on one finding (one per framework/control combination).
+  ComplianceMapping:
+    fields:
+      - name: framework
+        type: string
+        required: true
+        description: "Compliance framework identifier (e.g. EU_AI_ACT, NIST_AI_RMF, SOC2)"
+      - name: control_id
+        type: string
+        required: true
+        description: "Control identifier within the framework (e.g. Art_15, MEASURE_2_7, CC6.1)"
+      - name: rationale
+        type: string
+        required: false
+        description: "Human-readable rationale for why this finding maps to this control"
+      - name: evidence_ref
+        type: string
+        required: false
+        description: "Reference to supporting evidence (e.g. a finding ID, document URI, or report section)"
+
+# ==================== RELATIONSHIP TYPES ====================
+relationship_types:
+  # Execution hierarchy (parent relationships defined in node_types)
+  - name: USED_TOOL
+    description: "Agent run used a tool"
+    from_types: [agent_run]
+    to_types: [tool_execution]
+    cardinality: one_to_many
+
+  - name: DELEGATED_TO
+    description: "Agent run delegated to another agent"
+    from_types: [agent_run]
+    to_types: [agent_run]
+    cardinality: many_to_many
+
+  - name: EMITTED_SIGNAL
+    description: "Agent run emitted a compliance signal (one signal per harness call)"
+    from_types: [agent_run]
+    to_types: [compliance_signal]
+    cardinality: one_to_many
+
+  - name: TRIGGERED
+    description: "Compliance signal triggered a finding (one signal may trigger zero or more findings)"
+    from_types: [compliance_signal]
+    to_types: [finding]
+    cardinality: one_to_many
+
+  # Asset hierarchy
+  - name: HAS_SUBDOMAIN
+    description: "Domain has subdomain"
+    from_types: [domain]
+    to_types: [subdomain]
+    cardinality: one_to_many
+
+  - name: RESOLVES_TO
+    description: "Domain/subdomain resolves to host"
+    from_types: [domain, subdomain]
+    to_types: [host]
+    cardinality: many_to_many
+
+  - name: HAS_PORT
+    description: "Host has port"
+    from_types: [host]
+    to_types: [port]
+    cardinality: one_to_many
+
+  - name: RUNS_SERVICE
+    description: "Port runs service"
+    from_types: [port]
+    to_types: [service]
+    cardinality: one_to_many
+
+  - name: HAS_ENDPOINT
+    description: "Service has endpoint"
+    from_types: [service]
+    to_types: [endpoint]
+    cardinality: one_to_many
+
+  - name: USES_TECHNOLOGY
+    description: "Asset uses technology"
+    from_types: [host, service, endpoint]
+    to_types: [technology]
+    cardinality: many_to_many
+
+  - name: SERVES_CERTIFICATE
+    description: "Host serves certificate"
+    from_types: [host]
+    to_types: [certificate]
+    cardinality: many_to_many
+
+  # Findings
+  - name: AFFECTS
+    description: "Finding affects an asset"
+    from_types: [finding]
+    to_types: [host, port, service, endpoint, technology]
+    cardinality: many_to_many
+
+  - name: HAS_EVIDENCE
+    description: "Finding has evidence"
+    from_types: [finding]
+    to_types: [evidence]
+    cardinality: one_to_many
+
+  - name: USES_TECHNIQUE
+    description: "Finding uses attack technique"
+    from_types: [finding]
+    to_types: [technique]
+    cardinality: many_to_many
+
+  - name: LEADS_TO
+    description: "Finding leads to another finding (attack chain)"
+    from_types: [finding]
+    to_types: [finding]
+    cardinality: many_to_many
+
+# ==================== EXECUTION RELATIONSHIPS ====================
+# These relationships link execution context to discovered assets.
+# They are created based on context (agent_run_id, mission_run_id) rather than explicit fields.
+execution_relationships:
+  # DISCOVERED: Links agent executions to the assets they find
+  - name: DISCOVERED
+    description: "Agent run discovered an asset"
+    from_type: agent_run
+    to_type: "*"  # Any non-execution node type
+    context_field: agent_run_id
+    applies_to: non_execution_nodes
+    properties:
+      - name: discovered_at
+        type: timestamp
+        description: "When the asset was discovered"
+      - name: discovery_method
+        type: string
+        description: "How the asset was discovered"
+
+  # BELONGS_TO: Links root asset nodes to mission runs for scoping
+  - name: BELONGS_TO
+    description: "Root asset belongs to a mission run"
+    from_type: "*"  # Any root node type (host, domain, finding, etc.)
+    to_type: mission_run
+    context_field: mission_run_id
+    applies_to: root_nodes_only
+
+# ==================== STRUCTURAL RELATIONSHIPS ====================
+# These relationships define the workflow/execution structure.
+# They are created explicitly when workflow/execution nodes are created.
+structural_relationships:
+  # PART_OF: WorkflowNode belongs to a Mission
+  - name: PART_OF
+    description: "Workflow node is part of a mission"
+    from_type: workflow_node
+    to_type: mission
+
+  # EXECUTES: AgentExecution runs a WorkflowNode
+  - name: EXECUTES
+    description: "Agent execution executes a workflow node"
+    from_type: agent_execution
+    to_type: workflow_node
+
+  # PRODUCED: AgentExecution produced a Finding
+  - name: PRODUCED
+    description: "Agent execution produced a finding"
+    from_type: agent_execution
+    to_type: finding
+
+  # RUN_OF: MissionRun is a run of a Mission (alternative to parent relationship)
+  - name: RUN_OF
+    description: "Mission run is a run of a mission"
+    from_type: mission_run
+    to_type: mission

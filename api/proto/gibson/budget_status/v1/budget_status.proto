@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+// Package gibson.budget_status.v1 — public, customer-visible wire shapes
+// for LLM budget status signals.
+//
+// BudgetScope and BudgetExceeded are the wire-level types that:
+//   - the daemon attaches to a codes.ResourceExhausted gRPC status as
+//     a status-detail when an ExecuteLLM call is denied for budget
+//     reasons (see internal/daemon/api/server_provider_exec.go); and
+//   - the SDK exposes back to customer agent code through
+//     llm.BudgetExceededError and llm.IsBudgetExceeded (see
+//     llm/errors.go).
+//
+// Both surfaces share these types — the customer-facing READ side lives
+// in the public OSS SDK (this package); the tenant-admin WRITE-side
+// service that mutates budgets (gibson.budget.v1.BudgetService) lives
+// in the internal platform-sdk. Customer agent code branching on
+// budget denial parses BudgetExceeded directly out of the gRPC status
+// detail without needing the admin service descriptor.
+//
+// This mirrors the sdk#103 pattern that did the same separation for
+// gibson.capability.v1.CapabilityGrantInfo (READ side in OSS) vs
+// gibson.admin.v1.GrantsAdminService (WRITE side in platform-sdk).
+//
+// Spec: llm-user-attribution-governance (Requirement 3, READ-side
+//       wire contract); two-surface platform contract
+//       (ADR-0025 / ADR-0030, sdk#106).
+package gibson.budget_status.v1;
+
+option go_package = "github.com/zeroroot-ai/sdk/api/gen/gibson/budget_status/v1;budgetstatusv1";
+option java_multiple_files = true;
+option csharp_namespace = "Gibson.BudgetStatus";
+
+// BudgetScope identifies the subject class a budget applies to. Tenant is
+// the rollup ceiling; user and team are subdivisions within a tenant.
+//
+// Field numbers + enum-value names are wire-identical to the original
+// definition in gibson.budget.v1; see sdk#106 for the relocation rationale.
+enum BudgetScope {
+  BUDGET_SCOPE_UNSPECIFIED = 0;
+  BUDGET_SCOPE_USER = 1;
+  BUDGET_SCOPE_TEAM = 2;
+  BUDGET_SCOPE_TENANT = 3;
+}
+
+// BudgetExceeded is the status-detail payload returned inside the
+// codes.ResourceExhausted gRPC status when an LLM call is denied for
+// budget reasons. Consumers unmarshal via SDK helper IsBudgetExceeded.
+//
+// Field numbers + tag names are wire-identical to the original
+// definition in gibson.budget.v1.BudgetExceeded; see sdk#106 for the
+// relocation rationale. Customer code branching on budget denial
+// continues to receive the same on-wire bytes.
+message BudgetExceeded {
+  BudgetScope scope = 1;
+
+  // dimension is one of "tokens" or "spend".
+  string dimension = 2;
+
+  int64 current_usage = 3;
+  int64 limit = 4;
+  int64 period_reset_at_unix = 5;
+
+  // subject_id is the limiting subject (user or team ID; empty for tenant).
+  string subject_id = 6;
+}

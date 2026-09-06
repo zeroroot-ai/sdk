@@ -1,0 +1,29 @@
+# Calls the org-level reusable architectural-doc-coverage workflow.
+# See zeroroot-ai/.github/.github/workflows/architectural-doc-coverage.yml
+# for the gate's logic, configuration, and rationale.
+#
+# Required check name: architectural-doc-coverage
+
+name: architectural-doc-coverage
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+jobs:
+  architectural-doc-coverage:
+    # Mirrors the reusable workflow's own `permissions:` block exactly
+    # (zeroroot-ai/.github .github/workflows/architectural-doc-coverage.yml)
+    # -- the caller's permissions are a ceiling on what a workflow_call can
+    # grant the called workflow's GITHUB_TOKEN, so this must match or exceed
+    # it. Fixes CodeQL actions/missing-workflow-permissions (sdk
+    # code-scanning alert #1).
+    permissions:
+      pull-requests: read
+      contents: read
+    # zeroroot-ai/.github's default branch, resolved 2026-08-15. This is a
+    # floating branch ref by design (org workflow contract intentionally
+    # tracks HEAD) -- re-resolve on any bump.
+    uses: zeroroot-ai/.github/.github/workflows/architectural-doc-coverage.yml@cf1c48774b57e552ccdd17a2a4bba3f782587dbe # main, .github recreated 2026-09-06
+    secrets:
+      DOCS_REPO_READ_TOKEN: ${{ secrets.DOCS_REPO_READ_TOKEN }}

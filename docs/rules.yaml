@@ -1,0 +1,161 @@
+# rules.yaml — zeroroot-ai/sdk
+#
+# Spec: unified-identity-and-authorization Phase J task 10.1.
+# Schema: ./rules-schema.yaml v1.0.0.
+#
+# The SDK is the spine of the polyrepo. Its rules constrain what the SDK
+# itself contains so that every consumer can rely on the contract:
+# `auth.TenantID` is always sealed, registry codegen is always run, and
+# the auth package never grows a dependency on a downstream concern.
+
+version: "1.0.0"
+
+rules:
+  - id: sdk-auth-001
+    description: |
+      The SDK auth package must depend only on the standard library and
+      grpc + protobuf. No imports from gibson/, dashboard/, ext-authz/,
+      adk/, or any IdP/FGA SDK. This is the "no upward dependency"
+      contract — consumers depend on the SDK; the SDK never depends on a
+      consumer or on a provider integration.
+    scope:
+      - "auth/**/*.go"
+      - "capabilitygrant/**/*.go"
+    exempt:
+      - "**/*_test.go"
+    pattern:
+      kind: forbidden_import
+      target:
+        - "github.com/zeroroot-ai/gibson"
+        - "github.com/zeroroot-ai/ext-authz"
+        - "github.com/zitadel/oidc"
+        - "github.com/zitadel/oidc/v3"
+        - "github.com/openfga/go-sdk"
+        - "github.com/openfga/api"
+    severity: error
+    message: |
+      Move provider-specific code to a consumer (ext-authz for FGA,
+      dashboard for Zitadel admin). The SDK auth package owns identity
+      types and the gRPC interceptor only.
+    enforced_by:
+      - "manual"
+      - "ci:sdk-buf-lint"
+
+  - id: sdk-auth-002
+    description: |
+      TenantID must remain a sealed type. No exported constructor other
+      than NewTenantID / MustNewTenantID; no UnmarshalText; no struct-
+      literal escape hatches.
+    scope:
+      - "auth/tenantid.go"
+      - "auth/tenantid_*.go"
+    pattern:
+      kind: forbidden_string
+      target: "func\\s+\\(\\s*[a-zA-Z_]+\\s+\\*?TenantID\\)\\s+UnmarshalText"
+    severity: error
+    message: |
+      Implementing UnmarshalText would let JSON / YAML deserializers
+      bypass NewTenantID's validation. Callers that round-trip a tenant
+      through text must re-call NewTenantID explicitly.
+    enforced_by:
+      - "manual"
+
+  - id: sdk-auth-003
+    description: |
+      Every RPC defined under api/proto/gibson/ MUST carry the
+      (gibson.auth.v1.authz) annotation. Missing annotations break the
+      registry codegen and therefore the daemon's startup self-check.
+    scope:
+      - "api/proto/gibson/**/*.proto"
+    exempt:
+      - "api/proto/gibson/auth/v1/options.proto"   # the annotation itself
+    pattern:
+      kind: required_annotation
+      target: "gibson.auth.v1.authz"
+    severity: error
+    message: |
+      Add option (gibson.auth.v1.authz) = {…}; on the new RPC. Use
+      {unauthenticated: true} for explicit-no-auth methods (Ping etc.).
+      See sdk/docs/how-to-add-a-rpc.md.
+    enforced_by:
+      - "ci:sdk-buf-lint-authz-required"
+      - "gibsoncheck:registry-coverage-test"
+
+  - id: sdk-auth-004
+    description: |
+      The auth interceptor must NOT validate JWTs, talk to Zitadel, or
+      talk to OpenFGA. Its sole job is reading the x-gibson-identity-*
+      headers (which ext-authz emits over a SPIFFE-pinned channel) and
+      placing an Identity on the context.
+    scope:
+      - "auth/interceptor.go"
+      - "auth/headers.go"
+    pattern:
+      kind: forbidden_import
+      target:
+        - "github.com/golang-jwt/jwt"
+        - "github.com/lestrrat-go/jwx"
+        - "github.com/zitadel/oidc"
+        - "github.com/openfga/go-sdk"
+    severity: error
+    message: |
+      Channel security is SPIFFE mTLS. Crypto verification of upstream
+      JWTs is Envoy's job. If you need JWT parsing for a different
+      reason (CG-JWT Verify), put it in capabilitygrant/, not auth/.
+    enforced_by:
+      - "manual"
+
+  - id: sdk-auth-005
+    description: |
+      capabilitygrant.Verify must accept ONLY EdDSA. Algorithm-confusion
+      attacks (presenting an HMAC-signed token under a public key) are
+      the canonical CG-JWT exploit shape; allowing a second algorithm
+      reopens that door.
+    scope:
+      - "capabilitygrant/verify.go"
+    pattern:
+      kind: required_call
+      target: "jwt.WithValidMethods([]string{jwt.SigningMethodEdDSA.Alg()})"
+    severity: error
+    message: |
+      Keep the jwt.WithValidMethods constraint. Daemon mints with
+      EdDSA; ext-authz verifies with EdDSA only.
+    enforced_by:
+      - "manual"
+
+  - id: sdk-auth-006
+    description: |
+      `make proto` runs cmd/authz-registry-gen so the three registry
+      artifacts (registry.go, registry.yaml, permissions.ts) stay in
+      lockstep with the proto annotations. Bypassing this step ships a
+      stale registry to ext-authz and the daemon.
+    scope:
+      - "Makefile"
+    pattern:
+      kind: required_call
+      target: "authz-registry-gen"
+    severity: error
+    message: |
+      The proto target must invoke authz-registry-gen after buf
+      generate. Removing the step lets a hand-edited registry slip in.
+    enforced_by:
+      - "manual"
+      - "gibsoncheck:registry-coverage-test"
+
+  - id: sdk-auth-007
+    description: |
+      auth.TenantFromContext returns (zero, false) when no Identity is
+      on the context. There is no `_system` fallback. Audit findings
+      C11 / C12 closed structurally.
+    scope:
+      - "auth/context.go"
+    pattern:
+      kind: forbidden_string
+      target: "(SystemTenant|_system)"
+    severity: error
+    message: |
+      Default-to-SystemTenant logic is forbidden in the SDK auth
+      package. Platform-operator code paths obtain SystemTenant by
+      naming auth.SystemTenant explicitly — easy audit grep.
+    enforced_by:
+      - "manual"

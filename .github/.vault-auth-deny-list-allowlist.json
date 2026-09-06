@@ -1,0 +1,14 @@
+[
+  {
+    "file": "CHANGELOG.md",
+    "content": "AuthMethodKubernetes and AuthConfig.ServiceAccountTokenPath are removed from the public API",
+    "token": "AuthMethodKubernetes",
+    "reason": "release-please CHANGELOG entry documenting the historical removal of this constant"
+  },
+  {
+    "file": "CHANGELOG.md",
+    "content": "rip AuthMethodKubernetes — see ADR-0009",
+    "token": "AuthMethodKubernetes",
+    "reason": "release-please CHANGELOG entry documenting the historical removal of this constant"
+  }
+]

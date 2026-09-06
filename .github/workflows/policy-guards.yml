@@ -1,0 +1,30 @@
+# Epic: cicd-efficiency (board #44), slice S11b. Consolidates sdk's trivial
+# per-PR policy guards into a single fast job per
+# docs/architecture/CICD-CONTEXT.md decision #9 ("trivial guards ...
+# consolidated into one policy-guards job"). Runs on both pull_request (fast
+# contributor signal) and merge_group (S3's authoritative gate) --
+# pr-title-lint.yml stays separate and pull_request-only since PR-title
+# checks are meaningless in the merge queue context. Mirrors gibson's
+# policy-guards.yml (gibson#1130) exactly.
+#
+# Currently folds in:
+#   - vault-auth-method-deny-list (ADR-0009, org-level reusable workflow;
+#     formerly its own vault-auth-method-deny-list.yml)
+#
+# sdk has no other standalone trivial guard workflows today.
+#
+# Required check name: policy-guards
+
+name: policy-guards
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+  merge_group:
+
+jobs:
+  policy-guards:
+    name: policy-guards
+    # zeroroot-ai/.github's default branch, resolved 2026-08-15 -- floating
+    # branch ref by design; re-resolve on any bump.
+    uses: zeroroot-ai/.github/.github/workflows/vault-auth-method-deny-list.yml@cf1c48774b57e552ccdd17a2a4bba3f782587dbe # main, .github recreated 2026-09-06

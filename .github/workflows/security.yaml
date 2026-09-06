@@ -1,0 +1,52 @@
+# Spec: security-hardening Requirement 5 (Go-CVE policy).
+#
+# Epic: cicd-efficiency (board #44), slice S11b. This used to run govulncheck
+# against the root module AND both example modules on every PR and every push
+# to main. The root-module scan is now redundant: go-ci.yml's `heavy` job
+# (merge_group) already runs govulncheck against the root module via the
+# reusable's heavy tier, so re-running it here would be pure duplicate
+# compute -- dropped.
+#
+# examples/custom-tool and examples/minimal-agent are each their own Go
+# module (separate go.mod), so the reusable's single-module govulncheck call
+# doesn't reach them. Those two scans are preserved here, natively, on
+# merge_group only (decision 9: scanners belong on the authoritative gate,
+# not per-PR).
+#
+# Local invocation is forbidden per CLAUDE.md (CPU thrash); this workflow is
+# the canonical place to surface CVE failures for the example modules.
+name: security
+
+on:
+  merge_group:
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  govulncheck-examples:
+    name: govulncheck (examples)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: run govulncheck on examples/custom-tool
+        working-directory: examples/custom-tool
+        run: govulncheck ./...
+
+      - name: run govulncheck on examples/minimal-agent
+        working-directory: examples/minimal-agent
+        run: govulncheck ./...

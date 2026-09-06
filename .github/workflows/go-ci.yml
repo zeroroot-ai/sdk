@@ -1,0 +1,223 @@
+name: go-ci
+
+# Thin caller for the canonical three-tier Go CI (Epic: cicd-efficiency, board
+# #44, slice S11b, .github#203). See docs/architecture/CICD-CONTEXT.md
+# decisions 8 & 9.
+#
+# Replaces the old ci.yaml, whose three jobs (lint/coverage/test) all ran
+# their full suite on both `pull_request` and `push:main` -- pure double-fire
+# waste. This file follows the org-wide trigger split instead:
+#
+#   pull_request -> fast tier:  quick contributor signal -- vet/build/test via
+#                                the reusable, plus sdk's own lint job and the
+#                                sdk-specific static/drift gates below. No
+#                                race, no coverage gate, no Docker.
+#   merge_group  -> heavy tier: authoritative gate -- race + govulncheck via
+#                                the reusable, plus sdk's 80%/85% coverage
+#                                floor+diff gate.
+#
+# sdk is a PUBLIC Apache-2.0 repo (open-core "build+execute components" tier,
+# ADR-0058, component-dev-surface only). Its only zeroroot-ai Go dependency is
+# the also-public ast-checks module, so private-modules stays at its default
+# false and no gh-pat secret is needed.
+#
+# sdk's own `make lint` (golangci-lint pinned in the Makefile, built from
+# source with the repo's own Go toolchain) is kept as a separate native job
+# rather than delegating to the reusable's built-in golangci-lint-action step:
+# the reusable pins golangci-lint-action to a fixed version which can silently
+# diverge from the Makefile pin and trail go.mod's toolchain target -- the
+# "v2 trap" sdk was already bitten by once (sdk#355, see prior ci.yaml
+# history). Passing skip-lint: true avoids double-running lint under two
+# different pins.
+#
+# workflow_dispatch and push:main triggers are dropped (nothing should
+# double-fire on both pull_request and push:main per decision 9).
+
+on:
+  pull_request:
+  merge_group:
+
+concurrency:
+  group: go-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ---- fast tier (pull_request): reusable vet/build/test, no race ----
+  fast:
+    if: github.event_name == 'pull_request'
+    uses: zeroroot-ai/.github/.github/workflows/reusable-go-ci.yml@cf1c48774b57e552ccdd17a2a4bba3f782587dbe # main, .github recreated 2026-09-06
+    with:
+      tier: fast
+      private-modules: false
+      skip-lint: true # sdk runs its own pinned golangci-lint below (make lint)
+
+  # ---- heavy tier (merge_group): reusable race + govulncheck ----
+  heavy:
+    if: github.event_name == 'merge_group'
+    uses: zeroroot-ai/.github/.github/workflows/reusable-go-ci.yml@cf1c48774b57e552ccdd17a2a4bba3f782587dbe # main, .github recreated 2026-09-06
+    with:
+      tier: heavy
+      private-modules: false
+
+  # ---- sdk-specific lint (fast tier / pull_request) ----
+  # Kept native (not delegated to the reusable's golangci-lint step) so the
+  # Makefile-pinned golangci-lint version and toolchain stay the single
+  # source of truth. Includes the pagination / allowed-identities script
+  # gates that `make lint` already runs.
+  lint:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0 # merge-base needs full history
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      # lint scripts (scripts/*.mjs) are stdlib-only — plain node, no npm deps.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '20'
+
+      - name: Lint (blocking, new-from-merge-base)
+        run: make lint LINT_BASE=origin/${{ github.base_ref || 'main' }}
+
+  # ---- sdk-specific static/drift gates (fast tier / pull_request) ----
+  # All of these are static / generator-diff / grep checks -- no Docker, no
+  # race -- so they belong on pull_request, the same category as gibson's
+  # critical-paths guard. The old `test` job's plain `go build`/`go vet`/
+  # `go test` steps are dropped here: the `fast` job above already covers
+  # them via the reusable, so re-running them in this job would be pure
+  # redundant compute. No protoc plugins are installed to the runner's
+  # ambient PATH: the drift gates go through `make generate`, which
+  # self-provides the Makefile-pinned protoc-gen-go / protoc-gen-go-grpc
+  # via proto-deps into bin/tools/ and runs buf with that dir at the front
+  # of PATH ($(BUF_GENERATE)). The previous hardcoded `go install ...@vX`
+  # step here was a duplicate pin that could silently diverge from the
+  # Makefile's (sdk#427); the buf-build-only steps (authz lint, mission
+  # gates) never invoke protoc plugins at all.
+  sdk-checks:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      # scripts/*.mjs run with plain node (no npm deps); buf is a go.mod tool
+      # dependency, so `go tool buf` self-provides it — no npm step.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '20'
+
+      # sdk#427 recurrence guard: every `buf generate` call site in the
+      # Makefile must go through the pinned $(BUF_GENERATE) macro.
+      - name: Check buf generate call sites use the pinned toolchain
+        run: make check-buf-pinned
+
+      # Spec: unified-identity-and-authorization Requirement 14.1.
+      - name: Lint authz annotations
+        run: |
+          go build -o bin/protoc-gen-authz-registry ./cmd/authz-registry-gen
+          mkdir -p /tmp/authz-lint-out
+          go tool buf build -o /tmp/sdk-fds-lint.binpb
+          ./bin/protoc-gen-authz-registry -input /tmp/sdk-fds-lint.binpb -output /tmp/authz-lint-out
+          rm -rf /tmp/authz-lint-out /tmp/sdk-fds-lint.binpb
+
+      # Spec: unified-identity-and-authorization Requirement 7.6.
+      - name: Registry coverage
+        run: go test -v ./auth/registry/...
+
+      - name: Check no gibson dependency
+        run: |
+          if grep -q 'zeroroot-ai/gibson' go.mod; then
+            echo "ERROR: SDK must not depend on gibson"; exit 1
+          fi
+
+      # Spec: mission-authoring-cue Requirements 1.3 + 8.2 + 9.x.
+      # Regenerates the JSON Schema + MDX docs and asserts no drift.
+      # PRs that change the proto without regenerating the
+      # mission-authoring artifacts fail here. The tarball itself
+      # is excluded from the drift check (tar timestamps are
+      # non-reproducible across machines); the publish workflow
+      # rebuilds it fresh on tag.
+      - name: mission-authoring drift gate
+        run: |
+          make mission-jsonschema mission-docs
+          git diff --exit-code gen/mission-definition.schema.json gen/mission-docs/ || {
+            echo "ERROR: mission-authoring artifacts drifted from proto sources." >&2
+            echo "Run 'make mission-jsonschema mission-docs' locally and commit the result." >&2
+            exit 1
+          }
+
+      # api/gen/ is TRACKED SOURCE (ADR-0039). This gate fails if the committed
+      # Go bindings drift from the protos OR if newly-generated files were not
+      # committed -- the failure mode that shipped an incomplete v0.129.0.
+      # Codegen is deterministic (plugin versions pinned in the Makefile).
+      - name: proto bindings drift gate
+        run: |
+          make generate
+          git diff --exit-code api/gen/ graphrag/ api/proto/taxonomy/ || {
+            echo "ERROR: generated bindings drifted from sources, or new generated files were not committed." >&2
+            echo "Run 'make generate' locally and commit api/gen/, graphrag/ and api/proto/taxonomy/." >&2
+            exit 1
+          }
+
+      # Spec: non-plugin-secret-isolation Requirement 1.3.
+      # Fails if GetCredential re-appears in core/sdk/agent/.
+      # Path-scoped: daemon's own GetCredential RPC handlers live in core/gibson/ and are not flagged.
+      - name: Check no agent GetCredential
+        run: bash scripts/check-no-agent-getcredential.sh
+
+      # Spec: sdk#147.
+      # Verifies all files embedded by cueschemas/cueschemas.go are present
+      # and non-empty. Fails if proto regen removed or emptied a CUE file
+      # without the embed directive being updated.
+      - name: check-cueschemas-fresh
+        run: bash scripts/check-cueschemas-fresh.sh
+
+  # ---- sdk-specific coverage gates (heavy tier / merge_group) ----
+  # Design intent (CICD-CONTEXT.md decision 8): coverage is part of the
+  # merge_group-only authoritative suite, not a per-PR gate. Mirrors gibson's
+  # own `coverage` job placement in go-ci.yml exactly.
+  coverage:
+    if: github.event_name == 'merge_group'
+    runs-on: ubuntu-latest
+    name: coverage gates (floor + diff)
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0 # diff-coverage merge-base needs full history
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '20'
+
+      # No protoc plugin install: the coverage profile is built by
+      # `go test ./...` against the COMMITTED api/gen/ bindings (tracked
+      # source, ADR-0039) — nothing in the test run invokes protoc-gen-go /
+      # protoc-gen-go-grpc, and buf is a go.mod tool dependency. The
+      # previous hardcoded `go install ...@vX` step was a stale duplicate
+      # of the Makefile pin (sdk#427).
+
+      # merge_group checkouts don't set github.base_ref, and even with
+      # fetch-depth: 0 the checkout action only fetches the ref it checked
+      # out by default -- origin/main must be fetched explicitly so the diff
+      # base actually exists locally (mirrors gibson's coverage job).
+      - name: Fetch base branch
+        run: git fetch --no-tags origin "${{ github.base_ref || 'main' }}"
+
+      # 80% floor (baselined) + 85% diff-coverage.
+      - name: Coverage gate (floor + diff, blocking)
+        run: make check-coverage COVERAGE_BASE=origin/${{ github.base_ref || 'main' }}

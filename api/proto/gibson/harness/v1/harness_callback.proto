@@ -1,0 +1,2647 @@
+syntax = "proto3";
+package gibson.harness.v1;
+option go_package = "github.com/zeroroot-ai/sdk/api/gen/gibson/harness/v1;harnesspb";
+option java_multiple_files = true;
+option csharp_namespace = "Gibson.Harness";
+
+import "gibson/common/v1/gibson_common.proto";
+import "gibson/types/v1/types.proto";
+import "gibson/graphrag/v1/graphrag.proto";
+import "gibson/mission/v1/mission_definition.proto";
+import "gibson/job/v1/job.proto";
+import "buf/validate/validate.proto";
+
+import "gibson/auth/v1/options.proto";
+// HarnessCallbackService provides the harness interface for agents executing in standalone mode.
+// The SDK's CallbackHarness forwards all harness operations to the orchestrator via this service.
+service HarnessCallbackService {
+    // LLM Operations
+    rpc LLMComplete(LLMCompleteRequest) returns (LLMCompleteResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc LLMCompleteWithTools(LLMCompleteWithToolsRequest) returns (LLMCompleteWithToolsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc LLMCompleteStructured(LLMCompleteStructuredRequest) returns (LLMCompleteStructuredResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc LLMStream(LLMStreamRequest) returns (stream LLMStreamResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // Tool Operations
+    rpc CallToolProto(CallToolProtoRequest) returns (CallToolProtoResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc CallToolProtoStream(CallToolProtoStreamRequest) returns (stream CallToolProtoStreamResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc ListTools(ListToolsRequest) returns (ListToolsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // SearchTools returns a small, ranked, authz-filtered set of tools matching
+    // a query — the meta-tool surface agents use instead of receiving every tool
+    // (ADR-0047 facet 5). Per-tool authorization is enforced inside the handler;
+    // this RPC-level gate only checks that the caller may use the harness.
+    rpc SearchTools(SearchToolsRequest) returns (SearchToolsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // Tool Work Queue Operations
+    rpc QueueToolWork(QueueToolWorkRequest) returns (QueueToolWorkResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc ToolResults(ToolResultsRequest) returns (stream ToolResultsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // Plugin Operations
+    rpc QueryPlugin(QueryPluginRequest) returns (QueryPluginResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc ListPlugins(ListPluginsRequest) returns (ListPluginsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // Agent Operations
+    rpc DelegateToAgent(DelegateToAgentRequest) returns (DelegateToAgentResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc ListAgents(ListAgentsRequest) returns (ListAgentsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // Finding Operations
+    rpc SubmitFinding(SubmitFindingRequest) returns (SubmitFindingResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    // Observe emits a typed observation into the World (ADR-0007). The brain
+    // resolves identity and topology; scope is derived server-side from context.
+    rpc Observe(ObserveRequest) returns (ObserveResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    // WorldView returns the caller's server-projected slice of the tenant World
+    // (ADR-0012, sdk#341's read half). It is the counterpart to Observe: Observe
+    // is the agent's only write, WorldView its only read.
+    //
+    // The slice is projected by the daemon from the mission record it created —
+    // the tenant that owns the World and the scope that bounds the slice are read
+    // there, never from this request. WorldViewRequest carries no tenant field and
+    // no scope field, so an agent cannot name another tenant's World or a wider
+    // slice: both are unrepresentable rather than rejected.
+    rpc WorldView(WorldViewRequest) returns (WorldViewResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    // Knowledge Operations
+    //
+    // The knowledge-graph READ surface. It exists on ComponentService too, and
+    // that duplication is deliberate: without it here, a dispatched run holding
+    // only its task-scoped callback grant cannot read the tenant graph, and the
+    // agent would have to keep a component-scoped grant alive purely to call
+    // recall — which defeats the point of scoping the dispatch at all.
+    // See zerocool-plugins ADR-0006 and docs/adr/0001-callback-knowledge-reads.md.
+    //
+    // Read-only by construction. The write half is NOT mirrored: the projector
+    // is the sole graph writer (ADR-0012), and sdk#451 already removed the
+    // generic graph-write RPC from ComponentService.
+    rpc QueryNodes(QueryNodesRequest) returns (QueryNodesResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc FindSimilarAttacks(FindSimilarAttacksRequest) returns (FindSimilarAttacksResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc GetAttackChains(GetAttackChainsRequest) returns (GetAttackChainsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc FindSimilarFindings(FindSimilarFindingsRequest) returns (FindSimilarFindingsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc GetRelatedFindings(GetRelatedFindingsRequest) returns (GetRelatedFindingsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc GetFindings(GetFindingsRequest) returns (GetFindingsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    // ApplicationFindings answers the one lifecycle question the reads above
+    // cannot: for this Application, what is still open, and does anything
+    // actually run the code it is in (gibson#1669).
+    //
+    // The reads above are hybrid vector-and-graph SEARCH — text or embedding, a
+    // node-type filter, top-k. Reachability is a TRAVERSAL: is this Package
+    // inside an Image that a Deployment of this Application runs, and does that
+    // Deployment expose a Host. No top-k over a node-type filter answers it.
+    //
+    // It is one bounded question rather than a Cypher surface, deliberately: an
+    // agent able to send arbitrary Cypher would be a second unaudited path into
+    // the tenant graph, and the traversal an agent needs is knowable in advance.
+    rpc ApplicationFindings(ApplicationFindingsRequest) returns (ApplicationFindingsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc GetRunFindings(GetRunFindingsRequest) returns (GetRunFindingsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc GetMissionRunHistory(GetMissionRunHistoryRequest) returns (GetMissionRunHistoryResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // Planning Operations
+    rpc GetPlanContext(GetPlanContextRequest) returns (GetPlanContextResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc ReportStepHints(ReportStepHintsRequest) returns (ReportStepHintsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // Distributed Tracing Operations
+    rpc RecordSpan(RecordSpanRequest) returns (RecordSpanResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc RecordSpans(RecordSpansRequest) returns (RecordSpansResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // Credential Operations
+    rpc GetCredential(GetCredentialRequest) returns (GetCredentialResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_resolve"
+        object_type: "secret"
+        object_deriver: "tenant_and_field('Name')"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // Taxonomy Operations
+    rpc GetTaxonomySchema(GetTaxonomySchemaRequest) returns (GetTaxonomySchemaResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc GenerateNodeID(GenerateNodeIDRequest) returns (GenerateNodeIDResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc ValidateFinding(ValidateFindingRequest) returns (ValidateFindingResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc ValidateGraphNode(ValidateGraphNodeRequest) returns (ValidateGraphNodeResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc ValidateRelationship(ValidateRelationshipRequest) returns (ValidateRelationshipResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // Mission Management Operations
+    // These enable agents to autonomously create, run, and manage missions
+    rpc CreateMission(CreateMissionRequest) returns (CreateMissionResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc RunMission(RunMissionRequest) returns (RunMissionResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc GetMissionStatus(GetMissionStatusRequest) returns (GetMissionStatusResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc WaitForMission(WaitForMissionRequest) returns (WaitForMissionResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc ListMissions(ListMissionsRequest) returns (ListMissionsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc CancelMission(CancelMissionRequest) returns (CancelMissionResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc GetMissionResults(GetMissionResultsRequest) returns (GetMissionResultsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // Authorization Operations
+    // Authorize checks whether the calling component's current work execution
+    // is permitted to perform action on resource. The daemon resolves the
+    // run_id to a (user_id, tenant_id) pair and consults FGA.
+    rpc Authorize(AuthorizeRequest) returns (AuthorizeResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // Workspace operations — added in vX.Y for callback-harness workspace
+    // parity with the in-process DefaultAgentHarness path
+    // (core/gibson/internal/harness/implementation.go:2076-2117).
+    //
+    // v1 surface: file IO + commit + push. The Editor (SEARCH/REPLACE +
+    // LSP) and full GitOps (branching, snapshots) interfaces from
+    // core/sdk/codegen/workspace are intentionally out of scope; a follow-on
+    // spec will add streaming-aware variants once the LSP-diagnostic-over-
+    // the-wire contract is settled.
+    //
+    // Spec: callback-harness-workspace-rpcs.
+
+    // WorkspaceList returns metadata for every workspace configured for
+    // the calling component's active mission. Returns an empty list when
+    // the mission has no workspaces.
+    rpc WorkspaceList(WorkspaceListRequest) returns (WorkspaceListResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    // WorkspaceGetInfo returns name + path for a single workspace. An empty
+    // name resolves to the mission's primary workspace (single-repo case).
+    // Returns NOT_FOUND when no workspace with that name exists.
+    rpc WorkspaceGetInfo(WorkspaceGetInfoRequest) returns (WorkspaceGetInfoResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    // WorkspaceReadFile reads a file from the named workspace. Path is
+    // relative to the workspace root. Files larger than 16 MB return
+    // RESOURCE_EXHAUSTED; a streaming variant is deferred to a follow-on
+    // spec.
+    rpc WorkspaceReadFile(WorkspaceReadFileRequest) returns (WorkspaceReadFileResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    // WorkspaceWriteFile writes content to a file in the named workspace.
+    // Path is relative to the workspace root. Content larger than 16 MB
+    // returns RESOURCE_EXHAUSTED; a streaming variant is deferred.
+    rpc WorkspaceWriteFile(WorkspaceWriteFileRequest) returns (WorkspaceWriteFileResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    // WorkspaceListFiles returns paths matching the given glob pattern,
+    // relative to the workspace root. Result sets larger than 10,000 paths
+    // are truncated to the first 10,000 with truncated=true on the
+    // response.
+    rpc WorkspaceListFiles(WorkspaceListFilesRequest) returns (WorkspaceListFilesResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    // WorkspaceCommit stages all changes in the workspace and creates a
+    // commit with the given message. Returns the commit SHA.
+    rpc WorkspaceCommit(WorkspaceCommitRequest) returns (WorkspaceCommitResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    // WorkspacePush pushes committed changes to the remote configured for
+    // the workspace. Returns PERMISSION_DENIED on auth failure against
+    // the remote.
+    rpc WorkspacePush(WorkspacePushRequest) returns (WorkspacePushResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // Session operations (gibson#1183 / gibson#1184, resolved design
+    // 2026-08-02). Both share one session identity: an opaque,
+    // AGENT-PROVIDED session_id, tenant-scoped — the daemon keys all
+    // per-session state by (tenant, session_id). The tenant half is derived
+    // server-side from the authenticated caller (system_tenant, exactly as
+    // WorldView derives it); no request message carries a tenant field, so a
+    // caller cannot name another tenant's session — cross-tenant access is
+    // unrepresentable rather than rejected. session_id is NOT the Zitadel
+    // UserSession (auth-only) and NOT agent_run_id (per-run): a coding
+    // session spans many runs.
+
+    // DevboxExec runs one command in the caller's session Devbox — a
+    // session-lifetime sandbox resolved (and lazily created on first call)
+    // by (tenant, session_id), then REUSED across calls in that session.
+    // This is deliberately distinct from the per-call SANDBOXED tool path
+    // (CallToolProto), which stays one microVM per call; a Devbox holds
+    // working state (checkouts, build caches) that per-call isolation would
+    // throw away between commands.
+    rpc DevboxExec(DevboxExecRequest) returns (stream DevboxExecResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // Session-context store: an opaque, versioned blob per (tenant,
+    // session_id), persisted in the per-tenant dataplane store. The daemon
+    // never interprets the bytes — the component owns its own format. This
+    // is the TRUSTED home for a session's local context; it must never be
+    // written to the untrusted Devbox volume (that invariant is the
+    // client's to keep, but this store is why keeping it costs nothing).
+    // Writes are guarded by an etag (If-Match) so concurrent writers cannot
+    // clobber each other; the server enforces a TTL and a size cap.
+    rpc PutSessionContext(PutSessionContextRequest) returns (PutSessionContextResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc GetSessionContext(GetSessionContextRequest) returns (GetSessionContextResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc DeleteSessionContext(DeleteSessionContextRequest) returns (DeleteSessionContextResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // ========================================================================
+    // Bank member inbox and jobs (gibson#1706, ADR-0017)
+    //
+    // A bank member is a long-lived sandbox that serves many dispatches. It
+    // pulls its input outbound through these RPCs and never accepts an
+    // inbound connection. Every input carries the grant of its own dispatch.
+    // ========================================================================
+
+    // SubscribeInput streams the inputs for the calling member, in order,
+    // across every job it holds. Each Input carries the per-turn grant the
+    // member uses for every tool call of that turn. The stream stays open
+    // for the life of the member.
+    rpc SubscribeInput(SubscribeInputRequest) returns (stream SubscribeInputResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    // PullJob returns the next queued job of the calling member's bank, or
+    // nothing when the queue is empty. A member with a free slot calls it
+    // after each heartbeat. The daemon assigns the job to the member.
+    rpc PullJob(PullJobRequest) returns (PullJobResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    // ReportJobState tells the daemon a job moved to WORKING or WAITING, and
+    // names the Claude Code session that holds it so a restart can resume
+    // it. A member never reports CLOSED: a scorer closes the job.
+    rpc ReportJobState(ReportJobStateRequest) returns (ReportJobStateResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    // ReportDeliverable records one outward result the driver performed at
+    // wrap-up: a pushed branch or an opened merge request.
+    rpc ReportDeliverable(ReportDeliverableRequest) returns (ReportDeliverableResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    // OpenJob opens a job on a bank from a dispatched agent, under its
+    // grant. It mirrors gibson.job.v1.JobService.OpenJob.
+    rpc OpenJob(OpenJobRequest) returns (OpenJobResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    // SendInput sends the next message to an open job from a dispatched
+    // agent, under its grant. It mirrors gibson.job.v1.JobService.SendInput.
+    rpc SendInput(SendInputRequest) returns (SendInputResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    // CloseJob closes a job with a verdict and a score from a dispatched
+    // agent, under its grant. A verification agent is the usual caller. It
+    // mirrors gibson.job.v1.JobService.CloseJob.
+    rpc CloseJob(CloseJobRequest) returns (CloseJobResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+}
+
+// ============================================================================
+// Common Types
+// ============================================================================
+
+// Error represents an error response from a callback operation.
+message HarnessError {
+    gibson.common.v1.ErrorCode code = 1;
+    string message = 2;
+    bool retryable = 3;
+}
+
+// HealthStatus represents the health status of a service.
+message HarnessHealthStatus {
+    string state = 1;      // healthy, degraded, unhealthy
+    string message = 2;
+    int64 checked_at = 3;  // Unix timestamp in milliseconds
+}
+
+message ContextInfo {
+    string task_id = 1;
+    string agent_name = 2;
+    string trace_id = 3;
+    string span_id = 4;
+    string mission_id = 5;
+    // Mission run ID - unique identifier for this specific mission execution.
+    // Created by MissionGraphManager.CreateMissionRunNode() at mission start.
+    // Used for mission-scoped GraphRAG storage (nodes BELONGS_TO mission_run).
+    string mission_run_id = 6;
+    // Agent run ID - unique identifier for this specific agent execution.
+    // Used for DISCOVERED relationships and provenance tracking.
+    string agent_run_id = 7;
+    // Run number - sequential number for this mission (1, 2, 3...).
+    // Used for mission memory queries and historical comparisons.
+    int32 run_number = 8;
+    // Tool execution ID - unique identifier for tool execution provenance.
+    // Used to create PRODUCED relationships from tool executions to nodes.
+    string tool_execution_id = 9;
+}
+
+message TokenUsage {
+    int32 input_tokens = 1;
+    int32 output_tokens = 2;
+    int32 total_tokens = 3;
+}
+
+message LLMMessage {
+    string role = 1;  // system, user, assistant, tool
+    string content = 2;
+    repeated ToolCall tool_calls = 3;
+    repeated ToolResult tool_results = 4;
+    string name = 5;  // For tool messages
+}
+
+message ToolCall {
+    string id = 1;
+    string name = 2;
+    string arguments = 3;  // JSON string
+}
+
+message ToolResult {
+    string tool_call_id = 1;
+    string content = 2;
+    bool is_error = 3;
+}
+
+message ToolDef {
+    string name = 1;
+    string description = 2;
+    JSONSchemaNode parameters = 3;
+}
+
+// ============================================================================
+// LLM Operations
+// ============================================================================
+
+message LLMCompleteRequest {
+    ContextInfo context = 1;
+    string slot = 2;
+    repeated LLMMessage messages = 3;
+
+    // Completion options
+    optional double temperature = 4;
+    optional int32 max_tokens = 5;
+    optional double top_p = 6;
+    repeated string stop = 7;
+}
+
+message LLMCompleteWithToolsRequest {
+    ContextInfo context = 1;
+    string slot = 2;
+    repeated LLMMessage messages = 3;
+    repeated ToolDef tools = 4;
+}
+
+message LLMCompleteStructuredRequest {
+    ContextInfo context = 1;
+    string slot = 2;
+    repeated LLMMessage messages = 3;
+    string schema_json = 4;  // JSON-encoded schema (Go struct as JSON) - kept for backward compatibility
+}
+
+message LLMCompleteStructuredResponse {
+    gibson.common.v1.TypedValue result = 1;
+    reserved 2;  // Previously result_json
+    TokenUsage usage = 3;
+    HarnessError error = 4;
+}
+
+message LLMCompleteResponse {
+    string content = 1;
+    repeated ToolCall tool_calls = 2;
+    string finish_reason = 3;
+    TokenUsage usage = 4;
+    HarnessError error = 5;
+}
+
+message LLMCompleteWithToolsResponse {
+    string content = 1;
+    repeated ToolCall tool_calls = 2;
+    string finish_reason = 3;
+    TokenUsage usage = 4;
+    HarnessError error = 5;
+}
+
+message LLMStreamRequest {
+    ContextInfo context = 1;
+    string slot = 2;
+    repeated LLMMessage messages = 3;
+
+    // Completion options
+    optional double temperature = 4;
+    optional int32 max_tokens = 5;
+    optional double top_p = 6;
+    repeated string stop = 7;
+}
+
+message LLMStreamResponse {
+    string delta = 1;
+    repeated ToolCall tool_calls = 2;
+    string finish_reason = 3;
+    TokenUsage usage = 4;
+    HarnessError error = 5;
+}
+
+// ============================================================================
+// Tool Operations
+// ============================================================================
+
+// CallToolProtoRequest invokes a tool using proto-serialized JSON input/output.
+message CallToolProtoRequest {
+    ContextInfo context = 1;
+    string name = 2;
+    // JSON-serialized proto request message
+    bytes input_json = 3;
+    // Fully qualified proto message type name for input (e.g., "gibson.tool.mytool.MyRequest")
+    string input_type = 4;
+    // Fully qualified proto message type name for output (e.g., "gibson.tool.mytool.MyResponse")
+    string output_type = 5;
+}
+
+// CallToolProtoResponse returns the tool output as proto-serialized JSON.
+message CallToolProtoResponse {
+    // JSON-serialized proto response message
+    bytes output_json = 1;
+    HarnessError error = 2;
+}
+
+// CallToolProtoStreamRequest initiates a streaming tool execution.
+message CallToolProtoStreamRequest {
+    ContextInfo context = 1;
+    string name = 2;
+    // JSON-serialized proto request message
+    bytes input_json = 3;
+    // Fully qualified proto message type name for input (e.g., "gibson.tool.mytool.MyRequest")
+    string input_type = 4;
+    // Fully qualified proto message type name for output (e.g., "gibson.tool.mytool.MyResponse")
+    string output_type = 5;
+    // Optional timeout in milliseconds
+    int64 timeout_ms = 6;
+}
+
+// CallToolProtoStreamResponse streams tool execution events back to the agent.
+message CallToolProtoStreamResponse {
+    oneof payload {
+        ToolProgressEvent progress = 1;
+        ToolPartialResultEvent partial = 2;
+        ToolWarningEvent warning = 3;
+        ToolCompleteEvent complete = 4;
+        ToolErrorEvent error = 5;
+    }
+    string trace_id = 10;
+    string span_id = 11;
+    int64 sequence = 12;
+    int64 timestamp_ms = 13;
+}
+
+// ToolProgressEvent indicates progress during tool execution
+message ToolProgressEvent {
+    int32 percent = 1;
+    string stage = 2;
+    string message = 3;
+}
+
+// ToolPartialResultEvent contains partial results during execution
+message ToolPartialResultEvent {
+    bytes output_json = 1;
+    string description = 2;
+}
+
+// ToolWarningEvent contains non-fatal warnings during execution
+message ToolWarningEvent {
+    string message = 1;
+    string code = 2;
+}
+
+// ToolCompleteEvent signals successful completion with final output
+message ToolCompleteEvent {
+    bytes output_json = 1;
+}
+
+// ToolErrorEvent signals an error during execution
+message ToolErrorEvent {
+    HarnessError error = 1;
+    bool fatal = 2;
+}
+
+message ListToolsRequest {
+    ContextInfo context = 1;
+}
+
+message ListToolsResponse {
+    repeated HarnessToolDescriptor tools = 1;
+    HarnessError error = 2;
+}
+
+message HarnessToolDescriptor {
+    string name = 1;
+    string description = 2;
+    reserved 3;  // Previously schema_json (legacy)
+    reserved 4;  // Previously output_schema_json
+    // Structured schemas with full taxonomy support
+    JSONSchemaNode input_schema = 5;
+    JSONSchemaNode output_schema = 6;
+}
+
+// SearchToolsRequest carries a tool-discovery query: free text plus structured
+// filters. The daemon returns only tools the caller is authorized to invoke.
+message SearchToolsRequest {
+    ContextInfo context = 1;
+    // query is matched (case-insensitively) against tool names and descriptions.
+    // Empty matches everything.
+    string query = 2;
+    // sources optionally restricts results by source ("mcp", "native"). Empty = all.
+    repeated string sources = 3;
+    // connector optionally restricts results to a single connector instance.
+    string connector = 4;
+    // limit caps the candidate count; zero uses the daemon default.
+    int32 limit = 5;
+}
+
+// SearchToolsResponse is the authz-filtered candidate set.
+message SearchToolsResponse {
+    repeated SearchToolsCandidate candidates = 1;
+    HarnessError error = 2;
+}
+
+// SearchToolsCandidate is one authorized tool the agent may invoke via its
+// canonical id.
+message SearchToolsCandidate {
+    // id is the canonical tool id (mcp:<connector>:<tool> or native:<tool>) the
+    // agent passes to invoke the tool.
+    string id = 1;
+    string source = 2;
+    string connector = 3;
+    string tool = 4;
+    string description = 5;
+    // input_schema_json is the JSON-Schema input document, when known.
+    string input_schema_json = 6;
+}
+
+// QueueToolWorkRequest initiates parallel execution of multiple tool invocations.
+message QueueToolWorkRequest {
+    ContextInfo context = 1;
+    string tool_name = 2;
+    repeated string input_jsons = 3;  // Each input as JSON string
+    string input_type = 4;            // Proto message type name
+    string output_type = 5;           // Expected output type name
+}
+
+// QueueToolWorkResponse returns a job ID for tracking the work queue.
+message QueueToolWorkResponse {
+    string job_id = 1;
+    HarnessError error = 2;
+}
+
+// ToolResultsRequest requests streaming results for a queued job.
+message ToolResultsRequest {
+    ContextInfo context = 1;
+    string job_id = 2;
+}
+
+// ToolResultsResponse streams individual results as tool executions complete.
+message ToolResultsResponse {
+    int32 index = 1;              // Position in original inputs
+    string output_json = 2;       // Output as JSON (empty if error)
+    string output_type = 3;       // Proto message type
+    HarnessError error = 4;       // Error if execution failed
+    bool is_final = 5;            // True if this is the last result
+}
+
+// JSONSchemaNode represents a JSON Schema node with taxonomy support.
+// Used for structured schema transmission that preserves taxonomy mappings.
+message JSONSchemaNode {
+    string type = 1;  // "string", "number", "integer", "boolean", "array", "object"
+    string description = 2;
+    map<string, JSONSchemaNode> properties = 3;
+    repeated string required = 4;
+    JSONSchemaNode items = 5;  // For array types
+    repeated string enum_values = 6;
+    string format = 7;
+    optional double minimum = 8;
+    optional double maximum = 9;
+    optional int32 min_length = 10;
+    optional int32 max_length = 11;
+    optional int32 min_items = 12;
+    optional int32 max_items = 13;
+    optional string pattern = 14;
+    optional string default_value = 15;
+    bool nullable = 16;
+    TaxonomyMapping taxonomy = 17;  // Taxonomy mapping for knowledge graph extraction
+}
+
+// TaxonomyMapping defines how tool output maps to knowledge graph nodes.
+// Uses deterministic ID generation based on identifying properties instead of templates.
+message TaxonomyMapping {
+    string node_type = 1;  // e.g., "host", "port", "finding"
+    map<string, string> identifying_properties = 2;  // Property name -> JSONPath expression for ID generation
+    repeated PropertyMapping properties = 3;
+    repeated RelationshipMapping relationships = 4;
+}
+
+// PropertyMapping maps a source field to a target property.
+message PropertyMapping {
+    string source = 1;  // JSONPath expression, e.g., "$.ip"
+    string target = 2;  // Property name, e.g., "ip_address"
+    string default_value = 3;  // Default value if source is missing
+    string transform = 4;  // Transformation function (e.g., "lowercase", "trim")
+}
+
+// NodeReference identifies a node by type and property mappings.
+// Use type="self" to reference the current node being mapped.
+message NodeReference {
+    string type = 1;  // Node type (e.g., "host", "port") or "self" for current node
+    map<string, string> properties = 2;  // Identifying property name -> JSONPath expression
+}
+
+// RelationshipMapping defines relationships between nodes using typed references.
+message RelationshipMapping {
+    string type = 1;  // e.g., "HAS_PORT", "DISCOVERED_BY"
+    NodeReference from = 2;  // Source node reference (use type="self" for current node)
+    NodeReference to = 3;  // Target node reference
+    string condition = 4;  // Optional condition for creating this relationship
+    repeated PropertyMapping rel_properties = 5;  // Property mappings for the relationship edge
+}
+
+// ============================================================================
+// Plugin Operations
+// ============================================================================
+
+message QueryPluginRequest {
+    ContextInfo context = 1;
+    string name = 2;
+    string method = 3;
+    map<string, gibson.common.v1.TypedValue> params = 4;
+}
+
+message QueryPluginResponse {
+    gibson.common.v1.TypedValue result = 1;
+    HarnessError error = 2;
+}
+
+message ListPluginsRequest {
+    ContextInfo context = 1;
+}
+
+message ListPluginsResponse {
+    repeated HarnessPluginDescriptor plugins = 1;
+    HarnessError error = 2;
+}
+
+message HarnessPluginDescriptor {
+    string name = 1;
+    string description = 2;
+    string version = 3;
+    repeated string methods = 4;
+}
+
+// ============================================================================
+// Agent Operations
+// ============================================================================
+
+// DelegateToAgentRequest dispatches a task to another agent. The target
+// selector says WHERE the task runs. Absent means an ephemeral launch, which
+// is the behavior every caller had before banks existed (gibson#1706).
+message DelegateToAgentRequest {
+    ContextInfo context = 1;
+    string name = 2;
+    gibson.types.v1.Task task = 3;
+
+    // target says where the task runs. Leave it unset for an ephemeral
+    // launch.
+    oneof target {
+        // ephemeral launches a new sandbox for this task and tears it down
+        // when the task ends. Setting it to true is the same as leaving the
+        // oneof unset; it lets a caller say so out loud.
+        bool ephemeral = 10;
+        // bank_id opens a new job on that bank. A member with a free slot
+        // takes it, or the bank queues it, per the bank spill policy.
+        string bank_id = 11;
+        // job_id sends the task as the next input to a job that is already
+        // open, so the agent keeps its conversation and its worktrees.
+        string job_id = 12;
+    }
+}
+
+// DelegateToAgentResponse carries the delegated task's result, and the job
+// the task ran as when the target was a bank or a job.
+message DelegateToAgentResponse {
+    gibson.types.v1.Result result = 1;
+    HarnessError error = 2;
+    // job_id names the job the task ran as. Empty for an ephemeral launch.
+    string job_id = 3;
+    // member_id names the bank member that ran the job. Empty for an
+    // ephemeral launch.
+    string member_id = 4;
+}
+
+message ListAgentsRequest {
+    ContextInfo context = 1;
+}
+
+message ListAgentsResponse {
+    repeated HarnessAgentDescriptor agents = 1;
+    HarnessError error = 2;
+}
+
+message HarnessAgentDescriptor {
+    string name = 1;
+    string version = 2;
+    string description = 3;
+    repeated string capabilities = 4;
+    repeated string target_types = 5;
+    repeated string technique_types = 6;
+}
+
+// ============================================================================
+// Finding Operations
+// ============================================================================
+
+message SubmitFindingRequest {
+    ContextInfo context = 1;
+    gibson.types.v1.Finding finding = 2;
+}
+
+message SubmitFindingResponse {
+    HarnessError error = 1;
+}
+
+// FindingFilter represents filtering criteria for findings
+message FindingFilter {
+    string mission_id = 1;
+    string agent_name = 2;
+    gibson.types.v1.FindingSeverity severity = 3;
+    gibson.types.v1.FindingStatus status = 4;
+    repeated string tags = 5;
+}
+
+// ============================================================================
+// Knowledge Operations
+// ============================================================================
+//
+// These mirror the ComponentService knowledge reads, with one deliberate
+// difference: they carry ContextInfo rather than a bare work_id. ContextInfo is
+// this service's scoping convention and it also names mission_run_id, which is
+// what mission-scoped GraphRAG reads need — a work_id alone cannot express it.
+//
+// The *_json payloads keep the ComponentService encodings verbatim so both
+// services decode with the same code on either side of the wire. They are JSON,
+// not proto, because that is what the existing graphrag querier returns; making
+// them typed here and untyped there would be a second representation of the
+// same data, which is how the two drift.
+
+// QueryNodesRequest searches the knowledge graph with hybrid vector + graph scoring.
+message QueryNodesRequest {
+    ContextInfo context = 1;
+    gibson.graphrag.v1.GraphQuery query = 2;
+}
+
+// QueryNodesResponse carries knowledge graph query results.
+message QueryNodesResponse {
+    repeated gibson.graphrag.v1.QueryResult results = 1;
+    HarnessError error = 2;
+}
+
+// FindSimilarAttacksRequest searches for attack patterns similar to the given content.
+message FindSimilarAttacksRequest {
+    ContextInfo context = 1;
+    string content = 2;
+    int32 top_k = 3;
+}
+
+// FindSimilarAttacksResponse carries matching attack patterns.
+message FindSimilarAttacksResponse {
+    repeated gibson.graphrag.v1.AttackPattern results = 1;
+    HarnessError error = 2;
+}
+
+// GetAttackChainsRequest requests multi-hop attack paths from a technique.
+message GetAttackChainsRequest {
+    ContextInfo context = 1;
+    string technique_id = 2;
+    int32 max_depth = 3;
+}
+
+// GetAttackChainsResponse carries attack chain results.
+message GetAttackChainsResponse {
+    repeated gibson.graphrag.v1.AttackChain results = 1;
+    HarnessError error = 2;
+}
+
+// FindSimilarFindingsRequest searches for findings similar to the given one.
+message FindSimilarFindingsRequest {
+    ContextInfo context = 1;
+    string finding_id = 2;
+    int32 top_k = 3;
+}
+
+// FindSimilarFindingsResponse carries matching findings.
+message FindSimilarFindingsResponse {
+    repeated gibson.graphrag.v1.FindingNode results = 1;
+    HarnessError error = 2;
+}
+
+// GetRelatedFindingsRequest requests findings related via graph relationships.
+message GetRelatedFindingsRequest {
+    ContextInfo context = 1;
+    string finding_id = 2;
+}
+
+// GetRelatedFindingsResponse carries related findings.
+message GetRelatedFindingsResponse {
+    repeated gibson.graphrag.v1.FindingNode results = 1;
+    HarnessError error = 2;
+}
+
+// GetFindingsRequest queries previously submitted findings.
+message GetFindingsRequest {
+    ContextInfo context = 1;
+    // filter is typed for the same reason the responses are: a JSON blob whose
+    // schema lives in a comment is a contract nothing checks.
+    FindingFilter filter = 2;
+}
+
+// GetFindingsResponse carries matching findings.
+message GetFindingsResponse {
+    repeated gibson.types.v1.Finding findings = 1;
+    HarnessError error = 2;
+}
+
+// ApplicationFindingsRequest asks for one Application's Findings with the
+// lifecycle context that decides how much each one matters.
+//
+// It carries NO tenant field. The tenant is derived from the call context, so
+// naming another tenant's graph is unrepresentable rather than rejected — the
+// same rule every other read on this service follows.
+message ApplicationFindingsRequest {
+    ContextInfo context = 1;
+    // application is the Application's key. Required: this read is scoped to
+    // one Application by construction, and an empty key would silently widen
+    // the traversal to the whole tenant graph.
+    string application = 2;
+    // statuses filters by lifecycle status (open, fixing, fixed, verified).
+    // Empty means every status.
+    repeated string statuses = 3;
+    // limit bounds one read. 0 means the server default; the server caps it,
+    // so a caller cannot walk an entire tenant graph in one call.
+    int32 limit = 4;
+}
+
+// ApplicationFinding is one Finding of an Application, with the lifecycle
+// context that decides how much it matters.
+message ApplicationFinding {
+    // finding_id is the Finding's brain_id — the same identity every other
+    // surface uses, so an agent can write back to the node it read.
+    string finding_id = 1;
+    // status is the Finding's lifecycle status: open, fixing, fixed, verified.
+    string status = 2;
+    // severity is the severity recorded when the Finding was raised.
+    string severity = 3;
+    // vulnerability_id identifies the weakness this Finding instantiates (a
+    // CVE, a GHSA, or a platform id). Empty when the Finding names no public
+    // identifier — a source finding, say — which is a fact about the Finding,
+    // not a failure of the read.
+    string vulnerability_id = 4;
+    // place_label and place_key are what the Finding affects: a Package in an
+    // image, a Repository, or a Service on a host.
+    string place_label = 5;
+    string place_key = 6;
+    // reachable reports that the affected place is inside an Image that a
+    // Deployment of this Application runs. False means nothing this
+    // Application deploys contains it.
+    //
+    // It is derived from the presence of that route, never from a stored
+    // property: a property would go stale the moment a deployment rolls, and a
+    // stale "not reachable" is a silent false negative — a triage rule reads it
+    // as "nothing runs this" and ranks a live finding last.
+    bool reachable = 7;
+    // exposed reports that the Deployment which reaches it also exposes a Host.
+    // Only ever true when reachable is.
+    bool exposed = 8;
+    // deployment_key and image_key name the route that made it reachable, so an
+    // agent can say WHY rather than assert it.
+    string deployment_key = 9;
+    string image_key = 10;
+    // priority, priority_rule and priority_reason are what a previous triage
+    // pass decided about this Finding, written back by the agent and returned
+    // here so the next pass can read its own history (gibson#1684).
+    //
+    // Two behaviours are dark while they are empty. A triage rule that keeps
+    // the previous priority when a scoring feed is unavailable — so an outage
+    // never re-ranks a Finding on severity alone — has nothing to keep. And a
+    // pass that explains only what changed sees every decision as a change, so
+    // model cost scales with the size of the backlog rather than with what
+    // actually happened.
+    //
+    // Empty means NO PASS HAS DECIDED YET. That is a fact about the Finding,
+    // not a failure of the read, and a reader must never take it for
+    // "unimportant". The three are written by different steps — a rule table
+    // decides the priority, a model writes the reason — so losing the reason
+    // must not take the decision with it: an empty priority_reason beside a
+    // populated priority is a model that went quiet, not a Finding nobody
+    // ranked.
+    string priority = 11;
+    string priority_rule = 12;
+    string priority_reason = 13;
+}
+
+// ApplicationFindingsResponse carries the Application's Findings.
+//
+// Unavailability is reported in error, NEVER as an empty list with no error:
+// an empty list means the Application genuinely has no matching Finding, and
+// conflating the two is what makes an unanswerable question look like good news.
+message ApplicationFindingsResponse {
+    repeated ApplicationFinding findings = 1;
+    HarnessError error = 2;
+}
+
+// RunScope selects which mission runs GetRunFindings reads.
+enum RunScope {
+    RUN_SCOPE_UNSPECIFIED = 0;
+    // RUN_SCOPE_PREVIOUS reads the run immediately before the current one.
+    RUN_SCOPE_PREVIOUS = 1;
+    // RUN_SCOPE_ALL reads every run of this mission.
+    RUN_SCOPE_ALL = 2;
+}
+
+// GetRunFindingsRequest queries findings scoped to mission runs.
+//
+// One RPC with a scope, not one RPC per scope. gibson's harness carried
+// GetPreviousRunFindings and GetAllRunFindings as separate methods; the scope is
+// data, and modelling it as data is what lets a caller pass it through.
+message GetRunFindingsRequest {
+    ContextInfo context = 1;
+    RunScope scope = 2;
+    FindingFilter filter = 3;
+}
+
+// GetRunFindingsResponse carries findings from the selected runs.
+message GetRunFindingsResponse {
+    repeated gibson.types.v1.Finding findings = 1;
+    HarnessError error = 2;
+}
+
+// GetMissionRunHistoryRequest asks for every run of the caller's mission.
+message GetMissionRunHistoryRequest {
+    ContextInfo context = 1;
+}
+
+// GetMissionRunHistoryResponse carries the run summaries.
+message GetMissionRunHistoryResponse {
+    repeated gibson.types.v1.MissionRunSummary runs = 1;
+    HarnessError error = 2;
+}
+
+// ============================================================================
+// Memory Operations
+// ============================================================================
+
+// MemoryTier specifies which memory tier to use for an operation.
+enum MemoryTier {
+    MEMORY_TIER_UNSPECIFIED = 0;  // Default to WORKING for backward compatibility
+    MEMORY_TIER_WORKING = 1;      // Ephemeral in-memory
+    MEMORY_TIER_MISSION = 2;      // Persistent per-mission with FTS
+    MEMORY_TIER_LONG_TERM = 3;    // Vector-based semantic storage
+}
+
+// ============================================================================
+// Mission Memory Operations
+// ============================================================================
+
+message MissionMemoryResult {
+    string key = 1;
+    gibson.common.v1.TypedValue value = 2;
+    map<string, gibson.common.v1.TypedValue> metadata = 3;
+    double score = 4;
+    string created_at = 5;
+    string updated_at = 6;
+}
+
+message MissionMemoryItem {
+    string key = 1;
+    gibson.common.v1.TypedValue value = 2;
+    map<string, gibson.common.v1.TypedValue> metadata = 3;
+    string created_at = 4;
+    string updated_at = 5;
+}
+
+message HistoricalValueItem {
+    gibson.common.v1.TypedValue value = 1;
+    int32 run_number = 2;
+    string mission_id = 3;
+    string stored_at = 4;
+}
+
+// ============================================================================
+// Long-Term Memory Operations
+// ============================================================================
+
+message LongTermMemoryResult {
+    string id = 1;
+    string content = 2;
+    map<string, gibson.common.v1.TypedValue> metadata = 3;
+    double score = 4;
+    string created_at = 5;
+}
+
+// ============================================================================
+// GraphRAG Query Operations
+// ============================================================================
+
+message GraphRAGResult {
+    GraphNode node = 1;
+    double score = 2;
+    double vector_score = 3;
+    double graph_score = 4;
+    repeated string path = 5;
+    int32 distance = 6;
+}
+
+message GraphNode {
+    string id = 1;
+    string type = 2;
+    map<string, gibson.common.v1.TypedValue> properties = 3;
+    string content = 4;
+    string mission_id = 5;
+    string agent_name = 6;
+    int64 created_at = 7;  // Unix timestamp
+    int64 updated_at = 8;  // Unix timestamp
+}
+
+message AttackPattern {
+    string technique_id = 1;
+    string name = 2;
+    string description = 3;
+    repeated string tactics = 4;
+    repeated string platforms = 5;
+    double similarity = 6;
+}
+
+message FindingNode {
+    string id = 1;
+    string title = 2;
+    string description = 3;
+    string severity = 4;
+    string category = 5;
+    double confidence = 6;
+    double similarity = 7;
+}
+
+message AttackChain {
+    string id = 1;
+    string name = 2;
+    string severity = 3;
+    repeated AttackStep steps = 4;
+}
+
+message AttackStep {
+    int32 order = 1;
+    string technique_id = 2;
+    string node_id = 3;
+    string description = 4;
+    double confidence = 5;
+}
+
+// ============================================================================
+// GraphRAG Storage Operations
+// ============================================================================
+
+message Relationship {
+    string from_id = 1;
+    string to_id = 2;
+    string type = 3;
+    map<string, gibson.common.v1.TypedValue> properties = 4;
+    bool bidirectional = 5;
+}
+
+message TraversalOptions {
+    int32 max_depth = 1;
+    repeated string relationship_types = 2;
+    repeated string node_types = 3;
+    string direction = 4;  // outgoing, incoming, both
+}
+
+message TraversalResult {
+    GraphNode node = 1;
+    repeated string path = 2;
+    int32 distance = 3;
+}
+
+// ============================================================================
+// Proto-Canonical GraphRAG Operations (uses graphragpb types)
+// ============================================================================
+
+// ObserveRequest carries a typed observation (ADR-0007). Scope is NOT carried —
+// the daemon derives it from the mission context.
+message ObserveRequest {
+    ContextInfo context = 1;
+    oneof observation {
+        HostObservation host = 2;
+        DomainObservation domain = 3;
+        SubdomainObservation subdomain = 4;
+        CredentialObservation credential = 5;
+        AccountObservation account = 6;
+        MemoryObservation memory = 7;
+        LifecycleEntityObservation lifecycle_entity = 8;
+    }
+}
+
+// LifecycleEntityObservation reports a sighting of a typed application-lifecycle
+// entity: an Application, Repository, Image, Package, Deployment, Vulnerability,
+// MergeRequest, Pipeline or Control, and the edges it was seen to have
+// (gibson#1656).
+//
+// Admission is the Taxonomy's decision, not this message's. The daemon puts
+// label and every edge type to the global Taxonomy; an admitted shape becomes a
+// typed node, and one the Taxonomy does not admit is neither rejected nor lost —
+// it lands as an Observation with its residue preserved (ADR-0012). So an agent
+// can always write, and can never invent schema.
+//
+// This is a SIGHTING, not a graph write. The agent reports what it saw; the
+// brain resolves identity and the projector materialises it. An agent naming an
+// existing node's identity enriches that node rather than creating a second one.
+message LifecycleEntityObservation {
+    // label is the Taxonomy label, e.g. "Package". A label outside the Taxonomy
+    // lands as an Observation rather than being refused.
+    string label = 1;
+    // id_properties identify the entity. One property is the identity; several
+    // are folded into a composite key in sorted order, so the same entity
+    // observed twice resolves to the same node whatever order the map came in.
+    // An entity with no identity property records nothing — there would be no
+    // stable node to project.
+    map<string, string> id_properties = 2;
+    // properties are the entity's non-identifying facts. A later sighting's
+    // properties take precedence over an earlier one's; a sighting that omits a
+    // property never erases what an earlier one established.
+    map<string, string> properties = 3;
+    // edges are the outgoing relationships seen in this sighting. Both ends and
+    // the relationship type must be admitted by the Taxonomy, or the edge is
+    // skipped while the entity itself still lands.
+    repeated LifecycleEntityEdge edges = 4;
+}
+
+// LifecycleEntityEdge is one outgoing relationship to another typed entity,
+// named by its label and identity rather than by a node id — the emitter does
+// not know node ids, and must not be able to guess them.
+message LifecycleEntityEdge {
+    // type is a Taxonomy relationship type, e.g. "CONTAINS".
+    string type = 1;
+    // target_label is the Taxonomy label of the other end.
+    string target_label = 2;
+    // target_id_properties identify the other end, folded the same way as
+    // id_properties above.
+    map<string, string> target_id_properties = 3;
+}
+
+// HostObservation reports a host seen at address with optional strong identity
+// signals and the ports observed open in this sighting.
+message HostObservation {
+    string address = 1;
+    string ssh_host_key = 2;
+    string cloud_id = 3;
+    repeated PortObservation ports = 4;
+}
+
+// PortObservation is an observed open port and its optional service detail.
+message PortObservation {
+    int32 number = 1;
+    string protocol = 2;
+    string service = 3;
+    string product = 4;
+    string version = 5;
+    repeated EndpointObservation endpoints = 6;
+    repeated TechnologyObservation technologies = 7;
+    CertificateObservation certificate = 8;
+}
+
+// EndpointObservation is a path observed on a service.
+message EndpointObservation {
+    string path = 1;
+    int32 status = 2;
+}
+
+// TechnologyObservation is a technology fingerprinted on a service.
+message TechnologyObservation {
+    string name = 1;
+    string version = 2;
+}
+
+// CertificateObservation is a TLS certificate served on a port (identity: fingerprint).
+message CertificateObservation {
+    string fingerprint = 1;
+    string subject = 2;
+    string issuer = 3;
+    string not_after = 4;
+}
+
+// DomainObservation reports a registrable domain seen in scope.
+message DomainObservation {
+    string name = 1;
+}
+
+// SubdomainObservation reports an FQDN, its parent domain, and resolved addresses.
+message SubdomainObservation {
+    string fqdn = 1;
+    string domain = 2;
+    repeated string addresses = 3;
+}
+
+// CredentialObservation reports a discovered credential (identity: secret hash).
+message CredentialObservation {
+    string secret_hash = 1;
+    string username = 2;
+    string kind = 3;
+}
+
+// AccountObservation reports a discovered account/principal (identity: identifier).
+message AccountObservation {
+    string identifier = 1;
+    string kind = 2;
+}
+
+// MemoryObservation reports a fact the agent wants to keep across runs, in the
+// agent's own words. It is the memory write for coding agents (gibson#1593,
+// decision 10): a memory is a World observation, not a store of its own.
+//
+// Identity is per sighting: the Timeline event id, like every observation. The
+// Taxonomy gate lands it as an `Observation` node with shape "Memory" until
+// Sensing promotes the shape. Scope and tenant are server-side, same as the
+// other variants. There is no field for either.
+message MemoryObservation {
+    // text is the fact.
+    string text = 1;
+    // kind is a short category, for example "convention", "decision", "layout".
+    string kind = 2;
+    // tags help recall. Free-form, lower-case.
+    repeated string tags = 3;
+    // source_ref names where the fact came from: a path, a URL, or a work id.
+    string source_ref = 4;
+}
+
+// ObserveResponse acknowledges an observation.
+message ObserveResponse {
+    HarnessError error = 1;
+}
+
+// ============================================================================
+// WorldView — the agent's read of the World (ADR-0012)
+// ============================================================================
+
+// WorldViewRequest asks for the caller's slice of the tenant World.
+//
+// There is deliberately no tenant field and no scope field. The daemon reads both
+// off the mission record it created, reached through the harness registered for
+// (mission_id, agent_name); context is an address that selects which harness to
+// consult, never an authority over what the slice contains. An agent therefore
+// cannot express "another tenant's World" or "a wider scope" at all.
+message WorldViewRequest {
+    ContextInfo context = 1;
+
+    // focus narrows the response to entities the caller was already shown, by
+    // their handles, and returns those at full detail instead of the summary
+    // level the unfocused slice carries. A handle that was not issued to this
+    // caller is refused — focus can never widen a slice, only zoom into one.
+    repeated string focus = 2;
+}
+
+// WorldViewResponse carries the projected slice.
+message WorldViewResponse {
+    HarnessError error = 1;
+    repeated WorldEntity entities = 2;
+
+    // truncated is true when the slice exceeded the projection cap and entities
+    // were dropped. The cap is a server-side budget, not something the caller can
+    // raise; a truncated slice is still a valid one.
+    bool truncated = 3;
+}
+
+// WorldEntityKind names what an entity in the slice is.
+enum WorldEntityKind {
+    WORLD_ENTITY_KIND_UNSPECIFIED = 0;
+    WORLD_ENTITY_KIND_HOST = 1;
+    WORLD_ENTITY_KIND_DOMAIN = 2;
+    WORLD_ENTITY_KIND_SUBDOMAIN = 3;
+    WORLD_ENTITY_KIND_CREDENTIAL = 4;
+    WORLD_ENTITY_KIND_ACCOUNT = 5;
+    WORLD_ENTITY_KIND_FINDING = 6;
+}
+
+// WorldEntity is one entity in the slice.
+message WorldEntity {
+    // handle is the ONLY name the agent has for this entity: an opaque,
+    // server-minted, non-constructible reference, valid within the slice it was
+    // issued to and nowhere else. It carries no brain id an agent could iterate,
+    // so enumerating past the slice boundary is unrepresentable (ADR-0012).
+    //
+    // A handle stays stable across re-projections of the same slice: the entity
+    // it names does not change, so refreshing the view never invalidates a
+    // reference the agent is holding.
+    string handle = 1;
+
+    WorldEntityKind kind = 2;
+
+    // label is the entity's coordinate as observed — an address, an FQDN, a
+    // finding title. Human- and LLM-readable; not a reference (only handle is).
+    string label = 3;
+
+    // attributes is the projected detail, level-of-detail summarized for the
+    // unfocused slice and complete for a focused one. Keys are server-chosen.
+    map<string, string> attributes = 4;
+}
+
+// ============================================================================
+// Planning Operations
+// ============================================================================
+
+message GetPlanContextRequest {
+    ContextInfo context = 1;
+}
+
+message GetPlanContextResponse {
+    PlanContext plan_context = 1;
+    HarnessError error = 2;
+}
+
+message PlanContext {
+    int32 current_step_index = 1;
+    int32 total_steps = 2;
+    repeated string remaining_steps = 3;
+    int32 step_budget = 4;
+    int32 mission_budget_remaining = 5;
+}
+
+message ReportStepHintsRequest {
+    ContextInfo context = 1;
+    StepHints hints = 2;
+}
+
+message ReportStepHintsResponse {
+    HarnessError error = 1;
+}
+
+message StepHints {
+    double confidence = 1;
+    repeated string suggested_next = 2;
+    string replan_reason = 3;
+    repeated string key_findings = 4;
+}
+
+// ============================================================================
+// Distributed Tracing Operations
+// ============================================================================
+
+// SpanKind represents the role of a span in a distributed trace.
+enum SpanKind {
+    SPAN_KIND_UNSPECIFIED = 0;
+    SPAN_KIND_INTERNAL = 1;
+    SPAN_KIND_SERVER = 2;
+    SPAN_KIND_CLIENT = 3;
+    SPAN_KIND_PRODUCER = 4;
+    SPAN_KIND_CONSUMER = 5;
+}
+
+// StatusCode represents the status of a span.
+enum StatusCode {
+    STATUS_CODE_UNSPECIFIED = 0;
+    STATUS_CODE_OK = 1;
+    STATUS_CODE_ERROR = 2;
+}
+
+// AnyValue represents a dynamically typed value used in attributes.
+message AnyValue {
+    oneof value {
+        string string_value = 1;
+        bool bool_value = 2;
+        int64 int_value = 3;
+        double double_value = 4;
+        bytes bytes_value = 5;
+    }
+}
+
+// KeyValue represents a key-value pair used in span attributes.
+message KeyValue {
+    string key = 1;
+    AnyValue value = 2;
+}
+
+// SpanEvent represents a single event within a span.
+message SpanEvent {
+    string name = 1;
+    int64 time_unix_nano = 2;
+    repeated KeyValue attributes = 3;
+}
+
+// Span represents a single span in a distributed trace.
+message Span {
+    string trace_id = 1;
+    string span_id = 2;
+    string parent_span_id = 3;
+    int64 start_time_unix_nano = 4;
+    int64 end_time_unix_nano = 5;
+    string name = 6;
+    SpanKind kind = 7;
+    StatusCode status_code = 8;
+    string status_message = 9;
+    repeated KeyValue attributes = 10;
+    repeated SpanEvent events = 11;
+}
+
+message RecordSpanRequest {
+    ContextInfo context = 1;
+    Span span = 2;
+}
+
+message RecordSpanResponse {
+    HarnessError error = 1;
+}
+
+message RecordSpansRequest {
+    ContextInfo context = 1;
+    repeated Span spans = 2;
+}
+
+message RecordSpansResponse {
+    HarnessError error = 1;
+}
+
+// ============================================================================
+// Credential Operations
+// ============================================================================
+
+// CredentialType represents the type of credential.
+enum CredentialType {
+    CREDENTIAL_TYPE_UNSPECIFIED = 0;
+    CREDENTIAL_TYPE_API_KEY = 1;
+    CREDENTIAL_TYPE_BEARER = 2;
+    CREDENTIAL_TYPE_BASIC = 3;
+    CREDENTIAL_TYPE_OAUTH = 4;
+    CREDENTIAL_TYPE_CUSTOM = 5;
+}
+
+message GetCredentialRequest {
+    ContextInfo context = 1;
+    string name = 2;  // Credential name (e.g., "hackerone-api")
+}
+
+message GetCredentialResponse {
+    Credential credential = 1;
+    HarnessError error = 2;
+}
+
+message Credential {
+    string name = 1;
+    CredentialType type = 2;
+    oneof secret_data {
+        string api_key = 3;           // For API_KEY type
+        string bearer_token = 4;      // For BEARER type
+        BasicAuth basic = 5;          // For BASIC type
+        OAuthCredential oauth = 6;    // For OAUTH type
+        string custom_secret = 7;     // For CUSTOM type
+    }
+    map<string, gibson.common.v1.TypedValue> metadata = 8;
+}
+
+// BasicAuth represents username/password credentials
+message BasicAuth {
+    string username = 1;
+    string password = 2;
+}
+
+// OAuthCredential represents OAuth tokens
+message OAuthCredential {
+    string access_token = 1;
+    string refresh_token = 2;
+    string token_type = 3;
+    int64 expires_at = 4;  // Unix timestamp in milliseconds
+}
+
+// ============================================================================
+// Taxonomy Operations
+// ============================================================================
+
+message GetTaxonomySchemaRequest {
+    ContextInfo context = 1;
+}
+
+message GetTaxonomySchemaResponse {
+    string version = 1;
+    repeated TaxonomyNodeType node_types = 2;
+    repeated TaxonomyRelationshipType relationship_types = 3;
+    repeated TaxonomyTechnique techniques = 4;
+    repeated TaxonomyTargetType target_types = 5;
+    repeated TaxonomyTechniqueType technique_types = 6;
+    repeated TaxonomyCapability capabilities = 7;
+    HarnessError error = 8;
+}
+
+message TaxonomyNodeType {
+    string id = 1;
+    string name = 2;
+    string type = 3;
+    string category = 4;
+    string description = 5;
+    repeated string identifying_properties = 6;  // Properties used for deterministic ID generation
+    repeated TaxonomyProperty properties = 7;
+}
+
+message TaxonomyRelationshipType {
+    string id = 1;
+    string name = 2;
+    string type = 3;
+    string category = 4;
+    string description = 5;
+    repeated string from_types = 6;
+    repeated string to_types = 7;
+    repeated TaxonomyProperty properties = 8;
+    bool bidirectional = 9;
+}
+
+message TaxonomyTechnique {
+    string technique_id = 1;
+    string name = 2;
+    string taxonomy = 3;  // mitre, arcanum, custom
+    string category = 4;
+    string description = 5;
+    string tactic = 6;
+    repeated string platforms = 7;
+    repeated string mitre_mapping = 8;
+}
+
+message TaxonomyTargetType {
+    string id = 1;
+    string type = 2;
+    string name = 3;
+    string category = 4;
+    string description = 5;
+    repeated string required_fields = 6;
+    repeated string optional_fields = 7;
+}
+
+message TaxonomyTechniqueType {
+    string id = 1;
+    string type = 2;
+    string name = 3;
+    string category = 4;
+    string description = 5;
+    repeated string mitre_ids = 6;
+    string default_severity = 7;
+}
+
+message TaxonomyCapability {
+    string id = 1;
+    string name = 2;
+    string description = 3;
+    repeated string technique_types = 4;
+}
+
+message TaxonomyProperty {
+    string name = 1;
+    string type = 2;  // string, int, float64, bool, []string, map[string]any
+    bool required = 3;
+    string description = 4;
+    repeated string enum_values = 5;
+    string default_value = 6;  // JSON-encoded
+}
+
+message GenerateNodeIDRequest {
+    ContextInfo context = 1;
+    string node_type = 2;
+    map<string, gibson.common.v1.TypedValue> properties = 3;
+}
+
+message GenerateNodeIDResponse {
+    string node_id = 1;
+    HarnessError error = 2;
+}
+
+message ValidateFindingRequest {
+    ContextInfo context = 1;
+    gibson.types.v1.Finding finding = 2;
+}
+
+message ValidateGraphNodeRequest {
+    ContextInfo context = 1;
+    string node_type = 2;
+    map<string, gibson.common.v1.TypedValue> properties = 3;
+}
+
+message ValidateRelationshipRequest {
+    ContextInfo context = 1;
+    string relationship_type = 2;
+    string from_node_type = 3;
+    string to_node_type = 4;
+    map<string, gibson.common.v1.TypedValue> properties = 5;
+}
+
+message ValidationResponse {
+    bool valid = 1;
+    repeated ValidationError errors = 2;
+    repeated string warnings = 3;
+    HarnessError error = 4;
+}
+
+message ValidateFindingResponse {
+    bool valid = 1;
+    repeated ValidationError errors = 2;
+    repeated string warnings = 3;
+    HarnessError error = 4;
+}
+
+message ValidateGraphNodeResponse {
+    bool valid = 1;
+    repeated ValidationError errors = 2;
+    repeated string warnings = 3;
+    HarnessError error = 4;
+}
+
+message ValidateRelationshipResponse {
+    bool valid = 1;
+    repeated ValidationError errors = 2;
+    repeated string warnings = 3;
+    HarnessError error = 4;
+}
+
+message ValidationError {
+    string field = 1;
+    string message = 2;
+    string code = 3;  // e.g., "MISSING_REQUIRED", "INVALID_ENUM", "UNKNOWN_TYPE"
+}
+
+// ============================================================================
+// Mission Management Operations
+// ============================================================================
+
+// MissionStatus represents the current state of a mission.
+enum MissionStatus {
+    MISSION_STATUS_UNSPECIFIED = 0;
+    MISSION_STATUS_PENDING = 1;
+    MISSION_STATUS_RUNNING = 2;
+    MISSION_STATUS_PAUSED = 3;
+    MISSION_STATUS_COMPLETED = 4;
+    MISSION_STATUS_FAILED = 5;
+    MISSION_STATUS_CANCELLED = 6;
+}
+
+// MissionConstraints limits mission execution to prevent resource exhaustion.
+//
+// Deprecated: use gibson.mission.v1.MissionConstraints via the
+// canonical_constraints field on CreateMissionRequest instead.
+// This type will be removed in a follow-up release after all microVM
+// consumers have migrated (see sdk#64 migration plan).
+message MissionConstraints {
+    option deprecated = true;
+
+    int64 max_duration_ms = 1;   // Maximum duration in milliseconds (0 = no limit)
+    int64 max_tokens = 2;         // Maximum LLM tokens (0 = no limit)
+    double max_cost = 3;          // Maximum dollar cost (0 = no limit)
+    int32 max_findings = 4;       // Maximum findings count (0 = no limit)
+}
+
+// MissionMetrics aggregates execution statistics.
+message MissionMetrics {
+    int64 duration_ms = 1;        // Total execution time in milliseconds
+    int64 tokens_used = 2;        // Total LLM tokens consumed
+    int32 tool_calls = 3;         // Number of tool invocations
+    int32 agent_calls = 4;        // Number of sub-agent invocations
+    int32 findings_count = 5;     // Total findings generated
+}
+
+// MissionInfo provides metadata about a mission.
+message MissionInfo {
+    string id = 1;
+    string name = 2;
+    MissionStatus status = 3;
+    string target_id = 4;
+    string parent_mission_id = 5;  // Empty for root missions
+    int64 created_at = 6;          // Unix timestamp in milliseconds
+    repeated string tags = 7;
+}
+
+// MissionStatusInfo provides detailed status of a running mission.
+message MissionStatusInfo {
+    MissionStatus status = 1;
+    double progress = 2;           // Completion percentage (0.0 to 1.0)
+    string phase = 3;              // Current mission phase/step
+    map<string, int32> finding_counts = 4;  // Severity -> count
+    int64 token_usage = 5;         // Cumulative tokens consumed
+    int64 duration_ms = 6;         // Elapsed execution time
+    string error = 7;              // Error details if failed
+}
+
+// MissionResult contains final results of a completed mission.
+message MissionResult {
+    string mission_id = 1;
+    MissionStatus status = 2;
+    repeated gibson.types.v1.Finding findings = 3;
+    map<string, gibson.common.v1.TypedValue> output = 4;
+    MissionMetrics metrics = 5;
+    string error = 6;
+    int64 completed_at = 7;        // Unix timestamp in milliseconds
+}
+
+// MissionFilter specifies criteria for listing missions.
+message MissionFilter {
+    MissionStatus status = 1;  // Filter by status (0 = no filter)
+    string target_id = 2;          // Filter by target ID
+    string parent_mission_id = 3;  // Filter by parent mission
+    int64 created_after = 4;       // Unix timestamp filter
+    int64 created_before = 5;      // Unix timestamp filter
+    repeated string tags = 6;      // Filter by tags (all must match)
+    int32 limit = 7;               // Max results (0 = no limit)
+    int32 offset = 8;              // Pagination offset
+}
+
+// CreateMissionRequest creates a new mission from a mission definition.
+message CreateMissionRequest {
+    ContextInfo context = 1;
+    bytes mission_definition_json = 2;  // JSON-serialized mission definition
+    string target_id = 3;
+    string name = 4;               // Optional human-readable name
+
+    // Deprecated: use canonical_constraints (field 8) instead.
+    // constraints uses the harness-local MissionConstraints shape which only
+    // carries max_duration_ms (int64 ms), max_tokens, max_cost, and max_findings.
+    // It will be removed in a follow-up release once all microVM consumers
+    // have migrated to canonical_constraints. See sdk#64 migration plan.
+    MissionConstraints constraints = 5 [deprecated = true];
+
+    map<string, gibson.common.v1.TypedValue> metadata = 6;
+    repeated string tags = 7;
+
+    // canonical_constraints carries the platform-canonical
+    // gibson.mission.v1.MissionConstraints type (sdk#47 / ADR 0004).
+    // Prefer this field over the deprecated constraints (field 5).
+    // The daemon merges canonical_constraints with any constraints baked
+    // into the mission definition (dispatch wins on conflict).
+    // Absent means no dispatch-time constraint overrides.
+    gibson.mission.v1.MissionConstraints canonical_constraints = 8;
+
+    // catalog_mission names a mission definition checked into the platform's
+    // mission catalog, to be originated instead of a caller-supplied graph
+    // (ADR-0018: the checked-in definition is authoritative).
+    //
+    // This is a second *input* to the one mission-creation route, deliberately
+    // not a second RPC. A dedicated RPC would carry its own authorization
+    // surface, so the per-tenant gate and the ADR-0063 origination rule ("a
+    // component originates only from inside a live parent") would be enforced
+    // in two places — which is where two enforcement paths drift apart.
+    //
+    // Exactly one of mission_definition_json (field 2) or catalog_mission must
+    // be set. Both is InvalidArgument; neither is InvalidArgument.
+    string catalog_mission = 9;
+
+    // catalog_params carries the parameters the named catalog mission declares,
+    // keyed by the definition's own parameter names.
+    //
+    // The map is CLOSED: the daemon refuses an unrecognised key rather than
+    // ignoring it. Silently dropping a key a caller sent would let that caller
+    // believe a parameter bound when it did not — which is what keeps the
+    // runtime target out of this map honest. The target continues to bind from
+    // target_id (field 3) alone, so a scan can only ever run against a target
+    // the tenant registered.
+    //
+    // Every missing parameter is reported at once rather than one render at a
+    // time. Only meaningful when catalog_mission is set.
+    map<string, string> catalog_params = 10;
+
+    // workflow_json (field 2) was renamed to mission_definition_json under spec
+    // mission-api-only-cleanup (Phase 3); the old name is reserved.
+    reserved "workflow_json";
+}
+
+// CreateMissionResponse returns the created mission info.
+message CreateMissionResponse {
+    MissionInfo mission = 1;
+    HarnessError error = 2;
+}
+
+// RunMissionRequest queues a mission for execution.
+message RunMissionRequest {
+    ContextInfo context = 1;
+    string mission_id = 2;
+    bool wait = 3;                 // Block until completion
+    int64 timeout_ms = 4;          // Timeout in milliseconds (when wait=true)
+}
+
+// RunMissionResponse confirms mission execution started.
+message RunMissionResponse {
+    HarnessError error = 1;
+}
+
+// GetMissionStatusRequest retrieves current mission status.
+message GetMissionStatusRequest {
+    ContextInfo context = 1;
+    string mission_id = 2;
+}
+
+// GetMissionStatusResponse returns detailed status info.
+message GetMissionStatusResponse {
+    MissionStatusInfo status = 1;
+    HarnessError error = 2;
+}
+
+// WaitForMissionRequest blocks until mission completion.
+message WaitForMissionRequest {
+    ContextInfo context = 1;
+    string mission_id = 2;
+    int64 timeout_ms = 3;          // 0 = no timeout
+}
+
+// WaitForMissionResponse returns final mission result.
+message WaitForMissionResponse {
+    MissionResult result = 1;
+    HarnessError error = 2;
+}
+
+// ListMissionsRequest queries missions matching filter criteria.
+message ListMissionsRequest {
+    ContextInfo context = 1;
+    MissionFilter filter = 2;
+}
+
+// ListMissionsResponse returns matching missions.
+message ListMissionsResponse {
+    repeated MissionInfo missions = 1;
+    HarnessError error = 2;
+}
+
+// CancelMissionRequest requests cancellation of a running mission.
+message CancelMissionRequest {
+    ContextInfo context = 1;
+    string mission_id = 2;
+}
+
+// CancelMissionResponse confirms cancellation request.
+message CancelMissionResponse {
+    HarnessError error = 1;
+}
+
+// GetMissionResultsRequest retrieves completed mission results.
+message GetMissionResultsRequest {
+    ContextInfo context = 1;
+    string mission_id = 2;
+}
+
+// GetMissionResultsResponse returns mission results.
+message GetMissionResultsResponse {
+    MissionResult result = 1;
+    HarnessError error = 2;
+}
+
+// ============================================================================
+// Authorization Operations
+// ============================================================================
+
+// AuthorizeRequest asks the daemon whether the current work execution is
+// permitted to perform action on resource. The daemon resolves run_id to
+// the (user_id, tenant_id) that owns this mission run, then calls FGA.
+message AuthorizeRequest {
+    // run_id is the mission run ID embedded in the work envelope's AuthzContext.
+    // The daemon uses it to look up the active mission's user and tenant.
+    string run_id = 1;
+
+    // action is one of: execute, configure, read, write.
+    // Maps to FGA relation "can_{action}" in the authorization model.
+    string action = 2;
+
+    // resource is the FGA object in "<type>:<name>" format, e.g. "tool:mytool".
+    string resource = 3;
+}
+
+// AuthorizeResponse returns the authorization decision.
+message AuthorizeResponse {
+    // allowed is true if the action is permitted, false if denied.
+    bool allowed = 1;
+
+    // reason is a human-readable explanation, populated only on deny.
+    // It does not expose internal FGA object names or user IDs.
+    string reason = 2;
+}
+
+// ============================================================================
+// Mission Memory: Cross-Run History Operations (Spec 5 R6)
+// ============================================================================
+
+// MissionRunSummary is the proto wire type for types.MissionRunSummary,
+// used by GetMissionRunHistory to return chronological run records to
+// the SDK CallbackHarness.
+//
+// Spec: headline-feature-completion R6.1.
+message MissionRunSummary {
+    // mission_id uniquely identifies this run.
+    string mission_id = 1;
+    // run_number is the sequential run number for this mission name (1-based).
+    int32 run_number = 2;
+    // status is the final status string (running, completed, failed, cancelled, paused).
+    string status = 3;
+    // findings_count is the number of findings discovered in this run.
+    int32 findings_count = 4;
+    // created_at is when the run was created (Unix epoch seconds).
+    int64 created_at_unix = 5;
+    // completed_at_unix is when the run completed (Unix epoch seconds, 0 if still running).
+    int64 completed_at_unix = 6;
+}
+
+// ============================================================================
+// Workspace operations — request/response messages
+// Spec: callback-harness-workspace-rpcs.
+// Mirrors core/sdk/codegen/workspace.Workspace's file-IO + commit/push
+// surface. Editor and full GitOps are intentionally not exposed here.
+// ============================================================================
+
+// WorkspaceInfo is the minimal name + path projection of a workspace.
+message WorkspaceInfo {
+    // name is the repository identifier from the mission's WorkspaceConfig.
+    string name = 1;
+    // path is the absolute path to the workspace root on the daemon. Useful
+    // for log attribution; the callback agent does not access this path.
+    string path = 2;
+}
+
+// WorkspaceListRequest enumerates workspaces for the calling mission.
+// The mission scope is derived from the request context (set by the SDK
+// CallbackClient via contextInfo() — same pattern as the memory RPCs).
+message WorkspaceListRequest {
+    ContextInfo context = 1;
+}
+
+// WorkspaceListResponse carries every workspace in the mission.
+message WorkspaceListResponse {
+    repeated WorkspaceInfo workspaces = 1;
+}
+
+// WorkspaceGetInfoRequest fetches metadata for a single workspace.
+message WorkspaceGetInfoRequest {
+    ContextInfo context = 1;
+    // Empty name resolves to the mission's primary workspace
+    // (single-repository missions).
+    string name = 2;
+}
+
+// WorkspaceGetInfoResponse carries the requested workspace metadata.
+message WorkspaceGetInfoResponse {
+    // Absent on NOT_FOUND.
+    WorkspaceInfo workspace = 1;
+}
+
+// WorkspaceReadFileRequest reads a file from a workspace.
+message WorkspaceReadFileRequest {
+    ContextInfo context = 1;
+    // Empty workspace_name resolves to the primary workspace.
+    string workspace_name = 2;
+    // Path is relative to the workspace root.
+    string path = 3;
+}
+
+// WorkspaceReadFileResponse carries the file's full content.
+message WorkspaceReadFileResponse {
+    bytes content = 1;
+}
+
+// WorkspaceWriteFileRequest writes content to a file in a workspace.
+message WorkspaceWriteFileRequest {
+    ContextInfo context = 1;
+    // Empty workspace_name resolves to the primary workspace.
+    string workspace_name = 2;
+    // Path is relative to the workspace root.
+    string path = 3;
+    // Content is the new file body. RESOURCE_EXHAUSTED if > 16 MB.
+    bytes content = 4;
+}
+
+// WorkspaceWriteFileResponse is empty on success.
+message WorkspaceWriteFileResponse {}
+
+// WorkspaceListFilesRequest enumerates workspace files matching a glob.
+message WorkspaceListFilesRequest {
+    ContextInfo context = 1;
+    // Empty workspace_name resolves to the primary workspace.
+    string workspace_name = 2;
+    // pattern is a glob matched relative to the workspace root.
+    // Examples: "*.go", "**/*.py", "src/**/*.ts".
+    string pattern = 3;
+}
+
+// WorkspaceListFilesResponse carries the matched paths, with a truncation
+// flag when the result set exceeded the 10,000-path cap.
+message WorkspaceListFilesResponse {
+    repeated string paths = 1;
+    // truncated is true when the result was capped at 10,000 paths and more
+    // matches exist. Refine the pattern to drill in.
+    bool truncated = 2;
+}
+
+// WorkspaceCommitRequest stages all changes and creates a commit.
+message WorkspaceCommitRequest {
+    ContextInfo context = 1;
+    // Empty workspace_name resolves to the primary workspace.
+    string workspace_name = 2;
+    // message is the commit message. Required.
+    string message = 3;
+}
+
+// WorkspaceCommitResponse carries the new commit's SHA.
+message WorkspaceCommitResponse {
+    string commit_sha = 1;
+}
+
+// WorkspacePushRequest pushes committed changes to the workspace's remote.
+message WorkspacePushRequest {
+    ContextInfo context = 1;
+    // Empty workspace_name resolves to the primary workspace.
+    string workspace_name = 2;
+}
+
+// WorkspacePushResponse is empty on success.
+message WorkspacePushResponse {}
+
+// ---------------------------------------------------------------------------
+// Session operations (gibson#1183 / gibson#1184)
+// ---------------------------------------------------------------------------
+
+// DevboxExecRequest names the session and the command. No tenant field, no
+// sandbox handle: the Devbox is addressed purely by the server-derived
+// (tenant, session_id) pair.
+message DevboxExecRequest {
+    ContextInfo context = 1;
+
+    // session_id is the agent-chosen opaque session identity shared with the
+    // session-context store. Required, non-empty.
+    string session_id = 2;
+
+    // argv is the command to run, exec-style (argv[0] is the binary). The
+    // server does not shell-interpret it; a caller that wants a shell asks
+    // for one explicitly (argv = ["sh", "-c", …]).
+    repeated string argv = 3;
+
+    // stdin is written to the process's standard input and closed. Empty
+    // means an immediately-closed stdin, not an open pipe.
+    bytes stdin = 4;
+}
+
+// DevboxExecResponse streams interleaved stdio and ends with the exit event.
+// Exactly one exit event terminates a successful stream; a stream that ends
+// without one was cut by transport or server failure and the caller must not
+// assume the command completed.
+message DevboxExecResponse {
+    oneof payload {
+        // stdout/stderr carry raw chunks in arrival order. Chunk boundaries
+        // are transport artifacts, not line boundaries.
+        bytes stdout = 1;
+        bytes stderr = 2;
+        DevboxExecExit exit = 3;
+        HarnessError error = 4;
+    }
+}
+
+// DevboxExecExit is the terminal event of a completed command.
+message DevboxExecExit {
+    int32 exit_code = 1;
+}
+
+// PutSessionContextRequest writes the session's context blob.
+message PutSessionContextRequest {
+    ContextInfo context = 1;
+
+    // session_id — see DevboxExecRequest.session_id; the same identity.
+    string session_id = 2;
+
+    // data is the opaque blob. The server enforces a size cap (~8 MB);
+    // larger working state belongs in the Devbox, not here.
+    bytes data = 3;
+
+    // if_match carries the etag of the version this write is based on.
+    // Empty string means "create": the write succeeds only if no blob exists
+    // for this session yet. A non-empty etag succeeds only if it names the
+    // current version. Either mismatch is rejected — a stale writer learns
+    // it lost the race instead of clobbering the winner.
+    string if_match = 4;
+}
+
+message PutSessionContextResponse {
+    HarnessError error = 1;
+
+    // etag names the version this write produced; pass it as if_match on
+    // the next write.
+    string etag = 2;
+}
+
+message GetSessionContextRequest {
+    ContextInfo context = 1;
+    string session_id = 2;
+}
+
+message GetSessionContextResponse {
+    HarnessError error = 1;
+
+    // data is empty and etag "" when no blob exists for the session (a
+    // fresh session is not an error).
+    bytes data = 2;
+    string etag = 3;
+}
+
+message DeleteSessionContextRequest {
+    ContextInfo context = 1;
+    string session_id = 2;
+}
+
+// DeleteSessionContextResponse is empty on success; deleting a session that
+// has no blob is a no-op, not an error.
+message DeleteSessionContextResponse {
+    HarnessError error = 1;
+}
+
+// ============================================================================
+// Bank member inbox and jobs (gibson#1706, ADR-0017)
+// ============================================================================
+
+// SubscribeInputRequest opens the input stream for the calling member.
+message SubscribeInputRequest {
+    // context identifies the calling member's run.
+    ContextInfo context = 1;
+}
+
+// SubscribeInputResponse carries one input for the calling member.
+message SubscribeInputResponse {
+    // input is the next input, with its per-turn grant.
+    gibson.job.v1.Input input = 1;
+}
+
+// PullJobRequest asks for the next queued job of the calling member's bank.
+message PullJobRequest {
+    // context identifies the calling member's run.
+    ContextInfo context = 1;
+}
+
+// PullJobResponse carries the next queued job, or nothing.
+message PullJobResponse {
+    // job is the job the daemon assigned to the member. Unset when the queue
+    // is empty.
+    gibson.job.v1.Job job = 1;
+    HarnessError error = 2;
+}
+
+// ReportJobStateRequest reports a job state change from the member.
+message ReportJobStateRequest {
+    // context identifies the calling member's run.
+    ContextInfo context = 1;
+    // job_id is the job. Required.
+    string job_id = 2 [(buf.validate.field).string = { min_len: 1 }];
+    // state is the new state: WORKING or WAITING. Required.
+    gibson.job.v1.JobState state = 3 [(buf.validate.field).enum = { defined_only: true, in: [2, 3] }];
+    // claude_session_id is the Claude Code session that holds the job.
+    string claude_session_id = 4;
+}
+
+// ReportJobStateResponse acknowledges the state change.
+message ReportJobStateResponse {
+    HarnessError error = 1;
+}
+
+// ReportDeliverableRequest records one deliverable the driver performed.
+message ReportDeliverableRequest {
+    // context identifies the calling member's run.
+    ContextInfo context = 1;
+    // job_id is the job. Required.
+    string job_id = 2 [(buf.validate.field).string = { min_len: 1 }];
+    // deliverable is what was done. Required.
+    gibson.job.v1.Deliverable deliverable = 3 [(buf.validate.field).required = true];
+}
+
+// ReportDeliverableResponse acknowledges the deliverable.
+message ReportDeliverableResponse {
+    HarnessError error = 1;
+}
+
+// OpenJobRequest opens a job on a bank from a dispatched agent.
+message OpenJobRequest {
+    // context identifies the calling agent's run.
+    ContextInfo context = 1;
+    // bank_id is the bank to open the job on. Required.
+    string bank_id = 2 [(buf.validate.field).string = { min_len: 1 }];
+    // member_id pins the job to one member of that bank. Empty lets the
+    // daemon pick a member with a free slot.
+    string member_id = 3;
+    // spec is the structured input. Required.
+    gibson.job.v1.JobSpec spec = 4 [(buf.validate.field).required = true];
+}
+
+// OpenJobResponse carries the opened job.
+message OpenJobResponse {
+    // job is the job as stored.
+    gibson.job.v1.Job job = 1;
+    HarnessError error = 2;
+}
+
+// SendInputRequest sends the next message to an open job from a dispatched
+// agent.
+message SendInputRequest {
+    // context identifies the calling agent's run.
+    ContextInfo context = 1;
+    // job_id is the job. Required.
+    string job_id = 2 [(buf.validate.field).string = { min_len: 1 }];
+    // message is the text of the input. Required.
+    string message = 3 [(buf.validate.field).string = { min_len: 1 }];
+    // kind is what the input asks the member to do. Unspecified means
+    // INPUT_KIND_TURN. A client never sends INPUT_KIND_WRAP_UP.
+    gibson.job.v1.InputKind kind = 4 [(buf.validate.field).enum = { defined_only: true, not_in: [3] }];
+}
+
+// SendInputResponse carries the input as the daemon recorded it.
+message SendInputResponse {
+    // input is the input without its grant.
+    gibson.job.v1.Input input = 1;
+    HarnessError error = 2;
+}
+
+// CloseJobRequest closes a job from a dispatched agent.
+message CloseJobRequest {
+    // context identifies the calling agent's run.
+    ContextInfo context = 1;
+    // job_id is the job. Required.
+    string job_id = 2 [(buf.validate.field).string = { min_len: 1 }];
+    // verdict is the outcome. Required.
+    gibson.job.v1.JobVerdict verdict = 3 [(buf.validate.field).enum = { defined_only: true, not_in: [0] }];
+    // score is the scorer's score, from 0.0 to 1.0.
+    double score = 4 [(buf.validate.field).double = { gte: 0.0, lte: 1.0 }];
+}
+
+// CloseJobResponse carries the job after the close was recorded.
+message CloseJobResponse {
+    // job is the job as stored.
+    gibson.job.v1.Job job = 1;
+    HarnessError error = 2;
+}

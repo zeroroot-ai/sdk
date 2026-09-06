@@ -1,0 +1,86 @@
+name: CodeQL
+
+# Epic: cicd-efficiency (board #44), slice S11b. Per
+# docs/architecture/CICD-CONTEXT.md decision 9, security scanners belong on
+# the merge_group authoritative gate, not on every push AND every PR (this
+# workflow used to fire its full analysis on both). Collapsed to merge_group
+# + the existing weekly cron only.
+#
+# #477: that never actually worked. codeql-action/analyze uploads SARIF
+# against github.ref, which for a merge_group run is the ephemeral
+# refs/heads/gh-readonly-queue/main/pr-N-<sha> ref -- deleted by GitHub as
+# soon as the queue entry resolves, usually before the (multi-minute, two
+# languages here) analysis finishes. CodeQL isn't in sdk-required-checks'
+# required status checks (only policy-guards/vault-auth-method-deny-list
+# is), so this was silent: only the weekly cron ever landed an analysis on
+# main. Same class of bug hit gibson-executor#345 and adk#206 -- all three
+# repos share this template.
+#
+# Fix: trigger on push:main instead of merge_group. main persists, so
+# uploads succeed on every merge -- better cadence than the broken
+# merge_group trigger, no double-fire versus decision #9's original concern
+# (one analyze run per merge either way). Chose this over #477's originally
+# suggested fix (pin `ref`/`sha` to the merge_group head under
+# gh-readonly-queue) because that ref is itself ephemeral -- it would stop
+# the upload 404ing, but a short-lived feature-branch-shaped ref doesn't
+# retire alerts pinned to the `main` category either, so it wouldn't
+# actually close the underlying gap this issue is about.
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 8 * * 2"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: go
+            build-mode: manual
+          # actions/missing-workflow-permissions and friends: this repo had
+          # no ongoing scanner for the "actions" query category (sdk CodeQL
+          # hygiene sweep, 2026-08). Two workflow-permissions alerts (sdk
+          # code-scanning #1, #2) predated this job and could never
+          # auto-close without a scan covering this language.
+          - language: actions
+            build-mode: none
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - if: matrix.language == 'go'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: github/codeql-action/init@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          queries: security-and-quality
+          config-file: .github/codeql-config.yml
+
+      - if: matrix.language == 'go'
+        name: Build
+        run: go build ./...
+
+      - uses: github/codeql-action/analyze@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4
+        with:
+          category: "/language:${{ matrix.language }}"
+          wait-for-processing: true

@@ -1,0 +1,63 @@
+// Generic test fixture proto for SDK-internal test use only.
+//
+// Per spec decouple-sdk-from-tool-protos, the SDK contains no tool-specific
+// proto definitions. The types here are tool-agnostic stand-ins used by SDK
+// tests (streaming, extraction, recording, feedback) that previously used
+// toolspb.NmapResponse / HttpxRequest / etc. as fixtures. These types are NOT
+// part of the public SDK surface — agents and tools should not import them.
+//
+// GenericDiscoveryResponse preserves the proto-field-100 = DiscoveryResult
+// contract documented in core/gibson/CLAUDE.md so SDK extraction tests
+// continue to validate that mechanism.
+syntax = "proto3";
+
+package gibson.test.v1;
+
+option go_package = "github.com/zeroroot-ai/sdk/api/gen/gibson/test/v1;testpb";
+option java_multiple_files = true;
+option csharp_namespace = "Gibson.Test.V1";
+
+import "gibson/graphrag/v1/graphrag.proto";
+import "gibson/tool/v1/options.proto";
+
+// GenericRequest is a tool-agnostic request message used by SDK tests for
+// streaming, recording, and feedback behaviour validation. It mirrors the
+// shape of typical tool requests (target list + arbitrary options) without
+// privileging any specific tool's wire format.
+message GenericRequest {
+  repeated string targets = 1;
+  map<string, string> options = 2;
+}
+
+// GenericResultItem mirrors the identifying-field-plus-arbitrary-attributes
+// shape of typical tool result items (e.g., scanned hosts, discovered
+// services, found vulnerabilities).
+message GenericResultItem {
+  string id = 1;
+  string name = 2;
+  map<string, string> attributes = 3;
+}
+
+// GenericResponse is the standard SDK-test response payload, used by
+// streaming and non-streaming tests that need to assert on a list of
+// result items.
+message GenericResponse {
+  repeated GenericResultItem items = 1;
+  string status = 2;
+}
+
+// GenericDiscoveryResponse carries a gibson.graphrag.v1.DiscoveryResult at
+// proto field 100, preserving the field-100 contract documented in
+// core/gibson/CLAUDE.md so SDK extraction tests continue to validate that
+// mechanism. The non-discovery items field is included so tests can verify
+// extraction works regardless of other fields present in the message.
+//
+// The (gibson.tool.v1.is_tool_response) option opts this message into the
+// SDK field-100 contract test (graphrag/field_100_contract_test.go), which
+// asserts every tool-response message has DiscoveryResult at slot 100.
+message GenericDiscoveryResponse {
+  option (gibson.tool.v1.is_tool_response) = true;
+
+  repeated GenericResultItem items = 1;
+  gibson.graphrag.v1.DiscoveryResult discovery = 100;
+}

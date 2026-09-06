@@ -1,0 +1,193 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://zeroroot.ai/schemas/tool-manifest/v1/schema.json",
+  "title": "Gibson Tool Manifest",
+  "description": "Schema for tool.gibson.zeroroot.ai/v1 tool manifests. Use a YAML editor with yaml-language-server support to get autocomplete: # yaml-language-server: $schema=schema.json",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "description": "Must be 'tool.gibson.zeroroot.ai/v1'.",
+      "enum": ["tool.gibson.zeroroot.ai/v1"]
+    },
+    "kind": {
+      "type": "string",
+      "description": "Must be 'Tool'. Maps to gibson.identity.v1.PrincipalKind.PRINCIPAL_KIND_TOOL. Sister schemas exist for 'Agent' and 'Plugin' manifests.",
+      "enum": ["Tool"]
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Tool identity fields.",
+      "required": ["name", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "DNS-label-style identifier for the tool. Must match ^[a-z][a-z0-9-]{0,61}[a-z0-9]$.",
+          "pattern": "^[a-z][a-z0-9-]{0,61}[a-z0-9]$"
+        },
+        "version": {
+          "type": "string",
+          "description": "Semantic version of the tool (e.g. '1.2.3' or '0.1.0-alpha').",
+          "pattern": "^v?([0-9]+)\\.([0-9]+)\\.([0-9]+)(-[a-zA-Z0-9.+\\-]+)?(\\+[a-zA-Z0-9.+]+)?$"
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional human-readable description of the tool."
+        },
+        "author": {
+          "type": "string",
+          "description": "Optional identifier for the tool's author."
+        }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "description": "Operational declaration for the tool.",
+      "required": ["workload_class", "input_proto", "output_proto", "image"],
+      "additionalProperties": false,
+      "properties": {
+        "workload_class": {
+          "type": "string",
+          "description": "Must be 'tool'.",
+          "enum": ["tool"]
+        },
+        "input_proto": {
+          "type": "string",
+          "description": "Fully-qualified proto message type for the tool's request envelope (e.g. 'gibson.tools.nmap.v1.ScanRequest').",
+          "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+\\.[A-Z][A-Za-z0-9]*$"
+        },
+        "output_proto": {
+          "type": "string",
+          "description": "Fully-qualified proto message type for the tool's response envelope (e.g. 'gibson.tools.nmap.v1.ScanResponse').",
+          "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+\\.[A-Z][A-Za-z0-9]*$"
+        },
+        "image": {
+          "type": "string",
+          "description": "Container image reference the tool runs as. Setec launches an ephemeral microVM from this image per call.",
+          "minLength": 1,
+          "examples": ["ghcr.io/zeroroot-ai/tools/nmap:0.1.0"]
+        },
+        "env": {
+          "type": "array",
+          "description": "Environment variables passed into the sandboxed runtime. Values may reference declared secrets via 'secret:<broker-name>'.",
+          "items": {
+            "type": "object",
+            "required": ["name", "value"],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[A-Z][A-Z0-9_]*$"
+              },
+              "value": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "secrets": {
+          "type": "array",
+          "description": "Declared credential needs. May be empty when the tool requires no credentials.",
+          "items": {
+            "$ref": "#/definitions/SecretDecl"
+          }
+        },
+        "resources": {
+          "$ref": "#/definitions/ResourceLimits"
+        },
+        "egress": {
+          "type": "array",
+          "description": "Declared external network targets. Enforced by the Setec sandbox.",
+          "items": {
+            "$ref": "#/definitions/EgressDecl"
+          }
+        },
+        "timeout": {
+          "type": "string",
+          "description": "Maximum duration a single tool invocation may run. Go duration string (e.g. '60s'). Defaults to '60s'.",
+          "examples": ["30s", "60s", "5m"],
+          "default": "60s"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "SecretDecl": {
+      "type": "object",
+      "description": "A single secret declaration.",
+      "required": ["name", "scope", "rotation"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Broker-qualified secret name. Must match ^(cred|provider_config):[a-z0-9_/:.-]+$.",
+          "pattern": "^(cred|provider_config):[a-z0-9_/:.-]+$"
+        },
+        "scope": {
+          "type": "string",
+          "description": "When the secret is resolved: 'startup' (once at start) or 'per_call' (each invocation).",
+          "enum": ["startup", "per_call"]
+        },
+        "rotation": {
+          "type": "string",
+          "description": "How the tool reacts to a rotation event: 'live' (cache invalidation) or 'restart' (exit 75).",
+          "enum": ["live", "restart"]
+        },
+        "required": {
+          "type": "boolean",
+          "description": "When true, missing secret blocks tool startup.",
+          "default": false
+        }
+      }
+    },
+    "ResourceLimits": {
+      "type": "object",
+      "description": "Per-invocation resource quotas applied by the Setec sandbox.",
+      "additionalProperties": false,
+      "properties": {
+        "cpu": {
+          "type": "string",
+          "description": "Kubernetes-style CPU limit (e.g. '500m', '1', '2').",
+          "examples": ["500m", "1", "2"]
+        },
+        "memory": {
+          "type": "string",
+          "description": "Kubernetes-style memory limit (e.g. '256Mi', '1Gi').",
+          "examples": ["256Mi", "512Mi", "1Gi"]
+        }
+      }
+    },
+    "EgressDecl": {
+      "type": "object",
+      "description": "A single external network target the tool contacts.",
+      "required": ["host", "protocol", "port"],
+      "additionalProperties": false,
+      "properties": {
+        "host": {
+          "type": "string",
+          "description": "DNS name or wildcard pattern (e.g. '*.example.com'). IP addresses are not permitted.",
+          "examples": ["api.github.com", "*.example.com"]
+        },
+        "protocol": {
+          "type": "string",
+          "description": "Network protocol.",
+          "enum": ["https", "http", "grpc", "tcp", "udp"]
+        },
+        "port": {
+          "type": "integer",
+          "description": "Destination port number. Must be in [1, 65535].",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "purpose": {
+          "type": "string",
+          "description": "Optional human-readable description of why this egress target is needed.",
+          "examples": ["GitHub REST API", "Internal cache service"]
+        }
+      }
+    }
+  }
+}

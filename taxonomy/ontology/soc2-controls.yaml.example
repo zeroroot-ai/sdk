@@ -1,0 +1,49 @@
+# soc2-controls.yaml.example — Minimal authored SOC2 control hierarchy stub
+#
+# This file demonstrates the YAML format for an authored ontology hierarchy.
+# It contains a small subset of SOC2 Trust Services Criteria for illustration.
+# Rename it to soc2-controls.yaml and extend it with the full control set to
+# enable SOC2-aware reasoning in the Gibson daemon.
+#
+# The daemon merges all *.yaml files in this directory at startup. Example
+# files (*.yaml.example) are skipped by the loader.
+
+version: "1.0"
+
+prefixes:
+  soc2: "https://trust.aicpa.org/soc2#"
+
+# Hierarchy: CC6 (Logical and Physical Access Controls) with a small set of
+# sub-criteria. This is illustrative only — the full SOC2 2017 Trust Services
+# Criteria have 64 points of focus across 9 common criteria categories.
+hierarchies:
+  # Root: CC6 — Logical and Physical Access Controls (no parent)
+  - node_type: control
+    label: soc2:CC6
+
+  # CC6.1 — The entity implements logical access security software,
+  # infrastructure, and architectures over protected information assets.
+  - node_type: control
+    label: soc2:CC6.1
+    sub_class_of: soc2:CC6
+
+  # CC6.2 — Prior to issuing system credentials and granting system access,
+  # the entity registers and authorizes new internal and external users.
+  - node_type: control
+    label: soc2:CC6.2
+    sub_class_of: soc2:CC6
+
+  # CC6.3 — The entity authorizes, modifies, or removes access to data,
+  # software, functions, and other protected information assets based on
+  # approved and documented access requests and the results of access reviews.
+  - node_type: control
+    label: soc2:CC6.3
+    sub_class_of: soc2:CC6
+
+equivalences: []
+
+# IFP: within "control" nodes, the control_id property uniquely identifies
+# the node (it is an inverse-functional property).
+ifps:
+  - node_type: control
+    property: control_id

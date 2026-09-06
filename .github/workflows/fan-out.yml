@@ -1,0 +1,371 @@
+# SDK fan-out: when a tag is pushed to core/sdk, open `chore(deps): bump sdk to vX.Y.Z`
+# PRs in each Go consumer. The PRs auto-merge if the consumer's required CI checks
+# pass.
+#
+# token_repos derivation (sdk#120)
+# ---------------------------------
+# Each consumer shard used to carry a hand-maintained `token_repos` field listing
+# every private zeroroot-ai repo the minted App token needs read access to. That
+# list drifted multiple times during PRD #101 (gibson missed platform-clients, then
+# platform-sdk, then ast-checks/setec/testfixtures), each requiring a follow-up
+# sdk#NNN patch.
+#
+# The fix: a "derive-token-repos" step runs BEFORE the token-mint. It fetches the
+# consumer's go.mod via the GitHub API (using GITHUB_TOKEN for public read), extracts
+# every `github.com/zeroroot-ai/*` require line via awk, and emits a comma-separated
+# list. The consumer repo itself is always included (write access for the PR). This is
+# self-healing: adding a new private transitive dep to a consumer's go.mod
+# automatically widens the token scope on the next fan-out run.
+#
+# Override: the matrix field `extra_token_repos` (optional, comma-separated) lets a
+# consumer name repos that do NOT appear in go.mod but are needed at tidy-time
+# (e.g. a pure-test-only private tool). Those are appended to the derived set.
+#
+# The fanout App must still be installed on every repo that appears in a derived
+# token_repos list.
+#
+# Operator-required prerequisites (one-time):
+#   1. Create a GitHub App `zeroday-sdk-fanout` with permissions:
+#        Contents: read & write
+#        Pull requests: read & write
+#        Metadata: read-only (default)
+#      Install on the 6 consumer repos AND on all private zeroroot-ai repos those
+#      consumers transitively depend on.
+#   2. Set repo-level secrets on core/sdk:
+#        SDK_FANOUT_APP_ID
+#        SDK_FANOUT_APP_PRIVATE_KEY  (the .pem contents)
+
+name: fan-out
+
+on:
+  push:
+    tags:
+      - "v*"
+  # workflow_dispatch is the manual escape hatch when the tag-triggered
+  # run failed for an infra reason (e.g. a token_repos misconfiguration —
+  # see fix/fan-out-platform-clients-token-access for the historical
+  # case). Re-running the failed run from the Actions UI does NOT work
+  # because github.ref_name is empty on a non-tag run; this dispatch
+  # accepts the tag explicitly.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to fan out (e.g. v0.111.0). Defaults to the latest SDK tag.'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  resolve-tag:
+    # One-shot job that resolves the tag to fan out, so both the
+    # matrixed fan-out job and the summary job downstream reuse it.
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Resolve tag
+        id: tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISPATCH_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            tag="${{ github.ref_name }}"
+          elif [ -n "$DISPATCH_TAG" ]; then
+            tag="$DISPATCH_TAG"
+          else
+            tag=$(gh release list -R zeroroot-ai/sdk --limit 1 --json tagName --jq '.[0].tagName')
+            if [ -z "$tag" ]; then
+              echo "::error::No SDK tag found; cannot fan out"
+              exit 1
+            fi
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Resolved fan-out tag: $tag"
+
+  fan-out:
+    needs: resolve-tag
+    name: ${{ matrix.consumer }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # continue-on-error: true keeps a single shard's failure from
+    # marking the parent workflow run as red, which would block the
+    # `summary` job from posting a clean per-consumer outcome. The
+    # summary job below explicitly re-checks every shard and fails
+    # iff at least one failed, so org-level visibility is preserved.
+    # `fail-fast: false` was already in place but does not prevent
+    # the overall run status from going red; that's what this flag
+    # changes. See sdk#66.
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # extra_token_repos (optional): comma-separated list of zeroroot-ai repos
+          # that are NOT in go.mod but must be reachable at `go mod tidy` time
+          # (e.g. a private test-only tool, a runtime-only dep). They are appended
+          # to the repos derived from go.mod. Omit the field entirely when not needed.
+          #
+          # Consumer set follows the open-core consolidation (ADR-0056): the
+          # former standalone ext-authz and tenant-operator repos were absorbed
+          # into the gibson monorepo (cmd/ext-authz, operators/tenant) and share
+          # gibson's go.mod, so bumping `gibson` covers them — they are NOT
+          # separate consumers. gibson-tool-runner was renamed to
+          # gibson-executor. adk's Go module lives at gibson/go.mod, not cli/.
+          - consumer: gibson
+            mod_dir: ""
+            regen_authz: "true"
+          - consumer: adk
+            mod_dir: "gibson"
+            regen_authz: "false"
+          - consumer: gibson-executor
+            mod_dir: ""
+            regen_authz: "false"
+    steps:
+      # ------------------------------------------------------------------
+      # Step 0a: mint a minimal App token scoped to just the consumer repo.
+      # GITHUB_TOKEN (sdk repo) cannot read private consumer repos, so we
+      # use the App token (installed on all consumers) for go.mod fetching.
+      # This minimal token grants read+write to the consumer only; the full
+      # broader token is minted after token_repos are derived (step 0b/0c).
+      # ------------------------------------------------------------------
+      - name: Mint minimal token for go.mod fetch
+        id: minimal-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        with:
+          app-id: ${{ secrets.SDK_FANOUT_APP_ID }}
+          private-key: ${{ secrets.SDK_FANOUT_APP_PRIVATE_KEY }}
+          owner: zeroroot-ai
+          repositories: ${{ matrix.consumer }}
+
+      # ------------------------------------------------------------------
+      # Step 0b: derive token_repos from the consumer's go.mod.
+      # Uses the minimal App token so private consumer repos are readable.
+      # Extracts every `github.com/zeroroot-ai/*` require line, strips the
+      # module path prefix and version, and deduplicates. The consumer repo
+      # is always included (write access for the PR). extra_token_repos from
+      # the matrix are appended for repos absent from go.mod but needed at
+      # tidy-time (e.g. a pure-test-only private tool).
+      # ------------------------------------------------------------------
+      - name: Derive token_repos from go.mod
+        id: derive
+        env:
+          GH_TOKEN: ${{ steps.minimal-token.outputs.token }}
+          CONSUMER: ${{ matrix.consumer }}
+          MOD_DIR: ${{ matrix.mod_dir }}
+          EXTRA: ${{ matrix.extra_token_repos }}
+        run: |
+          set -euo pipefail
+
+          # Compute the go.mod path inside the consumer repo
+          if [ -n "${MOD_DIR}" ]; then
+            MOD_PATH="${MOD_DIR}/go.mod"
+          else
+            MOD_PATH="go.mod"
+          fi
+
+          # Fetch go.mod content via GitHub API (base64-encoded).
+          # Use a standalone jq pipe instead of --jq to reliably extract .content:
+          # gh api --jq emits the full error JSON + "null" on the same stream when
+          # the API returns 404/403, causing base64 to receive non-base64 input.
+          # With the pipe, jq '.content // ""' returns empty string when .content is
+          # absent. 2>/dev/null suppresses http/auth error messages; || true absorbs
+          # the non-zero pipefail exit when gh api fails.
+          CONTENT=$(gh api "repos/zeroroot-ai/${CONSUMER}/contents/${MOD_PATH}" 2>/dev/null \
+            | jq -r '.content // ""' 2>/dev/null) || true
+
+          if [ -z "${CONTENT}" ]; then
+            echo "::warning::Could not fetch go.mod for ${CONSUMER}; falling back to consumer-only token scope"
+            DERIVED="${CONSUMER}"
+          else
+            # Decode, extract github.com/zeroroot-ai/* require lines, pull the repo name
+            DERIVED=$(echo "${CONTENT}" | base64 -d \
+              | awk '/^[[:space:]]*github\.com\/zeroroot-ai\// {
+                  gsub(/^[[:space:]]+/, "")
+                  n = split($1, a, "/")
+                  print a[3]
+                }' \
+              | sort -u \
+              | tr '\n' ',' \
+              | sed 's/,$//')
+
+            # Always include the consumer itself (needs write access for the PR)
+            if [ -z "${DERIVED}" ]; then
+              DERIVED="${CONSUMER}"
+            elif ! echo ",${DERIVED}," | grep -q ",${CONSUMER},"; then
+              DERIVED="${CONSUMER},${DERIVED}"
+            fi
+          fi
+
+          # Append any extra repos declared in the matrix
+          if [ -n "${EXTRA:-}" ]; then
+            EXTRA_CLEAN=$(echo "${EXTRA}" | sed 's/^,*//;s/,*$//')
+            if [ -n "${EXTRA_CLEAN}" ]; then
+              DERIVED="${DERIVED},${EXTRA_CLEAN}"
+            fi
+          fi
+
+          echo "token_repos=${DERIVED}" >> "$GITHUB_OUTPUT"
+          echo "Derived token_repos for ${CONSUMER}: ${DERIVED}"
+
+      - name: Mint installation token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        with:
+          app-id: ${{ secrets.SDK_FANOUT_APP_ID }}
+          private-key: ${{ secrets.SDK_FANOUT_APP_PRIVATE_KEY }}
+          owner: zeroroot-ai
+          repositories: ${{ steps.derive.outputs.token_repos }}
+
+      - name: Checkout consumer
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: zeroroot-ai/${{ matrix.consumer }}
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
+      - name: Resolve go.mod path
+        id: paths
+        run: |
+          if [ -n "${{ matrix.mod_dir }}" ]; then
+            echo "go_mod_file=${{ matrix.mod_dir }}/go.mod" >> "$GITHUB_OUTPUT"
+            echo "go_sum_file=${{ matrix.mod_dir }}/go.sum" >> "$GITHUB_OUTPUT"
+            echo "work_dir=${{ matrix.mod_dir }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "go_mod_file=go.mod" >> "$GITHUB_OUTPUT"
+            echo "go_sum_file=go.sum" >> "$GITHUB_OUTPUT"
+            echo "work_dir=." >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: ${{ steps.paths.outputs.go_mod_file }}
+          cache: true
+          cache-dependency-path: ${{ steps.paths.outputs.go_sum_file }}
+
+      - name: Configure git author
+        run: |
+          git config user.name "zeroday-sdk-fanout[bot]"
+          git config user.email "zeroday-sdk-fanout[bot]@users.noreply.github.com"
+
+      - name: Create branch
+        run: git checkout -b chore/bump-sdk-${{ needs.resolve-tag.outputs.tag }}
+
+      - name: Configure go module auth for private deps
+        # Consumers like tenant-operator transitively depend on other
+        # private zeroroot-ai modules (e.g. github.com/zeroroot-ai/gibson).
+        # `go mod tidy` fetches those via HTTPS and would prompt for
+        # credentials interactively. Rewrite the URL to embed the App
+        # token, and set GOPRIVATE so Go bypasses the public proxy +
+        # checksum DB for our private modules.
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          git config --global url."https://x-access-token:${APP_TOKEN}@github.com/zeroroot-ai/".insteadOf "https://github.com/zeroroot-ai/"
+          echo "GOPRIVATE=github.com/zeroroot-ai/*" >> "$GITHUB_ENV"
+
+      - name: Bump SDK
+        working-directory: ${{ steps.paths.outputs.work_dir }}
+        run: |
+          set -euo pipefail
+          go get github.com/zeroroot-ai/sdk@${{ needs.resolve-tag.outputs.tag }}
+          go mod tidy
+
+      - name: Regenerate authz registry (gibson only)
+        if: matrix.regen_authz == 'true'
+        continue-on-error: true
+        run: |
+          # Best-effort: regen needs SDK as a workspace sibling, which fresh CI
+          # doesn't have. On failure we still want to ship the go.mod/go.sum bump;
+          # gibson's own CI will catch any registry drift on the PR.
+          if make -n authz-registry >/dev/null 2>&1; then
+            make authz-registry || echo "::warning::authz-registry regen failed; consumer PR may need manual regen"
+          fi
+
+      - name: Commit
+        id: commit
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "no_change=true" >> "$GITHUB_OUTPUT"
+            echo "No changes after sdk bump (consumer already on ${{ needs.resolve-tag.outputs.tag }})"
+            exit 0
+          fi
+          git add -A
+          git commit \
+            -m "chore(deps): bump sdk to ${{ needs.resolve-tag.outputs.tag }}" \
+            -m "Auto-generated by zeroroot-ai/sdk fan-out workflow." \
+            -m "Co-Authored-By: zeroday-sdk-fanout[bot] <noreply@github.com>"
+
+      - name: Push and open PR
+        if: steps.commit.outputs.no_change != 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -uo pipefail
+          # Push branch if not already on remote (idempotent across re-runs).
+          if git ls-remote --exit-code origin chore/bump-sdk-${{ needs.resolve-tag.outputs.tag }} >/dev/null 2>&1; then
+            echo "Branch already exists upstream; skipping push"
+          else
+            git push -u origin chore/bump-sdk-${{ needs.resolve-tag.outputs.tag }} || {
+              echo "::error::failed to push branch"
+              exit 1
+            }
+          fi
+          # Open PR if one doesn't already exist for this branch. gh pr create
+          # exits non-zero if a PR already exists for the head; tolerate that.
+          # No --label here: not every consumer repo has a "dependencies" label
+          # configured, and a missing label aborts the call before PR creation.
+          TAG="${{ needs.resolve-tag.outputs.tag }}"
+          CONSUMER="${{ matrix.consumer }}"
+          PR_BODY="Automated SDK bump from \`zeroroot-ai/sdk@${TAG}\`. Auto-merge enabled — will land if CI passes."
+          PR_BODY+=$'\n\nDocs-PR: not-applicable: automated dependency bump'
+          gh pr create \
+            --title "chore(deps): bump sdk to ${TAG}" \
+            --body "$PR_BODY" \
+            -R "zeroroot-ai/${CONSUMER}" || \
+            echo "::notice::gh pr create returned non-zero (likely PR already exists); continuing"
+
+          # Close superseded bump PRs (sdk#301): any other open chore/bump-sdk-*
+          # PR for this consumer targets an older SDK version. Once main moves to
+          # $TAG those go CONFLICTING and never merge, accumulating indefinitely.
+          # Close them so only the newest bump is ever open.
+          gh pr list -R "zeroroot-ai/${CONSUMER}" --state open --json number,headRefName \
+            --jq '.[] | select(.headRefName | startswith("chore/bump-sdk-")) | select(.headRefName != "chore/bump-sdk-'"${TAG}"'") | .number' \
+            | while read -r old; do
+                [ -z "$old" ] && continue
+                echo "Closing superseded bump PR #${old} in ${CONSUMER}"
+                gh pr close "$old" -R "zeroroot-ai/${CONSUMER}" --delete-branch \
+                  --comment "Superseded by the bump to ${TAG} (fan-out hygiene, sdk#301)." || \
+                  echo "::warning::could not close superseded PR #${old} in ${CONSUMER}"
+              done
+
+          # Arm auto-merge. Failure here is LOUD (::error, not a swallowed
+          # ::warning) so a broken arm — repo "Allow auto-merge" disabled, or the
+          # fanout App lacking pull-request write — is visible in the run and the
+          # downstream summary, not silently leaving a PR to pile up (sdk#301).
+          if ! gh pr merge --auto --squash -R "zeroroot-ai/${CONSUMER}" "chore/bump-sdk-${TAG}"; then
+            echo "::error::Auto-merge could not be armed for ${CONSUMER} bump to ${TAG}. Check the repo's 'Allow auto-merge' setting and the fanout App's Pull requests: write permission. PR is open awaiting human merge."
+          fi
+
+  summary:
+    name: summary
+    runs-on: ubuntu-latest
+    needs: [resolve-tag, fan-out]
+    if: always()
+    steps:
+      # Explicit fail-the-run gate: per-shard `continue-on-error: true`
+      # would otherwise let the entire workflow run be marked green even
+      # if one or more consumers failed to bump. Mirror the matrix result
+      # here so org-level visibility (red workflow badge, push-event
+      # failure email) still fires. sdk#66.
+      - name: Fail run if any consumer shard failed
+        if: needs.fan-out.result != 'success'
+        run: |
+          echo "::error::At least one consumer shard failed. See workflow logs and the auto-filed summary issue."
+          exit 1

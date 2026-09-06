@@ -1,0 +1,166 @@
+syntax = "proto3";
+
+// Package gibson.identity.v1 — caller-side identity inspection.
+//
+// IdentityService.WhoAmI is the canonical "what can I do?" RPC. Every
+// authenticated principal may call it for themselves; tenant_admins
+// may pass target_principal_id to inspect another agent in their
+// tenant. The response carries the caller's effective FGA grants
+// (component reads/writes/executes, plugin invocations) and any
+// active capability grants.
+//
+// Spec: component-bootstrap-e2e Requirement 10.
+package gibson.identity.v1;
+
+import "gibson/auth/v1/options.proto";
+import "gibson/capability/v1/capability.proto";
+
+option go_package = "github.com/zeroroot-ai/sdk/api/gen/gibson/identity/v1;identityv1";
+option java_multiple_files = true;
+option csharp_namespace = "Gibson.Identity";
+
+// PrincipalKind identifies the runtime kind of a Gibson principal.
+//
+// Canonical home: this enum is the SDK-published source of truth. The
+// daemon's local tenant_admin proto and the SDK's RecipientClass enum
+// in gibson.admin.v1.grants are duplicates that pre-date the
+// component-bootstrap-e2e consolidation; both should migrate to
+// importing PrincipalKind from this package over time.
+enum PrincipalKind {
+  PRINCIPAL_KIND_UNSPECIFIED = 0;
+  PRINCIPAL_KIND_AGENT = 1;
+  PRINCIPAL_KIND_TOOL = 2;
+  PRINCIPAL_KIND_PLUGIN = 3;
+}
+
+// IdentityService exposes the "describe me" RPC.
+service IdentityService {
+  // WhoAmI returns the caller's effective FGA grants. When
+  // target_principal_id is set, the caller MUST be tenant_admin on
+  // the target's tenant — otherwise the daemon returns
+  // PermissionDenied. Identity is derived from ext-authz-emitted
+  // headers, never from the request body.
+  rpc WhoAmI(WhoAmIRequest) returns (WhoAmIResponse) {
+    option (gibson.auth.v1.authz) = {
+      relation: "member",
+      object_type: "tenant",
+      object_deriver: "tenant_from_identity",
+      allowed_identities: 7  // USER | SERVICE | COMPONENT
+    };
+  }
+}
+
+// WhoAmIRequest carries an optional target_principal_id for admin
+// inspection. When empty, the caller's own identity (from ext-authz
+// headers) is used.
+message WhoAmIRequest {
+  // target_principal_id is OPTIONAL. When set, the caller MUST be
+  // tenant_admin on the target's tenant. Format matches the FGA
+  // user form: "agent_principal:<uuid>" / "tool_principal:<uuid>" /
+  // "plugin_principal:<uuid>".
+  string target_principal_id = 1;
+}
+
+// WhoAmIResponse carries the principal's effective grants.
+message WhoAmIResponse {
+  // principal_id is the FGA principal identifier of the principal
+  // this response describes.
+  string principal_id = 1;
+
+  PrincipalKind kind = 2;
+
+  // name is the human-readable name the principal was registered with
+  // (e.g. "scanner-bot"). Used for display; not used for authz.
+  string name = 3;
+
+  // tenant_id is the tenant the principal belongs to.
+  string tenant_id = 4;
+
+  // component_grants is one entry per component the principal can
+  // touch in any way (read, configure, or execute). Components the
+  // principal cannot touch are NOT included.
+  repeated ComponentGrantEffective component_grants = 5;
+
+  // plugin_grants is one entry per plugin the principal can invoke.
+  // For agent_principals this is empty by FGA model design (agents
+  // do not directly invoke plugins; tools do).
+  repeated PluginGrantEffective plugin_grants = 6;
+
+  // active_capability_grants is the principal's currently-issued
+  // CG-JWTs (mission-scoped) at the time of the call. Reuses the
+  // public CapabilityGrantInfo message from gibson.capability.v1
+  // (extracted from gibson.admin.v1 in slice #108) rather than
+  // minting a parallel type.
+  repeated gibson.capability.v1.CapabilityGrantInfo active_capability_grants = 7;
+
+  // truncated is true when the response had to drop entries to fit
+  // within the 1000-grant safety bound documented in
+  // component-bootstrap-e2e Requirement 10.4. Callers seeing this
+  // flag should treat the listing as incomplete and surface a UI
+  // warning.
+  bool truncated = 8;
+
+  // can_revoke_sessions is a COARSE capability flag: true when the
+  // principal holds a tenant/team admin role that lets it revoke the
+  // sessions of at least some members (composed from self +
+  // tenant#admin-over-member + team#admin-over-member; see
+  // RevokeUserSessions / gibson#622). It exists so admin UIs
+  // (dashboard#717) can gate "revoke sessions" button visibility
+  // without a trial-and-error RPC.
+  //
+  // It is deliberately NOT per-target: the authoritative,
+  // per-(caller,target) decision is still made inside
+  // RevokeUserSessions, which fails closed for targets the caller may
+  // not revoke. A false value means "show no revoke UI"; a true value
+  // means "this principal can revoke someone — let the RPC enforce who."
+  bool can_revoke_sessions = 9;
+}
+
+// ComponentGrantEffective describes the principal's per-action access
+// to one component (FGA type "component"). The three booleans reflect
+// the per-action FGA relations as composed by model.fga's deny-wins
+// rules: each is true iff the principal can perform that action right
+// now after all denies are subtracted.
+message ComponentGrantEffective {
+  // component_ref is the FGA object identifier, e.g. "component:gitlab".
+  string component_ref = 1;
+
+  bool can_read = 2;       // can_read_as_component = can_read AND component_read_enabled
+  bool can_configure = 3;  // can_write_as_component = can_configure AND component_write_enabled
+  bool can_execute = 4;    // can_execute_as_component = can_execute AND component_execute_enabled
+
+  // sources enumerates how the principal got each granted action.
+  // For UI legibility — multiple sources may stack (direct grant
+  // plus tenant-member inheritance, etc.).
+  repeated GrantSource sources = 5;
+}
+
+// PluginGrantEffective describes the principal's invocation access to
+// one plugin (FGA type "plugin", binary can_invoke).
+message PluginGrantEffective {
+  string plugin_ref = 1;          // e.g. "plugin:gitlab"
+  repeated GrantSource sources = 2;
+}
+
+// GrantSource attributes a single grant to its origin in the FGA model.
+// Used by the dashboard's Permissions tab to render inheritance and by
+// gibson-cli inspect to show the operator where a permission came from.
+message GrantSource {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    // KIND_DIRECT — tuple writes the principal directly.
+    KIND_DIRECT = 1;
+    // KIND_TENANT_MEMBER — inherited via tenant#member.
+    KIND_TENANT_MEMBER = 2;
+    // KIND_TEAM_MEMBER — inherited via team#member.
+    KIND_TEAM_MEMBER = 3;
+    // KIND_OWNER — granted because the principal's tenant owns the
+    // component (admin-from-owner FGA path).
+    KIND_OWNER = 4;
+  }
+  Kind kind = 1;
+
+  // source_object is the FGA object the inheritance flowed from
+  // (e.g. "tenant:zeroroot-ai", "team:red"). Empty for KIND_DIRECT.
+  string source_object = 2;
+}

@@ -1,0 +1,316 @@
+# rules-schema.yaml — shared schema for per-repo rules.yaml
+#
+# Spec: unified-identity-and-authorization Phase J / task 10.2.
+#
+# Purpose
+# -------
+# Every Gibson polyrepo (sdk, gibson, ext-authz, dashboard, deploy, adk,
+# gibson-tool-runner, tenant-operator) ships a docs/rules.yaml enumerating
+# the architectural invariants the AI agent and human reviewer must not
+# violate when editing that repo. This file is the single shared schema
+# those rules.yaml files conform to.
+#
+# Rule shape
+# ----------
+# Each rule is one entry in the top-level `rules` array. Required fields:
+#
+#   id            string   — stable identifier.
+#                            Format: <repo-slug>-<area>-<NNN>.
+#                            <repo-slug> is the GitHub repo short name
+#                            (e.g. gibson, ext-authz, dashboard). <area>
+#                            is a 2-8 char tag (auth, dp, build, …).
+#                            <NNN> is a zero-padded 3-digit sequence
+#                            unique within the (repo, area) pair.
+#                            Example: gibson-auth-001, dashboard-auth-014.
+#
+#   pattern       object   — kind + target (see below).
+#   severity      string   — one of: error, warning, info.
+#   message       string   — human-readable; SHOULD include a remediation
+#                            hint (e.g. "use auth.TenantFromContext at
+#                            <handler>.go:NN instead").
+#   enforced_by   array    — non-empty list of enforcement points. Each
+#                            element is one of:
+#                              gibsoncheck:<analyzer-name>
+#                              script:<repo-relative-path>
+#                              helm:<validator-name>
+#                              ci:<workflow-or-job-name>
+#                              manual                       (review-only)
+#
+# Optional fields:
+#
+#   description   string   — multi-line context for the rule.
+#   scope         array    — list of path globs the rule applies to.
+#                            Default ["**/*"]. Globs use Go's filepath.Match
+#                            semantics extended with "**" for recursive
+#                            match.
+#   exempt        array    — list of path globs that override scope.
+#   replaces      array    — list of older rule ids this rule supersedes
+#                            (for migration/rename traceability).
+#
+# Pattern object
+# --------------
+# `pattern.kind` is one of:
+#
+#   forbidden_import      — forbid a Go / TypeScript import path.
+#                           target: string (exact path) or array of strings.
+#   forbidden_call        — forbid a function / method call site.
+#                           target: string (e.g. "redis.NewClient",
+#                           "fetch('https://daemon...')") or regex.
+#   forbidden_string      — forbid a string literal pattern.
+#                           target: string regex.
+#   required_call         — call site must appear in scope.
+#                           target: object with `after` (anchor call) and
+#                           `requires` (downstream call), OR a single
+#                           string for "this call must be present".
+#   required_annotation   — proto / Go struct must carry an annotation.
+#                           target: string (annotation name).
+#
+# Top-level fields
+# ----------------
+#   version         string   — semver of THIS schema (not the rules file).
+#                              Bump on breaking changes; consumers compare
+#                              with their tooling expectation.
+#   inherits_from   string   — optional URL or path to a base rules.yaml
+#                              whose rules are inherited unless overridden
+#                              by id.
+#   rules           array    — list of rule objects.
+#
+# Validation
+# ----------
+# Each rules.yaml MUST validate against this schema. Suggested commands:
+#
+#   pnpm dlx ajv validate -s sdk/docs/rules-schema.yaml -d <repo>/docs/rules.yaml
+#   go run github.com/zeroroot-ai/sdk/cmd/rulescheck@latest \
+#     --schema sdk/docs/rules-schema.yaml \
+#     --rules  <repo>/docs/rules.yaml          # (planned tool, see below)
+#
+# A future `gibsoncheck doc-driven` runner will mechanically enforce a
+# subset of `pattern.kind` values across the polyrepo. Until then the
+# schema is the structural contract; per-rule `enforced_by` points at the
+# concrete check that catches violations today.
+#
+# How to add a new rule
+# ---------------------
+#  1. Pick the lowest unused <NNN> for your repo+area.
+#  2. Write the rule object below the existing rules in the target repo's
+#     docs/rules.yaml — keep ids in numerical order within the area.
+#  3. Make `enforced_by` reference a real existing guard. If none exists,
+#     create the guard in the same PR; do not leave `manual` unless the
+#     rule is genuinely review-only (e.g. "AAD must bind record to
+#     identifier" — too contextual for a static check).
+#  4. Update docs/forbidden-patterns.md with a wrong/right snippet.
+#  5. Validate locally: `pnpm dlx ajv validate -s … -d …`.
+#
+
+version: "1.0.0"
+
+# JSON-Schema (Draft 2020-12) describing the structure validated above.
+# Embedded in the same file so consumers do not need to track two files.
+# Tooling that already understands JSON Schema can consume the `schema`
+# block directly; tooling that just wants the descriptive header reads
+# the comments above.
+
+schema:
+  $schema: "https://json-schema.org/draft/2020-12/schema"
+  $id:     "https://schemas.zeroroot.ai/gibson/rules/v1.0.0"
+  title:   "Gibson per-repo rules.yaml"
+  type:    object
+  required: [version, rules]
+  additionalProperties: false
+  properties:
+    version:
+      type: string
+      pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
+      description: "rules.yaml format version. Match the schema major."
+    inherits_from:
+      type: string
+      description: "Optional URL/path to a base rules.yaml."
+    rules:
+      type: array
+      minItems: 1
+      items:
+        $ref: "#/$defs/Rule"
+  $defs:
+    Rule:
+      type: object
+      required: [id, pattern, severity, message, enforced_by]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: "^[a-z][a-z0-9]*-[a-z][a-z0-9]*-[0-9]{3}$"
+          description: "<repo-slug>-<area>-<NNN>. e.g. gibson-auth-001."
+        description:
+          type: string
+        scope:
+          type: array
+          default: ["**/*"]
+          items: { type: string }
+        exempt:
+          type: array
+          items: { type: string }
+        pattern:
+          type: object
+          required: [kind, target]
+          additionalProperties: false
+          properties:
+            kind:
+              type: string
+              enum:
+                - forbidden_import
+                - forbidden_call
+                - forbidden_string
+                - required_call
+                - required_annotation
+            target:
+              # string | array of strings | object (for required_call's
+              # {after, requires} shape). JSON Schema does not enforce a
+              # tighter type without per-kind branching; tooling does the
+              # final shape check.
+              oneOf:
+                - type: string
+                - type: array
+                  items: { type: string }
+                - type: object
+        severity:
+          type: string
+          enum: [error, warning, info]
+        message:
+          type: string
+          minLength: 1
+        enforced_by:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            pattern: "^(gibsoncheck:[a-zA-Z0-9_]+|script:.+|helm:[a-zA-Z0-9_.-]+|ci:[a-zA-Z0-9_.-]+|manual)$"
+        replaces:
+          type: array
+          items:
+            type: string
+
+# Worked examples
+# ---------------
+# These are illustrative only — they do not bind any consumer's rules.yaml.
+# Each consumer copies the shape and substitutes its own targets.
+
+examples:
+  - id: gibson-auth-001
+    description: |
+      The daemon must not import any JWT validation, OIDC, or FGA SDK.
+      Authentication is Envoy + jwt_authn; authorization is ext-authz.
+      The daemon trusts SPIFFE-pinned channel + identity headers only.
+    scope: ["**/*.go"]
+    exempt:
+      - "internal/capabilitygrant/**"   # mints CG-JWTs (Ed25519, KMS-derived)
+      - "tools/**"
+      - "**/*_test.go"
+    pattern:
+      kind: forbidden_import
+      target:
+        - "github.com/zitadel/oidc"
+        - "github.com/zitadel/oidc/v3"
+        - "github.com/openfga/go-sdk"
+        - "github.com/openfga/api"
+    severity: error
+    message: |
+      Daemon does no JWT validation and no FGA calls. Move the work to
+      Envoy's jwt_authn / ext-authz, or — if it is CG-JWT mint-only —
+      add the file to the capabilitygrant allowlist with a code comment.
+    enforced_by:
+      - "gibsoncheck:forbiddenimports"
+      - "ci:gibson-make-check"
+
+  - id: dashboard-auth-001
+    description: |
+      Dashboard code must reach the daemon ONLY through the Envoy edge
+      via gibson-client.ts. Direct dials and the retired
+      GIBSON_DAEMON_ADDRESS env var are blocked.
+    scope: ["app/**/*.{ts,tsx}", "src/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}"]
+    exempt:
+      - "**/__tests__/**"
+      - "**/*.test.*"
+      - "**/*.spec.*"
+    pattern:
+      kind: forbidden_string
+      target: "(gibson(\\.[a-z0-9-]+)*:5005[012]|GIBSON_DAEMON_ADDRESS)"
+    severity: error
+    message: |
+      Replace direct daemon URLs with the Envoy edge. Use userClient(svc)
+      for user-acting RPCs and serviceClient(svc, tenantId) for in-cluster
+      service-acting RPCs. Both compose makeClient() in gibson-client.ts.
+    enforced_by:
+      - "script:scripts/check-no-direct-daemon-grpc.mjs"
+      - "ci:dashboard-prebuild"
+
+  - id: ext-authz-auth-001
+    description: |
+      ext-authz must load the registry from the SDK release artifact —
+      hand-maintained per-repo registry YAML is forbidden (it drifted in
+      the past and produced authz misses).
+    scope: ["**/*.go", "**/*.yaml"]
+    exempt:
+      - "internal/fga/registry_test.go"
+      - "testing/fixtures/**"
+    pattern:
+      kind: forbidden_string
+      target: "configs/rpc_registry\\.yaml"
+    severity: error
+    message: |
+      The legacy hand-maintained registry has been deleted. Mount the
+      SDK-shipped registry.yaml (auth/registry/registry.yaml) via the
+      Helm ConfigMap at templates/ext-authz/configmap-registry.yaml.
+    enforced_by:
+      - "manual"
+
+  - id: deploy-auth-001
+    description: |
+      The daemon's gRPC ports must never be exposed outside the Envoy
+      mesh (NodePort/LoadBalancer Service or a parallel ingress).
+    scope: ["helm/gibson/**/*.yaml"]
+    pattern:
+      kind: forbidden_string
+      target: "(NodePort|LoadBalancer)"
+    severity: error
+    message: |
+      The Service for the daemon must remain ClusterIP. External traffic
+      enters at Envoy and reaches the daemon over SPIFFE mTLS only.
+    enforced_by:
+      - "helm:validateAllPathsViaEnvoy"
+
+  - id: sdk-auth-001
+    description: |
+      Every RPC defined under api/proto/gibson/ MUST carry a
+      (gibson.auth.v1.authz) annotation — either {unauthenticated:true}
+      or a {relation, object_type, object_deriver, allowed_identities}
+      tuple. Missing annotations cause registry generation to fail.
+    scope: ["api/proto/gibson/**/*.proto"]
+    pattern:
+      kind: required_annotation
+      target: "gibson.auth.v1.authz"
+    severity: error
+    message: |
+      Add option (gibson.auth.v1.authz) = {…}; on the new RPC.
+      See sdk/docs/auth.md "How to add an RPC" for the exact shape.
+    enforced_by:
+      - "ci:sdk-buf-lint-authz-required"
+      - "gibsoncheck:registry-coverage-test"
+
+  - id: tenant-operator-auth-001
+    description: |
+      The operator authenticates to the daemon with its OWN Zitadel
+      service account (ZITADEL_TENANT_OPERATOR_CLIENT_ID/_SECRET). It
+      must not reuse the dashboard's credentials and must not mint
+      gsk_-style API keys (the legacy path was deleted).
+    scope: ["internal/**/*.go", "cmd/**/*.go"]
+    pattern:
+      kind: forbidden_string
+      target: "(gsk_|ZITADEL_DASHBOARD_CLIENT_(ID|SECRET))"
+    severity: error
+    message: |
+      Use ZITADEL_TENANT_OPERATOR_CLIENT_ID / _SECRET. The dashboard's
+      credentials belong to a different audience and grant a different
+      role; reusing them would silently widen the operator's effective
+      privileges.
+    enforced_by:
+      - "manual"

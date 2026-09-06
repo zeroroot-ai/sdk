@@ -1,0 +1,140 @@
+syntax = "proto3";
+package gibson.tool.v1;
+option go_package = "github.com/zeroroot-ai/sdk/api/gen/gibson/tool/v1;toolpb";
+option java_multiple_files = true;
+option csharp_namespace = "Gibson.Tool";
+
+import "gibson/common/v1/gibson_common.proto";
+
+import "gibson/auth/v1/options.proto";
+service ToolService {
+    rpc GetDescriptor(GetDescriptorRequest) returns (GetDescriptorResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc Execute(ExecuteRequest) returns (ExecuteResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc Health(HealthRequest) returns (HealthResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc StreamExecute(stream StreamExecuteRequest) returns (stream StreamExecuteResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+}
+
+message GetDescriptorRequest {}
+
+message GetDescriptorResponse {
+    string name = 1;
+    string description = 2;
+    string version = 3;
+    repeated string tags = 4;
+    gibson.common.v1.JSONSchema input_schema = 5;
+    gibson.common.v1.JSONSchema output_schema = 6;
+}
+
+message ExecuteRequest {
+    string input_json = 1;
+    int64 timeout_ms = 2;
+}
+
+message ExecuteResponse {
+    string output_json = 1;
+    gibson.common.v1.Error error = 2;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+    gibson.common.v1.HealthStatus status = 1;
+}
+
+// Client -> Tool messages for streaming
+message StreamExecuteRequest {
+    oneof payload {
+        ToolStartRequest start = 1;
+        ToolCancelRequest cancel = 2;
+    }
+}
+
+message ToolStartRequest {
+    string input_json = 1;
+    int64 timeout_ms = 2;
+    // Trace ID for distributed tracing (propagated from agent/orchestrator).
+    string trace_id = 3;
+    // Parent span ID for distributed tracing (propagated from agent/orchestrator).
+    string parent_span_id = 4;
+}
+
+message ToolCancelRequest {
+    string reason = 1;
+}
+
+// Tool -> Client messages for streaming
+message StreamExecuteResponse {
+    oneof payload {
+        ToolProgress progress = 1;
+        ToolPartialResult partial = 2;
+        ToolWarning warning = 3;
+        ToolComplete complete = 4;
+        ToolError error = 5;
+    }
+    string trace_id = 10;
+    string span_id = 11;
+    int64 sequence = 12;
+    int64 timestamp_ms = 13;
+}
+
+message ToolProgress {
+    // Progress percentage (0-100)
+    int32 percent = 1;
+    // Current stage description
+    string stage = 2;
+    // Human-readable status message
+    string message = 3;
+}
+
+message ToolPartialResult {
+    // JSON-encoded partial output matching the tool's output schema
+    string output_json = 1;
+    // Optional description of this partial result
+    string description = 2;
+}
+
+message ToolWarning {
+    // Warning message
+    string message = 1;
+    // Optional warning code
+    string code = 2;
+}
+
+message ToolComplete {
+    // Final JSON-encoded output matching the tool's output schema
+    string output_json = 1;
+}
+
+message ToolError {
+    gibson.common.v1.Error error = 1;
+    // Whether this error is recoverable
+    bool fatal = 2;
+}

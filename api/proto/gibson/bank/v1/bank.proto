@@ -1,0 +1,430 @@
+syntax = "proto3";
+
+// Package gibson.bank.v1 declares banks of always-on coding agents and their
+// members (gibson#1706, ADR-0017).
+//
+// A bank is a declarative, daemon-reconciled pool of always-on Claude Code
+// instances. The daemon keeps desired_count members running in sandboxes,
+// relaunches a dead member, and holds a member at NEEDS_SIGN_IN until its
+// owner completes the in-sandbox sign in. A member signs in once inside its
+// sandbox through Anthropic's own flow, or runs on the tenant's API key or
+// cloud credentials. Callers with can_send on a bank open jobs on its members
+// through gibson.job.v1.JobService.
+package gibson.bank.v1;
+
+option go_package = "github.com/zeroroot-ai/sdk/api/gen/gibson/bank/v1;bankpb";
+option java_multiple_files = true;
+option csharp_namespace = "Gibson.Bank";
+
+import "buf/validate/validate.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "gibson/auth/v1/options.proto";
+import "gibson/common/v1/gibson_common.proto";
+
+// BankService creates, reads, updates and deletes banks, lists their
+// members, and relays the in-sandbox subscription sign in to the owner.
+// People and platform services call it. A dispatched component reaches
+// banks through gibson.job.v1.JobService and the harness callback under its
+// own grant, not through this service.
+service BankService {
+    // CreateBank declares a bank. The daemon starts to launch members until
+    // desired_count of them run. The caller owns the bank unless
+    // tenant_owned is true.
+    rpc CreateBank(CreateBankRequest) returns (CreateBankResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "writer"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+    // GetBank returns one bank by id.
+    rpc GetBank(GetBankRequest) returns (GetBankResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_read"
+        object_type: "bank"
+        object_deriver: "from_field('Id')"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+    // ListBanks returns the banks of the caller's tenant, newest first.
+    rpc ListBanks(ListBanksRequest) returns (ListBanksResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+    // UpdateBank changes desired_count and the policies of a bank. A field
+    // that is absent keeps its value. The login shape, the agent and the
+    // model are fixed at creation.
+    rpc UpdateBank(UpdateBankRequest) returns (UpdateBankResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "owner"
+        object_type: "bank"
+        object_deriver: "from_field('Id')"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+    // DeleteBank drains every member, closes their open jobs with verdict
+    // ABANDONED, and removes the bank.
+    rpc DeleteBank(DeleteBankRequest) returns (DeleteBankResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "owner"
+        object_type: "bank"
+        object_deriver: "from_field('Id')"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+    // ListMembers returns the members of a bank with their last reported
+    // status.
+    rpc ListMembers(ListMembersRequest) returns (ListMembersResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_read"
+        object_type: "bank"
+        object_deriver: "from_field('BankId')"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+    // StartSignIn asks a member at NEEDS_SIGN_IN to run the Anthropic sign in
+    // inside its sandbox. Follow it with StreamSignIn to read the URL and
+    // the code prompt, then SubmitSignInCode. Only the owner signs in: the
+    // subscription is theirs.
+    rpc StartSignIn(StartSignInRequest) returns (StartSignInResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "owner"
+        object_type: "bank"
+        object_deriver: "from_field('BankId')"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+    // StreamSignIn relays the sign-in flow of one member: the URL to open,
+    // the code prompt when the flow asks for one, and done or error at the
+    // end. The stream closes after done or error.
+    rpc StreamSignIn(StreamSignInRequest) returns (stream StreamSignInResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "owner"
+        object_type: "bank"
+        object_deriver: "from_field('BankId')"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+    // SubmitSignInCode passes the code the person got from Anthropic to the
+    // sign-in flow that runs inside the member's sandbox.
+    rpc SubmitSignInCode(SubmitSignInCodeRequest) returns (SubmitSignInCodeResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "owner"
+        object_type: "bank"
+        object_deriver: "from_field('BankId')"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+}
+
+// LoginShape is how a member authenticates to Anthropic. All shapes are
+// offered. API key and cloud credentials come from the tenant provider
+// configuration. A subscription is never stored by the platform.
+enum LoginShape {
+    LOGIN_SHAPE_UNSPECIFIED = 0;
+    // LOGIN_SHAPE_SUBSCRIPTION: the owner signs in inside the sandbox through
+    // Anthropic's own flow, relayed by StartSignIn, StreamSignIn and
+    // SubmitSignInCode. A member holds at NEEDS_SIGN_IN until then.
+    LOGIN_SHAPE_SUBSCRIPTION = 1;
+    // LOGIN_SHAPE_ANTHROPIC_API_KEY: the provider configuration named by
+    // Bank.provider_config_name holds an Anthropic API key.
+    LOGIN_SHAPE_ANTHROPIC_API_KEY = 2;
+    // LOGIN_SHAPE_BEDROCK: the provider configuration holds AWS credentials
+    // for Amazon Bedrock.
+    LOGIN_SHAPE_BEDROCK = 3;
+    // LOGIN_SHAPE_VERTEX: the provider configuration holds Google Cloud
+    // credentials for Vertex AI.
+    LOGIN_SHAPE_VERTEX = 4;
+    // LOGIN_SHAPE_FOUNDRY: the provider configuration holds Azure credentials
+    // for Microsoft Foundry.
+    LOGIN_SHAPE_FOUNDRY = 5;
+}
+
+// SpillPolicy is what a bank does with a job when no member has a free slot.
+enum SpillPolicy {
+    SPILL_POLICY_UNSPECIFIED = 0;
+    // SPILL_POLICY_QUEUE: the job waits in the bank queue. The next member
+    // with a free slot pulls it.
+    SPILL_POLICY_QUEUE = 1;
+    // SPILL_POLICY_EPHEMERAL: the daemon launches a one-shot instance for
+    // the job instead of queueing it.
+    SPILL_POLICY_EPHEMERAL = 2;
+}
+
+// MemberState is where a member is in its life. A member reports
+// NEEDS_SIGN_IN, IDLE, BUSY or DRAINING on every heartbeat. The daemon sets
+// LAUNCHING before the first heartbeat and DEAD when heartbeats stop.
+enum MemberState {
+    MEMBER_STATE_UNSPECIFIED = 0;
+    // MEMBER_STATE_LAUNCHING: the sandbox starts. No heartbeat yet. Daemon set.
+    MEMBER_STATE_LAUNCHING = 1;
+    // MEMBER_STATE_NEEDS_SIGN_IN: the member waits for the owner to complete
+    // the in-sandbox sign in. It takes no job.
+    MEMBER_STATE_NEEDS_SIGN_IN = 2;
+    // MEMBER_STATE_IDLE: the member has a free slot. jobs_in_flight is below
+    // cap.
+    MEMBER_STATE_IDLE = 3;
+    // MEMBER_STATE_BUSY: every slot is taken. jobs_in_flight equals cap.
+    MEMBER_STATE_BUSY = 4;
+    // MEMBER_STATE_DRAINING: the member takes no new job and exits when its
+    // open jobs close. The daemon asks for this on scale-down.
+    MEMBER_STATE_DRAINING = 5;
+    // MEMBER_STATE_DEAD: heartbeats stopped or the sandbox died. The daemon
+    // relaunches the member. Daemon set.
+    MEMBER_STATE_DEAD = 6;
+}
+
+// Bank is a pool of always-on coding agents with one owner.
+message Bank {
+    // id is the bank id. The daemon assigns it.
+    string id = 1;
+    // tenant_id is the tenant the bank belongs to.
+    string tenant_id = 2;
+    // owner is the person or the tenant that owns the bank. A person owns a
+    // bank that signs in on their subscription. The tenant owns a bank that
+    // runs on the tenant provider configuration.
+    gibson.common.v1.Principal owner = 3;
+    // name is the display name. Unique inside the tenant.
+    string name = 4;
+    // desired_count is how many members the daemon keeps running.
+    int32 desired_count = 5 [(buf.validate.field).int32 = { gte: 0 }];
+    // login_shape is how members authenticate to Anthropic.
+    LoginShape login_shape = 6 [(buf.validate.field).enum = { defined_only: true }];
+    // provider_config_name names the tenant provider configuration that
+    // holds the API key or the cloud credentials. Empty for
+    // LOGIN_SHAPE_SUBSCRIPTION.
+    string provider_config_name = 7;
+    // agent_name is the catalog id of the agent component each member runs.
+    // The default is "claude".
+    string agent_name = 8;
+    // model is the model id members run. Empty means the agent default.
+    string model = 9;
+    // max_jobs_in_flight is the per-member cap on open jobs. Capacity of the
+    // bank is desired_count times max_jobs_in_flight.
+    int32 max_jobs_in_flight = 10 [(buf.validate.field).int32 = { gte: 0 }];
+    // stale_limit is how long a job may go without input. A job idle past it
+    // closes with verdict ABANDONED.
+    google.protobuf.Duration stale_limit = 11;
+    // spill_policy is what the bank does with a job when no member has a
+    // free slot.
+    SpillPolicy spill_policy = 12 [(buf.validate.field).enum = { defined_only: true }];
+    // created_at is when the bank was created.
+    google.protobuf.Timestamp created_at = 13;
+    // updated_at is when the bank was last changed.
+    google.protobuf.Timestamp updated_at = 14;
+}
+
+// Member is one always-on instance in a bank. It is a mission the owner
+// originated (ADR-0063) with one sandbox that lives until the bank scales
+// down.
+message Member {
+    // id is the member id. The daemon assigns it.
+    string id = 1;
+    // bank_id is the bank this member belongs to.
+    string bank_id = 2;
+    // mission_id is the always-on mission that backs this member.
+    string mission_id = 3;
+    // mission_run_id is the run of that mission.
+    string mission_run_id = 4;
+    // agent_run_id is the agent run inside that mission run.
+    string agent_run_id = 5;
+    // sandbox_id is the setec sandbox the member runs in.
+    string sandbox_id = 6;
+    // status is what the member last reported, with LAUNCHING and DEAD
+    // filled in by the daemon.
+    MemberStatus status = 7;
+    // last_heartbeat is when the member last reported.
+    google.protobuf.Timestamp last_heartbeat = 8;
+}
+
+// MemberStatus is what a member reports on every heartbeat: busy or not busy,
+// how many jobs it holds, and which ones. The daemon uses it to route queued
+// jobs to a member with a free slot.
+message MemberStatus {
+    // state is where the member is in its life.
+    MemberState state = 1 [(buf.validate.field).enum = { defined_only: true }];
+    // jobs_in_flight is how many jobs the member holds open now.
+    int32 jobs_in_flight = 2 [(buf.validate.field).int32 = { gte: 0 }];
+    // cap is how many jobs the member may hold open at once.
+    int32 cap = 3 [(buf.validate.field).int32 = { gte: 0 }];
+    // active_job_ids lists the jobs the member holds open now.
+    repeated string active_job_ids = 4;
+    // claude_version is the version of the claude binary the member runs.
+    string claude_version = 5;
+}
+
+// CreateBankRequest declares a new bank.
+message CreateBankRequest {
+    // name is the display name. Unique inside the tenant.
+    string name = 1 [(buf.validate.field).string = { min_len: 1 }];
+    // tenant_owned makes the tenant the owner. The bank then runs on the
+    // tenant provider configuration and has no sign-in step. When false the
+    // caller owns the bank.
+    bool tenant_owned = 2;
+    // desired_count is how many members the daemon keeps running.
+    int32 desired_count = 3 [(buf.validate.field).int32 = { gte: 0 }];
+    // login_shape is how members authenticate to Anthropic. Required.
+    LoginShape login_shape = 4 [(buf.validate.field).enum = { defined_only: true, not_in: [0] }];
+    // provider_config_name names the tenant provider configuration for every
+    // login shape except LOGIN_SHAPE_SUBSCRIPTION.
+    string provider_config_name = 5;
+    // agent_name is the catalog id of the agent component each member runs.
+    // Empty means "claude".
+    string agent_name = 6;
+    // model is the model id members run. Empty means the agent default.
+    string model = 7;
+    // max_jobs_in_flight is the per-member cap on open jobs. Zero means the
+    // daemon default.
+    int32 max_jobs_in_flight = 8 [(buf.validate.field).int32 = { gte: 0 }];
+    // stale_limit is how long a job may go without input before it closes
+    // with verdict ABANDONED. Unset means the daemon default.
+    google.protobuf.Duration stale_limit = 9;
+    // spill_policy is what the bank does with a job when no member has a
+    // free slot. Unspecified means SPILL_POLICY_QUEUE.
+    SpillPolicy spill_policy = 10 [(buf.validate.field).enum = { defined_only: true }];
+}
+
+// CreateBankResponse carries the created bank.
+message CreateBankResponse {
+    // bank is the bank as stored.
+    Bank bank = 1;
+}
+
+// GetBankRequest names one bank.
+message GetBankRequest {
+    // id is the bank id. Required.
+    string id = 1 [(buf.validate.field).string = { min_len: 1 }];
+}
+
+// GetBankResponse carries one bank.
+message GetBankResponse {
+    // bank is the bank.
+    Bank bank = 1;
+}
+
+// ListBanksRequest pages through the banks of the caller's tenant.
+message ListBanksRequest {
+    // page_size is the maximum number of banks to return. Zero means the
+    // server default.
+    int32 page_size = 1 [(buf.validate.field).int32 = { gte: 0 }];
+    // page_token is the next_page_token of the previous page. Empty for the
+    // first page.
+    string page_token = 2;
+}
+
+// ListBanksResponse carries one page of banks.
+message ListBanksResponse {
+    // banks is the page.
+    repeated Bank banks = 1;
+    // next_page_token fetches the next page. Empty on the last page.
+    string next_page_token = 2;
+}
+
+// UpdateBankRequest changes desired_count and the policies of a bank. A
+// field that is absent keeps its value.
+message UpdateBankRequest {
+    // id is the bank id. Required.
+    string id = 1 [(buf.validate.field).string = { min_len: 1 }];
+    // desired_count is the new member count. The daemon launches or drains
+    // members to reach it.
+    optional int32 desired_count = 2 [(buf.validate.field).int32 = { gte: 0 }];
+    // max_jobs_in_flight is the new per-member cap.
+    optional int32 max_jobs_in_flight = 3 [(buf.validate.field).int32 = { gte: 0 }];
+    // stale_limit is the new idle limit for jobs.
+    google.protobuf.Duration stale_limit = 4;
+    // spill_policy is the new spill policy.
+    optional SpillPolicy spill_policy = 5 [(buf.validate.field).enum = { defined_only: true }];
+}
+
+// UpdateBankResponse carries the bank after the change.
+message UpdateBankResponse {
+    // bank is the bank as stored.
+    Bank bank = 1;
+}
+
+// DeleteBankRequest names the bank to remove.
+message DeleteBankRequest {
+    // id is the bank id. Required.
+    string id = 1 [(buf.validate.field).string = { min_len: 1 }];
+}
+
+// DeleteBankResponse is empty. The bank is gone when the call returns.
+message DeleteBankResponse {}
+
+// ListMembersRequest pages through the members of one bank.
+message ListMembersRequest {
+    // bank_id is the bank. Required.
+    string bank_id = 1 [(buf.validate.field).string = { min_len: 1 }];
+    // page_size is the maximum number of members to return. Zero means the
+    // server default.
+    int32 page_size = 2 [(buf.validate.field).int32 = { gte: 0 }];
+    // page_token is the next_page_token of the previous page. Empty for the
+    // first page.
+    string page_token = 3;
+}
+
+// ListMembersResponse carries one page of members.
+message ListMembersResponse {
+    // members is the page.
+    repeated Member members = 1;
+    // next_page_token fetches the next page. Empty on the last page.
+    string next_page_token = 2;
+}
+
+// StartSignInRequest names the member that must sign in.
+message StartSignInRequest {
+    // bank_id is the bank the member belongs to. Required.
+    string bank_id = 1 [(buf.validate.field).string = { min_len: 1 }];
+    // member_id is the member. Required.
+    string member_id = 2 [(buf.validate.field).string = { min_len: 1 }];
+}
+
+// StartSignInResponse carries the member after the sign in started.
+message StartSignInResponse {
+    // member is the member. Its status.state is NEEDS_SIGN_IN until the flow
+    // completes.
+    Member member = 1;
+}
+
+// StreamSignInRequest names the member whose sign-in flow to follow.
+message StreamSignInRequest {
+    // bank_id is the bank the member belongs to. Required.
+    string bank_id = 1 [(buf.validate.field).string = { min_len: 1 }];
+    // member_id is the member. Required.
+    string member_id = 2 [(buf.validate.field).string = { min_len: 1 }];
+}
+
+// StreamSignInResponse is one step of the sign-in flow.
+message StreamSignInResponse {
+    // url is the address the person opens to sign in. Set on the first step.
+    string url = 1;
+    // code_prompt is the text the flow shows when it asks for the code. Set
+    // when the flow waits for SubmitSignInCode.
+    string code_prompt = 2;
+    // done is true on the last step when the sign in succeeded.
+    bool done = 3;
+    // error is set on the last step when the sign in failed.
+    string error = 4;
+}
+
+// SubmitSignInCodeRequest passes the sign-in code to a member.
+message SubmitSignInCodeRequest {
+    // bank_id is the bank the member belongs to. Required.
+    string bank_id = 1 [(buf.validate.field).string = { min_len: 1 }];
+    // member_id is the member. Required.
+    string member_id = 2 [(buf.validate.field).string = { min_len: 1 }];
+    // code is the code Anthropic gave the person. Required.
+    string code = 3 [(buf.validate.field).string = { min_len: 1 }];
+}
+
+// SubmitSignInCodeResponse carries the member after the code was passed on.
+message SubmitSignInCodeResponse {
+    // member is the member. Read StreamSignIn for the outcome.
+    Member member = 1;
+}

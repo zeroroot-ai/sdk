@@ -1,0 +1,227 @@
+syntax = "proto3";
+
+package gibson.manifest.v1;
+
+option go_package = "github.com/zeroroot-ai/sdk/api/gen/gibson/manifest/v1;manifestpb";
+option java_multiple_files = true;
+option csharp_namespace = "Gibson.Manifest";
+
+import "google/protobuf/timestamp.proto";
+import "gibson/identity/v1/identity.proto";
+
+// CapabilityManifest is the single, signed, versioned snapshot of every
+// component, permission, cross-component rule, and runtime context that
+// applies to the calling principal in their resolved tenant. Both SDKs
+// (runtime) and the ADK (scaffold-time) consume this shape.
+message CapabilityManifest {
+  string manifest_id = 1;
+  uint64 manifest_version = 2;
+  string tenant_id = 3;
+  string subject = 4;
+  google.protobuf.Timestamp issued_at = 5;
+  google.protobuf.Timestamp expires_at = 6;
+  uint32 ttl_seconds = 7;
+
+  TenantContext tenant_context = 10;
+  repeated ComponentCapability agents = 11;
+  repeated ComponentCapability tools = 12;
+  repeated ComponentCapability plugins = 13;
+  repeated CrossComponentRule cross_component_rules = 20;
+  bool cross_component_rules_truncated = 21;
+  LimitsAndQuotas limits = 30;
+  repeated string available_llm_slots = 31;
+  MemoryPermissions memory = 32;
+
+  // Field 100/101 are reserved platform-wide: 100 for gibson.graphrag.DiscoveryResult
+  // on tool response messages. Signature payload moved to 200/201 in v1.0.0.
+  reserved 100, 101;
+
+  // Signature payload (Ed25519 over body with signature/kid cleared).
+  bytes signature = 200;
+  string signing_key_id = 201;
+}
+
+// TenantContext surfaces the tenant identity and team memberships that
+// gate the manifest's scope.
+message TenantContext {
+  string tenant_id = 1;
+  string tenant_display_name = 2;
+  repeated string team_memberships = 3;
+  bool is_admin = 4;
+}
+
+// ComponentCapability is a single discoverable component (agent, tool, plugin)
+// enriched with the permissions the subject holds against it, plus a typed
+// contract describing how to invoke it.
+//
+// Kind discriminator (component-bootstrap-e2e R12): the typed
+// `principal_kind` field is the canonical way to branch on
+// agent/tool/plugin. The legacy `string kind = 2` is retained for
+// backward compatibility during the one-minor-release deprecation
+// window — readers SHOULD prefer `principal_kind` and SHOULD validate
+// that the populated `contract` oneof matches the kind.
+message ComponentCapability {
+  string name = 1;
+
+  // DEPRECATED: prefer `principal_kind`. String-form kind for legacy
+  // consumers; one-minor-release deprecation window.
+  string kind = 2;
+
+  string component_ref = 3;
+  string version = 4;
+  string description = 5;
+  bool is_system = 6;
+  string owner_tenant = 7;
+  repeated string permissions = 10;
+
+  oneof contract {
+    AgentContract agent_contract = 20;
+    ToolContract tool_contract = 21;
+    PluginContract plugin_contract = 22;
+  }
+  ComponentLiveness liveness = 30;
+
+  // principal_kind is the typed kind discriminator. Populated by the
+  // daemon at manifest-resolution time; set by the SDK loader when
+  // converting YAML manifests. Must agree with the populated
+  // `contract` oneof (PRINCIPAL_KIND_AGENT ↔ agent_contract, etc.) —
+  // mismatches are rejected by the daemon's RegisterPlugin /
+  // CreateAgentIdentity validators.
+  //
+  // Spec: component-bootstrap-e2e Requirement 12.
+  gibson.identity.v1.PrincipalKind principal_kind = 40;
+}
+
+// AgentContract describes an agent's LLM slot surface and declared
+// tool/plugin dependencies. The daemon composes this from the agent's
+// descriptor RPC at registration time.
+message AgentContract {
+  repeated string llm_slot_names = 1;
+  repeated string declared_tool_dependencies = 2;
+  repeated string declared_plugin_dependencies = 3;
+}
+
+// ToolIdempotency declares the at-most-once / at-least-once / exactly-once
+// delivery semantics a tool guarantees. Read by the resume-from-checkpoint
+// logic: tools at AT_LEAST_ONCE are safely retried on resume; tools at
+// AT_MOST_ONCE are skipped if their pre-checkpoint invocation status is
+// ambiguous; tools at EXACTLY_ONCE require the orchestrator to consult the
+// idempotency journal before re-issuing. UNSPECIFIED is treated as
+// AT_LEAST_ONCE for backward compatibility.
+//
+// Spec: mission-checkpointing R6.
+enum ToolIdempotency {
+  TOOL_IDEMPOTENCY_UNSPECIFIED = 0;
+  TOOL_IDEMPOTENCY_AT_MOST_ONCE = 1;
+  TOOL_IDEMPOTENCY_AT_LEAST_ONCE = 2;
+  TOOL_IDEMPOTENCY_EXACTLY_ONCE = 3;
+}
+
+// ToolContract describes the proto envelope a tool accepts and emits.
+// input_schema_json and output_schema_json are derived from the
+// FileDescriptor and rendered to JSON Schema for SDK/ADK consumption.
+message ToolContract {
+  string input_proto_name = 1;
+  string output_proto_name = 2;
+  string input_schema_json = 3;
+  string output_schema_json = 4;
+  // see ToolIdempotency enum; UNSPECIFIED is treated as AT_LEAST_ONCE
+  ToolIdempotency idempotency = 5;
+}
+
+// PluginContract enumerates a plugin's callable methods with per-method
+// schemas and per-method FGA-derived invocation permission.
+message PluginContract {
+  repeated PluginMethod methods = 1;
+}
+
+message PluginMethod {
+  string name = 1;
+  string params_schema_json = 2;
+  string result_schema_json = 3;
+  bool can_invoke = 4;
+}
+
+// CrossComponentRule expresses an explicit override on the default
+// can_execute evaluation for a (source_component, target_component) pair.
+// Only rules that override the default are emitted, keeping payload bounded.
+message CrossComponentRule {
+  string source_component_ref = 1;
+  string target_component_ref = 2;
+  Effect effect = 3;
+  string reason = 4;
+
+  enum Effect {
+    EFFECT_UNSPECIFIED = 0;
+    EFFECT_ALLOW = 1;
+    EFFECT_DENY = 2;
+  }
+}
+
+// LimitsAndQuotas carries the tier-derived resource ceilings applied to
+// the subject's session. max_spend_usd is a decimal string to avoid
+// floating-point rounding at quota boundaries.
+message LimitsAndQuotas {
+  uint64 max_tokens_per_call = 1;
+  uint64 max_tokens_per_session = 2;
+  uint32 rate_limit_per_minute = 3;
+  string max_spend_usd = 4;
+}
+
+// MemoryPermissions expresses per-tier memory access (e.g. "ro", "rw", "").
+message MemoryPermissions {
+  string working = 1;
+  string mission = 2;
+  string longterm = 3;
+}
+
+// ComponentLiveness is a snapshot of the component's runtime health at
+// manifest issuance time. It is advisory only; the daemon remains the
+// source of truth for live execution decisions.
+message ComponentLiveness {
+  string status = 1;
+  google.protobuf.Timestamp last_heartbeat = 2;
+  uint32 instance_count = 3;
+}
+
+// GetCapabilityManifestRequest identifies the subject whose manifest is
+// requested. agent_principal_id is only honored for tenant admins and
+// enables scaffold-time impersonation previews.
+message GetCapabilityManifestRequest {
+  string agent_principal_id = 1;
+}
+
+// GetCapabilityManifestResponse wraps the signed manifest. Wrapping keeps
+// the RPC Buf-STANDARD compliant and leaves room for envelope metadata
+// (e.g. server-side issuance metrics) to be added without breaking the
+// wire format of the manifest body itself.
+message GetCapabilityManifestResponse {
+  CapabilityManifest manifest = 1;
+}
+
+// WatchManifestInvalidationsRequest opens a server-streaming channel
+// emitting ManifestInvalidationEvent for the caller's resolved tenant.
+message WatchManifestInvalidationsRequest {}
+
+// WatchManifestInvalidationsResponse wraps a single invalidation event
+// so the RPC's streaming response type satisfies Buf STANDARD naming.
+message WatchManifestInvalidationsResponse {
+  ManifestInvalidationEvent event = 1;
+}
+
+// ManifestInvalidationEvent is delivered when the subject's manifest
+// should be considered stale. HEARTBEAT events indicate the stream is
+// alive; INVALIDATED events indicate a refresh is warranted.
+message ManifestInvalidationEvent {
+  EventType event_type = 1;
+  string tenant_id = 2;
+  string reason = 3;
+  uint64 new_manifest_version = 4;
+  google.protobuf.Timestamp emitted_at = 5;
+
+  enum EventType {
+    EVENT_TYPE_UNSPECIFIED = 0;
+    EVENT_TYPE_HEARTBEAT = 1;
+    EVENT_TYPE_INVALIDATED = 2;
+  }
+}

@@ -1,0 +1,101 @@
+name: docs-spec-sync
+
+# Tells zeroroot-ai/docs-site to refresh its committed `api-spec.json` from
+# this repo's protos when a release is tagged (docs-site#26).
+#
+# ── Why this workflow only signals ──────────────────────────────────────────
+# The regeneration itself lives in docs-site (`.github/workflows/spec-sync.yml`):
+# it checks this repo out at the released tag and runs its OWN `regen:api`
+# entrypoint, so the committed spec is byte-identical to a maintainer's local
+# `pnpm regen:api`. Reimplementing the `buf build` → doc-spec walk here would
+# fork that generator. docs-site can read this repo with no credential (it is
+# public), so all that has to cross the repo boundary is "a release happened".
+#
+# Deliberately NOT via the BSR: `buf-push.yml` has been red on every tagged
+# release since v0.155.0 (sdk#446/#459), so the BSR module is stale. docs-site
+# builds from a git checkout of the tag instead, which cannot be stale.
+#
+# ── Credential ─────────────────────────────────────────────────────────────
+# `DOCS_SITE_DISPATCH_TOKEN` — a token with `contents: write` on
+# zeroroot-ai/docs-site, the ONE cross-repo credential this feature needs
+# (docs-site#26 asks for it to be decided once and reused by both halves, so
+# adk's release-please notify job reads the same secret name). Set it as an org
+# secret visible to `adk` and `sdk`.
+#
+# It is not provisioned yet. Until it is, this job warns and exits 0 rather
+# than failing every release: docs-site's spec-sync also runs on a weekly
+# schedule, so the refresh still happens, just later. A red release workflow
+# nobody can fix is worse than a visible warning.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Ref for docs-site to build the api-spec from (default: this run's ref, else the latest release tag)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    name: notify docs-site
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Dispatch api-spec refresh
+        id: dispatch
+        env:
+          GH_TOKEN: ${{ secrets.DOCS_SITE_DISPATCH_TOKEN }}
+          DISPATCH_REF: ${{ inputs.ref }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::warning::DOCS_SITE_DISPATCH_TOKEN is not configured for this repo, so docs-site was not notified. Its spec-sync workflow will still pick this release up on its weekly schedule, or immediately via 'gh workflow run spec-sync.yml -R zeroroot-ai/docs-site -f spec=api'. See docs-site#26."
+            exit 0
+          fi
+          if [ -n "${DISPATCH_REF}" ]; then
+            ref="${DISPATCH_REF}"
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            ref="${{ github.ref_name }}"
+          else
+            # Empty ref: docs-site resolves this repo's latest release tag.
+            ref=""
+          fi
+          echo "Notifying docs-site to refresh api-spec from ref='${ref:-<latest release tag>}'"
+          jq -n --arg ref "$ref" '{event_type:"refresh-api-spec", client_payload:{ref:$ref}}' \
+            | gh api /repos/zeroroot-ai/docs-site/dispatches --input -
+
+      # Release-time automation nobody watches is exactly how buf-push stayed
+      # red across nine releases (sdk#459). Same find-by-title / refresh-in-place
+      # failure signal as buf-push.yml.
+      - name: File or update tracked issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TITLE="ci(docs): docs-spec-sync failed — docs-site api-spec refresh is not being triggered"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          BODY="## docs-spec-sync failed\n\n"
+          BODY="${BODY}Run: ${RUN_URL}\nRef: \`${{ github.ref }}\`\nEvent: \`${{ github.event_name }}\`\n\n"
+          BODY="${BODY}zeroroot-ai/docs-site was NOT told to refresh \`src/generated/api-spec.json\`, so the published API reference will drift from this release's wire surface.\n\n"
+          BODY="${BODY}Most likely cause: the \`DOCS_SITE_DISPATCH_TOKEN\` secret is missing or lacks \`contents: write\` on zeroroot-ai/docs-site (docs-site#26).\n\n"
+          BODY="${BODY}Manual recovery: \`gh workflow run spec-sync.yml -R zeroroot-ai/docs-site -f spec=api -f ref=<tag>\`.\n\n"
+          BODY="${BODY}This issue is auto-filed by the docs-spec-sync workflow's failure step and refreshed in place on each subsequent failure."
+          EXISTING=$(gh issue list -R "${{ github.repository }}" \
+                       --state open --search "in:title \"ci(docs): docs-spec-sync failed\"" \
+                       --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            printf "%b" "$BODY" | gh issue comment "$EXISTING" -R "${{ github.repository }}" --body-file -
+          else
+            printf "%b" "$BODY" | gh issue create -R "${{ github.repository }}" --title "$TITLE" --body-file - --label "ready-for-human" || \
+              printf "%b" "$BODY" | gh issue create -R "${{ github.repository }}" --title "$TITLE" --body-file -
+          fi

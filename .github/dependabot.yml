@@ -1,0 +1,26 @@
+version: 2
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule: { interval: "weekly" }
+    labels: ["dependencies", "go"]
+  - package-ecosystem: "gomod"
+    directory: "/examples/custom-tool"
+    schedule: { interval: "weekly" }
+    labels: ["dependencies", "go"]
+  - package-ecosystem: "gomod"
+    directory: "/examples/minimal-agent"
+    schedule: { interval: "weekly" }
+    labels: ["dependencies", "go"]
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule: { interval: "weekly" }
+    labels: ["dependencies", "npm"]
+  - package-ecosystem: "docker"
+    directory: "/examples/tool-runner-hello"
+    schedule: { interval: "weekly" }
+    labels: ["dependencies", "docker"]
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule: { interval: "weekly" }
+    labels: ["dependencies", "github-actions"]

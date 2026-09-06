@@ -1,0 +1,2395 @@
+syntax = "proto3";
+
+// Schema evolution policy (mission-schema-canonicalization Requirement 7):
+//
+//   1. Enum values (MissionStatus, etc.) are append-only. No renumbers,
+//      no deletions. Deprecated values use `[deprecated = true]` plus a
+//      `// reserved` comment.
+//   2. Message field numbers are append-only. No renumbers, no reuse.
+//      Type-of-field changes ARE breaking and require a ship sequence
+//      across SDK + every consumer (see ADR 0004 for the precedent).
+//   3. Cross-file consistency: this file consumes
+//      gibson.mission.v1.MissionDefinition AND
+//      gibson.mission.v1.MissionConstraints (the canonical platform-wide
+//      constraint shape per ADR 0004). The daemon-local MissionConstraints
+//      message was removed in the same change. Any breaking change to the
+//      canonical SDK type must be coordinated with this file under the
+//      canonical ship sequence.
+
+package gibson.daemon.v1;
+
+option go_package = "github.com/zeroroot-ai/sdk/api/gen/gibson/daemon/v1;daemonpb";
+option java_multiple_files = true;
+option csharp_namespace = "Gibson.Daemon";
+
+// Import SDK common types for TypedValue, TypedMap, ErrorCode, etc.
+import "gibson/common/v1/gibson_common.proto";
+import "gibson/manifest/v1/manifest.proto";
+import "gibson/mission/v1/mission_definition.proto";
+import "gibson/target/v1/target.proto";
+import "google/protobuf/timestamp.proto";
+import "buf/validate/validate.proto";
+
+import "gibson/auth/v1/options.proto";
+// MissionStatus represents the execution status of a mission.
+enum MissionStatus {
+  MISSION_STATUS_UNSPECIFIED = 0;
+  MISSION_STATUS_PENDING = 1;
+  MISSION_STATUS_RUNNING = 2;
+  MISSION_STATUS_PAUSED = 3;
+  MISSION_STATUS_COMPLETED = 4;
+  MISSION_STATUS_FAILED = 5;
+  MISSION_STATUS_CANCELLED = 6;
+}
+
+// DaemonService provides the gRPC API for Gibson daemon client communication.
+//
+// This service exposes operational daemon functionality including mission execution,
+// agent management, and real-time event streaming for the TUI and SDK clients.
+service DaemonService {
+  // Connect establishes a client connection to the daemon.
+  // Returns connection metadata and daemon version info.
+  rpc Connect(ConnectRequest) returns (ConnectResponse) {
+      option (gibson.auth.v1.authz) = {
+        unauthenticated: true
+      };
+    }
+
+  // Ping checks if the daemon is responsive.
+  // Used for health checks and connection validation.
+  rpc Ping(PingRequest) returns (PingResponse) {
+      option (gibson.auth.v1.authz) = {
+        unauthenticated: true
+      };
+    }
+
+  // Status returns the current daemon status including uptime,
+  // service endpoints, and component counts.
+  rpc Status(StatusRequest) returns (StatusResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // Subscribe establishes an event stream for TUI real-time updates.
+  // Streams mission events, agent events, finding events, etc.
+  rpc Subscribe(SubscribeRequest) returns (stream SubscribeResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // RunMission starts a mission and streams execution events.
+  // The stream remains open until the mission completes or is stopped.
+  rpc RunMission(RunMissionRequest) returns (stream RunMissionResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // StopMission gracefully stops a running mission.
+  rpc StopMission(StopMissionRequest) returns (StopMissionResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // CreateMission creates a new mission with target and mission-definition reference.
+  // Supports both referenced and inline configurations.
+  rpc CreateMission(CreateMissionRequest) returns (CreateMissionResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // CreateTarget registers a new target and returns its server-minted UUID.
+  // The id field of the supplied target is ignored; the daemon mints it.
+  rpc CreateTarget(CreateTargetRequest) returns (CreateTargetResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // GetTarget returns a single target by its UUID.
+  rpc GetTarget(GetTargetRequest) returns (GetTargetResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // ListTargets returns the calling tenant's targets, narrowed by TargetFilter.
+  rpc ListTargets(ListTargetsRequest) returns (ListTargetsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // UpdateTarget replaces a target's metadata. The id field is the lookup key
+  // and is never changed.
+  rpc UpdateTarget(UpdateTargetRequest) returns (UpdateTargetResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // DeleteTarget removes a target by its UUID.
+  rpc DeleteTarget(DeleteTargetRequest) returns (DeleteTargetResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // ListMissions returns all missions (past and active).
+  rpc ListMissions(ListMissionsRequest) returns (ListMissionsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // PauseMission pauses a running mission at the next clean checkpoint boundary.
+  // If force is true, pauses immediately without waiting for a clean boundary.
+  rpc PauseMission(PauseMissionRequest) returns (PauseMissionResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // ResumeMission resumes a paused mission from its last checkpoint.
+  // Returns a stream of mission events as execution continues.
+  rpc ResumeMission(ResumeMissionRequest) returns (stream ResumeMissionResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // GetMissionHistory returns all runs for a mission name, showing the
+  // complete history of mission executions with the same mission name.
+  rpc GetMissionHistory(GetMissionHistoryRequest) returns (GetMissionHistoryResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // The pre-ECS checkpoint browser RPCs (GetMissionCheckpoints,
+  // ListCheckpoints, GetCheckpoint, DiffCheckpoints) were removed with
+  // the checkpoint store (gibson#1117; ADR-0011: one snapshot
+  // mechanism = World snapshots).
+
+  // ListMissionDefinitions returns all installed mission definitions.
+  rpc ListMissionDefinitions(ListMissionDefinitionsRequest) returns (ListMissionDefinitionsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // CreateMissionDefinition registers a structured mission definition with the
+  // daemon. This is the API-only replacement for the removed InstallMission RPC:
+  // the daemon does not clone git repositories or parse YAML; callers submit a
+  // fully-formed MissionDefinition proto (serialized from JSON in the CLI via
+  // protojson, or constructed natively in the dashboard).
+  rpc CreateMissionDefinition(CreateMissionDefinitionRequest) returns (CreateMissionDefinitionResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "writer"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+
+  // UpdateMissionDefinition replaces the content of an existing mission
+  // definition. The name field of the embedded definition is the lookup key.
+  // All other fields replace the stored definition; the server-assigned ID and
+  // original timestamps are preserved. Returns codes.NotFound if no definition
+  // with that name exists.
+  // Spec: gibson#437.
+  rpc UpdateMissionDefinition(UpdateMissionDefinitionRequest) returns (UpdateMissionDefinitionResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "writer"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // GetMissionDefinition returns the full structured proto for a single
+  // installed mission definition, looked up by name. Use this instead of
+  // ListMissionDefinitions when the caller knows the definition name and
+  // needs every author-facing field (workspace, constraints, per-node
+  // retry/data/reuse policies). Returns codes.NotFound when the name is
+  // not registered.
+  // Spec: mission-author-experience M5 (gibson#134).
+  rpc GetMissionDefinition(GetMissionDefinitionRequest) returns (GetMissionDefinitionResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // GetMissionGraph returns the renderable flow-chart projection of a mission
+  // definition: typed nodes (boxes), data-flow edges, derived entry/exit, and
+  // per-node positions. The daemon computes the topology and a deterministic
+  // auto-layout from the mission DAG, then overlays any saved layout from the
+  // mission layout store (SaveMissionLayout) so hand-arranged positions win.
+  // This keeps the dashboard a pure renderer — it never re-derives topology.
+  // Presentation only: nothing here affects mission execution.
+  // Spec: MissionGraph epic (sdk#278).
+  rpc GetMissionGraph(GetMissionGraphRequest) returns (GetMissionGraphResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // GetMissionLayout returns the saved diagram layout (per-node positions +
+  // viewport) for a mission definition, or an empty layout when none has been
+  // saved. The layout store is separate from the mission definition record —
+  // the mission work-schema carries no presentation state. Keyed by
+  // mission_definition_id. Spec: MissionGraph epic (sdk#278).
+  rpc GetMissionLayout(GetMissionLayoutRequest) returns (GetMissionLayoutResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // SaveMissionLayout persists a hand-arranged diagram layout for a mission
+  // definition into the layout store. Layout-only: it never mutates the mission
+  // definition, its nodes/edges/configs, or its cue_source. The optional
+  // expected_version enables optimistic concurrency — a stale write (the layout
+  // changed underneath) is rejected rather than clobbering. Keyed by
+  // mission_definition_id. Spec: MissionGraph epic (sdk#278).
+  rpc SaveMissionLayout(SaveMissionLayoutRequest) returns (SaveMissionLayoutResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "writer"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // ListAgents returns all registered agents from the etcd registry.
+  rpc ListAgents(ListAgentsRequest) returns (ListAgentsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // GetAgentStatus returns the current status of a specific agent.
+  rpc GetAgentStatus(GetAgentStatusRequest) returns (GetAgentStatusResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // ListTools returns all registered tools from the etcd registry.
+  rpc ListTools(ListToolsRequest) returns (ListToolsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // ListPlugins returns all registered plugins from the etcd registry.
+  rpc ListPlugins(ListPluginsRequest) returns (ListPluginsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // GetCapabilityManifest returns the signed, versioned capability manifest
+  // for the calling principal in their resolved tenant. SDKs call this on
+  // session start and on invalidation events. The ADK calls it at scaffold
+  // time to discover what components, permissions, cross-component rules,
+  // and runtime limits apply.
+  rpc GetCapabilityManifest(gibson.manifest.v1.GetCapabilityManifestRequest) returns (gibson.manifest.v1.GetCapabilityManifestResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // WatchManifestInvalidations streams ManifestInvalidationEvents to the
+  // caller whenever their resolved tenant's manifest is invalidated (FGA
+  // mutation, component registry change, tier update). Heartbeats are
+  // emitted periodically to keep the stream alive.
+  rpc WatchManifestInvalidations(gibson.manifest.v1.WatchManifestInvalidationsRequest) returns (stream gibson.manifest.v1.WatchManifestInvalidationsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // QueryPlugin executes a method on a plugin and returns the result.
+  // The plugin must be registered in the etcd registry.
+  rpc QueryPlugin(QueryPluginRequest) returns (QueryPluginResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // StartComponent starts a component (agent, tool, or plugin) by kind and name.
+  // The component must be installed in the local database.
+  rpc StartComponent(StartComponentRequest) returns (StartComponentResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "admin"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // StopComponent stops a running component (agent, tool, or plugin) by kind and name.
+  // If force is true, sends SIGKILL immediately instead of graceful SIGTERM.
+  rpc StopComponent(StopComponentRequest) returns (StopComponentResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "admin"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // BuildComponent rebuilds a component (agent, tool, or plugin) from source.
+  // Useful for rebuilding after manual code changes.
+  rpc BuildComponent(BuildComponentRequest) returns (BuildComponentResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "admin"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // ShowComponent returns detailed information about a component.
+  // Includes manifest, status, paths, and lifecycle information.
+  rpc ShowComponent(ShowComponentRequest) returns (ShowComponentResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // GetComponentLogs streams log entries for a component.
+  // Supports follow mode for continuous streaming and line limits.
+  rpc GetComponentLogs(GetComponentLogsRequest) returns (stream GetComponentLogsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // GetMyPermissions returns the current user's role, is_admin flag, component
+  // grants, and team memberships for the current tenant. Used by the
+  // dashboard's PermissionsCache to gate UI elements without per-click daemon
+  // calls.
+  //
+  // Auth: self-mode (spec: self-mode-authz). The hotfix `unauthenticated: true`
+  // is replaced with `self: true + allowed_identities: USER`. This RPC may be
+  // called before the active-tenant cookie is set (which made the earlier
+  // `tenant_from_identity` FGA check fail with "no tenant derivable"), so no
+  // FGA tuple lookup is performed. The four defense layers are preserved:
+  //   (a) Envoy `jwt_authn` validates the Zitadel JWT before ext-authz.
+  //   (b) ext-authz mints X-Gibson-Identity-Subject from the verified sub —
+  //       clients cannot forge it.
+  //   (c) The daemon's SPIFFE mTLS init is fail-closed (zero-trust-hardening
+  //       Req 1) so non-Envoy callers cannot reach the listener.
+  //   (d) ext-authz enforces allowed_identities: only USER tokens are accepted.
+  // The handler scopes the response strictly to the caller's verified subject.
+  rpc GetMyPermissions(GetMyPermissionsRequest) returns (GetMyPermissionsResponse) {
+      option (gibson.auth.v1.authz) = {
+        self: true
+        allowed_identities: 1  // IDENTITY_CLASS_USER only
+      };
+    }
+
+  // ListMyMemberships returns every tenant the authenticated caller is a
+  // member of, with the caller's role per tenant. Identity comes from the
+  // call context; no tenant_id parameter — this RPC discovers the caller's
+  // tenants. Used by the dashboard at sign-in time to populate the tenant
+  // picker / set the active-tenant cookie.
+  //
+  // Auth: self-mode (spec: self-mode-authz). The hotfix `unauthenticated: true`
+  // is replaced with `self: true + allowed_identities: USER`. By definition this
+  // RPC runs before the caller's active tenant is known, so a
+  // `tenant_from_identity` deriver would always fail "no tenant derivable". The
+  // same four defense layers as GetMyPermissions apply; see that method for the
+  // full contract. The handler self-scopes the membership list to the verified
+  // caller subject.
+  rpc ListMyMemberships(ListMyMembershipsRequest) returns (ListMyMembershipsResponse) {
+      option (gibson.auth.v1.authz) = {
+        self: true
+        allowed_identities: 1  // IDENTITY_CLASS_USER only
+      };
+    }
+
+  // RenewCapabilityGrant mints a fresh capability-grant JWT for an
+  // ongoing mission task whose existing CG-JWT is approaching its
+  // ≤30-minute expiry. Long-running missions (vuln research, broad
+  // recon sweeps, multi-host fuzzing) call this before their current
+  // CG-JWT expires so callbacks keep flowing without dispatching a
+  // fresh task.
+  //
+  // Authorization: the caller MUST present a valid (non-expired)
+  // CG-JWT whose subject matches the request's agent_id and whose
+  // mission_id/task_id match the request. Renewal is rate-limited
+  // per agent to prevent abuse.
+  //
+  // Spec: unified-identity-and-authorization Requirement 5.8.
+  rpc RenewCapabilityGrant(RenewCapabilityGrantRequest) returns (RenewCapabilityGrantResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 4 // COMPONENT
+      };
+    }
+
+  // ValidateMissionCUE compiles a CUE mission snippet and returns diagnostics.
+  // Powers the dashboard CUE editor's real-time error squiggles, and is now
+  // callable by ADK/SDK users with a single user token. An empty diagnostics
+  // list means the source is valid.
+  rpc ValidateMissionCUE(ValidateMissionCUERequest) returns (ValidateMissionCUEResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "writer"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 1  // USER
+      };
+    }
+
+  // CompleteMissionCUE returns completion candidates at a cursor position.
+  // Powers the dashboard CUE editor's auto-complete.
+  rpc CompleteMissionCUE(CompleteMissionCUERequest) returns (CompleteMissionCUEResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "writer"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 1  // USER
+      };
+    }
+
+  // HoverMissionCUE returns type and documentation for a position in CUE source.
+  // Powers the dashboard CUE editor's hover tooltip.
+  rpc HoverMissionCUE(HoverMissionCUERequest) returns (HoverMissionCUEResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "writer"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 1  // USER
+      };
+    }
+}
+
+// RenewCapabilityGrantRequest carries the identifiers needed to
+// validate the renewal request. The currently-presented CG-JWT (in
+// the X-Capability-Grant header) authorizes the call; this request
+// body just identifies which task is being renewed.
+//
+// Spec: unified-identity-and-authorization Requirement 5.8.
+message RenewCapabilityGrantRequest {
+  // agent_id is the agent's Zitadel service-account ID. Must match
+  // the sub claim of the presented CG-JWT.
+  string agent_id = 1;
+
+  // mission_id names the mission. Must match the mission_id claim
+  // of the presented CG-JWT.
+  string mission_id = 2;
+
+  // task_id names the specific task. Must match the task_id claim
+  // of the presented CG-JWT.
+  string task_id = 3;
+}
+
+// RenewCapabilityGrantResponse returns the freshly-minted CG-JWT
+// plus its claimed expiry timestamp (Unix seconds, UTC) for client-
+// side scheduling of the next renewal.
+message RenewCapabilityGrantResponse {
+  // capability_grant is the compact-serialized JWT to attach as the
+  // X-Capability-Grant header on subsequent harness callbacks.
+  string capability_grant = 1;
+
+  // expires_at_unix is the new exp claim, Unix seconds. Clients use
+  // this to schedule renewal before expiry.
+  int64 expires_at_unix = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Connection RPCs — request/response messages
+// ---------------------------------------------------------------------------
+
+// ConnectRequest initiates a client connection to the daemon.
+message ConnectRequest {
+  // client_version is the version of the Gibson CLI client
+  string client_version = 1;
+
+  // client_id is an optional unique identifier for this client
+  string client_id = 2;
+}
+
+// ConnectResponse returns connection metadata.
+message ConnectResponse {
+  // daemon_version is the version of the running daemon
+  string daemon_version = 1;
+
+  // session_id is a unique identifier for this client session
+  string session_id = 2;
+
+  // grpc_address is the address the daemon is listening on
+  string grpc_address = 3;
+}
+
+// PingRequest is an empty health check request.
+message PingRequest {}
+
+// PingResponse confirms the daemon is responsive.
+message PingResponse {
+  // timestamp is the server time when the ping was received
+  int64 timestamp = 1;
+}
+
+// StatusRequest queries daemon status.
+message StatusRequest {}
+
+// StatusResponse returns complete daemon status information.
+message StatusResponse {
+  // running indicates if the daemon is running (always true if responding)
+  bool running = 1;
+
+  // pid is the process ID of the daemon
+  int32 pid = 2;
+
+  // start_time is when the daemon started (Unix timestamp)
+  int64 start_time = 3;
+
+  // uptime is the human-readable uptime string
+  string uptime = 4;
+
+  // grpc_address is the gRPC server address
+  string grpc_address = 5;
+
+  // registry_type is the type of registry (embedded, external)
+  string registry_type = 6;
+
+  // registry_addr is the registry endpoint address
+  string registry_addr = 7;
+
+  // callback_addr is the callback server address
+  string callback_addr = 8;
+
+  // agent_count is the number of registered agents
+  int32 agent_count = 9;
+
+  // mission_count is the total number of missions
+  int32 mission_count = 10;
+
+  // active_mission_count is the number of currently running missions
+  int32 active_mission_count = 11;
+}
+
+// ---------------------------------------------------------------------------
+// Event types — shared by Subscribe, RunMission, and ResumeMission
+// ---------------------------------------------------------------------------
+
+// OperationResult represents the unified result of a long-running operation (attack or mission).
+// This provides typed metrics instead of JSON-encoded strings.
+message OperationResult {
+  // status of the operation ("success", "failed", "timeout", "cancelled")
+  string status = 1;
+
+  // duration_ms is the total duration in milliseconds
+  int64 duration_ms = 2;
+
+  // started_at is the Unix timestamp (milliseconds) when the operation started
+  int64 started_at = 3;
+
+  // completed_at is the Unix timestamp (milliseconds) when the operation completed
+  int64 completed_at = 4;
+
+  // turns_used is the number of agent turns/iterations executed
+  int32 turns_used = 5;
+
+  // tokens_used is the total LLM tokens consumed
+  int64 tokens_used = 6;
+
+  // nodes_executed is the number of mission nodes that ran successfully
+  int32 nodes_executed = 7;
+
+  // nodes_failed is the number of mission nodes that failed
+  int32 nodes_failed = 8;
+
+  // findings_count is the total number of findings discovered
+  int32 findings_count = 9;
+
+  // critical_count is the number of critical severity findings
+  int32 critical_count = 10;
+
+  // high_count is the number of high severity findings
+  int32 high_count = 11;
+
+  // medium_count is the number of medium severity findings
+  int32 medium_count = 12;
+
+  // low_count is the number of low severity findings
+  int32 low_count = 13;
+
+  // error_message contains the error message if status == "failed"
+  string error_message = 14;
+
+  // error_code contains a machine-readable error code if status == "failed"
+  string error_code = 15;
+}
+
+// FindingInfo describes a discovered vulnerability.
+message FindingInfo {
+  // id is the unique finding identifier
+  string id = 1;
+
+  // title is the finding title
+  string title = 2;
+
+  // severity is the severity level (info, low, medium, high, critical)
+  string severity = 3;
+
+  // category is the finding category
+  string category = 4;
+
+  // description is the detailed finding description
+  string description = 5;
+
+  // technique is the MITRE ATT&CK or ATLAS technique ID
+  string technique = 6;
+
+  // evidence contains supporting evidence
+  string evidence = 7;
+
+  // timestamp is when the finding was discovered (Unix timestamp)
+  int64 timestamp = 8;
+}
+
+// MissionEvent represents a mission execution event.
+message MissionEvent {
+  // event_type identifies the type of event
+  string event_type = 1;
+
+  // timestamp is when the event occurred (Unix timestamp)
+  int64 timestamp = 2;
+
+  // mission_id is the unique mission identifier
+  string mission_id = 3;
+
+  // node_id is the mission node ID (if applicable)
+  string node_id = 4;
+
+  // message is a human-readable event message
+  string message = 5;
+
+  // data contains event-specific data (typed map)
+  gibson.common.v1.TypedMap data = 6;
+
+  // error contains error information if the event represents an error
+  string error = 7;
+
+  // result contains typed operation metrics (for mission.completed events)
+  OperationResult result = 8;
+}
+
+// AgentEvent represents an agent lifecycle event.
+message AgentEvent {
+  // event_type identifies the agent event type (registered, unregistered, health_change)
+  string event_type = 1;
+
+  // timestamp is when the event occurred (Unix timestamp)
+  int64 timestamp = 2;
+
+  // agent_id is the agent identifier
+  string agent_id = 3;
+
+  // agent_name is the agent name
+  string agent_name = 4;
+
+  // message is a human-readable message
+  string message = 5;
+
+  // data contains event-specific data (typed map)
+  gibson.common.v1.TypedMap data = 6;
+}
+
+// FindingEvent represents a finding discovery event.
+message FindingEvent {
+  // event_type identifies the finding event type (discovered, updated)
+  string event_type = 1;
+
+  // timestamp is when the event occurred (Unix timestamp)
+  int64 timestamp = 2;
+
+  // finding is the finding information
+  FindingInfo finding = 3;
+
+  // mission_id is the mission that discovered the finding
+  string mission_id = 4;
+}
+
+// ToolEvent represents a tool execution event.
+message ToolEvent {
+  // event_type identifies the tool event type (tool.started, tool.completed, tool.failed, tool.progress, tool.warning)
+  string event_type = 1;
+
+  // timestamp is when the event occurred (Unix timestamp)
+  int64 timestamp = 2;
+
+  // tool_name is the name of the tool being executed
+  string tool_name = 3;
+
+  // agent_id is the agent identifier executing the tool
+  string agent_id = 4;
+
+  // agent_name is the agent name executing the tool
+  string agent_name = 5;
+
+  // mission_id is the mission context for this tool execution
+  string mission_id = 6;
+
+  // message is a human-readable event message
+  string message = 7;
+
+  // duration is the execution time in seconds (for completed/failed events)
+  double duration = 8;
+
+  // progress is the completion percentage (0-1 for progress events)
+  double progress = 9;
+
+  // error contains error information if the event represents an error
+  string error = 10;
+
+  // error_code contains a machine-readable error code
+  string error_code = 11;
+
+  // warning contains warning information if the event represents a warning
+  string warning = 12;
+
+  // warning_severity is the severity level (low, medium, high)
+  string warning_severity = 13;
+
+  // data contains event-specific data (typed map)
+  gibson.common.v1.TypedMap data = 14;
+}
+
+// LLMEvent represents an LLM activity event.
+message LLMEvent {
+  // event_type identifies the LLM event type (llm.request.started, llm.request.completed, llm.request.failed)
+  string event_type = 1;
+
+  // timestamp is when the event occurred (Unix timestamp)
+  int64 timestamp = 2;
+
+  // agent_id is the agent identifier
+  string agent_id = 3;
+
+  // agent_name is the agent name
+  string agent_name = 4;
+
+  // model is the LLM model identifier (e.g., "claude-3-5-sonnet-20241022")
+  string model = 5;
+
+  // slot is the LLM slot (primary, fast, reasoning)
+  string slot = 6;
+
+  // message_count is the number of messages in the request
+  int32 message_count = 7;
+
+  // prompt_tokens is the number of input tokens
+  int32 prompt_tokens = 8;
+
+  // completion_tokens is the number of output tokens
+  int32 completion_tokens = 9;
+
+  // total_tokens is the sum of prompt and completion tokens
+  int32 total_tokens = 10;
+
+  // duration_ms is the request duration in milliseconds
+  double duration_ms = 11;
+
+  // cached indicates if the response was served from cache
+  bool cached = 12;
+
+  // error contains error information if the event represents a failure
+  string error = 13;
+
+  // error_code identifies the error type (rate_limit, context_length, api_error, timeout)
+  string error_code = 14;
+
+  // will_retry indicates if the failed request will be retried
+  bool will_retry = 15;
+}
+
+// OrchestratorEvent represents an orchestrator decision event.
+message OrchestratorEvent {
+  // event_type identifies the orchestrator event type (orchestrator.decision, orchestrator.approval_required)
+  string event_type = 1;
+
+  // timestamp is when the event occurred (Unix timestamp)
+  int64 timestamp = 2;
+
+  // mission_id is the mission identifier
+  string mission_id = 3;
+
+  // iteration is the orchestrator iteration number
+  int32 iteration = 4;
+
+  // action is the orchestrator action (execute_agent, skip_node, wait, complete, request_approval)
+  string action = 5;
+
+  // target_node_id is the mission node ID being targeted
+  string target_node_id = 6;
+
+  // target_agent_name is the agent name being targeted
+  string target_agent_name = 7;
+
+  // confidence is the decision confidence score (0-1)
+  double confidence = 8;
+
+  // reasoning is the orchestrator's reasoning (max 500 chars in practice)
+  string reasoning = 9;
+
+  // tokens_used is the number of tokens consumed for this decision
+  int32 tokens_used = 10;
+
+  // latency_ms is the decision latency in milliseconds
+  double latency_ms = 11;
+
+  // approval_id is set when approval is required
+  string approval_id = 12;
+
+  // risk is the risk level (low, medium, high, critical)
+  string risk = 13;
+
+  // timeout_seconds is the timeout for approval requests
+  int32 timeout_seconds = 14;
+}
+
+// Event represents a generic daemon event.
+message Event {
+  // event_type identifies the type of event
+  string event_type = 1;
+
+  // timestamp is when the event occurred (Unix timestamp)
+  int64 timestamp = 2;
+
+  // source is the event source (mission, agent, daemon, etc.)
+  string source = 3;
+
+  // data contains event-specific data (typed map)
+  gibson.common.v1.TypedMap data = 4;
+
+  // Field 6 (attack_event) was removed when the ad-hoc attack subsystem
+  // was retired in favour of the mission DAG; reserved per Buf FILE
+  // breaking ruleset.
+  reserved 6;
+  reserved "attack_event";
+
+  // Specific event types (only one will be set)
+  oneof event {
+    MissionEvent mission_event = 5;
+    AgentEvent agent_event = 7;
+    FindingEvent finding_event = 8;
+    ToolEvent tool_event = 9;
+    LLMEvent llm_event = 10;
+    OrchestratorEvent orchestrator_event = 11;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Subscribe RPC — request/response messages
+// ---------------------------------------------------------------------------
+
+// SubscribeRequest establishes an event stream.
+message SubscribeRequest {
+  // event_types filters which event types to receive (empty = all)
+  repeated string event_types = 1;
+
+  // mission_id filters to a specific mission (empty = all)
+  string mission_id = 2;
+}
+
+// SubscribeResponse wraps an Event for the Subscribe streaming RPC.
+message SubscribeResponse {
+  // event_type identifies the type of event
+  string event_type = 1;
+
+  // timestamp is when the event occurred (Unix timestamp)
+  int64 timestamp = 2;
+
+  // source is the event source (mission, agent, daemon, etc.)
+  string source = 3;
+
+  // data contains event-specific data (typed map)
+  gibson.common.v1.TypedMap data = 4;
+
+  // Field 6 (attack_event) was removed when the ad-hoc attack subsystem
+  // was retired in favour of the mission DAG; reserved per Buf FILE
+  // breaking ruleset.
+  reserved 6;
+  reserved "attack_event";
+
+  // Specific event types (only one will be set)
+  oneof event {
+    MissionEvent mission_event = 5;
+    AgentEvent agent_event = 7;
+    FindingEvent finding_event = 8;
+    ToolEvent tool_event = 9;
+    LLMEvent llm_event = 10;
+    OrchestratorEvent orchestrator_event = 11;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Mission RPCs — request/response messages
+// ---------------------------------------------------------------------------
+
+// RunMissionRequest starts a mission execution.
+// API-only: missions are invoked by reference — no YAML, no file paths.
+message RunMissionRequest {
+  // mission_definition_id is the ID of a registered mission definition to execute.
+  string mission_definition_id = 1;
+
+  // target_id is the ID of a registered target the mission runs against.
+  string target_id = 2;
+
+  // variables contains mission variables to override
+  map<string, string> variables = 3;
+
+  // memory_continuity defines how agent memory is shared across mission runs
+  // Valid values: "isolated" (default), "inherit", "shared"
+  string memory_continuity = 4;
+
+  // workflow_yaml (field 5) removed under spec mission-api-only-cleanup (Phase 2).
+  // File-path / inline-YAML invocation no longer exists; missions run by reference only.
+  // workflow_path (field 1) was renamed to mission_definition_id; mission_id (field 2)
+  // was renamed to target_id — old names are reserved to prevent silent reuse.
+  reserved 5;
+  reserved "workflow_path", "workflow_yaml", "mission_id";
+}
+
+// RunMissionResponse wraps a MissionEvent for the RunMission streaming RPC.
+message RunMissionResponse {
+  // event_type identifies the type of event
+  string event_type = 1;
+
+  // timestamp is when the event occurred (Unix timestamp)
+  int64 timestamp = 2;
+
+  // mission_id is the unique mission identifier
+  string mission_id = 3;
+
+  // node_id is the mission node ID (if applicable)
+  string node_id = 4;
+
+  // message is a human-readable event message
+  string message = 5;
+
+  // data contains event-specific data (typed map)
+  gibson.common.v1.TypedMap data = 6;
+
+  // error contains error information if the event represents an error
+  string error = 7;
+
+  // result contains typed operation metrics (for mission.completed events)
+  OperationResult result = 8;
+}
+
+// ResumeMissionResponse wraps a MissionEvent for the ResumeMission streaming RPC.
+message ResumeMissionResponse {
+  // event_type identifies the type of event
+  string event_type = 1;
+
+  // timestamp is when the event occurred (Unix timestamp)
+  int64 timestamp = 2;
+
+  // mission_id is the unique mission identifier
+  string mission_id = 3;
+
+  // node_id is the mission node ID (if applicable)
+  string node_id = 4;
+
+  // message is a human-readable event message
+  string message = 5;
+
+  // data contains event-specific data (typed map)
+  gibson.common.v1.TypedMap data = 6;
+
+  // error contains error information if the event represents an error
+  string error = 7;
+
+  // result contains typed operation metrics (for mission.completed events)
+  OperationResult result = 8;
+
+  // checkpoint_metadata surfaces the source checkpoint metadata at the
+  // start of a resumed stream so the dashboard can render the
+  // "Resumed from checkpoint X" affordance. Populated on the first
+  // event of a resume stream; nil/empty on subsequent events.
+  // Spec: mission-checkpointing R9.
+  CheckpointMetadata checkpoint_metadata = 9;
+}
+
+// CheckpointMetadata is the lightweight summary of the source checkpoint
+// streamed back on a ResumeMission response so the dashboard can render
+// "Resumed from checkpoint X".
+//
+// Spec: mission-checkpointing R9.
+message CheckpointMetadata {
+  // checkpoint_id is the unique identifier of the source checkpoint.
+  string checkpoint_id = 1;
+  // saved_at_unix_seconds is when the checkpoint was captured (Unix epoch seconds).
+  int64 saved_at_unix_seconds = 2;
+  // super_step_number identifies which super-step boundary this checkpoint
+  // captured (1-based; 0 if not super-step-aligned).
+  int32 super_step_number = 3;
+  // cadence_reason is a free-form classifier for why the checkpoint was
+  // taken. Recognised values per R9.1: "super_step",
+  // "parallel_group_complete", "approval_required", "graceful_shutdown".
+  // Promoted to enum at v1.0.0.
+  string cadence_reason = 4;
+  // size_bytes is the wire size of the checkpoint payload (advisory).
+  int64 size_bytes = 5;
+}
+
+// StopMissionRequest requests mission termination.
+message StopMissionRequest {
+  // mission_id is the identifier of the mission to stop
+  string mission_id = 1;
+
+  // force indicates whether to force-kill the mission (default: graceful)
+  bool force = 2;
+}
+
+// StopMissionResponse confirms mission stop request.
+message StopMissionResponse {
+  // success indicates if the stop request was accepted
+  bool success = 1;
+
+  // message provides additional context
+  string message = 2;
+}
+
+// ListMissionsRequest queries mission list.
+message ListMissionsRequest {
+  // active_only filters to only running missions
+  bool active_only = 1;
+
+  // limit restricts the number of results
+  int32 limit = 2;
+
+  // offset is the pagination offset
+  int32 offset = 3;
+
+  // status_filter filters missions by status (running, completed, failed, cancelled)
+  string status_filter = 4;
+
+  // name_pattern filters missions by name using glob pattern matching
+  string name_pattern = 5;
+}
+
+// ListMissionsResponse returns mission list.
+message ListMissionsResponse {
+  // missions is the list of missions
+  repeated MissionInfo missions = 1;
+
+  // total is the total count of missions (for pagination)
+  int32 total = 2;
+}
+
+// MissionInfo describes a mission.
+message MissionInfo {
+  // id is the unique mission identifier
+  string id = 1;
+
+  // status is the mission status (running, completed, failed)
+  string status = 3;
+
+  // start_time is when the mission started (Unix timestamp)
+  int64 start_time = 4;
+
+  // end_time is when the mission ended (Unix timestamp, 0 if running)
+  int64 end_time = 5;
+
+  // finding_count is the number of findings discovered
+  int32 finding_count = 6;
+
+  // name is the human-readable mission name
+  string name = 7;
+
+  // description is the mission description
+  string description = 9;
+
+  // progress is the mission completion progress from 0.0 to 1.0
+  double progress = 10;
+
+  // mission_definition_id is the registered mission definition this run used.
+  string mission_definition_id = 11;
+
+  // target_id is the registered target this mission ran against.
+  string target_id = 12;
+
+  // workflow_path (field 2) and workflow_yaml (field 8) were removed under spec
+  // mission-api-only-cleanup (Phase 2). Missions no longer carry file-path or
+  // inline-YAML state because they can no longer be constructed that way.
+  reserved 2, 8;
+  reserved "workflow_path", "workflow_yaml";
+}
+
+// PauseMissionRequest requests pausing a running mission.
+message PauseMissionRequest {
+  // mission_id is the unique identifier of the mission to pause
+  string mission_id = 1;
+
+  // force indicates whether to pause immediately without waiting for a clean checkpoint boundary
+  // If false (default), waits for the current node to complete before pausing
+  bool force = 2;
+}
+
+// PauseMissionResponse confirms the mission pause request.
+message PauseMissionResponse {
+  // success indicates if the pause request was accepted
+  bool success = 1;
+
+  // checkpoint_id is the ID of the checkpoint created during pause
+  string checkpoint_id = 2;
+
+  // message provides additional context about the pause operation
+  string message = 3;
+}
+
+// ResumeMissionRequest requests resuming a paused mission.
+message ResumeMissionRequest {
+  // mission_id is the unique identifier of the mission to resume
+  string mission_id = 1;
+
+  // checkpoint_id optionally specifies a specific checkpoint to resume from
+  // If empty, resumes from the latest checkpoint
+  string checkpoint_id = 2;
+
+  // Empty string = legacy resume-from-latest behaviour (backward compatible).
+  // When non-empty, the daemon rewinds the mission to the named checkpoint
+  // and resumes execution from that point. The handler additionally enforces
+  // the mission#admin FGA relation when this field is non-empty per
+  // mission-checkpointing R16.3.
+  string target_checkpoint_id = 3;
+}
+
+// GetMissionHistoryRequest queries mission execution history by name.
+message GetMissionHistoryRequest {
+  // name is the mission name to query history for
+  string name = 1;
+
+  // limit restricts the number of results (default: 100)
+  int32 limit = 2;
+
+  // offset is the pagination offset (default: 0)
+  int32 offset = 3;
+}
+
+// GetMissionHistoryResponse returns mission execution history.
+message GetMissionHistoryResponse {
+  // runs contains all mission runs for the requested name
+  repeated MissionRun runs = 1;
+
+  // total is the total count of runs (for pagination)
+  int32 total = 2;
+}
+
+// MissionRun represents a single execution instance of a mission.
+message MissionRun {
+  // mission_id is the unique identifier for this run
+  string mission_id = 1;
+
+  // run_number is the sequential run number for this mission name
+  int32 run_number = 2;
+
+  // status is the final status of this run (running, completed, failed, cancelled, paused)
+  string status = 3;
+
+  // created_at is when this run was created (Unix timestamp)
+  int64 created_at = 4;
+
+  // completed_at is when this run completed (Unix timestamp, 0 if not completed)
+  int64 completed_at = 5;
+
+  // findings_count is the number of findings discovered in this run
+  int32 findings_count = 6;
+
+  // previous_run_id is the ID of the previous run (if any)
+  string previous_run_id = 7;
+
+  // trace_id is the OTel trace ID for Langfuse lookup
+  string trace_id = 8;
+}
+
+// GetMissionCheckpointsRequest/Response and CheckpointInfo (previously
+// defined here) were removed with the retired GetMissionCheckpoints RPC
+// (gibson#1117; ADR-0011).
+
+// ListMissionDefinitionsRequest queries installed mission definitions.
+message ListMissionDefinitionsRequest {
+  // limit restricts the number of results (0 = all)
+  int32 limit = 1;
+
+  // offset is the pagination offset
+  int32 offset = 2;
+}
+
+// ListMissionDefinitionsResponse returns installed mission definitions.
+message ListMissionDefinitionsResponse {
+  // missions is the list of installed mission definitions
+  repeated MissionDefinitionInfo missions = 1;
+
+  // total is the total count of mission definitions (for pagination)
+  int32 total = 2;
+}
+
+// CreateMissionDefinitionRequest registers a new mission definition with the
+// daemon. The definition is validated server-side via MissionDefinition.Validate
+// and written to the definition store.
+message CreateMissionDefinitionRequest {
+  // definition is the fully-formed mission definition to register.
+  gibson.mission.v1.MissionDefinition definition = 1;
+
+  // cue_source is the raw CUE source text that compiled to `definition`
+  // (maximum 512 KB). Persisted alongside the definition so that
+  // GetMissionDefinition can return the author's exact source rather than a
+  // reconstruction. Optional for backward compatibility; when empty the
+  // definition is stored without a recoverable source.
+  string cue_source = 2;
+}
+
+// CreateMissionDefinitionResponse returns the registered mission definition ID
+// and its summary info record.
+message CreateMissionDefinitionResponse {
+  // mission_definition_id is the server-assigned identifier for the definition.
+  string mission_definition_id = 1;
+
+  // info is the summary record for the registered definition.
+  MissionDefinitionInfo info = 2;
+}
+
+// UpdateMissionDefinitionRequest carries the replacement definition.
+// The name field of the embedded definition is the lookup key.
+message UpdateMissionDefinitionRequest {
+  // definition is the replacement content. The name field is used as the
+  // lookup key; all other fields replace the stored definition. The
+  // server-assigned ID and original timestamps are preserved.
+  gibson.mission.v1.MissionDefinition definition = 1;
+
+  // cue_source is the raw CUE source text that compiled to `definition`
+  // (maximum 512 KB). Overwrites the stored source in place under the stable
+  // id. Optional for backward compatibility.
+  string cue_source = 2;
+}
+
+// UpdateMissionDefinitionResponse returns the stable server-assigned ID for
+// the updated definition (unchanged across updates).
+message UpdateMissionDefinitionResponse {
+  // mission_definition_id is the stable server-assigned identifier for this
+  // definition (unchanged across updates).
+  string mission_definition_id = 1;
+}
+
+// MissionDefinitionInfo describes an installed mission definition.
+message MissionDefinitionInfo {
+  // name is the mission name
+  string name = 1;
+
+  // version is the mission version
+  string version = 2;
+
+  // description is the mission description
+  string description = 3;
+
+  // source is the Git repository URL
+  string source = 4;
+
+  // installed_at is when the mission was installed (Unix timestamp)
+  int64 installed_at = 5;
+
+  // updated_at is when the mission was last updated (Unix timestamp)
+  int64 updated_at = 6;
+
+  // node_count is the number of nodes in the mission
+  int32 node_count = 7;
+
+  // mission_definition_id is the stable server-assigned identifier for this
+  // definition (the GUID returned by CreateMissionDefinition, unchanged across
+  // updates).
+  string mission_definition_id = 8;
+}
+
+// Mission represents a complete mission execution instance with full state.
+message Mission {
+  // id is the unique mission identifier
+  string id = 1;
+
+  // name is the human-readable mission name
+  string name = 2;
+
+  // status is the current mission status
+  MissionStatus status = 3;
+
+  // target_id is the target identifier
+  string target_id = 4;
+
+  // mission_definition_id is the mission definition identifier
+  string mission_definition_id = 5;
+
+  // constraints defines execution constraints. Canonical type per ADR 0004:
+  // gibson.mission.v1.MissionConstraints is the single platform-wide shape.
+  gibson.mission.v1.MissionConstraints constraints = 6;
+
+  // metrics contains current execution metrics
+  MissionMetrics metrics = 7;
+
+  // checkpoint is the latest checkpoint (if any)
+  MissionCheckpoint checkpoint = 8;
+
+  // run_number is the sequential run number for this mission name
+  int32 run_number = 9;
+
+  // created_at is when the mission was created (Unix timestamp in milliseconds)
+  int64 created_at = 10;
+
+  // updated_at is when the mission was last updated (Unix timestamp in milliseconds)
+  int64 updated_at = 11;
+
+  // started_at is when the mission execution started (Unix timestamp in milliseconds)
+  int64 started_at = 12;
+
+  // completed_at is when the mission execution completed (Unix timestamp in milliseconds, 0 if not completed)
+  int64 completed_at = 13;
+
+  // Reserved name from prior schema; field 5 is now mission_definition_id.
+  // Rename performed under spec mission-api-only-cleanup (Phase 3).
+  reserved "workflow_id";
+}
+
+// MissionConstraints message removed under ADR 0004
+// (https://github.com/zeroroot-ai/docs/blob/main/adr/0004-canonical-mission-constraints.md).
+// The canonical type is gibson.mission.v1.MissionConstraints; daemon-only
+// fields (max_turns_per_agent, allowed_techniques, blocked_techniques,
+// max_tokens_per_call) were promoted into the SDK type with normalized
+// representation (google.protobuf.Duration over int32 seconds; repeated
+// string for allow/block lists). Every consumer references the SDK type
+// directly — no compat shim, no translator, one type end-to-end.
+
+// MissionMetrics contains execution metrics for a mission.
+message MissionMetrics {
+  // turns_used is the number of agent turns/iterations executed
+  int32 turns_used = 1;
+
+  // nodes_executed is the number of mission nodes that ran successfully
+  int32 nodes_executed = 2;
+
+  // nodes_failed is the number of mission nodes that failed
+  int32 nodes_failed = 3;
+
+  // findings_count is the total number of findings discovered
+  int32 findings_count = 4;
+
+  // critical_count is the number of critical severity findings
+  int32 critical_count = 5;
+
+  // high_count is the number of high severity findings
+  int32 high_count = 6;
+
+  // medium_count is the number of medium severity findings
+  int32 medium_count = 7;
+
+  // low_count is the number of low severity findings
+  int32 low_count = 8;
+
+  // tokens_used is the total LLM tokens consumed
+  int64 tokens_used = 9;
+}
+
+// MissionCheckpoint represents a saved checkpoint state for pause/resume.
+message MissionCheckpoint {
+  // id is the unique checkpoint identifier
+  string id = 1;
+
+  // version is the checkpoint format version
+  int32 version = 2;
+
+  // completed_nodes is the number of nodes that had completed at checkpoint time
+  int32 completed_nodes = 3;
+
+  // total_nodes is the total number of nodes in the mission
+  int32 total_nodes = 4;
+
+  // created_at is when this checkpoint was created (Unix timestamp in milliseconds)
+  int64 created_at = 5;
+
+  // state_data is the serialized checkpoint state (opaque blob)
+  bytes state_data = 6;
+}
+
+// The local MissionDefinition summary message (previously defined here) has been
+// removed under spec mission-api-only-cleanup (Phase 3); the canonical definition
+// now lives in gibson.mission.v1.MissionDefinition. Use MissionDefinitionInfo
+// (above) for summary listings and gibson.mission.v1.MissionDefinition for
+// definition registration via CreateMissionDefinition.
+
+// CreateMissionRequest requests creation of a new mission.
+// API-only: missions reference a registered target and mission definition by ID.
+// Inline target / inline mission / YAML paths are no longer accepted.
+message CreateMissionRequest {
+  // name is the mission name
+  string name = 1;
+
+  // description is the mission description
+  string description = 2;
+
+  // target_id is the ID of a pre-registered target.
+  string target_id = 3;
+
+  // mission_definition_id is the ID of a pre-registered mission definition.
+  string mission_definition_id = 4;
+
+  // constraints defines dispatch-time execution constraints. Canonical type
+  // per ADR 0004: gibson.mission.v1.MissionConstraints is the single
+  // platform-wide shape.
+  //
+  // Precedence: dispatch-time constraints (this field) take full precedence
+  // over any constraints baked into the referenced MissionDefinition. There
+  // is NO per-field merge — if this field is set, the entire dispatch
+  // constraint set wins; any field absent from this message reverts to 0
+  // (unlimited), not to the definition's value.
+  //
+  // To inherit the definition's constraints, leave this field unset (the
+  // zero-value message is NOT the same as "absent"). Callers that want
+  // partial overrides must read the definition's constraints first and
+  // re-supply all fields they wish to preserve.
+  //
+  // Token budget precedence for per-call caps:
+  //   dispatch constraints.max_tokens_per_call
+  //     > definition constraints.max_tokens_per_call
+  //     > per-node *NodeConfig.max_tokens_per_call (lowest; wins if set)
+  //
+  // Spec: ADR 0004, mission-schema-canonicalization; gibson#133 (M4).
+  gibson.mission.v1.MissionConstraints constraints = 5;
+
+  // metadata provides additional mission metadata
+  map<string, string> metadata = 6;
+
+  // variables contains mission variables to override at creation time
+  map<string, string> variables = 7;
+
+  // memory_continuity defines how agent memory is shared across mission runs
+  // Valid values: "isolated" (default), "inherit", "shared"
+  string memory_continuity = 8;
+
+  // source_yaml is the original YAML the dashboard used to construct this
+  // mission. Optional. When non-empty, the daemon stores it alongside the
+  // structured mission state. Empty for programmatic callers that never had
+  // a YAML source.
+  // Spec: dashboard-neo4j-crud-removal Req 3.5.
+  string source_yaml = 9;
+
+  // Fields removed under spec mission-api-only-cleanup (Phase 2).
+  // The oneof target_config (field 10: inline_target) and oneof workflow_config
+  // (field 11: inline_workflow) plus workflow_yaml (field 12) supported inline
+  // construction; they are gone in favour of target_id + mission_definition_id
+  // references. workflow_id (field 4) was renamed to mission_definition_id.
+  reserved 10, 11, 12;
+  reserved "inline_target", "inline_workflow", "workflow_yaml", "workflow_id",
+           "target_config", "workflow_config";
+}
+
+// CreateMissionResponse returns the result of creating a mission.
+message CreateMissionResponse {
+  // success indicates if the mission was created successfully
+  bool success = 1;
+
+  // mission is the created mission
+  Mission mission = 2;
+
+  // message provides additional context or error information
+  string message = 3;
+}
+
+// InlineTargetConfig, InlineWorkflowConfig, InlineNodeConfig, InlineEdgeConfig, and the
+// helper Seed message were removed under spec mission-api-only-cleanup (Phase 2).
+// Missions reference registered targets and mission definitions by ID only —
+// the daemon no longer accepts inline mission construction over the wire.
+
+// ---------------------------------------------------------------------------
+// Target RPCs — request/response messages
+// ---------------------------------------------------------------------------
+
+// CreateTargetRequest carries the metadata for a new target.
+message CreateTargetRequest {
+  // target carries the new target's metadata. Its id field is ignored; the
+  // daemon mints the canonical UUID.
+  gibson.target.v1.Target target = 1;
+}
+
+// CreateTargetResponse returns the minted target.
+message CreateTargetResponse {
+  // target_id is the server-minted UUID — the canonical identity clients use
+  // to reference this target thereafter.
+  string target_id = 1;
+
+  // target is the full stored target, including the minted id and timestamps.
+  gibson.target.v1.Target target = 2;
+}
+
+// GetTargetRequest looks up a target by UUID.
+message GetTargetRequest {
+  // target_id is the target UUID.
+  string target_id = 1;
+}
+
+// GetTargetResponse returns the requested target.
+message GetTargetResponse {
+  gibson.target.v1.Target target = 1;
+}
+
+// ListTargetsRequest narrows the tenant's targets.
+message ListTargetsRequest {
+  // filter narrows the result set. Omit for the tenant's full target list.
+  gibson.target.v1.TargetFilter filter = 1;
+}
+
+// ListTargetsResponse returns the matching targets.
+message ListTargetsResponse {
+  repeated gibson.target.v1.Target targets = 1;
+}
+
+// UpdateTargetRequest replaces a target's metadata.
+message UpdateTargetRequest {
+  // target is the replacement content. Its id field is the lookup key and is
+  // preserved; all other fields replace the stored target.
+  gibson.target.v1.Target target = 1;
+}
+
+// UpdateTargetResponse returns the updated target.
+message UpdateTargetResponse {
+  gibson.target.v1.Target target = 1;
+}
+
+// DeleteTargetRequest removes a target by UUID.
+message DeleteTargetRequest {
+  // target_id is the UUID of the target to delete.
+  string target_id = 1;
+}
+
+// DeleteTargetResponse reports the outcome of a delete.
+message DeleteTargetResponse {
+  bool success = 1;
+}
+
+// ---------------------------------------------------------------------------
+// Agent RPCs — request/response messages
+// ---------------------------------------------------------------------------
+
+// ListAgentsRequest queries agent registry.
+message ListAgentsRequest {
+  // kind filters by component kind (empty = all agents)
+  string kind = 1;
+}
+
+// ListAgentsResponse returns registered agents.
+message ListAgentsResponse {
+  // agents is the list of registered agents
+  repeated AgentInfo agents = 1;
+}
+
+// AgentInfo describes a registered agent.
+message AgentInfo {
+  // id is the unique agent identifier
+  string id = 1;
+
+  // name is the agent name
+  string name = 2;
+
+  // kind is the component kind (always "agent")
+  string kind = 3;
+
+  // version is the agent version
+  string version = 4;
+
+  // endpoint is the gRPC endpoint for the agent
+  string endpoint = 5;
+
+  // capabilities lists agent capabilities
+  repeated string capabilities = 6;
+
+  // health is the agent health status (healthy, unhealthy)
+  string health = 7;
+
+  // last_seen is when the agent was last seen (Unix timestamp)
+  int64 last_seen = 8;
+}
+
+// GetAgentStatusRequest queries a specific agent.
+message GetAgentStatusRequest {
+  // agent_id is the unique agent identifier
+  string agent_id = 1;
+}
+
+// GetAgentStatusResponse returns agent status.
+message GetAgentStatusResponse {
+  // agent is the agent information
+  AgentInfo agent = 1;
+
+  // active indicates if the agent is currently executing a task
+  bool active = 2;
+
+  // current_task describes the active task (if any)
+  string current_task = 3;
+
+  // task_start_time is when the current task started (Unix timestamp)
+  int64 task_start_time = 4;
+}
+
+// ---------------------------------------------------------------------------
+// Tool RPCs — request/response messages
+// ---------------------------------------------------------------------------
+
+// ListToolsRequest queries tool registry.
+message ListToolsRequest {}
+
+// ListToolsResponse returns registered tools.
+message ListToolsResponse {
+  // tools is the list of registered tools
+  repeated ToolInfo tools = 1;
+}
+
+// Capabilities describes runtime privileges and features available to a tool.
+message Capabilities {
+  // has_root indicates the tool is running as uid 0 (root user)
+  bool has_root = 1;
+
+  // has_sudo indicates passwordless sudo access is available
+  bool has_sudo = 2;
+
+  // can_raw_socket indicates the ability to create raw network sockets
+  bool can_raw_socket = 3;
+
+  // features contains tool-specific feature availability flags
+  map<string, bool> features = 4;
+
+  // blocked_args lists command-line arguments that cannot be used
+  repeated string blocked_args = 5;
+
+  // arg_alternatives maps blocked arguments to their safer alternatives
+  map<string, string> arg_alternatives = 6;
+}
+
+// ToolInfo describes a registered tool.
+message ToolInfo {
+  // id is the unique tool identifier
+  string id = 1;
+
+  // name is the tool name
+  string name = 2;
+
+  // version is the tool version
+  string version = 3;
+
+  // endpoint is the gRPC endpoint for the tool
+  string endpoint = 4;
+
+  // description is the tool description
+  string description = 5;
+
+  // health is the tool health status (healthy, unhealthy)
+  string health = 6;
+
+  // last_seen is when the tool was last seen (Unix timestamp)
+  int64 last_seen = 7;
+
+  // capabilities describes runtime privileges and features (optional)
+  Capabilities capabilities = 8;
+}
+
+// ---------------------------------------------------------------------------
+// Plugin RPCs — request/response messages
+// ---------------------------------------------------------------------------
+
+// ListPluginsRequest queries plugin registry.
+message ListPluginsRequest {}
+
+// ListPluginsResponse returns registered plugins.
+message ListPluginsResponse {
+  // plugins is the list of registered plugins
+  repeated PluginInfo plugins = 1;
+}
+
+// PluginInfo describes a registered plugin.
+message PluginInfo {
+  // id is the unique plugin identifier
+  string id = 1;
+
+  // name is the plugin name
+  string name = 2;
+
+  // version is the plugin version
+  string version = 3;
+
+  // endpoint is the gRPC endpoint for the plugin
+  string endpoint = 4;
+
+  // description is the plugin description
+  string description = 5;
+
+  // health is the plugin health status (healthy, unhealthy)
+  string health = 6;
+
+  // last_seen is when the plugin was last seen (Unix timestamp)
+  int64 last_seen = 7;
+}
+
+// QueryPluginRequest executes a method on a plugin.
+message QueryPluginRequest {
+  // name is the plugin name to query
+  string name = 1;
+
+  // method is the method name to execute
+  string method = 2;
+
+  // params is the typed parameters for the method
+  gibson.common.v1.TypedMap params = 3;
+
+  // timeout_ms is the optional timeout in milliseconds (0 = default)
+  int64 timeout_ms = 4;
+
+  // Reserved field numbers for removed fields
+  reserved 5;
+  reserved "params_json";
+}
+
+// QueryPluginResponse returns the result of a plugin query.
+message QueryPluginResponse {
+  // result is the typed result from the plugin method
+  gibson.common.v1.TypedValue result = 1;
+
+  // error is set if the query failed
+  string error = 2;
+
+  // duration_ms is how long the query took in milliseconds
+  int64 duration_ms = 3;
+
+  // Reserved field numbers for removed fields
+  reserved 4;
+  reserved "result_json";
+}
+
+// ---------------------------------------------------------------------------
+// Component lifecycle RPCs — request/response messages
+// ---------------------------------------------------------------------------
+
+// StartComponentRequest requests starting a component.
+message StartComponentRequest {
+  // kind is the component kind ("agent", "tool", "plugin")
+  string kind = 1;
+
+  // name is the component name
+  string name = 2;
+}
+
+// StartComponentResponse returns the result of starting a component.
+message StartComponentResponse {
+  // success indicates if the component was started successfully
+  bool success = 1;
+
+  // pid is the process ID of the started component
+  int32 pid = 2;
+
+  // port is the port the component is listening on
+  int32 port = 3;
+
+  // message provides additional context or error information
+  string message = 4;
+
+  // log_path is the path to the component's log file
+  string log_path = 5;
+}
+
+// StopComponentRequest requests stopping a component.
+message StopComponentRequest {
+  // kind is the component kind ("agent", "tool", "plugin")
+  string kind = 1;
+
+  // name is the component name
+  string name = 2;
+
+  // force indicates whether to skip graceful shutdown (SIGKILL instead of SIGTERM)
+  bool force = 3;
+}
+
+// StopComponentResponse returns the result of stopping a component.
+message StopComponentResponse {
+  // success indicates if the component was stopped successfully
+  bool success = 1;
+
+  // stopped_count is the number of instances successfully stopped
+  int32 stopped_count = 2;
+
+  // total_count is the total number of instances that were running
+  int32 total_count = 3;
+
+  // message provides additional context or error information
+  string message = 4;
+}
+
+// BuildComponentRequest requests rebuilding a component from source.
+message BuildComponentRequest {
+  // kind is the component kind ("agent", "tool", "plugin")
+  string kind = 1;
+
+  // name is the component name to build
+  string name = 2;
+}
+
+// BuildComponentResponse returns the result of building a component.
+message BuildComponentResponse {
+  // success indicates if the build was successful
+  bool success = 1;
+
+  // stdout contains the build standard output
+  string stdout = 2;
+
+  // stderr contains the build standard error
+  string stderr = 3;
+
+  // duration_ms is the build time in milliseconds
+  int64 duration_ms = 4;
+
+  // message provides additional context or error information
+  string message = 5;
+}
+
+// ShowComponentRequest requests detailed information about a component.
+message ShowComponentRequest {
+  // kind is the component kind ("agent", "tool", "plugin")
+  string kind = 1;
+
+  // name is the component name to show
+  string name = 2;
+}
+
+// ShowComponentResponse returns detailed component information.
+message ShowComponentResponse {
+  // success indicates if the component was found
+  bool success = 1;
+
+  // name is the component name
+  string name = 2;
+
+  // version is the component version
+  string version = 3;
+
+  // kind is the component kind
+  string kind = 4;
+
+  // status is the component status (installed, running, stopped)
+  string status = 5;
+
+  // source is the Git repository URL
+  string source = 6;
+
+  // repo_path is the local repository path
+  string repo_path = 7;
+
+  // bin_path is the path to the binary
+  string bin_path = 8;
+
+  // port is the listening port (if running)
+  int32 port = 9;
+
+  // pid is the process ID (if running)
+  int32 pid = 10;
+
+  // created_at is when the component was installed (Unix timestamp)
+  int64 created_at = 11;
+
+  // updated_at is when the component was last updated (Unix timestamp)
+  int64 updated_at = 12;
+
+  // started_at is when the component was started (Unix timestamp, 0 if not running)
+  int64 started_at = 13;
+
+  // stopped_at is when the component was stopped (Unix timestamp, 0 if never stopped)
+  int64 stopped_at = 14;
+
+  // manifest_info contains manifest details (JSON-encoded)
+  string manifest_info = 15;
+
+  // message provides additional context or error information
+  string message = 16;
+}
+
+// GetComponentLogsRequest requests log entries for a component.
+message GetComponentLogsRequest {
+  // kind is the component kind ("agent", "tool", "plugin")
+  string kind = 1;
+
+  // name is the component name to get logs for
+  string name = 2;
+
+  // follow indicates whether to stream logs continuously
+  bool follow = 3;
+
+  // lines is the number of lines to return (0 = all, default 50)
+  int32 lines = 4;
+}
+
+// LogEntry represents a single log entry from a component.
+message LogEntry {
+  // timestamp is when the log entry was created (Unix timestamp)
+  int64 timestamp = 1;
+
+  // level is the log level (debug, info, warn, error)
+  string level = 2;
+
+  // message is the log message
+  string message = 3;
+
+  // fields contains additional structured log fields (typed map)
+  gibson.common.v1.TypedMap fields = 4;
+}
+
+// GetComponentLogsResponse wraps a LogEntry for the GetComponentLogs streaming RPC.
+message GetComponentLogsResponse {
+  // timestamp is when the log entry was created (Unix timestamp)
+  int64 timestamp = 1;
+
+  // level is the log level (debug, info, warn, error)
+  string level = 2;
+
+  // message is the log message
+  string message = 3;
+
+  // fields contains additional structured log fields (typed map)
+  gibson.common.v1.TypedMap fields = 4;
+}
+
+// ---------------------------------------------------------------------------
+// GetMyPermissions — permission summary for the current authenticated user
+// ---------------------------------------------------------------------------
+
+// GetMyPermissionsRequest queries the caller's permissions within a tenant.
+message GetMyPermissionsRequest {
+  // tenant_id is the tenant to scope the query to.
+  // If empty, the tenant is inferred from the caller's auth context.
+  string tenant_id = 1;
+}
+
+// PermissionComponentGrant is a compact component grant for use in permissions summaries.
+message PermissionComponentGrant {
+  // component_ref is the component identifier, e.g. "tool:mytool"
+  string component_ref = 1;
+
+  // actions lists the FGA relations the caller holds (execute, configure, read)
+  repeated string actions = 2;
+}
+
+// PermissionTeamMembership describes the caller's membership in a team.
+message PermissionTeamMembership {
+  // team_id is the unique team identifier
+  string team_id = 1;
+
+  // team_name is the human-readable team name
+  string team_name = 2;
+
+  // is_admin is true when the caller is an admin of the team
+  bool is_admin = 3;
+}
+
+// GetMyPermissionsResponse returns a compact summary of the caller's permissions.
+message GetMyPermissionsResponse {
+  // tenant_id is the tenant this summary is scoped to
+  string tenant_id = 1;
+
+  // role is the caller's FGA-backed role ("owner", "admin", "operator", "viewer")
+  string role = 2;
+
+  // is_admin is true when the caller holds the admin or owner relation on the tenant
+  bool is_admin = 3;
+
+  // component_grants lists the component access grants held by the caller
+  repeated PermissionComponentGrant component_grants = 4;
+
+  // team_memberships lists the teams the caller belongs to within this tenant
+  repeated PermissionTeamMembership team_memberships = 5;
+}
+
+// ---------------------------------------------------------------------------
+// ListMyMemberships — tenant-membership discovery for the current user
+// ---------------------------------------------------------------------------
+
+// ListMyMembershipsRequest has no fields. The caller is identified via the
+// call context (HMAC-signed identity headers set by ext-authz). This RPC
+// answers "which tenants am I a member of?" before any tenant-scoped RPC
+// can be made.
+message ListMyMembershipsRequest {}
+
+// Membership describes one tenant the caller is a member of, plus the
+// caller's role in that tenant.
+message Membership {
+  // tenant_id is the FGA object id for this tenant (UUID or slug). It is
+  // the value the dashboard sets as the `x-gibson-tenant` header on
+  // tenant-scoped RPCs.
+  string tenant_id = 1;
+
+  // tenant_name is the human-friendly display name. Best-effort: when the
+  // daemon's tenant-name cache misses, this falls back to tenant_id.
+  string tenant_name = 2;
+
+  // role is the caller's FGA-backed role within this tenant ("admin" or
+  // "member"). Set to "admin" when the caller holds the admin relation on
+  // the tenant; otherwise "member".
+  string role = 3;
+}
+
+// ListMyMembershipsResponse returns the caller's tenant memberships.
+// Sorted by tenant_name ASC for stable rendering.
+message ListMyMembershipsResponse {
+  // memberships is the (possibly empty) list of tenants the caller belongs
+  // to. An empty list means the caller has no tenant — the dashboard
+  // should route to onboarding rather than the picker in that case.
+  repeated Membership memberships = 1;
+}
+
+
+// ────────────────────────────────────────────────────────────────────────────
+// GetMissionDefinition — mission-author-experience M5 (gibson#134)
+// ────────────────────────────────────────────────────────────────────────────
+
+// GetMissionDefinitionRequest fetches a single mission definition by name.
+message GetMissionDefinitionRequest {
+  // name is the mission definition name to look up. Case-sensitive;
+  // must match the name field used in CreateMissionDefinition.
+  string name = 1;
+}
+
+// GetMissionDefinitionResponse returns the full structured proto for the
+// requested mission definition. Every author-facing field is present:
+// workspace, constraints, per-node retry/data/reuse policies, etc.
+message GetMissionDefinitionResponse {
+  // definition is the full mission definition proto. Never nil on success.
+  gibson.mission.v1.MissionDefinition definition = 1;
+
+  // mission_definition_id is the stable server-assigned identifier for this
+  // definition (the GUID returned by CreateMissionDefinition, unchanged across
+  // updates). Populated on every successful response.
+  string mission_definition_id = 2;
+
+  // cue_source is the raw CUE source the author submitted when the definition
+  // was created or last updated. Empty for definitions registered before
+  // source persistence landed, or registered without a source.
+  string cue_source = 3;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Mission flow-chart projection + layout store — MissionGraph epic (sdk#278)
+//
+// The daemon projects a mission definition (the pure work DAG) into a
+// renderable graph and owns a SEPARATE layout store for hand-arranged
+// positions. Presentation never lives in mission_definition.proto; the
+// dashboard is a pure client of these RPCs.
+// ────────────────────────────────────────────────────────────────────────────
+
+// MissionGraphViewport is the diagram pan/zoom framing.
+message MissionGraphViewport {
+  double x = 1;     // horizontal pan offset
+  double y = 2;     // vertical pan offset
+  double zoom = 3;  // zoom factor (1.0 = 100%); 0 = renderer default (fit)
+}
+
+// MissionGraphNode is a renderable box in the mission flow-chart.
+message MissionGraphNode {
+  // id is the mission node id this box represents.
+  string id = 1;
+  // kind is the renderer classification of the node:
+  // "agent" | "tool" | "plugin" | "condition" | "parallel" | "join" |
+  // "unknown" (string, not enum, so renderers degrade gracefully on future
+  // node kinds).
+  string kind = 2;
+  // name is the human-readable label (falls back to id when unset).
+  string name = 3;
+  // summary is a kind-specific one-line descriptor (agent name, tool name,
+  // plugin name+method, condition expression, etc.). May be empty.
+  string summary = 4;
+  // is_entry / is_exit mark mission entry and exit nodes.
+  bool is_entry = 5;
+  bool is_exit = 6;
+  // rank is the 0-based topological layer (left-to-right depth).
+  int32 rank = 7;
+  // x / y are the box position in the renderer's abstract canvas space: the
+  // saved layout when present, else the deterministic auto-layout position.
+  double x = 8;
+  double y = 9;
+  // layout_source is "saved" when x/y came from the layout store, "auto" when
+  // computed by the deterministic auto-layout.
+  string layout_source = 10;
+}
+
+// MissionGraphEdge is a renderable data-flow line between two boxes.
+message MissionGraphEdge {
+  string from = 1;
+  string to = 2;
+  // condition is the optional CEL guard carried on an explicit mission edge.
+  string condition = 3;
+  // role is the branch semantics for edges leaving a condition node:
+  // "" (default) | "true" | "false".
+  string role = 4;
+}
+
+// MissionGraph is the daemon-computed renderable projection of a mission
+// definition. Node and edge ordering is deterministic.
+message MissionGraph {
+  repeated MissionGraphNode nodes = 1;
+  repeated MissionGraphEdge edges = 2;
+  repeated string entry_points = 3;
+  repeated string exit_points = 4;
+  MissionGraphViewport viewport = 5;
+}
+
+// GetMissionGraphRequest selects the mission definition to project.
+message GetMissionGraphRequest {
+  // mission_definition_id is the stable id of the registered mission
+  // definition (as returned by CreateMissionDefinition / carried on a run).
+  string mission_definition_id = 1;
+}
+
+// GetMissionGraphResponse carries the projected, layout-merged graph.
+message GetMissionGraphResponse {
+  MissionGraph graph = 1;
+}
+
+// NodePosition is a single node's saved diagram coordinate.
+message NodePosition {
+  string node_id = 1;
+  double x = 2;
+  double y = 3;
+}
+
+// MissionLayout is the saved diagram layout for a mission definition. It lives
+// in a store separate from the mission definition; the work-schema carries no
+// presentation state.
+message MissionLayout {
+  // mission_definition_id is the definition this layout belongs to.
+  string mission_definition_id = 1;
+  // nodes are the saved per-node positions. Nodes without an entry fall back
+  // to the daemon's deterministic auto-layout in GetMissionGraph.
+  repeated NodePosition nodes = 2;
+  // viewport is the saved pan/zoom framing (optional).
+  MissionGraphViewport viewport = 3;
+  // version is an opaque revision token for optimistic concurrency. Empty when
+  // no layout has been saved yet. Returned by GetMissionLayout and
+  // SaveMissionLayout; pass it back as expected_version on the next save.
+  string version = 4;
+}
+
+// GetMissionLayoutRequest selects the layout to read.
+message GetMissionLayoutRequest {
+  string mission_definition_id = 1;
+}
+
+// GetMissionLayoutResponse returns the saved layout, or an empty layout (no
+// node positions, empty version) when none has been saved.
+message GetMissionLayoutResponse {
+  MissionLayout layout = 1;
+}
+
+// SaveMissionLayoutRequest persists a hand-arranged layout.
+message SaveMissionLayoutRequest {
+  // layout is the layout to persist. Its mission_definition_id is the key.
+  MissionLayout layout = 1;
+  // expected_version, when set, must match the currently-stored layout's
+  // version or the save is rejected (codes.Aborted) as a stale write. Empty
+  // means "create if absent" / last-write-wins for the first save.
+  string expected_version = 2;
+}
+
+// SaveMissionLayoutResponse returns the new revision token after a successful
+// save. Pass it as expected_version on the subsequent save.
+message SaveMissionLayoutResponse {
+  string version = 1;
+}
+
+// The checkpoint browser messages (CheckpointSource, CheckpointSummary,
+// ListCheckpointsRequest/Response, GetCheckpointRequest/Response,
+// Checkpoint, DagStep, FindingSnapshot, ParallelGroupState,
+// BlobReference, DiffCheckpointsRequest/Response, CheckpointDiff and
+// its delta messages), previously defined here, were removed with the
+// retired checkpoint RPCs (gibson#1117; ADR-0011).
+
+// ---------------------------------------------------------------------------
+// CUE mission editor messages (mission-cue-editor epic)
+//
+// Collapsed onto DaemonService from gibson.daemon.admin.v1 (platform-sdk) so
+// ADK / SDK users can drive the CUE language service with a single user token.
+// Part of the one-customer-surface epic (zeroroot-ai/.github#143).
+// ---------------------------------------------------------------------------
+
+// CUEDiagnostic is a single error or warning produced by CUE compilation or
+// schema validation. Line and col are 1-based.
+message CUEDiagnostic {
+  // line is the 1-based source line number.
+  int32 line = 1;
+
+  // col is the 1-based column offset.
+  int32 col = 2;
+
+  // message is the human-readable diagnostic text.
+  string message = 3;
+
+  // severity is "error" or "warning".
+  string severity = 4;
+}
+
+// CUECompletionItem is a single completion suggestion from CompleteMissionCUE.
+message CUECompletionItem {
+  // label is the text to insert (the completion token).
+  string label = 1;
+
+  // detail is a short type annotation or signature hint.
+  string detail = 2;
+
+  // documentation is the Markdown documentation for this item.
+  string documentation = 3;
+
+  // kind classifies the item: "field" | "value" | "keyword".
+  string kind = 4;
+}
+
+// ValidateMissionCUERequest carries raw CUE source text to validate.
+message ValidateMissionCUERequest {
+  // cue_source is the raw CUE source text.
+  string cue_source = 1;
+}
+
+// ValidateMissionCUEResponse returns the diagnostics produced by compiling
+// the submitted CUE source against the mission schema. An empty list means
+// the source is valid.
+message ValidateMissionCUEResponse {
+  // diagnostics is the list of errors and warnings. Empty on success.
+  repeated CUEDiagnostic diagnostics = 1;
+
+  // compiled_definition is the MissionDefinition proto produced by compiling
+  // the CUE source. Only populated when diagnostics is empty (i.e. the source
+  // is valid). Callers can pass this directly to CreateMissionDefinition
+  // without a separate compile round-trip.
+  gibson.mission.v1.MissionDefinition compiled_definition = 2;
+}
+
+// CompleteMissionCUERequest requests completion items at a cursor position.
+message CompleteMissionCUERequest {
+  // cue_source is the raw CUE source text at the time of the request.
+  string cue_source = 1;
+
+  // line is the 1-based cursor line number.
+  int32 line = 2;
+
+  // col is the 1-based cursor column offset.
+  int32 col = 3;
+}
+
+// CompleteMissionCUEResponse returns the completion items for the cursor
+// position.
+message CompleteMissionCUEResponse {
+  // items is the list of completion candidates.
+  repeated CUECompletionItem items = 1;
+}
+
+// HoverMissionCUERequest requests hover documentation for a cursor position.
+message HoverMissionCUERequest {
+  // cue_source is the raw CUE source text at the time of the request.
+  string cue_source = 1;
+
+  // line is the 1-based cursor line number.
+  int32 line = 2;
+
+  // col is the 1-based cursor column offset.
+  int32 col = 3;
+}
+
+// HoverMissionCUEResponse returns Markdown hover documentation for the
+// symbol under the cursor, or an empty string if there is no hover info.
+message HoverMissionCUEResponse {
+  // markdown is the hover documentation rendered as Markdown.
+  string markdown = 1;
+}

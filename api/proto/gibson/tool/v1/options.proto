@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+// Package gibson.tool.v1 also exposes the MessageOptions extension
+// `is_tool_response` so proto authors can mark a message as a tool
+// response container. Today this annotation is consumed by the SDK's
+// field-100 contract test (see graphrag/field_100_contract_test.go) to
+// scope its assertion to messages that actually need to honour the
+// gibson.graphrag.v1.DiscoveryResult slot at field 100.
+//
+// Spec: tdd-coverage-gibson-sdk (Epic #6) — replaces the previous
+// "scan every gibson.* message" filter.
+
+package gibson.tool.v1;
+
+option go_package = "github.com/zeroroot-ai/sdk/api/gen/gibson/tool/v1;toolpb";
+
+import "google/protobuf/descriptor.proto";
+
+// is_tool_response marks a message as the response container emitted by a
+// tool's ExecuteProto. When set to true, the message MUST declare field
+// number 100 as gibson.graphrag.v1.DiscoveryResult per the workspace
+// CLAUDE.md "Cross-repo rules" clause; the SDK contract test asserts this.
+//
+// Usage:
+//
+//   message MyToolResponse {
+//     option (gibson.tool.v1.is_tool_response) = true;
+//
+//     repeated Host hosts = 1;
+//     string raw_output = 2;
+//     gibson.graphrag.v1.DiscoveryResult discovery = 100;
+//   }
+//
+// Field number 50100 is reserved for this option and MUST NOT change —
+// the SDK contract test reads the option by number for parity with the
+// auth.v1.authz extension at 50001.
+extend google.protobuf.MessageOptions {
+  bool is_tool_response = 50100;
+}

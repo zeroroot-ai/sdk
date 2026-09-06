@@ -1,0 +1,141 @@
+syntax = "proto3";
+package gibson.agent.v1;
+option go_package = "github.com/zeroroot-ai/sdk/api/gen/gibson/agent/v1;agentpb";
+option java_multiple_files = true;
+option csharp_namespace = "Gibson.Agent";
+
+import "gibson/common/v1/gibson_common.proto";
+import "gibson/job/v1/job.proto";
+import "gibson/types/v1/types.proto";
+
+import "gibson/auth/v1/options.proto";
+service AgentService {
+    rpc GetDescriptor(GetDescriptorRequest) returns (GetDescriptorResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc GetSlotSchema(GetSlotSchemaRequest) returns (GetSlotSchemaResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc Execute(ExecuteRequest) returns (ExecuteResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    rpc Health(HealthRequest) returns (HealthResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+}
+
+message GetDescriptorRequest {}
+
+message TargetSchemaProto {
+    string type = 1;
+    string version = 2;
+    string schema_json = 3;
+    string description = 4;
+}
+
+message GetDescriptorResponse {
+    string name = 1;
+    string version = 2;
+    string description = 3;
+    repeated string capabilities = 4;
+    repeated TargetSchemaProto target_schemas = 5;
+    repeated string technique_types = 6;
+    // Deprecated: v0.8.0. Use target_schemas (field 5) instead. Will be removed in v0.10.0.
+    repeated string target_types = 7 [deprecated = true];
+}
+
+message AgentSlotDefinition {
+    string name = 1;
+    string description = 2;
+    bool required = 3;
+    AgentSlotConfig default_config = 4;
+    AgentSlotConstraints constraints = 5;
+}
+
+message AgentSlotConfig {
+    string provider = 1;
+    string model = 2;
+    double temperature = 3;
+    int32 max_tokens = 4;
+}
+
+message AgentSlotConstraints {
+    int32 min_context_window = 1;
+    repeated string required_features = 2;
+}
+
+message GetSlotSchemaRequest {}
+message GetSlotSchemaResponse {
+    repeated AgentSlotDefinition slots = 1;
+}
+
+message ExecuteRequest {
+    gibson.types.v1.Task task = 1;
+    int64 timeout_ms = 2;
+    // Callback endpoint for the orchestrator's HarnessCallbackService.
+    // When provided, the agent will connect to this endpoint to access
+    // harness operations (LLM, tools, memory, etc.).
+    string callback_endpoint = 3;
+    // Optional authentication token for the callback connection.
+    string callback_token = 4;
+    // Mission context for this execution.
+    gibson.common.v1.TypedMap mission = 5;
+    // Target information for this execution.
+    gibson.common.v1.TypedMap target = 6;
+    // Trace ID for distributed tracing (propagated from orchestrator).
+    string trace_id = 7;
+    // Parent span ID for distributed tracing (propagated from orchestrator).
+    string parent_span_id = 8;
+    // Mission run ID - unique identifier for this specific mission execution.
+    // Created by MissionGraphManager.CreateMissionRunNode() at mission start.
+    // Used for mission-scoped GraphRAG storage.
+    string mission_run_id = 9;
+    // Agent run ID - unique identifier for this specific agent execution.
+    // Used for DISCOVERED relationships and provenance tracking.
+    string agent_run_id = 10;
+    // Run number - sequential number for this mission (1, 2, 3...).
+    // Used for mission memory queries and historical comparisons.
+    int32 run_number = 11;
+    // job_id names the job this execution serves (gibson#1706). A one-shot
+    // dispatch and a bank job then share one result path. Empty for a
+    // dispatch that opens no job.
+    string job_id = 12;
+}
+
+message ExecuteResponse {
+    gibson.types.v1.Result result = 1;
+    gibson.common.v1.Error error = 2;
+    // deliverables lists what left the sandbox for this execution: a pushed
+    // branch, an opened merge request (gibson#1706). Empty when nothing left.
+    repeated gibson.job.v1.Deliverable deliverables = 3;
+    // claude_session_id is the coding-agent session that ran this execution,
+    // so a later turn resumes the same conversation. Empty for an agent that
+    // holds no session.
+    string claude_session_id = 4;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+    gibson.common.v1.HealthStatus status = 1;
+}

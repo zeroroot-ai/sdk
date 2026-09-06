@@ -1,0 +1,130 @@
+name: buf-push
+
+# Publishes the OSS SDK proto module to the BSR at
+# buf.build/zeroroot-ai/sdk (the module name declared in buf.yaml, which
+# `buf push` reads — the old buf.build/zeroroot-ai-platform/sdk module is
+# deprecated).
+#
+# Three trigger surfaces:
+#  - push of a `v*` tag (created by release-please when its release PR is
+#    merged) — `--git-metadata` picks up the tag and labels the BSR commit
+#    with that version.
+#  - workflow_dispatch — lets a maintainer push the current main with a
+#    custom label (e.g. `manual-bootstrap`) to seed BSR ahead of the next
+#    tagged release, or backfill a label at an older tag with `--ref`.
+#  - schedule (weekly) — credential health check only, no push. See below.
+#
+# `BUF_TOKEN` is provisioned per-repo and authenticates a buf.build user
+# that holds publish permission on the `zeroroot-ai` BSR org.
+#
+# Why the weekly check (sdk#459): BSR tokens expire. When the last one did,
+# the only surface that used it was this tag-triggered workflow, so the
+# breakage stayed invisible until a release day — and then stayed broken
+# through nine more releases. The scheduled run exercises the credential
+# against buf.build every week, so an expired token files the tracked issue
+# on a quiet Monday instead of silently dropping a release from the
+# registry.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      label:
+        description: 'BSR label to apply to this push'
+        required: false
+        default: 'manual-bootstrap'
+  schedule:
+    # Mondays 07:19 UTC. Credential check only — the push steps are skipped.
+    - cron: '19 7 * * 1'
+
+jobs:
+  push:
+    name: buf push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # For the on-failure alerting step below.
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # buf push --git-metadata reads git history to set
+          # --source-control-url and pick up the current tag as a label.
+          fetch-depth: 0
+
+      - name: Install buf
+        # bufbuild/buf-setup-action ships no annotated v1 tag, only a
+        # moving `v1` branch (points at v1.50.0 as of 2026-08-15) --
+        # floating-branch risk, re-resolve periodically.
+        uses: bufbuild/buf-setup-action@a47c93e0b1648d5651a065437926377d060baa99 # v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Runs on every trigger, including the weekly schedule. `buf push`
+      # reports an invalid token the same way, but only when a release is
+      # already going out; this step is what turns a dead credential into an
+      # alert of its own, and it names the failure plainly in the log.
+      - name: Check the BSR credential
+        env:
+          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${BUF_TOKEN}" ]; then
+            echo "::error::BUF_TOKEN is empty. Set the repo secret — see sdk#459."
+            exit 1
+          fi
+          if ! buf registry whoami buf.build; then
+            echo "::error::BUF_TOKEN is rejected by buf.build (expired or revoked). Mint a new token and run: gh secret set BUF_TOKEN -R ${{ github.repository }}"
+            exit 1
+          fi
+
+      - name: Push to BSR (tag)
+        if: github.event_name == 'push'
+        env:
+          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
+        run: |
+          buf push --git-metadata
+
+      - name: Push to BSR (manual)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
+        run: |
+          buf push --git-metadata --label "${{ inputs.label }}"
+
+      # ------------------------------------------------------------------
+      # Failure signal (sdk#459): this workflow fires on tag pushes, where
+      # a red run blocks nothing and nobody is watching — it failed on nine
+      # consecutive releases (v0.154.0..v0.161.0, expired BUF_TOKEN) before
+      # anyone noticed, leaving the BSR module three releases stale. On
+      # failure, file (or refresh) ONE tracked issue, the same
+      # find-by-title / edit-in-place pattern the org drift reports use
+      # (zeroroot-ai/.github flake-report.yml, makefile-contract.yml).
+      # ------------------------------------------------------------------
+      - name: File or update tracked issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TITLE="ci(buf): buf-push failed — BSR publish is broken"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          BODY="## buf-push failed\n\n"
+          BODY="${BODY}Run: ${RUN_URL}\nRef: \`${{ github.ref }}\`\nEvent: \`${{ github.event_name }}\`\n\n"
+          BODY="${BODY}On a \`schedule\` event this is the weekly credential check: no release was lost yet, but the next one will be unless \`BUF_TOKEN\` is rotated first.\n\n"
+          BODY="${BODY}The BSR module \`buf.build/zeroroot-ai/sdk\` did NOT receive this push. "
+          BODY="${BODY}Every consumer generating from BSR (or pinning a version label) is now behind the release tags until this is fixed.\n\n"
+          BODY="${BODY}Most likely cause: expired/invalid \`BUF_TOKEN\` repo secret (see sdk#459 for the diagnosis and rotation steps). "
+          BODY="${BODY}After rotating, backfill with \`gh workflow run buf-push.yml -R zeroroot-ai/sdk --ref <latest-tag>\` so the version label catches up.\n\n"
+          BODY="${BODY}This issue is auto-filed by the buf-push workflow's failure step and refreshed in place on each subsequent failure."
+          EXISTING=$(gh issue list -R "${{ github.repository }}" \
+                       --state open --search "in:title \"ci(buf): buf-push failed\"" \
+                       --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            printf "%b" "$BODY" | gh issue comment "$EXISTING" -R "${{ github.repository }}" --body-file -
+          else
+            printf "%b" "$BODY" | gh issue create -R "${{ github.repository }}" --title "$TITLE" --body-file - --label "ready-for-human" || \
+              printf "%b" "$BODY" | gh issue create -R "${{ github.repository }}" --title "$TITLE" --body-file -
+          fi

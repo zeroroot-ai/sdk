@@ -1,0 +1,429 @@
+// GraphService — daemon-mediated knowledge graph data path for the dashboard.
+//
+// Replaces the dashboard's prior direct-Neo4j-driver path with an FGA-gated,
+// SPIFFE-authed channel that routes through the per-tenant pool. See
+// .spec-workflow/specs/dashboard-knowledge-graph for full context.
+syntax = "proto3";
+
+package gibson.graph.v1;
+
+option go_package = "github.com/zeroroot-ai/sdk/api/gen/gibson/graph/v1;graphpb";
+option java_multiple_files = true;
+option csharp_namespace = "Gibson.Graph.V1";
+
+import "google/protobuf/timestamp.proto";
+import "gibson/auth/v1/options.proto";
+
+// GraphService serves per-tenant knowledge-graph reads and a server-streaming
+// update feed. Every RPC routes through Pool.For(tenant).Neo4j() server-side
+// and is gated by the FGA tenant.member relation at ext-authz.
+service GraphService {
+  // GetTenantGraph returns the full per-tenant subgraph subject to a server-side
+  // node-count cap. Use limit + include_labels to narrow scope.
+  rpc GetTenantGraph(GetTenantGraphRequest) returns (GetTenantGraphResponse) {
+    option (gibson.auth.v1.authz) = {
+      relation: "member"
+      object_type: "tenant"
+      object_deriver: "tenant_from_identity"
+      allowed_identities: 3  // USER | SERVICE
+    };
+  }
+
+  // GetMissionGraph returns the subgraph touched by a single mission run.
+  // Mission ownership is enforced by FGA + by `WHERE m.tenant_id = $tenant`
+  // in the underlying Cypher (defense in depth).
+  rpc GetMissionGraph(GetMissionGraphRequest) returns (GetMissionGraphResponse) {
+    option (gibson.auth.v1.authz) = {
+      relation: "member"
+      object_type: "tenant"
+      object_deriver: "tenant_from_identity"
+      allowed_identities: 3  // USER | SERVICE
+    };
+  }
+
+  // QueryPaths runs a bounded path query from `from_node_id` to either a
+  // specific `to_node_id` or any node of `to_node_kind`, up to `max_depth`.
+  // Server caps: depth ≤ 10, paths ≤ 100, query timeout 5s.
+  rpc QueryPaths(QueryPathsRequest) returns (QueryPathsResponse) {
+    option (gibson.auth.v1.authz) = {
+      relation: "member"
+      object_type: "tenant"
+      object_deriver: "tenant_from_identity"
+      allowed_identities: 3  // USER | SERVICE
+    };
+  }
+
+  // WatchGraphUpdates server-streams new node/edge writes for the calling
+  // tenant. Subscribers should treat the stream as a UX hint, not a source of
+  // truth — drops are possible under load. Reconnect with exponential
+  // backoff; fall back to polling GetTenantGraph if the stream stays
+  // unhealthy.
+  rpc WatchGraphUpdates(WatchGraphUpdatesRequest) returns (stream GraphUpdate) {
+    option (gibson.auth.v1.authz) = {
+      relation: "member"
+      object_type: "tenant"
+      object_deriver: "tenant_from_identity"
+      allowed_identities: 3  // USER | SERVICE
+    };
+  }
+
+  // GetFindingCounts returns finding counts grouped by severity or category.
+  // Replaces the dashboard's prior direct-Neo4j paths in
+  // gibson-client.ts (getKPIs, getFindingsBySeverity, getFindingsByCategory)
+  // and app/api/findings/counts/route.ts.
+  rpc GetFindingCounts(GetFindingCountsRequest) returns (GetFindingCountsResponse) {
+    option (gibson.auth.v1.authz) = {
+      relation: "member"
+      object_type: "tenant"
+      object_deriver: "tenant_from_identity"
+      allowed_identities: 3  // USER | SERVICE
+    };
+  }
+
+  // GetFindingTimeSeries returns finding counts bucketed by day for the last
+  // N days (default 30, max 365). Missing days are returned as zero buckets.
+  rpc GetFindingTimeSeries(GetFindingTimeSeriesRequest) returns (GetFindingTimeSeriesResponse) {
+    option (gibson.auth.v1.authz) = {
+      relation: "member"
+      object_type: "tenant"
+      object_deriver: "tenant_from_identity"
+      allowed_identities: 3  // USER | SERVICE
+    };
+  }
+
+  // GetGraphStats returns aggregate stats for the per-tenant knowledge graph:
+  // node counts by label, total edges, last-write timestamp.
+  rpc GetGraphStats(GetGraphStatsRequest) returns (GetGraphStatsResponse) {
+    option (gibson.auth.v1.authz) = {
+      relation: "member"
+      object_type: "tenant"
+      object_deriver: "tenant_from_identity"
+      allowed_identities: 3  // USER | SERVICE
+    };
+  }
+
+  // GetGraphSummary returns an LLM-friendly text summary of the per-tenant
+  // graph plus structured stats. Server-side caches results for 60s per
+  // tenant.
+  rpc GetGraphSummary(GetGraphSummaryRequest) returns (GetGraphSummaryResponse) {
+    option (gibson.auth.v1.authz) = {
+      relation: "member"
+      object_type: "tenant"
+      object_deriver: "tenant_from_identity"
+      allowed_identities: 3  // USER | SERVICE
+    };
+  }
+
+  // GetGraphContext returns a focus node and its bounded neighborhood, used
+  // by the chatbot to enrich its system prompt. Returns an empty response
+  // (focus_node unset) on missing node or NotProvisioned — does NOT error,
+  // so the chatbot prompt never breaks.
+  rpc GetGraphContext(GetGraphContextRequest) returns (GetGraphContextResponse) {
+    option (gibson.auth.v1.authz) = {
+      relation: "member"
+      object_type: "tenant"
+      object_deriver: "tenant_from_identity"
+      allowed_identities: 3  // USER | SERVICE
+    };
+  }
+
+  // GetFindings returns a paginated, filterable list of findings (and
+  // vulnerabilities) for the calling tenant. Replaces the dashboard's
+  // direct-Neo4j paths in app/api/findings/route.ts,
+  // app/api/missions/[id]/findings/route.ts, and the iteration backing
+  // findings export.
+  // Spec: dashboard-neo4j-crud-removal Req 1.
+  rpc GetFindings(GetFindingsRequest) returns (GetFindingsResponse) {
+    option (gibson.auth.v1.authz) = {
+      relation: "member"
+      object_type: "tenant"
+      object_deriver: "tenant_from_identity"
+      allowed_identities: 3  // USER | SERVICE
+    };
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Core entities
+// ────────────────────────────────────────────────────────────────────────────
+
+// Node is a single graph node. Properties are JSON-stringified per value to
+// preserve Neo4j integer/temporal type fidelity through proto3.
+message Node {
+  string id = 1;
+  repeated string labels = 2;
+  map<string, string> properties = 3;
+  google.protobuf.Timestamp first_seen_at = 4;
+  // Severity tag for finding-class nodes; empty for non-finding labels.
+  // Values: "low" | "medium" | "high" | "critical".
+  string severity = 5;
+}
+
+// Edge is a single relationship between two nodes.
+message Edge {
+  string id = 1;
+  string source_id = 2;
+  string target_id = 3;
+  string type = 4;
+  map<string, string> properties = 5;
+}
+
+// Path is an ordered sequence of node ids and edge ids that connects two
+// endpoints.
+message Path {
+  repeated string node_ids = 1;
+  repeated string edge_ids = 2;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// GetTenantGraph
+// ────────────────────────────────────────────────────────────────────────────
+
+message GetTenantGraphRequest {
+  // Optional. Default 1000, max 5000 (server-clamped).
+  uint32 limit = 1;
+  // Optional. If non-empty, only nodes carrying ANY of these labels are
+  // returned (and their connecting edges).
+  repeated string include_labels = 2;
+}
+
+message GetTenantGraphResponse {
+  repeated Node nodes = 1;
+  repeated Edge edges = 2;
+  // True when total_node_count exceeded the limit and the response was capped.
+  bool truncated = 3;
+  // Total node count for the tenant before truncation. UI should surface a
+  // "showing N of M" banner when truncated is true.
+  uint32 total_node_count = 4;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// GetMissionGraph
+// ────────────────────────────────────────────────────────────────────────────
+
+message GetMissionGraphRequest {
+  string mission_id = 1;
+}
+
+message GetMissionGraphResponse {
+  repeated Node nodes = 1;
+  repeated Edge edges = 2;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// QueryPaths
+// ────────────────────────────────────────────────────────────────────────────
+
+message QueryPathsRequest {
+  string from_node_id = 1;
+
+  // Exactly one of to_node_id or to_node_kind must be set.
+  oneof to {
+    string to_node_id = 2;
+    string to_node_kind = 3;
+  }
+
+  // Optional. Default 5, max 10 (server-clamped).
+  uint32 max_depth = 4;
+}
+
+message QueryPathsResponse {
+  repeated Path paths = 1;
+  // De-duplicated set of nodes referenced by any returned path.
+  repeated Node nodes = 2;
+  // De-duplicated set of edges referenced by any returned path.
+  repeated Edge edges = 3;
+  // True when the daemon's path-count cap was hit and additional paths were
+  // not returned.
+  bool truncated_paths = 4;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// WatchGraphUpdates
+// ────────────────────────────────────────────────────────────────────────────
+
+message WatchGraphUpdatesRequest {
+  // Reserved for future filter fields. v1 derives tenant from the SPIFFE
+  // JWT-SVID and streams all per-tenant updates.
+}
+
+// GraphUpdate is one event on the stream. The daemon may drop subscribers
+// that fall behind; clients SHOULD reconcile via a polling fallback.
+message GraphUpdate {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    NODE_ADDED = 1;
+    EDGE_ADDED = 2;
+    NODE_UPDATED = 3;
+  }
+
+  Kind kind = 1;
+
+  oneof entity {
+    Node node = 2;
+    Edge edge = 3;
+  }
+
+  google.protobuf.Timestamp at = 4;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// GetFindingCounts
+// ────────────────────────────────────────────────────────────────────────────
+
+enum FindingCountGroupBy {
+  FINDING_COUNT_GROUP_BY_UNSPECIFIED = 0;
+  SEVERITY = 1;
+  CATEGORY = 2;
+}
+
+message GetFindingCountsRequest {
+  FindingCountGroupBy group_by = 1;
+  // Optional. When > 0, only count findings whose created_at is within the
+  // last N seconds. 0 (default) means all-time.
+  uint64 time_window_seconds = 2;
+}
+
+message CountBucket {
+  string label = 1;
+  uint64 count = 2;
+}
+
+message GetFindingCountsResponse {
+  repeated CountBucket buckets = 1;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// GetFindingTimeSeries
+// ────────────────────────────────────────────────────────────────────────────
+
+message GetFindingTimeSeriesRequest {
+  // Default 30, max 365 (server-clamped).
+  uint32 days = 1;
+}
+
+message TimeSeriesPoint {
+  google.protobuf.Timestamp date = 1;
+  uint64 count = 2;
+}
+
+message GetFindingTimeSeriesResponse {
+  // Ordered, padded with zero buckets for missing days. Length == days.
+  repeated TimeSeriesPoint points = 1;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// GetGraphStats
+// ────────────────────────────────────────────────────────────────────────────
+
+message GetGraphStatsRequest {}
+
+message NodeCountByLabel {
+  string label = 1;
+  uint64 count = 2;
+}
+
+message GetGraphStatsResponse {
+  repeated NodeCountByLabel by_label = 1;
+  uint64 total_nodes = 2;
+  uint64 total_edges = 3;
+  // Zero when the tenant has never written a node.
+  google.protobuf.Timestamp last_write_at = 4;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// GetGraphSummary
+// ────────────────────────────────────────────────────────────────────────────
+
+message GetGraphSummaryRequest {}
+
+message GraphSummaryStats {
+  uint64 hosts = 1;
+  uint64 services = 2;
+  uint64 findings = 3;
+  uint64 vulnerabilities = 4;
+  uint64 missions = 5;
+}
+
+message GetGraphSummaryResponse {
+  // LLM-friendly text summary, capped at ~4000 chars.
+  string summary = 1;
+  GraphSummaryStats stats = 2;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// GetGraphContext
+// ────────────────────────────────────────────────────────────────────────────
+
+message GetGraphContextRequest {
+  string node_id = 1;
+  // Default 2, max 5 (server-clamped).
+  uint32 hops = 2;
+  // Default 30, max 100 (server-clamped).
+  uint32 max_nodes = 3;
+}
+
+message NeighborEdge {
+  Node node = 1;
+  string relationship = 2;
+  // "incoming" or "outgoing"
+  string direction = 3;
+}
+
+message GetGraphContextResponse {
+  // Unset when the node was not found OR Neo4j is unavailable. The daemon
+  // returns this shape (not an error) so chatbot prompts never break.
+  Node focus_node = 1;
+  repeated NeighborEdge neighbors = 2;
+  // LLM-friendly text serialization of focus + neighbors.
+  string summary = 3;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// GetFindings — dashboard-neo4j-crud-removal Req 1
+// ────────────────────────────────────────────────────────────────────────────
+
+// Finding is a per-tenant security finding or vulnerability node from the
+// knowledge graph, shaped for dashboard list/detail views.
+message Finding {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  // Category / type. Free-form string drawn from the underlying node's
+  // .type property (e.g. "sql_injection", "exposed_secret").
+  string type = 4;
+  // "critical" | "high" | "medium" | "low" | "info" (lowercase, free-form).
+  string severity = 5;
+  string mission_id = 6;
+  google.protobuf.Timestamp created_at = 7;
+  // Catch-all for additional properties beyond the structured fields above
+  // (CVE, CVSS, etc.). Values are stringified to preserve fidelity through
+  // proto3.
+  map<string, string> properties = 8;
+  // Distinguishes :Finding from :Vulnerability and any future label split.
+  repeated string labels = 9;
+}
+
+message GetFindingsRequest {
+  // Exact match. Empty string = no filter.
+  string severity_filter = 1;
+  // Exact match on the type / category. Empty string = no filter.
+  string category_filter = 2;
+  // When non-empty, only findings reachable from this mission node within
+  // the same tenant (within 3 hops) are returned.
+  string mission_id = 3;
+  // Substring match on name OR description (case-insensitive). Empty = no
+  // filter.
+  string search = 4;
+  // Default 100, max 500 (server-clamped).
+  uint32 limit = 5;
+  uint32 offset = 6;
+}
+
+message GetFindingsResponse {
+  repeated Finding findings = 1;
+  // Count of matching findings without limit/offset, for pagination UI.
+  uint64 total = 2;
+  // True when total > offset + len(findings).
+  bool truncated = 3;
+}

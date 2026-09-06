@@ -1,0 +1,5 @@
+# Generated protobuf Go bindings are tracked source (ADR-0039) but are
+# machine-generated — mark them so GitHub collapses them in diffs/reviews and
+# excludes them from language stats. The CI "proto bindings drift gate" is the
+# real correctness check.
+api/gen/** linguist-generated=true

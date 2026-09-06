@@ -1,0 +1,22 @@
+version: v2
+modules:
+  - path: api/proto
+    name: buf.build/zeroroot-ai/sdk
+    excludes:
+      - api/proto/google
+deps:
+  - buf.build/bufbuild/protovalidate
+lint:
+  use:
+    - STANDARD
+breaking:
+  use:
+    # WIRE is the breaking-change contract for the narrowed SDK: now that
+    # the SDK is frozen as the public component-developer wire surface
+    # (E6, ADR-0058; Phase 3 gate in the open-core MIGRATION-SEQUENCE),
+    # the guarantee customers depend on is wire/binary compatibility, not
+    # file layout. WIRE permits proto file reorganisation (the kind the
+    # E6 re-home performed) while still rejecting any change that breaks
+    # the serialized representation. (Was FILE, which over-constrained on
+    # file moves.)
+    - WIRE
