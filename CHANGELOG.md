@@ -1,5 +1,13 @@
 # Gibson SDK Changelog
 
+## [0.177.1](https://github.com/zeroroot-ai/sdk/compare/v0.177.0...v0.177.1) (2026-09-06)
+
+
+### Bug Fixes
+
+* **ci:** drop the dead GOPRIVATE step from the SDK fan-out ([#20](https://github.com/zeroroot-ai/sdk/issues/20)) ([8b7681c](https://github.com/zeroroot-ai/sdk/commit/8b7681cae5eb7f060e91db19061621f7df63e184))
+* **ci:** drop the private-modules input, the re-pinned reusable Go CI no longer has it ([#12](https://github.com/zeroroot-ai/sdk/issues/12)) ([b83b207](https://github.com/zeroroot-ai/sdk/commit/b83b207eb2f6d339fbef6e7146293e55c4105cea))
+
 ## [0.177.0](https://github.com/zeroroot-ai/sdk/compare/v0.176.0...v0.177.0) (2026-09-01)
 
 
