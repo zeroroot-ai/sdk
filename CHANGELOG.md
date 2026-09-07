@@ -1,5 +1,12 @@
 # Gibson SDK Changelog
 
+## [0.177.2](https://github.com/zeroroot-ai/sdk/compare/v0.177.1...v0.177.2) (2026-09-07)
+
+
+### Bug Fixes
+
+* **security:** fix redundant git operation, bump advisories, scope workflow tokens ([#21](https://github.com/zeroroot-ai/sdk/issues/21)) ([0350948](https://github.com/zeroroot-ai/sdk/commit/0350948f927d46d1159b238199b1dc2943c9ee3a))
+
 ## [0.177.1](https://github.com/zeroroot-ai/sdk/compare/v0.177.0...v0.177.1) (2026-09-06)
 
 
