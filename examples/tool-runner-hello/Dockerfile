@@ -12,10 +12,13 @@
 # syntax=docker/dockerfile:1.7
 
 # Base images route through the org mirror and are digest-pinned for reproducible
-# builds (RESTRUCTURE-QUALITY-BARS §1). Toolchain matches go.mod (Go 1.26.4).
-# Digests: golang:1.26.4-alpine + distroless-static-debian12:nonroot from
-# ghcr.io/zeroroot-ai/mirror. Re-resolve with `docker buildx imagetools inspect <ref>`.
-FROM ghcr.io/zeroroot-ai/mirror/golang:1.26.6-alpine@sha256:af8d6740070b8906d12eae1c3e3ea0957fb63f492051ea05e354c38ef9fe88df AS build
+# builds (RESTRUCTURE-QUALITY-BARS §1). The builder names the Go that go.mod
+# names; the org toolchain guard (reusable-go-ci) fails the PR when they drift,
+# and GOTOOLCHAIN=local makes a mismatch fail the build instead of downloading
+# a toolchain. Re-resolve digests with `crane digest <ref>`.
+FROM ghcr.io/zeroroot-ai/mirror/golang:1.26.8-alpine@sha256:ce864e7223ac17b1775e6fd0b4c0db580c2eb50e7953a427916379e4b92a1628 AS build
+ARG GOTOOLCHAIN=local
+ENV GOTOOLCHAIN=${GOTOOLCHAIN}
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod go mod download

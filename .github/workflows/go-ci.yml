@@ -48,7 +48,7 @@ jobs:
   # ---- fast tier (pull_request): reusable vet/build/test, no race ----
   fast:
     if: github.event_name == 'pull_request'
-    uses: zeroroot-ai/.github/.github/workflows/reusable-go-ci.yml@cf1c48774b57e552ccdd17a2a4bba3f782587dbe # main, .github recreated 2026-09-06
+    uses: zeroroot-ai/.github/.github/workflows/reusable-go-ci.yml@03e20c0508d3dae2d7f34ab03c4fe60123456957 # main 2026-09-07, Go toolchain guard (.github#22)
     with:
       tier: fast
       skip-lint: true # sdk runs its own pinned golangci-lint below (make lint)
@@ -56,7 +56,7 @@ jobs:
   # ---- heavy tier (merge_group): reusable race + govulncheck ----
   heavy:
     if: github.event_name == 'merge_group'
-    uses: zeroroot-ai/.github/.github/workflows/reusable-go-ci.yml@cf1c48774b57e552ccdd17a2a4bba3f782587dbe # main, .github recreated 2026-09-06
+    uses: zeroroot-ai/.github/.github/workflows/reusable-go-ci.yml@03e20c0508d3dae2d7f34ab03c4fe60123456957 # main 2026-09-07, Go toolchain guard (.github#22)
     with:
       tier: heavy
 
