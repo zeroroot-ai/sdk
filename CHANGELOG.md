@@ -1,5 +1,12 @@
 # Gibson SDK Changelog
 
+## [0.177.3](https://github.com/zeroroot-ai/sdk/compare/v0.177.2...v0.177.3) (2026-09-07)
+
+
+### Bug Fixes
+
+* **rework:** bump the example modules so Scorecard stops flagging x/text ([#23](https://github.com/zeroroot-ai/sdk/issues/23)) ([6a2e12c](https://github.com/zeroroot-ai/sdk/commit/6a2e12c60caa8ed07e67cca5a4cdce7af00a7962))
+
 ## [0.177.2](https://github.com/zeroroot-ai/sdk/compare/v0.177.1...v0.177.2) (2026-09-07)
 
 
