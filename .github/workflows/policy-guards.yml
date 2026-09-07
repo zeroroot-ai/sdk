@@ -22,9 +22,16 @@ on:
     types: [opened, edited, synchronize, reopened, ready_for_review]
   merge_group:
 
+permissions:
+  contents: read
+
 jobs:
   policy-guards:
     name: policy-guards
+    # Mirrors the reusable workflow's own `permissions:` block (the caller's
+    # grant is a ceiling on what the called workflow's GITHUB_TOKEN gets).
+    permissions:
+      contents: read
     # zeroroot-ai/.github's default branch, resolved 2026-08-15 -- floating
     # branch ref by design; re-resolve on any bump.
     uses: zeroroot-ai/.github/.github/workflows/vault-auth-method-deny-list.yml@cf1c48774b57e552ccdd17a2a4bba3f782587dbe # main, .github recreated 2026-09-06

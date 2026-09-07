@@ -137,12 +137,30 @@ func (g *gitOps) Status() (*GitStatus, error) {
 		return nil, fmt.Errorf("failed to get status: %w", err)
 	}
 
-	// Parse porcelain output
-	for _, line := range strings.Split(output, "\n") {
-		if line == "" {
-			continue
-		}
+	parsePorcelainStatus(output, status)
 
+	// Get ahead/behind counts if branch exists
+	if status.Branch != "" {
+		ahead, behind, err := g.getAheadBehind(status.Branch)
+		if err == nil {
+			status.Ahead = ahead
+			status.Behind = behind
+		}
+		// Ignore errors here as the branch might not have an upstream
+	}
+
+	return status, nil
+}
+
+// parsePorcelainStatus fills the file lists and the conflict flag of status
+// from `git status --porcelain` output.
+//
+// The two-letter code is the index state (X) and the worktree state (Y). Git
+// reports an unmerged path with a U in either column, or with the two
+// same-letter codes AA (both added) and DD (both deleted). A plain A in one
+// column is a staged or unstaged add, not a conflict.
+func parsePorcelainStatus(output string, status *GitStatus) {
+	for _, line := range strings.Split(output, "\n") {
 		if len(line) < 4 {
 			continue
 		}
@@ -159,23 +177,16 @@ func (g *gitOps) Status() (*GitStatus, error) {
 			status.Unstaged = append(status.Unstaged, filePath)
 		}
 
-		// Check for conflicts
-		if strings.Contains(statusCode, "U") || strings.Contains(statusCode, "A") && strings.Contains(statusCode, "A") {
+		if isUnmergedStatusCode(statusCode) {
 			status.HasConflicts = true
 		}
 	}
+}
 
-	// Get ahead/behind counts if branch exists
-	if status.Branch != "" {
-		ahead, behind, err := g.getAheadBehind(status.Branch)
-		if err == nil {
-			status.Ahead = ahead
-			status.Behind = behind
-		}
-		// Ignore errors here as the branch might not have an upstream
-	}
-
-	return status, nil
+// isUnmergedStatusCode reports whether a porcelain XY code marks an unmerged
+// path: DD, AU, UD, UA, DU, AA or UU.
+func isUnmergedStatusCode(statusCode string) bool {
+	return strings.Contains(statusCode, "U") || statusCode == "AA" || statusCode == "DD"
 }
 
 // getAheadBehind returns the number of commits ahead and behind the upstream.

@@ -39,6 +39,9 @@ on:
     # Mondays 07:19 UTC. Credential check only — the push steps are skipped.
     - cron: '19 7 * * 1'
 
+permissions:
+  contents: read
+
 jobs:
   push:
     name: buf push
