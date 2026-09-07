@@ -34,11 +34,14 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # oras login + oras push to ghcr.io with GITHUB_TOKEN.
+      packages: write
     env:
       REGISTRY: ghcr.io
       IMAGE: ghcr.io/${{ github.repository_owner }}/mission-authoring

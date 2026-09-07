@@ -312,3 +312,51 @@ func TestSnapshotWithUntrackedFiles(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "untracked content\n", string(content))
 }
+
+// TestParsePorcelainStatusConflicts pins the conflict detection to git's
+// unmerged XY codes. The old check read `contains U || contains A`, so a
+// plain staged add ("A ") marked the whole tree as conflicted.
+func TestParsePorcelainStatusConflicts(t *testing.T) {
+	tests := []struct {
+		name          string
+		output        string
+		wantStaged    []string
+		wantUnstaged  []string
+		wantUntracked []string
+		wantConflicts bool
+	}{
+		{name: "empty", output: ""},
+		{name: "staged add is not a conflict", output: "A  new.go\n", wantStaged: []string{"new.go"}},
+		{name: "unstaged add is not a conflict", output: " A new.go\n", wantUnstaged: []string{"new.go"}},
+		{name: "staged modify", output: "M  a.go\n", wantStaged: []string{"a.go"}},
+		{name: "unstaged modify", output: " M a.go\n", wantUnstaged: []string{"a.go"}},
+		{name: "untracked", output: "?? junk.txt\n", wantUntracked: []string{"junk.txt"}},
+		{name: "both added", output: "AA a.go\n", wantStaged: []string{"a.go"}, wantConflicts: true},
+		{name: "both deleted", output: "DD a.go\n", wantStaged: []string{"a.go"}, wantConflicts: true},
+		{name: "both modified", output: "UU a.go\n", wantStaged: []string{"a.go"}, wantConflicts: true},
+		{name: "added by us", output: "AU a.go\n", wantStaged: []string{"a.go"}, wantConflicts: true},
+		{name: "deleted by them", output: "UD a.go\n", wantStaged: []string{"a.go"}, wantConflicts: true},
+		{name: "added by them", output: "UA a.go\n", wantStaged: []string{"a.go"}, wantConflicts: true},
+		{name: "deleted by us", output: "DU a.go\n", wantStaged: []string{"a.go"}, wantConflicts: true},
+		{
+			name:          "mixed tree with one conflict",
+			output:        "A  new.go\n M a.go\n?? junk.txt\nUU b.go\n",
+			wantStaged:    []string{"new.go", "b.go"},
+			wantUnstaged:  []string{"a.go"},
+			wantUntracked: []string{"junk.txt"},
+			wantConflicts: true,
+		},
+		{name: "short line is skipped", output: "AA\n"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			status := &GitStatus{}
+			parsePorcelainStatus(tt.output, status)
+			assert.Equal(t, tt.wantStaged, status.Staged)
+			assert.Equal(t, tt.wantUnstaged, status.Unstaged)
+			assert.Equal(t, tt.wantUntracked, status.Untracked)
+			assert.Equal(t, tt.wantConflicts, status.HasConflicts)
+		})
+	}
+}

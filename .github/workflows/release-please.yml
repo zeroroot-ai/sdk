@@ -4,13 +4,14 @@ on:
   push:
     branches: [main]
 
-# Permissions on the default GITHUB_TOKEN. These cover release-please's PR/commit
-# work, but the *tag push* is done with the zeroday-sdk-fanout App token below
-# so that fan-out.yml (on.push.tags) actually triggers — tags pushed by
-# GITHUB_TOKEN do not fire downstream workflows.
+# The default GITHUB_TOKEN does no work here. release-please runs with the
+# zeroday-sdk-fanout App token minted below, so its release PR, commits and
+# the tag push all use that token, and the tag push fires fan-out.yml
+# (on.push.tags), which a GITHUB_TOKEN push would not. The App token carries
+# its own contents + pull-requests write scope, so GITHUB_TOKEN stays
+# read-only (Scorecard Token-Permissions, sdk#18).
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   release-please:
