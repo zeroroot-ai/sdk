@@ -165,9 +165,8 @@
 //	finding := createFinding()
 //	err := harness.SubmitFinding(ctx, finding)
 //
-//	// Memory access
-//	mem := harness.Memory()
-//	err := mem.Set(ctx, "last-attempt", attemptData)
+//	// Memory: a fact kept across runs is a World observation
+//	err := harness.Observe(ctx, agent.MemoryObservation{Text: "last attempt failed on auth", Kind: "decision"})
 //
 //	// Observability
 //	logger := harness.Logger()

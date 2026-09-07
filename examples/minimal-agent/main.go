@@ -109,18 +109,17 @@ func executeAgent(ctx context.Context, h agent.Harness, task agent.Task) (agent.
 	//     fmt.Printf("  Tool call failed: %v\n", err)
 	// }
 
-	// Example: Store data in agent memory
-	// Memory is now organized into tiers: Working, Mission, and LongTerm
-	// Working memory is ephemeral and cleared between executions
-	if err := h.Memory().Working().Set(ctx, "last_task_id", task.ID); err != nil {
-		fmt.Printf("  Warning: Failed to store in memory: %v\n", err)
+	// Example: Keep a fact across runs. A memory is a World observation,
+	// not a store of its own. The brain records it and the projector
+	// materializes it as an Observation node with shape "Memory".
+	if err := h.Observe(ctx, agent.MemoryObservation{
+		Text:      fmt.Sprintf("last task id was %s", task.ID),
+		Kind:      "decision",
+		Tags:      []string{"minimal-agent"},
+		SourceRef: task.ID,
+	}); err != nil {
+		fmt.Printf("  Warning: Failed to record memory: %v\n", err)
 	}
-
-	// Example: Retrieve data from memory
-	// lastTaskID, err := h.Memory().Working().Get(ctx, "last_task_id")
-	// if err == nil {
-	//     fmt.Printf("  Previous task ID: %v\n", lastTaskID)
-	// }
 
 	// Example: Access mission and target context
 	mission := h.Mission()
