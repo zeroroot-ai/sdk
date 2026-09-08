@@ -613,7 +613,7 @@ Benefits:
 
 ```bash
 # Unit tests
-cd /home/anthony/Code/zeroroot.ai/core/sdk/codegen
+cd codegen
 go test -v ./...
 
 # Integration tests (requires git, gopls, pyright, tsserver)
@@ -704,7 +704,7 @@ Follow conventional commit format:
 
 ## Contributing
 
-See the main Gibson SDK contributing guidelines at `/home/anthony/Code/zeroroot.ai/core/sdk/CLAUDE.md`.
+See the main Gibson SDK contributing guidelines in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 ## Examples
 
@@ -720,4 +720,4 @@ Complete examples can be found in:
 - [Editor Documentation](editor/doc.go)
 - [Git Documentation](git/doc.go)
 - [LSP Documentation](lsp/doc.go)
-- [Gibson SDK Overview](/home/anthony/Code/zeroroot.ai/core/sdk/CLAUDE.md)
+- [Gibson SDK Overview](../README.md)

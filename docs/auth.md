@@ -196,14 +196,14 @@ its inbound connections to Envoy's SPIFFE ID.
 
 | Concern | Owner | File |
 |---|---|---|
-| JWT signature / iss / aud / exp validation | Envoy `jwt_authn` filter | `enterprise/deploy/helm/gibson/files/envoy/envoy.yaml` |
+| JWT signature / iss / aud / exp validation | Envoy `jwt_authn` filter | `charts` repo: `helm/gibson-workloads/files/envoy/envoy.yaml` |
 | FGA decision + cache | ext-authz | `core/ext-authz/internal/fga/` |
 | CG-JWT short-circuit and identity header emission | ext-authz | `core/ext-authz/internal/server/envoy_extauthz.go:113` |
 | CG-JWT minting (Ed25519, KMS-derived) and JWKS publication | gibson daemon | `core/gibson/internal/capabilitygrant/{mint,jwks}.go` |
-| Browser session (Auth.js + Zitadel OIDC) | dashboard | `enterprise/platform/dashboard/auth.ts` |
-| Service-account token cache (client_credentials) | dashboard | `enterprise/platform/dashboard/src/lib/auth/service-token.ts` |
+| Browser session (Auth.js + Zitadel OIDC) | dashboard | `dashboard` repo: `auth.ts` |
+| Service-account token cache (client_credentials) | dashboard | `dashboard` repo: `src/lib/auth/service-token.ts` |
 | Per-tenant data plane | data-plane spec | see [`data-plane.md`](./data-plane.md) |
-| Tenant lifecycle (Zitadel org create/delete) | tenant-operator | `enterprise/platform/tenant-operator/internal/saga/flows/` |
+| Tenant lifecycle (Zitadel org create/delete) | tenant-operator | `gibson` repo: `operators/tenant/internal/saga/flows/` |
 
 ## Annotations: every RPC declares its policy
 
@@ -234,5 +234,5 @@ annotation fails CI.
 - Machine-readable rules: [`rules.yaml`](./rules.yaml).
 - Daemon-side auth model: `core/gibson/docs/auth.md`.
 - ext-authz internals: `core/ext-authz/docs/auth.md`.
-- Helm wiring (Envoy, SPIRE, Vault): `enterprise/deploy/docs/auth.md`.
+- Helm wiring (Envoy, SPIRE, Vault): the `charts` repo.
 - Data-plane half (per-tenant Conn): [`data-plane.md`](./data-plane.md).

@@ -45,6 +45,6 @@ future ingestion.
 
 1. Place the Turtle or YAML file in this directory.
 2. Add a license attribution entry to `THIRD-PARTY-LICENSES.md`.
-3. Run `make test` in `opensource/sdk/` — the embed picks up the new file
+3. Run `make test` at the repository root — the embed picks up the new file
    automatically.
 4. Open a PR using the `feat:` prefix with the new file and the license entry.

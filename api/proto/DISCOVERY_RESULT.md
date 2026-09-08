@@ -681,7 +681,6 @@ for _, rel := range discovery.ExplicitRelationships {
 After modifying `graphrag.proto`, regenerate Go code:
 
 ```bash
-cd /home/anthony/Code/zeroroot.ai/opensource/sdk
 make proto
 ```
 

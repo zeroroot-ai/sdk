@@ -430,7 +430,7 @@ The resolver uses these type names to locate and instantiate the correct message
 The package includes comprehensive tests:
 
 ```bash
-cd /home/anthony/Code/zeroroot.ai/core/sdk/protoresolver
+cd protoresolver
 go test -v ./...
 go test -bench=. ./...  # Run benchmarks
 go test -cover ./...    # Check coverage
@@ -463,6 +463,6 @@ Potential improvements:
 
 ## See Also
 
-- [Gibson Tool Development Guide](/home/anthony/Code/zeroroot.ai/tools/CLAUDE.md)
+- [Gibson SDK README](../README.md)
 - [Protocol Buffers Documentation](https://protobuf.dev/)
 - [dynamicpb Package](https://pkg.go.dev/google.golang.org/protobuf/types/dynamicpb)

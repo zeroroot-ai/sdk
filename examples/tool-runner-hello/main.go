@@ -3,7 +3,7 @@
 
 // Command tool-runner-hello is the simplest possible Gibson sandboxed tool:
 // echoes its input string with a "hello, " prefix. Used as the integration
-// smoke target for opensource/setec/development/k3s/.
+// smoke target for the setec repository k3s development environment.
 package main
 
 import (

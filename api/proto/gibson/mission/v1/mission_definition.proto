@@ -155,7 +155,7 @@ message MissionConstraints {
     repeated string blocked_domains = 8;
 
     // Fields 9-12 promoted from gibson.daemon.v1.MissionConstraints under
-    // ADR 0004 (https://github.com/zeroroot-ai/docs/blob/main/adr/0004-canonical-mission-constraints.md).
+    // ADR 0004, "Canonical MissionConstraints".
     // The daemon-local type is deleted in the same change; this is now the
     // single canonical MissionConstraints for the entire platform.
 

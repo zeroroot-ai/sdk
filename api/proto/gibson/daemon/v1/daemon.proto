@@ -1443,8 +1443,8 @@ message Mission {
   reserved "workflow_id";
 }
 
-// MissionConstraints message removed under ADR 0004
-// (https://github.com/zeroroot-ai/docs/blob/main/adr/0004-canonical-mission-constraints.md).
+// MissionConstraints message removed under ADR 0004,
+// "Canonical MissionConstraints".
 // The canonical type is gibson.mission.v1.MissionConstraints; daemon-only
 // fields (max_turns_per_agent, allowed_techniques, blocked_techniques,
 // max_tokens_per_call) were promoted into the SDK type with normalized

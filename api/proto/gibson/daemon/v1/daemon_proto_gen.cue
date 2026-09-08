@@ -30,8 +30,12 @@
 // Mission RPCs — request/response messages
 // ---------------------------------------------------------------------------
 
-// MissionConstraints message removed under ADR 0004
-// (https://github.com/zeroroot-ai/docs/blob/main/adr/0004-canonical-mission-constraints.md).
+// GetMissionCheckpointsRequest/Response and CheckpointInfo (previously
+// defined here) were removed with the retired GetMissionCheckpoints RPC
+// (gibson#1117; ADR-0011).
+
+// MissionConstraints message removed under ADR 0004,
+// "Canonical MissionConstraints".
 // The canonical type is gibson.mission.v1.MissionConstraints; daemon-only
 // fields (max_turns_per_agent, allowed_techniques, blocked_techniques,
 // max_tokens_per_call) were promoted into the SDK type with normalized
@@ -91,9 +95,12 @@
 // dashboard is a pure client of these RPCs.
 // ────────────────────────────────────────────────────────────────────────────
 
-// ────────────────────────────────────────────────────────────────────────────
-// Checkpoint browser — mission-checkpointing R13/R14/R15
-// ────────────────────────────────────────────────────────────────────────────
+// The checkpoint browser messages (CheckpointSource, CheckpointSummary,
+// ListCheckpointsRequest/Response, GetCheckpointRequest/Response,
+// Checkpoint, DagStep, FindingSnapshot, ParallelGroupState,
+// BlobReference, DiffCheckpointsRequest/Response, CheckpointDiff and
+// its delta messages), previously defined here, were removed with the
+// retired checkpoint RPCs (gibson#1117; ADR-0011).
 
 // ---------------------------------------------------------------------------
 // CUE mission editor messages (mission-cue-editor epic)
@@ -108,8 +115,6 @@ import (
 	"github.com/zeroroot-ai/sdk/api/proto/gibson/common/v1:commonpb"
 	"github.com/zeroroot-ai/sdk/api/proto/gibson/mission/v1:missionpb"
 	"github.com/zeroroot-ai/sdk/api/proto/gibson/target/v1:targetpb"
-	"time"
-	"github.com/zeroroot-ai/sdk/api/proto/gibson/manifest/v1:manifestpb"
 )
 
 // MissionStatus represents the execution status of a mission.
@@ -668,8 +673,7 @@ import (
 
 // CheckpointMetadata is the lightweight summary of the source checkpoint
 // streamed back on a ResumeMission response so the dashboard can render
-// "Resumed from checkpoint X". The full checkpoint payload is fetched
-// separately via GetCheckpoint.
+// "Resumed from checkpoint X".
 //
 // Spec: mission-checkpointing R9.
 #CheckpointMetadata: {
@@ -856,39 +860,6 @@ import (
 
 	// trace_id is the OTel trace ID for Langfuse lookup
 	traceId?: string @protobuf(8,string,name=trace_id)
-}
-
-// GetMissionCheckpointsRequest queries checkpoints for a mission.
-#GetMissionCheckpointsRequest: {
-	// mission_id is the unique identifier of the mission to query checkpoints for
-	missionId?: string @protobuf(1,string,name=mission_id)
-}
-
-// GetMissionCheckpointsResponse returns all checkpoints for a mission.
-#GetMissionCheckpointsResponse: {
-	// checkpoints contains all checkpoints for the requested mission
-	checkpoints?: [...#CheckpointInfo] @protobuf(1,CheckpointInfo)
-}
-
-// CheckpointInfo provides metadata about a mission checkpoint.
-#CheckpointInfo: {
-	// checkpoint_id is the unique identifier for this checkpoint
-	checkpointId?: string @protobuf(1,string,name=checkpoint_id)
-
-	// created_at is when this checkpoint was created (Unix timestamp)
-	createdAt?: int64 @protobuf(2,int64,name=created_at)
-
-	// completed_nodes is the number of nodes that had completed at checkpoint time
-	completedNodes?: int32 @protobuf(3,int32,name=completed_nodes)
-
-	// total_nodes is the total number of nodes in the mission
-	totalNodes?: int32 @protobuf(4,int32,name=total_nodes)
-
-	// findings_count is the number of findings at checkpoint time
-	findingsCount?: int32 @protobuf(5,int32,name=findings_count)
-
-	// version is the checkpoint format version
-	version?: int32 @protobuf(6,int32)
 }
 
 // ListMissionDefinitionsRequest queries installed mission definitions.
@@ -1815,287 +1786,6 @@ import (
 // save. Pass it as expected_version on the subsequent save.
 #SaveMissionLayoutResponse: {
 	version?: string @protobuf(1,string)
-}
-
-// CheckpointSource enumerates the cadence under which a checkpoint was
-// captured. Maps to the cadence_reason string carried on
-// CheckpointMetadata; both shapes coexist until v1.0.0.
-//
-// Spec: mission-checkpointing R13.1.
-#CheckpointSource:
-	#CHECKPOINT_SOURCE_UNSPECIFIED |
-	#CHECKPOINT_SOURCE_SUPER_STEP |
-	#CHECKPOINT_SOURCE_APPROVAL_GATE |
-	#CHECKPOINT_SOURCE_GRACEFUL_SHUTDOWN |
-	#CHECKPOINT_SOURCE_PARALLEL_GROUP |
-	#CHECKPOINT_SOURCE_MANUAL
-
-#CHECKPOINT_SOURCE_UNSPECIFIED:       0
-#CHECKPOINT_SOURCE_SUPER_STEP:        1
-#CHECKPOINT_SOURCE_APPROVAL_GATE:     2
-#CHECKPOINT_SOURCE_GRACEFUL_SHUTDOWN: 3
-#CHECKPOINT_SOURCE_PARALLEL_GROUP:    4
-#CHECKPOINT_SOURCE_MANUAL:            5
-
-#CheckpointSource_value: {
-	CHECKPOINT_SOURCE_UNSPECIFIED:       0
-	CHECKPOINT_SOURCE_SUPER_STEP:        1
-	CHECKPOINT_SOURCE_APPROVAL_GATE:     2
-	CHECKPOINT_SOURCE_GRACEFUL_SHUTDOWN: 3
-	CHECKPOINT_SOURCE_PARALLEL_GROUP:    4
-	CHECKPOINT_SOURCE_MANUAL:            5
-}
-
-// CheckpointSummary is the lightweight per-checkpoint listing row used by
-// ListCheckpoints and embedded in the full Checkpoint payload. Spec R13.1.
-#CheckpointSummary: {
-	checkpointId?: string            @protobuf(1,string,name=checkpoint_id)
-	missionId?:    string            @protobuf(2,string,name=mission_id)
-	superStep?:    int64             @protobuf(3,int64,name=super_step)
-	capturedAt?:   time.Time         @protobuf(4,google.protobuf.Timestamp,name=captured_at)
-	sizeBytes?:    int64             @protobuf(5,int64,name=size_bytes)
-	source?:       #CheckpointSource @protobuf(6,CheckpointSource)
-
-	// in_flight_idempotency surfaces the mode of any tool whose call was
-	// mid-flight at checkpoint time (UNSPECIFIED if none in flight).
-	inFlightIdempotency?: manifestpb.#ToolIdempotency @protobuf(7,gibson.manifest.v1.ToolIdempotency,name=in_flight_idempotency)
-
-	// parallel_group_id, when non-empty, ties this checkpoint to a specific
-	// parallel-group barrier.
-	parallelGroupId?: string @protobuf(8,string,name=parallel_group_id)
-
-	// expires_at, when set, is when the checkpoint will be GC'd by the
-	// retention policy (advisory).
-	expiresAt?: time.Time @protobuf(9,google.protobuf.Timestamp,name=expires_at)
-}
-
-// ListCheckpointsRequest is paginated and ordered. Pagination cursor is
-// opaque (string) — do not parse it client-side.
-#ListCheckpointsRequest: {
-	missionId?: string @protobuf(1,string,name=mission_id)
-
-	// page_size default 50, server ceiling 200.
-	pageSize?:  int32  @protobuf(2,int32,name=page_size)
-	pageToken?: string @protobuf(3,string,name=page_token)
-
-	#Order:
-		#ORDER_UNSPECIFIED |
-		#ORDER_NEWEST_FIRST |
-		#ORDER_OLDEST_FIRST
-
-	#ORDER_UNSPECIFIED:  0
-	#ORDER_NEWEST_FIRST: 1
-	#ORDER_OLDEST_FIRST: 2
-
-	#Order_value: {
-		ORDER_UNSPECIFIED:  0
-		ORDER_NEWEST_FIRST: 1
-		ORDER_OLDEST_FIRST: 2
-	}
-	order?: #Order @protobuf(4,Order)
-}
-
-// ListCheckpointsResponse returns one page of checkpoint summaries.
-#ListCheckpointsResponse: {
-	checkpoints?: [...#CheckpointSummary] @protobuf(1,CheckpointSummary)
-	nextPageToken?: string @protobuf(2,string,name=next_page_token)
-	totalCount?:    int32  @protobuf(3,int32,name=total_count)
-}
-
-// GetCheckpointRequest carries the (mission, checkpoint) pair plus a flag
-// to opt into large blob inclusion (R14.4: the daemon may substitute
-// BlobReference for payloads ≥1 MiB).
-#GetCheckpointRequest: {
-	missionId?:    string @protobuf(1,string,name=mission_id)
-	checkpointId?: string @protobuf(2,string,name=checkpoint_id)
-	includeBlobs?: bool   @protobuf(3,bool,name=include_blobs)
-}
-
-// GetCheckpointResponse wraps the full Checkpoint payload to satisfy
-// Buf STANDARD's RPC_RESPONSE_STANDARD_NAME rule.
-#GetCheckpointResponse: {
-	checkpoint?: #Checkpoint @protobuf(1,Checkpoint)
-}
-
-// Checkpoint is the full-decrypted-payload return type of GetCheckpoint.
-// working_memory and mission_memory are opaque msgpack bytes per R14
-// design. Large blobs may be substituted server-side via BlobReference
-// when include_blobs=false.
-#Checkpoint: {
-	summary?:       #CheckpointSummary @protobuf(1,CheckpointSummary)
-	workingMemory?: bytes              @protobuf(2,bytes,name=working_memory)
-	missionMemory?: bytes              @protobuf(3,bytes,name=mission_memory)
-	steps?: [...#DagStep] @protobuf(4,DagStep)
-	findings?: [...#FindingSnapshot] @protobuf(5,FindingSnapshot)
-	parallelGroups?: {
-		[string]: #ParallelGroupState
-	} @protobuf(6,map[string]ParallelGroupState,parallel_groups)
-}
-
-// DagStep is one node's snapshot at checkpoint time. inputs/outputs are
-// opaque per-step bytes.
-#DagStep: {
-	nodeId?:     string    @protobuf(1,string,name=node_id)
-	state?:      string    @protobuf(2,string)
-	startedAt?:  time.Time @protobuf(3,google.protobuf.Timestamp,name=started_at)
-	finishedAt?: time.Time @protobuf(4,google.protobuf.Timestamp,name=finished_at)
-	inputs?:     bytes     @protobuf(5,bytes)
-	outputs?:    bytes     @protobuf(6,bytes)
-}
-
-// FindingSnapshot is the per-finding slice of a checkpoint. payload is
-// opaque (taxonomy-canonical Finding bytes).
-#FindingSnapshot: {
-	findingId?: string @protobuf(1,string,name=finding_id)
-	severity?:  string @protobuf(2,string)
-	payload?:   bytes  @protobuf(3,bytes)
-}
-
-// ParallelGroupState captures the state of a parallel group's barrier.
-#ParallelGroupState: {
-	groupId?:   string @protobuf(1,string,name=group_id)
-	expected?:  int32  @protobuf(2,int32)
-	completed?: int32  @protobuf(3,int32)
-	completedNodeIds?: [...string] @protobuf(4,string,name=completed_node_ids)
-}
-
-// BlobReference is the substitution payload returned in lieu of large
-// (>=1 MiB) memory/finding blobs when include_blobs=false. The blob_key
-// is opaque to clients.
-#BlobReference: {
-	checkpointId?: string @protobuf(1,string,name=checkpoint_id)
-	blobKey?:      string @protobuf(2,string,name=blob_key)
-	sizeBytes?:    int64  @protobuf(3,int64,name=size_bytes)
-}
-
-// DiffCheckpointsRequest names the two checkpoints to diff. Both must
-// belong to mission_id.
-#DiffCheckpointsRequest: {
-	missionId?:     string @protobuf(1,string,name=mission_id)
-	checkpointAId?: string @protobuf(2,string,name=checkpoint_a_id)
-	checkpointBId?: string @protobuf(3,string,name=checkpoint_b_id)
-}
-
-// DiffCheckpointsResponse wraps the CheckpointDiff payload to satisfy
-// Buf STANDARD's RPC_RESPONSE_STANDARD_NAME rule.
-#DiffCheckpointsResponse: {
-	diff?: #CheckpointDiff @protobuf(1,CheckpointDiff)
-}
-
-// CheckpointDiff returns structured, per-domain deltas between two
-// checkpoints. Secret redaction (R15.6) is enforced server-side.
-#CheckpointDiff: {
-	workingMemoryDeltas?: [...#MemoryKeyDelta] @protobuf(1,MemoryKeyDelta,name=working_memory_deltas)
-	missionMemoryDeltas?: [...#MemoryKeyDelta] @protobuf(2,MemoryKeyDelta,name=mission_memory_deltas)
-	dagStepDeltas?: [...#DagStepDelta] @protobuf(3,DagStepDelta,name=dag_step_deltas)
-	findingDeltas?: [...#FindingDelta] @protobuf(4,FindingDelta,name=finding_deltas)
-	parallelGroupDeltas?: [...#ParallelGroupDelta] @protobuf(5,ParallelGroupDelta,name=parallel_group_deltas)
-}
-
-// MemoryKeyDelta is a single (key, op, before, after) record describing a
-// change in a memory tier between checkpoints.
-#MemoryKeyDelta: {
-	key?: string @protobuf(1,string)
-
-	#Op:
-		#OP_UNSPECIFIED |
-		#OP_ADDED |
-		#OP_REMOVED |
-		#OP_CHANGED
-
-	#OP_UNSPECIFIED: 0
-	#OP_ADDED:       1
-	#OP_REMOVED:     2
-	#OP_CHANGED:     3
-
-	#Op_value: {
-		OP_UNSPECIFIED: 0
-		OP_ADDED:       1
-		OP_REMOVED:     2
-		OP_CHANGED:     3
-	}
-	op?:     #Op   @protobuf(2,Op)
-	before?: bytes @protobuf(3,bytes)
-	after?:  bytes @protobuf(4,bytes)
-}
-
-// DagStepDelta describes a change to a single DAG step's snapshot.
-#DagStepDelta: {
-	nodeId?: string @protobuf(1,string,name=node_id)
-
-	#Op:
-		#OP_UNSPECIFIED |
-		#OP_ADDED |
-		#OP_REMOVED |
-		#OP_CHANGED
-
-	#OP_UNSPECIFIED: 0
-	#OP_ADDED:       1
-	#OP_REMOVED:     2
-	#OP_CHANGED:     3
-
-	#Op_value: {
-		OP_UNSPECIFIED: 0
-		OP_ADDED:       1
-		OP_REMOVED:     2
-		OP_CHANGED:     3
-	}
-	op?:     #Op   @protobuf(2,Op)
-	before?: bytes @protobuf(3,bytes)
-	after?:  bytes @protobuf(4,bytes)
-}
-
-// FindingDelta describes a change to a single finding between checkpoints.
-#FindingDelta: {
-	findingId?: string @protobuf(1,string,name=finding_id)
-
-	#Op:
-		#OP_UNSPECIFIED |
-		#OP_ADDED |
-		#OP_REMOVED |
-		#OP_CHANGED
-
-	#OP_UNSPECIFIED: 0
-	#OP_ADDED:       1
-	#OP_REMOVED:     2
-	#OP_CHANGED:     3
-
-	#Op_value: {
-		OP_UNSPECIFIED: 0
-		OP_ADDED:       1
-		OP_REMOVED:     2
-		OP_CHANGED:     3
-	}
-	op?:     #Op   @protobuf(2,Op)
-	before?: bytes @protobuf(3,bytes)
-	after?:  bytes @protobuf(4,bytes)
-}
-
-// ParallelGroupDelta describes a change to a parallel-group barrier
-// between checkpoints.
-#ParallelGroupDelta: {
-	groupId?: string @protobuf(1,string,name=group_id)
-
-	#Op:
-		#OP_UNSPECIFIED |
-		#OP_ADDED |
-		#OP_REMOVED |
-		#OP_CHANGED
-
-	#OP_UNSPECIFIED: 0
-	#OP_ADDED:       1
-	#OP_REMOVED:     2
-	#OP_CHANGED:     3
-
-	#Op_value: {
-		OP_UNSPECIFIED: 0
-		OP_ADDED:       1
-		OP_REMOVED:     2
-		OP_CHANGED:     3
-	}
-	op?:     #Op   @protobuf(2,Op)
-	before?: bytes @protobuf(3,bytes)
-	after?:  bytes @protobuf(4,bytes)
 }
 
 // CUEDiagnostic is a single error or warning produced by CUE compilation or

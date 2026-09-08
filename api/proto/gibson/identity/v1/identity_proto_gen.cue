@@ -85,6 +85,21 @@ import "github.com/zeroroot-ai/sdk/api/proto/gibson/capability/v1:capabilityv1"
 	// flag should treat the listing as incomplete and surface a UI
 	// warning.
 	truncated?: bool @protobuf(8,bool)
+
+	// can_revoke_sessions is a COARSE capability flag: true when the
+	// principal holds a tenant/team admin role that lets it revoke the
+	// sessions of at least some members (composed from self +
+	// tenant#admin-over-member + team#admin-over-member; see
+	// RevokeUserSessions / gibson#622). It exists so admin UIs
+	// (dashboard#717) can gate "revoke sessions" button visibility
+	// without a trial-and-error RPC.
+	//
+	// It is deliberately NOT per-target: the authoritative,
+	// per-(caller,target) decision is still made inside
+	// RevokeUserSessions, which fails closed for targets the caller may
+	// not revoke. A false value means "show no revoke UI"; a true value
+	// means "this principal can revoke someone — let the RPC enforce who."
+	canRevokeSessions?: bool @protobuf(9,bool,name=can_revoke_sessions)
 }
 
 // ComponentGrantEffective describes the principal's per-action access
