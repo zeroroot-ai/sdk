@@ -331,7 +331,7 @@ type ComponentDescriptor struct {
 	// registered before this field existed.
 	//
 	// NOTE: field 100 is reserved platform-wide for `gibson.graphrag.DiscoveryResult`
-	// on tool response messages (see `enterprise/docs/ARCHITECTURE.md`); do not
+	// on tool response messages (see `api/proto/DISCOVERY_RESULT.md`); do not
 	// assign new fields >= 100 on any component message without coordination.
 	ContentTrust ContentTrust `protobuf:"varint,18,opt,name=content_trust,json=contentTrust,proto3,enum=gibson.component.v1.ContentTrust" json:"content_trust,omitempty"`
 }

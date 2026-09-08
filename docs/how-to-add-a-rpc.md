@@ -73,7 +73,7 @@ If your change is a breaking change, use `feat(daemon)!:` plus a `BREAKING CHANG
 ### Step 3 — Regenerate dashboard TypeScript bindings
 
 ```bash
-# In enterprise/platform/dashboard/:
+# In a checkout of the dashboard repo:
 pnpm proto:generate          # regenerates src/gen/** from bumped SDK
 pnpm prebuild                # runs authz-registry freshness check + lints
 git add src/gen/
