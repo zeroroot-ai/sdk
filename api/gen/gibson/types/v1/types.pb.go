@@ -878,7 +878,7 @@ func (x *Finding) GetComplianceMappings() []*ComplianceMapping {
 }
 
 // ComplianceMapping links a Finding to a compliance framework control.
-// See core/sdk/finding/compliance_mapping.go for the author-side Go type.
+// See finding/compliance_mapping.go for the author-side Go type.
 type ComplianceMapping struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
