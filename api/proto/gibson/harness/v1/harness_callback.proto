@@ -436,12 +436,12 @@ service HarnessCallbackService {
     }
 
     // Workspace operations — added in vX.Y for callback-harness workspace
-    // parity with the in-process DefaultAgentHarness path
-    // (core/gibson/internal/harness/implementation.go:2076-2117).
+    // parity with the in-process DefaultAgentHarness path in the Gibson
+    // daemon, which is not in this repository.
     //
     // v1 surface: file IO + commit + push. The Editor (SEARCH/REPLACE +
     // LSP) and full GitOps (branching, snapshots) interfaces from
-    // core/sdk/codegen/workspace are intentionally out of scope; a follow-on
+    // codegen/workspace are intentionally out of scope; a follow-on
     // spec will add streaming-aware variants once the LSP-diagnostic-over-
     // the-wire contract is settled.
     //
@@ -2318,7 +2318,7 @@ message MissionRunSummary {
 // ============================================================================
 // Workspace operations — request/response messages
 // Spec: callback-harness-workspace-rpcs.
-// Mirrors core/sdk/codegen/workspace.Workspace's file-IO + commit/push
+// Mirrors codegen/workspace.Workspace's file-IO + commit/push
 // surface. Editor and full GitOps are intentionally not exposed here.
 // ============================================================================
 

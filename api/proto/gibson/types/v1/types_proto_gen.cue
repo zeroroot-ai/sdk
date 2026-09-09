@@ -213,7 +213,7 @@ import (
 }
 
 // ComplianceMapping links a Finding to a compliance framework control.
-// See core/sdk/finding/compliance_mapping.go for the author-side Go type.
+// See finding/compliance_mapping.go for the author-side Go type.
 #ComplianceMapping: {
 	// Compliance framework identifier (e.g. SOC2, NIST_AI_RMF, MITRE_ATLAS,
 	// MITRE_ATTACK, PLATFORM).
