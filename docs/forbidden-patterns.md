@@ -135,7 +135,7 @@ parsed, err := jwt.Parse(token, keyfunc,
     jwt.WithValidMethods([]string{jwt.SigningMethodEdDSA.Alg()}))
 ```
 
-The daemon mints with EdDSA only ([`core/gibson/internal/capabilitygrant/mint.go`](../../gibson/internal/capabilitygrant/mint.go));
+The daemon mints with EdDSA only (`core/gibson/internal/capabilitygrant/mint.go`, which is not in this repository);
 ext-authz must reject everything else.
 
 ## SDK-AUTH-006: skipping the registry codegen step

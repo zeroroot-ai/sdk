@@ -75,10 +75,10 @@ func TestSchemasMissionDefinitionNonEmpty(t *testing.T) {
 }
 
 // TestSchemasNoStaleModulePaths verifies that none of the embedded CUE files
-// reference the pre-rebrand module path (github.com/zero-day-ai/sdk). This
+// reference the module path this repository used before the rename. This
 // catches regressions where cue-defs regeneration uses stale tooling.
 func TestSchemasNoStaleModulePaths(t *testing.T) {
-	const stale = "github.com/zero-day-ai/sdk"
+	const stale = "github.com/zero-day-ai/sdk" // brand-guard-exempt: the retired module path is the value under test.
 	err := fs.WalkDir(cueschemas.Schemas, ".", func(p string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() || !strings.HasSuffix(p, ".cue") {
 			return err

@@ -657,9 +657,11 @@ serve.Plugin(plugin, serve.WithPort(50053))
 
 | Guide | Description |
 |-------|-------------|
-| [Agent Development](docs/AGENTS.md) | Complete guide to building autonomous agents |
-| [Tool Development](docs/TOOLS.md) | Building tools with automatic graph storage |
-| [Plugin Development](docs/PLUGINS.md) | Creating stateful service integrations |
+| [Feature reference](FEATURES.md) | Every package this SDK ships, and its entry points |
+| [Identity and authorization](docs/auth.md) | Tenant identity, capability grants and the gRPC interceptor |
+| [Add an RPC](docs/how-to-add-a-rpc.md) | The steps that add a new RPC end to end |
+| [Forbidden patterns](docs/forbidden-patterns.md) | Wrong and right code shapes, side by side |
+| [Examples](examples/) | Runnable agent, tool and tool-runner programs |
 
 ## Use Cases
 

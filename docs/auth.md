@@ -145,15 +145,15 @@ For external deployments (no SPIRE), set `GIBSON_PLATFORM_URL` and
 For in-cluster deployments (SPIRE co-located), set all five env vars; the SPIFFE
 transport upgrade is applied automatically.
 
-See [ADR-0036](../../docs/adr/0036-capability-grant-first-agent-identity.md) for the
-normative decision record.
+See ADR-0036, "Capability-grant-first agent identity", for the normative
+decision record.
 
 ## Capability-grant verify
 
 Agents and tools verify CG-JWTs using `capabilitygrant.Verify`
 ([`capabilitygrant/verify.go:70`](../capabilitygrant/verify.go)). The
 **daemon mints**; the SDK only verifies. Mint lives in the daemon at
-[`core/gibson/internal/capabilitygrant/mint.go`](../../gibson/internal/capabilitygrant/mint.go).
+`core/gibson/internal/capabilitygrant/mint.go`, which is not in this repository.
 
 ```go
 claims, err := capabilitygrant.Verify(ctx, jwksFetcher, token, capabilitygrant.VerifyOptions{
@@ -202,7 +202,7 @@ its inbound connections to Envoy's SPIFFE ID.
 | CG-JWT minting (Ed25519, KMS-derived) and JWKS publication | gibson daemon | `core/gibson/internal/capabilitygrant/{mint,jwks}.go` |
 | Browser session (Auth.js + Zitadel OIDC) | dashboard | `dashboard` repo: `auth.ts` |
 | Service-account token cache (client_credentials) | dashboard | `dashboard` repo: `src/lib/auth/service-token.ts` |
-| Per-tenant data plane | data-plane spec | see [`data-plane.md`](./data-plane.md) |
+| Per-tenant data plane | daemon client | `daemonclient/` in this repository |
 | Tenant lifecycle (Zitadel org create/delete) | tenant-operator | `gibson` repo: `operators/tenant/internal/saga/flows/` |
 
 ## Annotations: every RPC declares its policy
@@ -235,4 +235,4 @@ annotation fails CI.
 - Daemon-side auth model: `core/gibson/docs/auth.md`.
 - ext-authz internals: `core/ext-authz/docs/auth.md`.
 - Helm wiring (Envoy, SPIRE, Vault): the `charts` repo.
-- Data-plane half (per-tenant Conn): [`data-plane.md`](./data-plane.md).
+- Data-plane half (per-tenant Conn): the dial helpers in `daemonclient/`.

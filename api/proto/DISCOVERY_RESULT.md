@@ -14,9 +14,8 @@ The `DiscoveryResult` message is a **standardized container** for declaring disc
 
 ## Location
 
-- **Proto Definition**: `api/proto/graphrag.proto`
-- **Generated Go Code**: `api/gen/graphragpb/graphrag.pb.go`
-- **Documentation**: See `docs/TOOLS.md` for complete tool development guide
+- **Proto Definition**: `api/proto/gibson/graphrag/v1/graphrag.proto`
+- **Generated Go Code**: `api/gen/gibson/graphrag/v1/graphrag.pb.go`
 
 ## Quick Start
 
@@ -871,6 +870,5 @@ CustomNodes: []*graphragpb.CustomNode{
 
 ## See Also
 
-- **[Tool Development Guide](../../docs/TOOLS.md)** - Complete guide to building Gibson tools
-- **[Proto Definitions](./graphrag.proto)** - Complete proto schema reference
+- **[Proto Definitions](./gibson/graphrag/v1/graphrag.proto)** - Complete proto schema reference
 - **[SDK Examples](../../examples/)** - Example tool implementations
