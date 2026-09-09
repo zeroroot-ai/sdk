@@ -204,8 +204,8 @@ files.
 
 ## Reference: `object_deriver` choices
 
-Supported by ext-authz today
-([`core/ext-authz/internal/fga/check.go`](../../ext-authz/internal/fga/check.go)):
+Supported by ext-authz today, in `core/ext-authz/internal/fga/check.go`,
+which is not in this repository:
 
 | Deriver | Object string emitted | Use when |
 |---|---|---|

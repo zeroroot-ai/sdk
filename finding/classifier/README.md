@@ -469,6 +469,6 @@ func TestClassifier(t *testing.T) {
 
 ## See Also
 
-- [Finding Registry](../registry/README.md) - Category registry management
-- [Finding Submission](../README.md) - Creating and submitting findings
-- [Agent Harness](../../../agent/README.md) - Agent integration guide
+- `finding/registry` - Category registry management
+- `finding` - Creating and submitting findings
+- `harness` - Agent integration surface
