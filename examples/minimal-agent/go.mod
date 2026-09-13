@@ -2,7 +2,7 @@ module github.com/zeroroot-ai/sdk/examples/minimal-agent
 
 go 1.26.8
 
-require github.com/zeroroot-ai/sdk v0.177.2
+require github.com/zeroroot-ai/sdk v0.177.4
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.11-20260709200747-435963d16310.1 // indirect
