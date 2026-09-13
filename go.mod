@@ -3,7 +3,7 @@ module github.com/zeroroot-ai/sdk
 go 1.26.8
 
 require (
-	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.11-20260709200747-435963d16310.1
+	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.12-20260825204119-511051f7f437.2
 	buf.build/go/protovalidate v1.2.0
 	github.com/agnivade/levenshtein v1.2.1
 	github.com/golang-jwt/jwt/v5 v5.3.1
