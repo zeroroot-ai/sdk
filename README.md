@@ -12,12 +12,21 @@ go get github.com/zeroroot-ai/sdk@latest
 
 ## Overview
 
-Gibson is the **Kubernetes-native AI agent development framework**. Deploy Gibson with Helm, then use this SDK to build autonomous agents that:
+This module is the component-development surface: the interfaces, types and
+gRPC serving code you compile into your own agent, tool or plugin. It holds no
+platform runtime.
 
-- Reason with frontier LLMs (Claude, GPT, Gemini, Ollama)
-- Execute tools via distributed Redis work queues
-- Store knowledge in a Neo4j-backed graph database
-- Scale horizontally with standard Kubernetes patterns
+The platform provides the runtime capabilities your component reaches through
+the harness. Deploy Gibson with Helm, and it gives your component:
+
+- LLM completions against the providers the platform is configured with
+- Tool execution across the platform's distributed work queues
+- A knowledge graph your component reads and writes through `Observe`
+- Horizontal scaling with standard Kubernetes patterns
+
+The SDK defines the wire contract for each of those. It does not contain an LLM
+client, a queue or a graph database. See <https://docs.zeroroot.ai> for the
+platform itself.
 
 ```bash
 # Deploy Gibson to your cluster
@@ -121,34 +130,24 @@ spec:
 
 ### The Harness
 
-Every agent receives a `Harness` - your single interface to all Gibson capabilities:
+Every agent receives a `Harness` - your single interface to the platform. It is
+composed of capability groups, declared in [`agent/harness.go`](agent/harness.go):
 
-```go
-type Harness interface {
-    // LLM Access - reason with AI
-    Complete(ctx, slot, messages, opts...) (*CompletionResponse, error)
-    CompleteWithTools(ctx, slot, messages, tools) (*CompletionResponse, error)
-    CompleteStructured(ctx, slot, schema, messages) (*StructuredResult, error)
+| Group | Methods |
+|-------|---------|
+| `LLMCaller` | `Complete`, `CompleteWithTools`, `Stream`, `CompleteStructured`, `CompleteStructuredAny` |
+| `ToolCaller` | `CallToolProto`, `CallToolProtoStream`, `ListTools`, `QueueToolWork`, `ToolResults` |
+| `PluginCaller` | `QueryPlugin`, `ListPlugins` |
+| `Delegator` | `DelegateToAgent`, `ListAgents` |
+| `WorldEmitter` | `SubmitFinding`, `Observe` |
+| `WorldReader` | `WorldView` |
+| `KnowledgeReader` | `QueryNodes`, `FindSimilarFindings`, `GetAttackChains`, and the other read-only graph queries |
+| `Planner` | `PlanContext`, `ReportStepHints` |
+| `WorkspaceAccess` | `Workspace`, `Workspaces` |
+| `MissionManager` | `CreateMission`, `RunMission`, `GetMissionStatus`, `WaitForMission`, `ListMissions`, `CancelMission`, `GetMissionResults` |
 
-    // Tool Execution - call tools via Redis queues
-    ExecuteTool(ctx, name, input proto.Message) (proto.Message, error)
-    CallToolProto(ctx, name, request, response proto.Message) error
-
-    // Agent Delegation - spawn sub-agents
-    DelegateToAgent(ctx, name, task) (Result, error)
-
-    // Memory - three-tier persistence
-    Memory() MemoryManager
-
-    // Knowledge Graph - read-only; writes go through Observe
-    QueryNodes(ctx, query) ([]*QueryResult, error)
-    Observe(ctx, observation) error
-
-    // Observability - built-in tracing and logging
-    Logger() *slog.Logger
-    Tracer() trace.Tracer
-}
-```
+`Harness` also carries `Authorize`, `Mission`, `Target`, `Logger`, `Tracer` and
+`TokenUsage`.
 
 ### LLM Slots
 
@@ -177,22 +176,6 @@ func (a *MyAgent) LLMSlots() []agent.SlotDefinition {
 | `vision` | Image analysis capability |
 | `streaming` | Streaming response support |
 | `json_mode` | Structured JSON output |
-
-### Three-Tier Memory
-
-```go
-// Working Memory - ephemeral, task-scoped
-h.Memory().Working().Set(ctx, "step", "diagnosing")
-h.Memory().Working().Get(ctx, "step")
-
-// Mission Memory - persistent, Redis-backed with full-text search
-h.Memory().Mission().Set(ctx, "findings", data, metadata)
-h.Memory().Mission().Search(ctx, "error timeout", 10)
-
-// Long-Term Memory - vector embeddings for semantic search
-h.Memory().LongTerm().Store(ctx, "Kubernetes OOM kills often caused by...", metadata)
-h.Memory().LongTerm().Search(ctx, "pod memory issues", 5)
-```
 
 ## Building an Agent
 
@@ -621,22 +604,31 @@ Domain ──[HAS_SUBDOMAIN]──▶ Subdomain ──[RESOLVES_TO]──▶ Hos
 
 ```
 sdk/
-├── agent/       # Agent interfaces and types
-├── tool/        # Tool interfaces and worker system
-├── plugin/      # Plugin interfaces
-├── llm/         # LLM abstractions and message types
-├── memory/      # Three-tier memory APIs
-├── mission/     # Mission context types
-├── result/      # Execution result types
-├── health/      # Health check utilities
-├── serve/       # gRPC serving utilities
-├── graphrag/    # Knowledge graph integration
-│   ├── domain/      # Generated domain types
-│   ├── validation/  # CEL-based validators
-│   └── id/          # Node ID generation
-├── taxonomy/    # YAML-driven taxonomy
-└── examples/    # Reference implementations
+├── agent/          # Agent interface, harness, task and result types
+├── tool/           # Tool interface and builders
+├── plugin/         # Plugin interface and serving
+├── llm/            # LLM message, completion and slot types
+├── mission/        # Mission context and sub-mission types
+├── finding/        # Structured security findings
+├── graphrag/       # Knowledge graph client
+│   ├── domain/         # Generated domain types
+│   ├── validation/     # CEL-based validators
+│   ├── query/          # Query builders
+│   └── id/             # Node ID generation
+├── auth/           # SDK-side identity and authorization
+├── capabilitygrant/ # Capability Grant Protocol client
+├── spiffe/         # SPIFFE Workload API helpers
+├── serve/          # gRPC serving utilities
+├── health/         # Health check helpers
+├── schema/         # JSON Schema types and validation
+├── taxonomy/       # Compliance rule catalog loader
+├── toolrunner/     # Tool worker runtime
+├── codegen/        # Code generation, editing and workspace primitives
+└── examples/       # Reference implementations
 ```
+
+`go list ./...` is the full list. The module has no `memory` package and no
+`result` package.
 
 ## gRPC Serving Options
 
@@ -657,7 +649,7 @@ serve.Plugin(plugin, serve.WithPort(50053))
 
 | Guide | Description |
 |-------|-------------|
-| [Feature reference](FEATURES.md) | Every package this SDK ships, and its entry points |
+| [Feature reference](FEATURES.md) | The SDK surface: what each package gives a component author |
 | [Identity and authorization](docs/auth.md) | Tenant identity, capability grants and the gRPC interceptor |
 | [Add an RPC](docs/how-to-add-a-rpc.md) | The steps that add a new RPC end to end |
 | [Forbidden patterns](docs/forbidden-patterns.md) | Wrong and right code shapes, side by side |
