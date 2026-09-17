@@ -32,7 +32,7 @@
 
 // GetMissionCheckpointsRequest/Response and CheckpointInfo (previously
 // defined here) were removed with the retired GetMissionCheckpoints RPC
-// (gibson#1117; ADR-0011).
+// (ADR-0011).
 
 // MissionConstraints message removed under ADR 0004,
 // "Canonical MissionConstraints".
@@ -83,11 +83,11 @@
 // ---------------------------------------------------------------------------
 
 // ────────────────────────────────────────────────────────────────────────────
-// GetMissionDefinition — mission-author-experience M5 (gibson#134)
+// GetMissionDefinition — mission-author-experience M5
 // ────────────────────────────────────────────────────────────────────────────
 
 // ────────────────────────────────────────────────────────────────────────────
-// Mission flow-chart projection + layout store — MissionGraph epic (sdk#278)
+// Mission flow-chart projection + layout store — MissionGraph epic
 //
 // The daemon projects a mission definition (the pure work DAG) into a
 // renderable graph and owns a SEPARATE layout store for hand-arranged
@@ -100,14 +100,14 @@
 // Checkpoint, DagStep, FindingSnapshot, ParallelGroupState,
 // BlobReference, DiffCheckpointsRequest/Response, CheckpointDiff and
 // its delta messages), previously defined here, were removed with the
-// retired checkpoint RPCs (gibson#1117; ADR-0011).
+// retired checkpoint RPCs (ADR-0011).
 
 // ---------------------------------------------------------------------------
 // CUE mission editor messages (mission-cue-editor epic)
 //
 // Collapsed onto DaemonService from gibson.daemon.admin.v1 (platform-sdk) so
 // ADK / SDK users can drive the CUE language service with a single user token.
-// Part of the one-customer-surface epic (zeroroot-ai/.github#143).
+// Part of the one-customer-surface epic.
 // ---------------------------------------------------------------------------
 package daemonpb
 
@@ -688,7 +688,7 @@ import (
 	superStepNumber?: int32 @protobuf(3,int32,name=super_step_number)
 
 	// cadence_reason is a free-form classifier for why the checkpoint was
-	// taken. Recognised values per R9.1: "super_step",
+	// taken. Recognized values per R9.1: "super_step",
 	// "parallel_group_complete", "approval_required", "graceful_shutdown".
 	// Promoted to enum at v1.0.0.
 	cadenceReason?: string @protobuf(4,string,name=cadence_reason)
@@ -806,7 +806,7 @@ import (
 	// If empty, resumes from the latest checkpoint
 	checkpointId?: string @protobuf(2,string,name=checkpoint_id)
 
-	// Empty string = legacy resume-from-latest behaviour (backward compatible).
+	// Empty string = legacy resume-from-latest behavior (backward compatible).
 	// When non-empty, the daemon rewinds the mission to the named checkpoint
 	// and resumes execution from that point. The handler additionally enforces
 	// the mission#admin FGA relation when this field is non-empty per
@@ -1086,7 +1086,7 @@ import (
 	//     > definition constraints.max_tokens_per_call
 	//     > per-node *NodeConfig.max_tokens_per_call (lowest; wins if set)
 	//
-	// Spec: ADR 0004, mission-schema-canonicalization; gibson#133 (M4).
+	// Spec: ADR 0004, mission-schema-canonicalization (M4).
 	constraints?: missionpb.#MissionConstraints @protobuf(5,gibson.mission.v1.MissionConstraints)
 
 	// metadata provides additional mission metadata

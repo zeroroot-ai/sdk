@@ -62,7 +62,7 @@ const (
 	NodeType_NODE_TYPE_PARALLEL NodeType = 5
 	// Join node waits for multiple branches to complete
 	NodeType_NODE_TYPE_JOIN NodeType = 6
-	// Job node drives a job on a bank of always-on agents (gibson#1706).
+	// Job node drives a job on a bank of always-on agents.
 	// Its executor opens the job, runs the verify loop against the
 	// acceptance the spec declares, and closes the job with a verdict.
 	NodeType_NODE_TYPE_JOB NodeType = 7
@@ -353,11 +353,11 @@ type MissionDefinition struct {
 	// dispatch-time overrides (dispatch wins on conflict).
 	// Optional: absent means no constraints are baked into the definition.
 	//
-	// Spec: sdk#47 (MissionConstraints proto promotion).
+	// Spec: MissionConstraints proto promotion.
 	Constraints *MissionConstraints `protobuf:"bytes,16,opt,name=constraints,proto3,oneof" json:"constraints,omitempty"`
 	// DeciderSlot names the mission-level LLM the brain's Decider runs on — the
-	// orchestration decision-maker, distinct from per-node agent slots
-	// (gibson#850). Only the provider+model are used (the slot name is implicitly
+	// orchestration decision-maker, distinct from per-node agent slots.
+	// Only the provider+model are used (the slot name is implicitly
 	// "decider"). Absent means the brain uses the tenant's dashboard-default
 	// provider/model, so missions need not set it.
 	DeciderSlot *LLMSlotConfig `protobuf:"bytes,17,opt,name=decider_slot,json=deciderSlot,proto3,oneof" json:"decider_slot,omitempty"`
@@ -525,7 +525,7 @@ func (x *MissionDefinition) GetDeciderSlot() *LLMSlotConfig {
 //   - max_cost      : 0.0         → no cost ceiling
 //   - max_findings  : 0           → no finding count limit
 //
-// Spec: sdk#47 (MissionConstraints proto promotion).
+// Spec: MissionConstraints proto promotion.
 type MissionConstraints struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -589,7 +589,7 @@ type MissionConstraints struct {
 	// individual LLM call.
 	//
 	// 0 means unlimited at this level. Spec: mission-schema-canonicalization
-	// Requirement 5. Enforced by EffectivePerCallCap() (wired in M4, gibson#133).
+	// Requirement 5. Enforced by EffectivePerCallCap() (wired in M4).
 	MaxTokensPerCall int32 `protobuf:"varint,12,opt,name=max_tokens_per_call,json=maxTokensPerCall,proto3" json:"max_tokens_per_call,omitempty"`
 }
 
@@ -811,7 +811,7 @@ type MissionNode struct {
 	// DataPolicy defines data handling policy for this node.
 	//
 	// Deprecated: data reuse + scoping are no longer node-declared. Under the
-	// ECS brain (gibson#851, ADR-0008) reuse is implicit in the event-sourced
+	// ECS brain (ADR-0008) reuse is implicit in the event-sourced
 	// World and scoping flows from scope-relative identity (ADR-0002) +
 	// ambient projection. The field is retained wire-compatibly for old
 	// definitions but is ignored by the engine.
@@ -823,7 +823,7 @@ type MissionNode struct {
 	// ReusePolicy declares how this node's I/O is scoped +
 	// reused across mission runs.
 	//
-	// Deprecated: superseded by the ECS brain (gibson#851, ADR-0008). Reuse is
+	// Deprecated: superseded by the ECS brain (ADR-0008). Reuse is
 	// implicit in the World; scoping is via scope-relative identity (ADR-0002)
 	// + ambient projection. Retained wire-compatibly but ignored by the engine.
 	//
@@ -1028,7 +1028,7 @@ type MissionNode_JoinConfig struct {
 }
 
 type MissionNode_JobConfig struct {
-	// JobConfig for job nodes (gibson#1706). Field number 17 because
+	// JobConfig for job nodes. Field number 17 because
 	// 16 is the sibling reuse_policy field.
 	JobConfig *JobNodeConfig `protobuf:"bytes,17,opt,name=job_config,json=jobConfig,proto3,oneof"`
 }
@@ -1073,7 +1073,7 @@ type AgentNodeConfig struct {
 	// MissionConstraints.max_tokens_per_call applies instead.
 	//
 	// 0 = inherit from mission-level (when this field is absent).
-	// Spec: mission-schema-canonicalization Requirement 5; gibson#133.
+	// Spec: mission-schema-canonicalization Requirement 5.
 	MaxTokensPerCall *int32 `protobuf:"varint,3,opt,name=max_tokens_per_call,json=maxTokensPerCall,proto3,oneof" json:"max_tokens_per_call,omitempty"`
 	// llm_slots pins LLM provider/model bindings per named slot for this agent
 	// node. Each entry maps a slot name to a specific provider+model. Multiple
@@ -1088,7 +1088,7 @@ type AgentNodeConfig struct {
 	// Precedence at resolution per slot: explicit binding in llm_slots >
 	// tenant default > constraint search over the tenant's permitted providers.
 	//
-	// Spec: sdk#260 (multi-slot LLM binding contract); consumer: gibson#524.
+	// Spec: multi-slot LLM binding contract.
 	LlmSlots []*LLMSlotConfig `protobuf:"bytes,5,rep,name=llm_slots,json=llmSlots,proto3" json:"llm_slots,omitempty"`
 }
 
@@ -1241,7 +1241,7 @@ type ToolNodeConfig struct {
 	// Follows the same semantics as AgentNodeConfig.max_tokens_per_call:
 	// present and non-zero caps the call; present and 0 disables the cap for
 	// this node; absent means fall through to the mission-level constraint.
-	// Spec: mission-schema-canonicalization Requirement 5; gibson#133.
+	// Spec: mission-schema-canonicalization Requirement 5.
 	MaxTokensPerCall *int32 `protobuf:"varint,3,opt,name=max_tokens_per_call,json=maxTokensPerCall,proto3,oneof" json:"max_tokens_per_call,omitempty"`
 }
 
@@ -1319,7 +1319,7 @@ type PluginNodeConfig struct {
 	// Follows the same semantics as AgentNodeConfig.max_tokens_per_call:
 	// present and non-zero caps the call; present and 0 disables the cap for
 	// this node; absent means fall through to the mission-level constraint.
-	// Spec: mission-schema-canonicalization Requirement 5; gibson#133.
+	// Spec: mission-schema-canonicalization Requirement 5.
 	MaxTokensPerCall *int32 `protobuf:"varint,4,opt,name=max_tokens_per_call,json=maxTokensPerCall,proto3,oneof" json:"max_tokens_per_call,omitempty"`
 }
 
@@ -1858,7 +1858,7 @@ func (x *WorkspaceSettings) GetBaseDirectory() string {
 // ReusePolicy declares how a node's I/O is scoped + reused
 // across mission runs.
 //
-// Deprecated: superseded by the ECS brain (gibson#851, ADR-0008). Reuse is
+// Deprecated: superseded by the ECS brain (ADR-0008). Reuse is
 // implicit in the event-sourced World and scoping flows from scope-relative
 // identity (ADR-0002) + ambient projection, so node-declared reuse/scoping no
 // longer has meaning. Retained wire-compatibly; ignored by the engine.
@@ -1935,8 +1935,8 @@ func (x *ReusePolicy) GetReuse() string {
 
 // RetryPolicy defines the retry behavior for a mission node
 // JobNodeConfig contains configuration for job nodes.
-// JOB = a unit of work driven on a bank of always-on coding agents
-// (gibson#1706). The executor opens a job on the bank, then runs the verify
+// JOB = a unit of work driven on a bank of always-on coding agents.
+// The executor opens a job on the bank, then runs the verify
 // loop: it dispatches the acceptance step to the declared verifier
 // component, and on failure sends the verifier's report as the next input
 // to the SAME job, so the agent keeps its conversation and its worktrees.
@@ -2101,7 +2101,7 @@ func (x *RetryPolicy) GetMultiplier() float64 {
 
 // DataPolicy defines how data is handled for a node.
 //
-// Deprecated: superseded by the ECS brain (gibson#851, ADR-0008). Data
+// Deprecated: superseded by the ECS brain (ADR-0008). Data
 // handling (reuse + scoping) is now implicit in the event-sourced World and
 // scope-relative identity (ADR-0002) + ambient projection. Retained
 // wire-compatibly; ignored by the engine.
@@ -2195,7 +2195,7 @@ func (x *DataPolicy) GetAccessControl() []string {
 //
 // The graph is acyclic. A loop is never an edge. Work that repeats until it
 // passes an acceptance step loops INSIDE one node: a job node runs its
-// verify loop against the same job (gibson#1706), and a node's RetryPolicy
+// verify loop against the same job, and a node's RetryPolicy
 // retries the node itself.
 type MissionEdge struct {
 	state         protoimpl.MessageState

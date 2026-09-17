@@ -89,8 +89,8 @@ message CreateAgentIdentityRequest {
   // capability_ceiling names the session capabilities the enrolling admin
   // grants this identity, minted into its bootstrap credential's ceiling
   // (ADR-0045). Only the reserved names are accepted: "mission:originate"
-  // (start a mission of its own, the interactive coding-agent case,
-  // gibson#1593 decision 9) and "mission:delegate". Empty means neither.
+  // (start a mission of its own, the interactive coding-agent case) and
+  // "mission:delegate". Empty means neither.
   repeated string capability_ceiling = 5;
 }
 
@@ -101,7 +101,7 @@ message CreateAgentIdentityResponse {
   // client_credentials grant. They were removed when enrollment unified on the
   // one capability-grant handshake (ADR-0045): no OAuth client is provisioned
   // for machine principals; bootstrap_token is the sole credential. The field
-  // numbers and names are reserved so they are never reused (gibson#670).
+  // numbers and names are reserved so they are never reused.
   reserved 4, 5;
   reserved "client_id", "client_secret";
 

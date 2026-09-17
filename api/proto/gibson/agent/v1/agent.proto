@@ -116,7 +116,7 @@ message ExecuteRequest {
     // Run number - sequential number for this mission (1, 2, 3...).
     // Used for mission memory queries and historical comparisons.
     int32 run_number = 11;
-    // job_id names the job this execution serves (gibson#1706). A one-shot
+    // job_id names the job this execution serves. A one-shot
     // dispatch and a bank job then share one result path. Empty for a
     // dispatch that opens no job.
     string job_id = 12;
@@ -126,7 +126,7 @@ message ExecuteResponse {
     gibson.types.v1.Result result = 1;
     gibson.common.v1.Error error = 2;
     // deliverables lists what left the sandbox for this execution: a pushed
-    // branch, an opened merge request (gibson#1706). Empty when nothing left.
+    // branch, an opened merge request. Empty when nothing left.
     repeated gibson.job.v1.Deliverable deliverables = 3;
     // claude_session_id is the coding-agent session that ran this execution,
     // so a later turn resumes the same conversation. Empty for an agent that

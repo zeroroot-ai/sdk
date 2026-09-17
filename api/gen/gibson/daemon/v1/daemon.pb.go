@@ -2453,7 +2453,7 @@ type CheckpointMetadata struct {
 	// captured (1-based; 0 if not super-step-aligned).
 	SuperStepNumber int32 `protobuf:"varint,3,opt,name=super_step_number,json=superStepNumber,proto3" json:"super_step_number,omitempty"`
 	// cadence_reason is a free-form classifier for why the checkpoint was
-	// taken. Recognised values per R9.1: "super_step",
+	// taken. Recognized values per R9.1: "super_step",
 	// "parallel_group_complete", "approval_required", "graceful_shutdown".
 	// Promoted to enum at v1.0.0.
 	CadenceReason string `protobuf:"bytes,4,opt,name=cadence_reason,json=cadenceReason,proto3" json:"cadence_reason,omitempty"`
@@ -3054,7 +3054,7 @@ type ResumeMissionRequest struct {
 	// checkpoint_id optionally specifies a specific checkpoint to resume from
 	// If empty, resumes from the latest checkpoint
 	CheckpointId string `protobuf:"bytes,2,opt,name=checkpoint_id,json=checkpointId,proto3" json:"checkpoint_id,omitempty"`
-	// Empty string = legacy resume-from-latest behaviour (backward compatible).
+	// Empty string = legacy resume-from-latest behavior (backward compatible).
 	// When non-empty, the daemon rewinds the mission to the named checkpoint
 	// and resumes execution from that point. The handler additionally enforces
 	// the mission#admin FGA relation when this field is non-empty per
@@ -4229,7 +4229,7 @@ type CreateMissionRequest struct {
 	//	  > definition constraints.max_tokens_per_call
 	//	  > per-node *NodeConfig.max_tokens_per_call (lowest; wins if set)
 	//
-	// Spec: ADR 0004, mission-schema-canonicalization; gibson#133 (M4).
+	// Spec: ADR 0004, mission-schema-canonicalization (M4).
 	Constraints *v11.MissionConstraints `protobuf:"bytes,5,opt,name=constraints,proto3" json:"constraints,omitempty"`
 	// metadata provides additional mission metadata
 	Metadata map[string]string `protobuf:"bytes,6,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`

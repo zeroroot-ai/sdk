@@ -3745,7 +3745,7 @@ func (x *HarnessPluginDescriptor) GetMethods() []string {
 
 // DelegateToAgentRequest dispatches a task to another agent. The target
 // selector says WHERE the task runs. Absent means an ephemeral launch, which
-// is the behavior every caller had before banks existed (gibson#1706).
+// is the behavior every caller had before banks existed.
 type DelegateToAgentRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -5145,9 +5145,9 @@ type ApplicationFinding struct {
 	ImageKey      string `protobuf:"bytes,10,opt,name=image_key,json=imageKey,proto3" json:"image_key,omitempty"`
 	// priority, priority_rule and priority_reason are what a previous triage
 	// pass decided about this Finding, written back by the agent and returned
-	// here so the next pass can read its own history (gibson#1684).
+	// here so the next pass can read its own history.
 	//
-	// Two behaviours are dark while they are empty. A triage rule that keeps
+	// Two behaviors are dark while they are empty. A triage rule that keeps
 	// the previous priority when a scoring feed is unavailable — so an outage
 	// never re-ranks a Finding on severity alone — has nothing to keep. And a
 	// pass that explains only what changed sees every decision as a change, so
@@ -6791,8 +6791,7 @@ func (*ObserveRequest_LifecycleEntity) isObserveRequest_Observation() {}
 
 // LifecycleEntityObservation reports a sighting of a typed application-lifecycle
 // entity: an Application, Repository, Image, Package, Deployment, Vulnerability,
-// MergeRequest, Pipeline or Control, and the edges it was seen to have
-// (gibson#1656).
+// MergeRequest, Pipeline or Control, and the edges it was seen to have.
 //
 // Admission is the Taxonomy's decision, not this message's. The daemon puts
 // label and every edge type to the global Taxonomy; an admitted shape becomes a
@@ -7551,8 +7550,8 @@ func (x *AccountObservation) GetKind() string {
 }
 
 // MemoryObservation reports a fact the agent wants to keep across runs, in the
-// agent's own words. It is the memory write for coding agents (gibson#1593,
-// decision 10): a memory is a World observation, not a store of its own.
+// agent's own words. It is the memory write for coding agents: a memory is
+// a World observation, not a store of its own.
 //
 // Identity is per sighting: the Timeline event id, like every observation. The
 // Taxonomy gate lands it as an `Observation` node with shape "Memory" until
@@ -10687,7 +10686,7 @@ func (x *ValidationError) GetCode() string {
 // Deprecated: use gibson.mission.v1.MissionConstraints via the
 // canonical_constraints field on CreateMissionRequest instead.
 // This type will be removed in a follow-up release after all microVM
-// consumers have migrated (see sdk#64 migration plan).
+// consumers have migrated.
 //
 // Deprecated: Marked as deprecated in gibson/harness/v1/harness_callback.proto.
 type MissionConstraints struct {
@@ -11247,14 +11246,14 @@ type CreateMissionRequest struct {
 	// constraints uses the harness-local MissionConstraints shape which only
 	// carries max_duration_ms (int64 ms), max_tokens, max_cost, and max_findings.
 	// It will be removed in a follow-up release once all microVM consumers
-	// have migrated to canonical_constraints. See sdk#64 migration plan.
+	// have migrated to canonical_constraints.
 	//
 	// Deprecated: Marked as deprecated in gibson/harness/v1/harness_callback.proto.
 	Constraints *MissionConstraints       `protobuf:"bytes,5,opt,name=constraints,proto3" json:"constraints,omitempty"`
 	Metadata    map[string]*v1.TypedValue `protobuf:"bytes,6,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	Tags        []string                  `protobuf:"bytes,7,rep,name=tags,proto3" json:"tags,omitempty"`
 	// canonical_constraints carries the platform-canonical
-	// gibson.mission.v1.MissionConstraints type (sdk#47 / ADR 0004).
+	// gibson.mission.v1.MissionConstraints type (ADR 0004).
 	// Prefer this field over the deprecated constraints (field 5).
 	// The daemon merges canonical_constraints with any constraints baked
 	// into the mission definition (dispatch wins on conflict).

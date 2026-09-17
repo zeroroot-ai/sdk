@@ -813,7 +813,7 @@ type HeartbeatRequest struct {
 	// health_message provides optional human-readable detail about the health status.
 	HealthMessage string `protobuf:"bytes,3,opt,name=health_message,json=healthMessage,proto3" json:"health_message,omitempty"`
 	// member is the bank member status when this instance is a member of a
-	// bank (gibson#1706): busy or not busy, how many jobs it holds, which
+	// bank: busy or not busy, how many jobs it holds, which
 	// ones, and the coding-agent version it runs. The daemon routes a queued
 	// job to a member that reports a free slot. Absent for a component that
 	// is not a bank member. health_status and health_message stay: they

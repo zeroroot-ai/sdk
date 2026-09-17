@@ -144,7 +144,6 @@ type DaemonServiceClient interface {
 	// All other fields replace the stored definition; the server-assigned ID and
 	// original timestamps are preserved. Returns codes.NotFound if no definition
 	// with that name exists.
-	// Spec: gibson#437.
 	UpdateMissionDefinition(ctx context.Context, in *UpdateMissionDefinitionRequest, opts ...grpc.CallOption) (*UpdateMissionDefinitionResponse, error)
 	// GetMissionDefinition returns the full structured proto for a single
 	// installed mission definition, looked up by name. Use this instead of
@@ -152,7 +151,7 @@ type DaemonServiceClient interface {
 	// needs every author-facing field (workspace, constraints, per-node
 	// retry/data/reuse policies). Returns codes.NotFound when the name is
 	// not registered.
-	// Spec: mission-author-experience M5 (gibson#134).
+	// Spec: mission-author-experience M5.
 	GetMissionDefinition(ctx context.Context, in *GetMissionDefinitionRequest, opts ...grpc.CallOption) (*GetMissionDefinitionResponse, error)
 	// GetMissionGraph returns the renderable flow-chart projection of a mission
 	// definition: typed nodes (boxes), data-flow edges, derived entry/exit, and
@@ -161,20 +160,20 @@ type DaemonServiceClient interface {
 	// mission layout store (SaveMissionLayout) so hand-arranged positions win.
 	// This keeps the dashboard a pure renderer — it never re-derives topology.
 	// Presentation only: nothing here affects mission execution.
-	// Spec: MissionGraph epic (sdk#278).
+	// Spec: MissionGraph epic.
 	GetMissionGraph(ctx context.Context, in *GetMissionGraphRequest, opts ...grpc.CallOption) (*GetMissionGraphResponse, error)
 	// GetMissionLayout returns the saved diagram layout (per-node positions +
 	// viewport) for a mission definition, or an empty layout when none has been
 	// saved. The layout store is separate from the mission definition record —
 	// the mission work-schema carries no presentation state. Keyed by
-	// mission_definition_id. Spec: MissionGraph epic (sdk#278).
+	// mission_definition_id. Spec: MissionGraph epic.
 	GetMissionLayout(ctx context.Context, in *GetMissionLayoutRequest, opts ...grpc.CallOption) (*GetMissionLayoutResponse, error)
 	// SaveMissionLayout persists a hand-arranged diagram layout for a mission
 	// definition into the layout store. Layout-only: it never mutates the mission
 	// definition, its nodes/edges/configs, or its cue_source. The optional
 	// expected_version enables optimistic concurrency — a stale write (the layout
 	// changed underneath) is rejected rather than clobbering. Keyed by
-	// mission_definition_id. Spec: MissionGraph epic (sdk#278).
+	// mission_definition_id. Spec: MissionGraph epic.
 	SaveMissionLayout(ctx context.Context, in *SaveMissionLayoutRequest, opts ...grpc.CallOption) (*SaveMissionLayoutResponse, error)
 	// ListAgents returns all registered agents from the etcd registry.
 	ListAgents(ctx context.Context, in *ListAgentsRequest, opts ...grpc.CallOption) (*ListAgentsResponse, error)
@@ -802,7 +801,6 @@ type DaemonServiceServer interface {
 	// All other fields replace the stored definition; the server-assigned ID and
 	// original timestamps are preserved. Returns codes.NotFound if no definition
 	// with that name exists.
-	// Spec: gibson#437.
 	UpdateMissionDefinition(context.Context, *UpdateMissionDefinitionRequest) (*UpdateMissionDefinitionResponse, error)
 	// GetMissionDefinition returns the full structured proto for a single
 	// installed mission definition, looked up by name. Use this instead of
@@ -810,7 +808,7 @@ type DaemonServiceServer interface {
 	// needs every author-facing field (workspace, constraints, per-node
 	// retry/data/reuse policies). Returns codes.NotFound when the name is
 	// not registered.
-	// Spec: mission-author-experience M5 (gibson#134).
+	// Spec: mission-author-experience M5.
 	GetMissionDefinition(context.Context, *GetMissionDefinitionRequest) (*GetMissionDefinitionResponse, error)
 	// GetMissionGraph returns the renderable flow-chart projection of a mission
 	// definition: typed nodes (boxes), data-flow edges, derived entry/exit, and
@@ -819,20 +817,20 @@ type DaemonServiceServer interface {
 	// mission layout store (SaveMissionLayout) so hand-arranged positions win.
 	// This keeps the dashboard a pure renderer — it never re-derives topology.
 	// Presentation only: nothing here affects mission execution.
-	// Spec: MissionGraph epic (sdk#278).
+	// Spec: MissionGraph epic.
 	GetMissionGraph(context.Context, *GetMissionGraphRequest) (*GetMissionGraphResponse, error)
 	// GetMissionLayout returns the saved diagram layout (per-node positions +
 	// viewport) for a mission definition, or an empty layout when none has been
 	// saved. The layout store is separate from the mission definition record —
 	// the mission work-schema carries no presentation state. Keyed by
-	// mission_definition_id. Spec: MissionGraph epic (sdk#278).
+	// mission_definition_id. Spec: MissionGraph epic.
 	GetMissionLayout(context.Context, *GetMissionLayoutRequest) (*GetMissionLayoutResponse, error)
 	// SaveMissionLayout persists a hand-arranged diagram layout for a mission
 	// definition into the layout store. Layout-only: it never mutates the mission
 	// definition, its nodes/edges/configs, or its cue_source. The optional
 	// expected_version enables optimistic concurrency — a stale write (the layout
 	// changed underneath) is rejected rather than clobbering. Keyed by
-	// mission_definition_id. Spec: MissionGraph epic (sdk#278).
+	// mission_definition_id. Spec: MissionGraph epic.
 	SaveMissionLayout(context.Context, *SaveMissionLayoutRequest) (*SaveMissionLayoutResponse, error)
 	// ListAgents returns all registered agents from the etcd registry.
 	ListAgents(context.Context, *ListAgentsRequest) (*ListAgentsResponse, error)

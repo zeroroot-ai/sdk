@@ -327,8 +327,8 @@ type Task struct {
 	Context     map[string]*v1.TypedValue `protobuf:"bytes,3,rep,name=context,proto3" json:"context,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	Constraints *TaskConstraints          `protobuf:"bytes,4,opt,name=constraints,proto3" json:"constraints,omitempty"`
 	Metadata    map[string]*v1.TypedValue `protobuf:"bytes,5,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// job names the typed resources this task needs and how it is judged
-	// (gibson#1706). It is set when the task opens or continues a job on a
+	// job names the typed resources this task needs and how it is judged.
+	// It is set when the task opens or continues a job on a
 	// bank member. goal stays the goal; the spec's own goal is ignored on a
 	// dispatched task. Absent on a task that needs no repository, no
 	// credential and no acceptance step.

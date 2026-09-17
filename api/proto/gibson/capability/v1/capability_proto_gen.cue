@@ -18,7 +18,7 @@
 // Spec: two-surface platform contract (ADR-0001, forthcoming);
 //       component-bootstrap-e2e Requirement 10 (read side);
 //       secrets-tenant-lifecycle Requirement 8.1 (write side, moved
-//       to platform-sdk under slice #108).
+//       to platform-sdk).
 package capabilityv1
 
 // RecipientClass is the class of caller a capability grant is issued

@@ -2269,7 +2269,7 @@ func (x *IFPDef) GetProperty() string {
 }
 
 // SameAsPair is one [iriA, iriB] equivalence assertion in an OntologyExtension.
-// Proto does not have a fixed-length array type, so the pair is modelled as a
+// Proto does not have a fixed-length array type, so the pair is modeled as a
 // dedicated message with two named fields to keep the wire shape stable across
 // languages.
 type SameAsPair struct {
