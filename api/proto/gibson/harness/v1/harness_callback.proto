@@ -2304,7 +2304,7 @@ message MissionRunSummary {
     string mission_id = 1;
     // run_number is the sequential run number for this mission name (1-based).
     int32 run_number = 2;
-    // status is the final status string (running, completed, failed, cancelled, paused).
+    // status is the final status string (`running`, `completed`, `failed`, `cancelled`, `paused`).
     string status = 3;
     // findings_count is the number of findings discovered in this run.
     int32 findings_count = 4;

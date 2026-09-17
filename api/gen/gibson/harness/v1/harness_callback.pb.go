@@ -12270,7 +12270,7 @@ type MissionRunSummary struct {
 	MissionId string `protobuf:"bytes,1,opt,name=mission_id,json=missionId,proto3" json:"mission_id,omitempty"`
 	// run_number is the sequential run number for this mission name (1-based).
 	RunNumber int32 `protobuf:"varint,2,opt,name=run_number,json=runNumber,proto3" json:"run_number,omitempty"`
-	// status is the final status string (running, completed, failed, cancelled, paused).
+	// status is the final status string (`running`, `completed`, `failed`, `cancelled`, `paused`).
 	Status string `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
 	// findings_count is the number of findings discovered in this run.
 	FindingsCount int32 `protobuf:"varint,4,opt,name=findings_count,json=findingsCount,proto3" json:"findings_count,omitempty"`

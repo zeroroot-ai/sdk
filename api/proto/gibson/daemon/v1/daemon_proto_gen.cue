@@ -250,7 +250,7 @@ import (
 // OperationResult represents the unified result of a long-running operation (attack or mission).
 // This provides typed metrics instead of JSON-encoded strings.
 #OperationResult: {
-	// status of the operation ("success", "failed", "timeout", "cancelled")
+	// status of the operation (`success`, `failed`, `timeout`, `cancelled`)
 	status?: string @protobuf(1,string)
 
 	// duration_ms is the total duration in milliseconds
@@ -726,7 +726,7 @@ import (
 	// offset is the pagination offset
 	offset?: int32 @protobuf(3,int32)
 
-	// status_filter filters missions by status (running, completed, failed, cancelled)
+	// status_filter filters missions by status (`running`, `completed`, `failed`, `cancelled`)
 	statusFilter?: string @protobuf(4,string,name=status_filter)
 
 	// name_pattern filters missions by name using glob pattern matching
@@ -843,7 +843,7 @@ import (
 	// run_number is the sequential run number for this mission name
 	runNumber?: int32 @protobuf(2,int32,name=run_number)
 
-	// status is the final status of this run (running, completed, failed, cancelled, paused)
+	// status is the final status of this run (`running`, `completed`, `failed`, `cancelled`, `paused`)
 	status?: string @protobuf(3,string)
 
 	// created_at is when this run was created (Unix timestamp)
