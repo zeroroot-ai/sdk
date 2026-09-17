@@ -666,7 +666,7 @@ message StatusResponse {
 // OperationResult represents the unified result of a long-running operation (attack or mission).
 // This provides typed metrics instead of JSON-encoded strings.
 message OperationResult {
-  // status of the operation ("success", "failed", "timeout", "cancelled")
+  // status of the operation (`success`, `failed`, `timeout`, `cancelled`)
   string status = 1;
 
   // duration_ms is the total duration in milliseconds
@@ -1155,7 +1155,7 @@ message ListMissionsRequest {
   // offset is the pagination offset
   int32 offset = 3;
 
-  // status_filter filters missions by status (running, completed, failed, cancelled)
+  // status_filter filters missions by status (`running`, `completed`, `failed`, `cancelled`)
   string status_filter = 4;
 
   // name_pattern filters missions by name using glob pattern matching
@@ -1278,7 +1278,7 @@ message MissionRun {
   // run_number is the sequential run number for this mission name
   int32 run_number = 2;
 
-  // status is the final status of this run (running, completed, failed, cancelled, paused)
+  // status is the final status of this run (`running`, `completed`, `failed`, `cancelled`, `paused`)
   string status = 3;
 
   // created_at is when this run was created (Unix timestamp)

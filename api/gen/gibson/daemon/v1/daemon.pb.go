@@ -640,7 +640,7 @@ type OperationResult struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// status of the operation ("success", "failed", "timeout", "cancelled")
+	// status of the operation (`success`, `failed`, `timeout`, `cancelled`)
 	Status string `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
 	// duration_ms is the total duration in milliseconds
 	DurationMs int64 `protobuf:"varint,2,opt,name=duration_ms,json=durationMs,proto3" json:"duration_ms,omitempty"`
@@ -2656,7 +2656,7 @@ type ListMissionsRequest struct {
 	Limit int32 `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
 	// offset is the pagination offset
 	Offset int32 `protobuf:"varint,3,opt,name=offset,proto3" json:"offset,omitempty"`
-	// status_filter filters missions by status (running, completed, failed, cancelled)
+	// status_filter filters missions by status (`running`, `completed`, `failed`, `cancelled`)
 	StatusFilter string `protobuf:"bytes,4,opt,name=status_filter,json=statusFilter,proto3" json:"status_filter,omitempty"`
 	// name_pattern filters missions by name using glob pattern matching
 	NamePattern string `protobuf:"bytes,5,opt,name=name_pattern,json=namePattern,proto3" json:"name_pattern,omitempty"`
@@ -3250,7 +3250,7 @@ type MissionRun struct {
 	MissionId string `protobuf:"bytes,1,opt,name=mission_id,json=missionId,proto3" json:"mission_id,omitempty"`
 	// run_number is the sequential run number for this mission name
 	RunNumber int32 `protobuf:"varint,2,opt,name=run_number,json=runNumber,proto3" json:"run_number,omitempty"`
-	// status is the final status of this run (running, completed, failed, cancelled, paused)
+	// status is the final status of this run (`running`, `completed`, `failed`, `cancelled`, `paused`)
 	Status string `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
 	// created_at is when this run was created (Unix timestamp)
 	CreatedAt int64 `protobuf:"varint,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
