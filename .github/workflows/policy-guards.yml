@@ -32,4 +32,4 @@ jobs:
     # grant is a ceiling on what the called workflow's GITHUB_TOKEN gets).
     permissions:
       contents: read
-    uses: zeroroot-ai/.github/.github/workflows/vault-auth-method-deny-list.yml@26202a5181acc259188b0a21b0fc2e75a9f1dac3 # v0.4.1: the reusable pins its own actions by SHA
+    uses: zeroroot-ai/.github/.github/workflows/vault-auth-method-deny-list.yml@1366fb5a29590e522bf5a74308f55bb39a4edb56 # v0.5.1

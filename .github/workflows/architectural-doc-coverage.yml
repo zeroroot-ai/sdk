@@ -27,6 +27,6 @@ jobs:
     # zeroroot-ai/.github's default branch, resolved 2026-08-15. This is a
     # floating branch ref by design (org workflow contract intentionally
     # tracks HEAD) -- re-resolve on any bump.
-    uses: zeroroot-ai/.github/.github/workflows/architectural-doc-coverage.yml@cf1c48774b57e552ccdd17a2a4bba3f782587dbe # main, .github recreated 2026-09-06
+    uses: zeroroot-ai/.github/.github/workflows/architectural-doc-coverage.yml@1366fb5a29590e522bf5a74308f55bb39a4edb56 # v0.5.1
     secrets:
       DOCS_REPO_READ_TOKEN: ${{ secrets.DOCS_REPO_READ_TOKEN }}
