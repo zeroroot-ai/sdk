@@ -174,7 +174,7 @@ package commonpb
 
 // Principal names who acts: a person, the tenant, a component run, or a
 // platform service. Banks record their owner as a Principal. Jobs record who
-// opened them and who sent each input as a Principal (gibson#1706).
+// opened them and who sent each input as a Principal.
 #Principal: {
 	// Kind is the class of principal. It decides how to read id.
 	#Kind:

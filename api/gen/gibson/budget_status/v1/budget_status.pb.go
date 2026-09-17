@@ -22,13 +22,13 @@
 // budget denial parses BudgetExceeded directly out of the gRPC status
 // detail without needing the admin service descriptor.
 //
-// This mirrors the sdk#103 pattern that did the same separation for
+// This mirrors the pattern that did the same separation for
 // gibson.capability.v1.CapabilityGrantInfo (READ side in OSS) vs
 // gibson.admin.v1.GrantsAdminService (WRITE side in platform-sdk).
 //
 // Spec: llm-user-attribution-governance (Requirement 3, READ-side
 //       wire contract); two-surface platform contract
-//       (ADR-0025 / ADR-0030, sdk#106).
+//       (ADR-0025 / ADR-0030).
 
 package budgetstatusv1
 
@@ -50,7 +50,7 @@ const (
 // the rollup ceiling; user and team are subdivisions within a tenant.
 //
 // Field numbers + enum-value names are wire-identical to the original
-// definition in gibson.budget.v1; see sdk#106 for the relocation rationale.
+// definition in gibson.budget.v1.
 type BudgetScope int32
 
 const (
@@ -108,9 +108,8 @@ func (BudgetScope) EnumDescriptor() ([]byte, []int) {
 // budget reasons. Consumers unmarshal via SDK helper IsBudgetExceeded.
 //
 // Field numbers + tag names are wire-identical to the original
-// definition in gibson.budget.v1.BudgetExceeded; see sdk#106 for the
-// relocation rationale. Customer code branching on budget denial
-// continues to receive the same on-wire bytes.
+// definition in gibson.budget.v1.BudgetExceeded. Customer code branching
+// on budget denial continues to receive the same on-wire bytes.
 type BudgetExceeded struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

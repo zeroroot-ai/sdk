@@ -553,7 +553,7 @@ type ExecuteRequest struct {
 	// Run number - sequential number for this mission (1, 2, 3...).
 	// Used for mission memory queries and historical comparisons.
 	RunNumber int32 `protobuf:"varint,11,opt,name=run_number,json=runNumber,proto3" json:"run_number,omitempty"`
-	// job_id names the job this execution serves (gibson#1706). A one-shot
+	// job_id names the job this execution serves. A one-shot
 	// dispatch and a bank job then share one result path. Empty for a
 	// dispatch that opens no job.
 	JobId string `protobuf:"bytes,12,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
@@ -683,7 +683,7 @@ type ExecuteResponse struct {
 	Result *v1.Result `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
 	Error  *v11.Error `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
 	// deliverables lists what left the sandbox for this execution: a pushed
-	// branch, an opened merge request (gibson#1706). Empty when nothing left.
+	// branch, an opened merge request. Empty when nothing left.
 	Deliverables []*v12.Deliverable `protobuf:"bytes,3,rep,name=deliverables,proto3" json:"deliverables,omitempty"`
 	// claude_session_id is the coding-agent session that ran this execution,
 	// so a later turn resumes the same conversation. Empty for an agent that

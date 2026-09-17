@@ -31,14 +31,14 @@
           "type": "string"
         },
         "llmSlots": {
-          "description": "llm_slots pins LLM provider/model bindings per named slot for this agent node. Each entry maps a slot name to a specific provider+model. Multiple entries allow different slots to use different providers/models on the same node. Empty list → the node inherits the tenant's default provider for all slots. Absent slot entries fall through to tenant default + constraint search over the tenant's permitted providers.  Empty provider or model within an entry is a valid fall-through marker: the daemon resolves it against the tenant's configured defaults.  Precedence at resolution per slot: explicit binding in llm_slots \u003e tenant default \u003e constraint search over the tenant's permitted providers.  Spec: sdk#260 (multi-slot LLM binding contract); consumer: gibson#524.",
+          "description": "llm_slots pins LLM provider/model bindings per named slot for this agent node. Each entry maps a slot name to a specific provider+model. Multiple entries allow different slots to use different providers/models on the same node. Empty list → the node inherits the tenant's default provider for all slots. Absent slot entries fall through to tenant default + constraint search over the tenant's permitted providers.  Empty provider or model within an entry is a valid fall-through marker: the daemon resolves it against the tenant's configured defaults.  Precedence at resolution per slot: explicit binding in llm_slots \u003e tenant default \u003e constraint search over the tenant's permitted providers.  Spec: multi-slot LLM binding contract.",
           "items": {
             "$ref": "#/$defs/LLMSlotConfig"
           },
           "type": "array"
         },
         "maxTokensPerCall": {
-          "description": "max_tokens_per_call is the per-node override of MissionConstraints.max_tokens_per_call for this agent node only.  When present (non-nil), this value is used as the effective cap for all LLM calls made by this node, regardless of the mission-level MissionConstraints.max_tokens_per_call value. Setting this to 0 explicitly disables the cap for this node (the mission-level cap is NOT applied as a fallback when this field is explicitly set to 0).  When absent (nil / proto3 optional not set), the mission-level MissionConstraints.max_tokens_per_call applies instead.  0 = inherit from mission-level (when this field is absent). Spec: mission-schema-canonicalization Requirement 5; gibson#133.",
+          "description": "max_tokens_per_call is the per-node override of MissionConstraints.max_tokens_per_call for this agent node only.  When present (non-nil), this value is used as the effective cap for all LLM calls made by this node, regardless of the mission-level MissionConstraints.max_tokens_per_call value. Setting this to 0 explicitly disables the cap for this node (the mission-level cap is NOT applied as a fallback when this field is explicitly set to 0).  When absent (nil / proto3 optional not set), the mission-level MissionConstraints.max_tokens_per_call applies instead.  0 = inherit from mission-level (when this field is absent). Spec: mission-schema-canonicalization Requirement 5.",
           "format": "int32",
           "minimum": 0,
           "type": "integer"
@@ -84,7 +84,7 @@
     },
     "DataPolicy": {
       "additionalProperties": false,
-      "description": "DataPolicy defines how data is handled for a node.  Deprecated: superseded by the ECS brain (gibson#851, ADR-0008). Data handling (reuse + scoping) is now implicit in the event-sourced World and scope-relative identity (ADR-0002) + ambient projection. Retained wire-compatibly; ignored by the engine.",
+      "description": "DataPolicy defines how data is handled for a node.  Deprecated: superseded by the ECS brain (ADR-0008). Data handling (reuse + scoping) is now implicit in the event-sourced World and scope-relative identity (ADR-0002) + ambient projection. Retained wire-compatibly; ignored by the engine.",
       "properties": {
         "accessControl": {
           "description": "AccessControl specifies who can access this data",
@@ -114,7 +114,7 @@
     },
     "JobNodeConfig": {
       "additionalProperties": false,
-      "description": "RetryPolicy defines the retry behavior for a mission node JobNodeConfig contains configuration for job nodes. JOB = a unit of work driven on a bank of always-on coding agents (gibson#1706). The executor opens a job on the bank, then runs the verify loop: it dispatches the acceptance step to the declared verifier component, and on failure sends the verifier's report as the next input to the SAME job, so the agent keeps its conversation and its worktrees. When the verifier passes, or the passes run out, the executor calls CloseJob with a verdict and a score.  The loop lives inside this node. The mission graph stays a DAG: a job node never adds a loop edge.",
+      "description": "RetryPolicy defines the retry behavior for a mission node JobNodeConfig contains configuration for job nodes. JOB = a unit of work driven on a bank of always-on coding agents. The executor opens a job on the bank, then runs the verify loop: it dispatches the acceptance step to the declared verifier component, and on failure sends the verifier's report as the next input to the SAME job, so the agent keeps its conversation and its worktrees. When the verifier passes, or the passes run out, the executor calls CloseJob with a verdict and a score.  The loop lives inside this node. The mission graph stays a DAG: a job node never adds a loop edge.",
       "properties": {
         "bankRef": {
           "description": "bank_ref names the bank to open the job on, by id or by name. Required.",
@@ -229,7 +229,7 @@
     },
     "MissionConstraints": {
       "additionalProperties": false,
-      "description": "MissionConstraints declares the operational limits baked into a mission definition. Making constraints part of the schema lets mission authors publish self-describing missions (e.g., \"stop after 50 findings\") without requiring callers to supply limits out-of-band at dispatch time.  Semantics (zero means unlimited): - max_duration  : 0 duration  → no time limit - max_tokens    : 0           → no token budget - max_cost      : 0.0         → no cost ceiling - max_findings  : 0           → no finding count limit  Spec: sdk#47 (MissionConstraints proto promotion).",
+      "description": "MissionConstraints declares the operational limits baked into a mission definition. Making constraints part of the schema lets mission authors publish self-describing missions (e.g., \"stop after 50 findings\") without requiring callers to supply limits out-of-band at dispatch time.  Semantics (zero means unlimited): - max_duration  : 0 duration  → no time limit - max_tokens    : 0           → no token budget - max_cost      : 0.0         → no cost ceiling - max_findings  : 0           → no finding count limit  Spec: MissionConstraints proto promotion.",
       "properties": {
         "allowedTechniques": {
           "description": "allowed_techniques is the allowlist of attack technique IDs (taxonomy) that agents may use during the mission. Empty list means no allowlist (any technique may be used unless blocked).",
@@ -281,7 +281,7 @@
           "type": "integer"
         },
         "maxTokensPerCall": {
-          "description": "max_tokens_per_call is the per-invocation cap on LLM tokens for any single LLM call within this mission. Applied by the daemon before every provider call; the provider never sees more than this many output tokens.  Precedence cascade (highest → lowest): 1. Per-node *NodeConfig.max_tokens_per_call (when set on a specific node) 2. This field (mission-level default) 3. 0 — no cap from this mechanism  When a per-node override is set it completely supersedes this field for that node (including 0, which explicitly disables the cap for that node while this field may still apply to all other nodes).  This field is different from max_tokens: max_tokens is a cumulative budget for the entire mission; max_tokens_per_call is a ceiling on each individual LLM call.  0 means unlimited at this level. Spec: mission-schema-canonicalization Requirement 5. Enforced by EffectivePerCallCap() (wired in M4, gibson#133).",
+          "description": "max_tokens_per_call is the per-invocation cap on LLM tokens for any single LLM call within this mission. Applied by the daemon before every provider call; the provider never sees more than this many output tokens.  Precedence cascade (highest → lowest): 1. Per-node *NodeConfig.max_tokens_per_call (when set on a specific node) 2. This field (mission-level default) 3. 0 — no cap from this mechanism  When a per-node override is set it completely supersedes this field for that node (including 0, which explicitly disables the cap for that node while this field may still apply to all other nodes).  This field is different from max_tokens: max_tokens is a cumulative budget for the entire mission; max_tokens_per_call is a ceiling on each individual LLM call.  0 means unlimited at this level. Spec: mission-schema-canonicalization Requirement 5. Enforced by EffectivePerCallCap() (wired in M4).",
           "format": "int32",
           "minimum": 0,
           "type": "integer"
@@ -333,7 +333,7 @@
     },
     "MissionEdge": {
       "additionalProperties": false,
-      "description": "MissionEdge represents a directed edge in the mission DAG.  The graph is acyclic. A loop is never an edge. Work that repeats until it passes an acceptance step loops INSIDE one node: a job node runs its verify loop against the same job (gibson#1706), and a node's RetryPolicy retries the node itself.",
+      "description": "MissionEdge represents a directed edge in the mission DAG.  The graph is acyclic. A loop is never an edge. Work that repeats until it passes an acceptance step loops INSIDE one node: a job node runs its verify loop against the same job, and a node's RetryPolicy retries the node itself.",
       "properties": {
         "condition": {
           "description": "Condition is an optional condition that must be satisfied for the edge to be traversed",
@@ -431,7 +431,7 @@
           "properties": {
             "jobConfig": {
               "$ref": "#/$defs/JobNodeConfig",
-              "description": "JobConfig for job nodes (gibson#1706). Field number 17 because 16 is the sibling reuse_policy field."
+              "description": "JobConfig for job nodes. Field number 17 because 16 is the sibling reuse_policy field."
             }
           },
           "required": [
@@ -442,7 +442,7 @@
       "properties": {
         "dataPolicy": {
           "$ref": "#/$defs/DataPolicy",
-          "description": "DataPolicy defines data handling policy for this node.  Deprecated: data reuse + scoping are no longer node-declared. Under the ECS brain (gibson#851, ADR-0008) reuse is implicit in the event-sourced World and scoping flows from scope-relative identity (ADR-0002) + ambient projection. The field is retained wire-compatibly for old definitions but is ignored by the engine."
+          "description": "DataPolicy defines data handling policy for this node.  Deprecated: data reuse + scoping are no longer node-declared. Under the ECS brain (ADR-0008) reuse is implicit in the event-sourced World and scoping flows from scope-relative identity (ADR-0002) + ambient projection. The field is retained wire-compatibly for old definitions but is ignored by the engine."
         },
         "dependencies": {
           "description": "Dependencies lists node IDs that must complete before this node executes",
@@ -476,7 +476,7 @@
         },
         "reusePolicy": {
           "$ref": "#/$defs/ReusePolicy",
-          "description": "ReusePolicy declares how this node's I/O is scoped + reused across mission runs.  Deprecated: superseded by the ECS brain (gibson#851, ADR-0008). Reuse is implicit in the World; scoping is via scope-relative identity (ADR-0002) + ambient projection. Retained wire-compatibly but ignored by the engine."
+          "description": "ReusePolicy declares how this node's I/O is scoped + reused across mission runs.  Deprecated: superseded by the ECS brain (ADR-0008). Reuse is implicit in the World; scoping is via scope-relative identity (ADR-0002) + ambient projection. Retained wire-compatibly but ignored by the engine."
         },
         "timeout": {
           "description": "Timeout is the maximum execution time for this node",
@@ -522,7 +522,7 @@
       "description": "PluginNodeConfig contains configuration for plugin nodes. PLUGIN = multi-method provider keyed by `plugin_name + method`. Distinct from TOOL: a plugin advertises several callable methods behind one component identity. The executor selects the named method and dispatches `params` as the call payload.",
       "properties": {
         "maxTokensPerCall": {
-          "description": "max_tokens_per_call is the per-node override of MissionConstraints.max_tokens_per_call for this plugin node only. Follows the same semantics as AgentNodeConfig.max_tokens_per_call: present and non-zero caps the call; present and 0 disables the cap for this node; absent means fall through to the mission-level constraint. Spec: mission-schema-canonicalization Requirement 5; gibson#133.",
+          "description": "max_tokens_per_call is the per-node override of MissionConstraints.max_tokens_per_call for this plugin node only. Follows the same semantics as AgentNodeConfig.max_tokens_per_call: present and non-zero caps the call; present and 0 disables the cap for this node; absent means fall through to the mission-level constraint. Spec: mission-schema-canonicalization Requirement 5.",
           "format": "int32",
           "minimum": 0,
           "type": "integer"
@@ -649,7 +649,7 @@
     },
     "ReusePolicy": {
       "additionalProperties": false,
-      "description": "ReusePolicy declares how a node's I/O is scoped + reused across mission runs.  Deprecated: superseded by the ECS brain (gibson#851, ADR-0008). Reuse is implicit in the event-sourced World and scoping flows from scope-relative identity (ADR-0002) + ambient projection, so node-declared reuse/scoping no longer has meaning. Retained wire-compatibly; ignored by the engine.",
+      "description": "ReusePolicy declares how a node's I/O is scoped + reused across mission runs.  Deprecated: superseded by the ECS brain (ADR-0008). Reuse is implicit in the event-sourced World and scoping flows from scope-relative identity (ADR-0002) + ambient projection, so node-declared reuse/scoping no longer has meaning. Retained wire-compatibly; ignored by the engine.",
       "properties": {
         "inputScope": {
           "description": "InputScope: \"mission_run\" | \"mission\" | \"global\". Default: \"mission\".",
@@ -688,7 +688,7 @@
         },
         "job": {
           "$ref": "#/$defs/JobSpec",
-          "description": "job names the typed resources this task needs and how it is judged (gibson#1706). It is set when the task opens or continues a job on a bank member. goal stays the goal; the spec's own goal is ignored on a dispatched task. Absent on a task that needs no repository, no credential and no acceptance step."
+          "description": "job names the typed resources this task needs and how it is judged. It is set when the task opens or continues a job on a bank member. goal stays the goal; the spec's own goal is ignored on a dispatched task. Absent on a task that needs no repository, no credential and no acceptance step."
         },
         "metadata": {
           "additionalProperties": {
@@ -739,7 +739,7 @@
           "type": "object"
         },
         "maxTokensPerCall": {
-          "description": "max_tokens_per_call is the per-node override of MissionConstraints.max_tokens_per_call for this tool node only. Follows the same semantics as AgentNodeConfig.max_tokens_per_call: present and non-zero caps the call; present and 0 disables the cap for this node; absent means fall through to the mission-level constraint. Spec: mission-schema-canonicalization Requirement 5; gibson#133.",
+          "description": "max_tokens_per_call is the per-node override of MissionConstraints.max_tokens_per_call for this tool node only. Follows the same semantics as AgentNodeConfig.max_tokens_per_call: present and non-zero caps the call; present and 0 disables the cap for this node; absent means fall through to the mission-level constraint. Spec: mission-schema-canonicalization Requirement 5.",
           "format": "int32",
           "minimum": 0,
           "type": "integer"
@@ -923,7 +923,7 @@
   "properties": {
     "constraints": {
       "$ref": "#/$defs/MissionConstraints",
-      "description": "Constraints declares mission-level operational limits. When present, these are the authoritative constraints for the mission DAG — they make the mission self-describing so authors do not have to supply limits out-of-band at dispatch time. The daemon merges these with any dispatch-time overrides (dispatch wins on conflict). Optional: absent means no constraints are baked into the definition.  Spec: sdk#47 (MissionConstraints proto promotion)."
+      "description": "Constraints declares mission-level operational limits. When present, these are the authoritative constraints for the mission DAG — they make the mission self-describing so authors do not have to supply limits out-of-band at dispatch time. The daemon merges these with any dispatch-time overrides (dispatch wins on conflict). Optional: absent means no constraints are baked into the definition.  Spec: MissionConstraints proto promotion."
     },
     "createdAt": {
       "description": "CreatedAt is the timestamp when the mission definition was created",
@@ -932,7 +932,7 @@
     },
     "deciderSlot": {
       "$ref": "#/$defs/LLMSlotConfig",
-      "description": "DeciderSlot names the mission-level LLM the brain's Decider runs on — the orchestration decision-maker, distinct from per-node agent slots (gibson#850). Only the provider+model are used (the slot name is implicitly \"decider\"). Absent means the brain uses the tenant's dashboard-default provider/model, so missions need not set it."
+      "description": "DeciderSlot names the mission-level LLM the brain's Decider runs on — the orchestration decision-maker, distinct from per-node agent slots. Only the provider+model are used (the slot name is implicitly \"decider\"). Absent means the brain uses the tenant's dashboard-default provider/model, so missions need not set it."
     },
     "dependencies": {
       "$ref": "#/$defs/MissionDependencies",

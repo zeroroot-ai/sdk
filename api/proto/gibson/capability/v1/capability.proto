@@ -20,7 +20,7 @@ syntax = "proto3";
 // Spec: two-surface platform contract (ADR-0001, forthcoming);
 //       component-bootstrap-e2e Requirement 10 (read side);
 //       secrets-tenant-lifecycle Requirement 8.1 (write side, moved
-//       to platform-sdk under slice #108).
+//       to platform-sdk).
 package gibson.capability.v1;
 
 option go_package = "github.com/zeroroot-ai/sdk/api/gen/gibson/capability/v1;capabilityv1";

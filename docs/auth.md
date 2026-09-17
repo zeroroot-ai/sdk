@@ -15,7 +15,7 @@ live in Envoy and ext-authz upstream. The SDK owns:
 | `auth.NewTenantID`, `auth.MustNewTenantID` | [`auth/tenantid.go:97`](../auth/tenantid.go), [`auth/tenantid.go:123`](../auth/tenantid.go) | The only constructors. Refuse empty / whitespace / oversize / bad chars. |
 | `auth.SystemTenant` | [`auth/tenantid.go:140`](../auth/tenantid.go) | Reserved `_system` tenant. Single audit-grep handle. |
 | `auth.Identity` | [`auth/identity.go:65`](../auth/identity.go) | Request-scoped identity carrier. |
-| `auth.Issuer{Zitadel,CapabilityGrant}` | [`auth/identity.go:12`](../auth/identity.go) | Closed enum of recognised IdPs. |
+| `auth.Issuer{Zitadel,CapabilityGrant}` | [`auth/identity.go:12`](../auth/identity.go) | Closed enum of recognized IdPs. |
 | `auth.CredentialType{OIDCUser,ClientCredentials,CapabilityGrant}` | [`auth/identity.go:32`](../auth/identity.go) | Wire-credential class. |
 | `auth.Header*` constants | [`auth/headers.go:24`](../auth/headers.go) | `x-gibson-identity-{subject,issuer,credential-type,tenant,issued-at}`. |
 | `auth.IdentityFromMetadata` | [`auth/headers.go:72`](../auth/headers.go) | Reads headers, builds Identity. No HMAC verify. |
@@ -176,7 +176,7 @@ Claims (see [`capabilitygrant/claims.go`](../capabilitygrant/claims.go)):
 | `sub` | Agent service-account ID. |
 | `tenant` | Required; constructed via `auth.NewTenantID`. |
 | `mission_id`, `task_id` | Bind grant to one task. |
-| `allowed_rpcs` | List of fully-qualified gRPC methods this grant authorises. |
+| `allowed_rpcs` | List of fully-qualified gRPC methods this grant authorizes. |
 | `iat`, `exp` | `exp - iat <= 30m` enforced by mint; verify rejects `now > exp`. |
 | `jti` | Unique per grant; reserved for a future revocation list. |
 

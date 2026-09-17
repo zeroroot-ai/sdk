@@ -119,7 +119,7 @@ type HarnessCallbackServiceClient interface {
 	// resolves identity and topology; scope is derived server-side from context.
 	Observe(ctx context.Context, in *ObserveRequest, opts ...grpc.CallOption) (*ObserveResponse, error)
 	// WorldView returns the caller's server-projected slice of the tenant World
-	// (ADR-0012, sdk#341's read half). It is the counterpart to Observe: Observe
+	// (ADR-0012). It is the counterpart to Observe: Observe
 	// is the agent's only write, WorldView its only read.
 	//
 	// The slice is projected by the daemon from the mission record it created —
@@ -138,8 +138,8 @@ type HarnessCallbackServiceClient interface {
 	// See zerocool-plugins ADR-0006 and docs/adr/0001-callback-knowledge-reads.md.
 	//
 	// Read-only by construction. The write half is NOT mirrored: the projector
-	// is the sole graph writer (ADR-0012), and sdk#451 already removed the
-	// generic graph-write RPC from ComponentService.
+	// is the sole graph writer (ADR-0012), and ComponentService no longer
+	// has a generic graph-write RPC.
 	QueryNodes(ctx context.Context, in *QueryNodesRequest, opts ...grpc.CallOption) (*QueryNodesResponse, error)
 	FindSimilarAttacks(ctx context.Context, in *FindSimilarAttacksRequest, opts ...grpc.CallOption) (*FindSimilarAttacksResponse, error)
 	GetAttackChains(ctx context.Context, in *GetAttackChainsRequest, opts ...grpc.CallOption) (*GetAttackChainsResponse, error)
@@ -148,7 +148,7 @@ type HarnessCallbackServiceClient interface {
 	GetFindings(ctx context.Context, in *GetFindingsRequest, opts ...grpc.CallOption) (*GetFindingsResponse, error)
 	// ApplicationFindings answers the one lifecycle question the reads above
 	// cannot: for this Application, what is still open, and does anything
-	// actually run the code it is in (gibson#1669).
+	// actually run the code it is in.
 	//
 	// The reads above are hybrid vector-and-graph SEARCH — text or embedding, a
 	// node-type filter, top-k. Reachability is a TRAVERSAL: is this Package
@@ -974,7 +974,7 @@ type HarnessCallbackServiceServer interface {
 	// resolves identity and topology; scope is derived server-side from context.
 	Observe(context.Context, *ObserveRequest) (*ObserveResponse, error)
 	// WorldView returns the caller's server-projected slice of the tenant World
-	// (ADR-0012, sdk#341's read half). It is the counterpart to Observe: Observe
+	// (ADR-0012). It is the counterpart to Observe: Observe
 	// is the agent's only write, WorldView its only read.
 	//
 	// The slice is projected by the daemon from the mission record it created —
@@ -993,8 +993,8 @@ type HarnessCallbackServiceServer interface {
 	// See zerocool-plugins ADR-0006 and docs/adr/0001-callback-knowledge-reads.md.
 	//
 	// Read-only by construction. The write half is NOT mirrored: the projector
-	// is the sole graph writer (ADR-0012), and sdk#451 already removed the
-	// generic graph-write RPC from ComponentService.
+	// is the sole graph writer (ADR-0012), and ComponentService no longer
+	// has a generic graph-write RPC.
 	QueryNodes(context.Context, *QueryNodesRequest) (*QueryNodesResponse, error)
 	FindSimilarAttacks(context.Context, *FindSimilarAttacksRequest) (*FindSimilarAttacksResponse, error)
 	GetAttackChains(context.Context, *GetAttackChainsRequest) (*GetAttackChainsResponse, error)
@@ -1003,7 +1003,7 @@ type HarnessCallbackServiceServer interface {
 	GetFindings(context.Context, *GetFindingsRequest) (*GetFindingsResponse, error)
 	// ApplicationFindings answers the one lifecycle question the reads above
 	// cannot: for this Application, what is still open, and does anything
-	// actually run the code it is in (gibson#1669).
+	// actually run the code it is in.
 	//
 	// The reads above are hybrid vector-and-graph SEARCH — text or embedding, a
 	// node-type filter, top-k. Reachability is a TRAVERSAL: is this Package

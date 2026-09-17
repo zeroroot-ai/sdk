@@ -232,7 +232,7 @@ type WhoAmIResponse struct {
 	// active_capability_grants is the principal's currently-issued
 	// CG-JWTs (mission-scoped) at the time of the call. Reuses the
 	// public CapabilityGrantInfo message from gibson.capability.v1
-	// (extracted from gibson.admin.v1 in slice #108) rather than
+	// (extracted from gibson.admin.v1) rather than
 	// minting a parallel type.
 	ActiveCapabilityGrants []*v1.CapabilityGrantInfo `protobuf:"bytes,7,rep,name=active_capability_grants,json=activeCapabilityGrants,proto3" json:"active_capability_grants,omitempty"`
 	// truncated is true when the response had to drop entries to fit
@@ -245,8 +245,8 @@ type WhoAmIResponse struct {
 	// principal holds a tenant/team admin role that lets it revoke the
 	// sessions of at least some members (composed from self +
 	// tenant#admin-over-member + team#admin-over-member; see
-	// RevokeUserSessions / gibson#622). It exists so admin UIs
-	// (dashboard#717) can gate "revoke sessions" button visibility
+	// RevokeUserSessions). It exists so admin UIs can gate
+	// "revoke sessions" button visibility
 	// without a trial-and-error RPC.
 	//
 	// It is deliberately NOT per-target: the authoritative,
