@@ -698,7 +698,7 @@ func TestEditorRejectsPathOutsideWorkspace(t *testing.T) {
 	outsideDir := t.TempDir()
 	outsideFile := filepath.Join(outsideDir, "x")
 	outsideContent := "func hello() {}\n"
-	if err := os.WriteFile(outsideFile, []byte(outsideContent), 0600); err != nil {
+	if err := os.WriteFile(outsideFile, []byte(outsideContent), 0o600); err != nil {
 		t.Fatalf("Failed to create outside file: %v", err)
 	}
 
