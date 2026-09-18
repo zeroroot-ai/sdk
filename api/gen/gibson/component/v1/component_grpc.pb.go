@@ -58,6 +58,7 @@ const (
 	ComponentService_CancelMission_FullMethodName        = "/gibson.component.v1.ComponentService/CancelMission"
 	ComponentService_GetMissionResults_FullMethodName    = "/gibson.component.v1.ComponentService/GetMissionResults"
 	ComponentService_GetCredential_FullMethodName        = "/gibson.component.v1.ComponentService/GetCredential"
+	ComponentService_WatchComponentEvents_FullMethodName = "/gibson.component.v1.ComponentService/WatchComponentEvents"
 	ComponentService_GetTaxonomySchema_FullMethodName    = "/gibson.component.v1.ComponentService/GetTaxonomySchema"
 	ComponentService_GetMissionRunHistory_FullMethodName = "/gibson.component.v1.ComponentService/GetMissionRunHistory"
 	ComponentService_ReportStepHints_FullMethodName      = "/gibson.component.v1.ComponentService/ReportStepHints"
@@ -172,6 +173,11 @@ type ComponentServiceClient interface {
 	GetMissionResults(ctx context.Context, in *GetMissionResultsRequest, opts ...grpc.CallOption) (*GetMissionResultsResponse, error)
 	// GetCredential retrieves a tenant-scoped credential by name.
 	GetCredential(ctx context.Context, in *GetCredentialRequest, opts ...grpc.CallOption) (*GetCredentialResponse, error)
+	// WatchComponentEvents streams lifecycle events for the calling component:
+	// secret_access_revoked and secret_rotated. The daemon takes the component
+	// from the caller's identity; the request names nothing, so a caller cannot
+	// watch another component. The stream stays open until the client cancels.
+	WatchComponentEvents(ctx context.Context, in *WatchComponentEventsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ComponentEvent], error)
 	// GetTaxonomySchema returns the current taxonomy definition.
 	GetTaxonomySchema(ctx context.Context, in *GetTaxonomySchemaRequest, opts ...grpc.CallOption) (*GetTaxonomySchemaResponse, error)
 	// GetMissionRunHistory returns summaries of previous mission runs.
@@ -605,6 +611,25 @@ func (c *componentServiceClient) GetCredential(ctx context.Context, in *GetCrede
 	return out, nil
 }
 
+func (c *componentServiceClient) WatchComponentEvents(ctx context.Context, in *WatchComponentEventsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ComponentEvent], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &ComponentService_ServiceDesc.Streams[3], ComponentService_WatchComponentEvents_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[WatchComponentEventsRequest, ComponentEvent]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ComponentService_WatchComponentEventsClient = grpc.ServerStreamingClient[ComponentEvent]
+
 func (c *componentServiceClient) GetTaxonomySchema(ctx context.Context, in *GetTaxonomySchemaRequest, opts ...grpc.CallOption) (*GetTaxonomySchemaResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetTaxonomySchemaResponse)
@@ -744,6 +769,11 @@ type ComponentServiceServer interface {
 	GetMissionResults(context.Context, *GetMissionResultsRequest) (*GetMissionResultsResponse, error)
 	// GetCredential retrieves a tenant-scoped credential by name.
 	GetCredential(context.Context, *GetCredentialRequest) (*GetCredentialResponse, error)
+	// WatchComponentEvents streams lifecycle events for the calling component:
+	// secret_access_revoked and secret_rotated. The daemon takes the component
+	// from the caller's identity; the request names nothing, so a caller cannot
+	// watch another component. The stream stays open until the client cancels.
+	WatchComponentEvents(*WatchComponentEventsRequest, grpc.ServerStreamingServer[ComponentEvent]) error
 	// GetTaxonomySchema returns the current taxonomy definition.
 	GetTaxonomySchema(context.Context, *GetTaxonomySchemaRequest) (*GetTaxonomySchemaResponse, error)
 	// GetMissionRunHistory returns summaries of previous mission runs.
@@ -876,6 +906,9 @@ func (UnimplementedComponentServiceServer) GetMissionResults(context.Context, *G
 }
 func (UnimplementedComponentServiceServer) GetCredential(context.Context, *GetCredentialRequest) (*GetCredentialResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCredential not implemented")
+}
+func (UnimplementedComponentServiceServer) WatchComponentEvents(*WatchComponentEventsRequest, grpc.ServerStreamingServer[ComponentEvent]) error {
+	return status.Errorf(codes.Unimplemented, "method WatchComponentEvents not implemented")
 }
 func (UnimplementedComponentServiceServer) GetTaxonomySchema(context.Context, *GetTaxonomySchemaRequest) (*GetTaxonomySchemaResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTaxonomySchema not implemented")
@@ -1588,6 +1621,17 @@ func _ComponentService_GetCredential_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ComponentService_WatchComponentEvents_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(WatchComponentEventsRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ComponentServiceServer).WatchComponentEvents(m, &grpc.GenericServerStream[WatchComponentEventsRequest, ComponentEvent]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type ComponentService_WatchComponentEventsServer = grpc.ServerStreamingServer[ComponentEvent]
+
 func _ComponentService_GetTaxonomySchema_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetTaxonomySchemaRequest)
 	if err := dec(in); err != nil {
@@ -1820,6 +1864,11 @@ var ComponentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "ToolResults",
 			Handler:       _ComponentService_ToolResults_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "WatchComponentEvents",
+			Handler:       _ComponentService_WatchComponentEvents_Handler,
 			ServerStreams: true,
 		},
 	},

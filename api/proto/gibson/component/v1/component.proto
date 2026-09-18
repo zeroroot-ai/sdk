@@ -8,6 +8,7 @@ option csharp_namespace = "Gibson.Component";
 
 import "gibson/bank/v1/bank.proto";
 import "gibson/graphrag/v1/graphrag.proto";
+import "google/protobuf/timestamp.proto";
 
 import "gibson/auth/v1/options.proto";
 // DispatchMode identifies how the Gibson daemon should dispatch calls to a
@@ -523,6 +524,19 @@ service ComponentService {
         relation: "can_resolve"
         object_type: "secret"
         object_deriver: "tenant_and_field('Name')"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // WatchComponentEvents streams lifecycle events for the calling component:
+    // secret_access_revoked and secret_rotated. The daemon takes the component
+    // from the caller's identity; the request names nothing, so a caller cannot
+    // watch another component. The stream stays open until the client cancels.
+    rpc WatchComponentEvents(WatchComponentEventsRequest) returns (stream ComponentEvent) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_poll_work"
+        object_type: "component"
+        object_deriver: "system_tenant"
         allowed_identities: 4  // COMPONENT
       };
     }
@@ -1404,6 +1418,19 @@ message GetCredentialRequest {
 message GetCredentialResponse {
     // credential_json is the JSON-encoded types.Credential.
     bytes credential_json = 1;
+}
+
+// WatchComponentEventsRequest is empty. The daemon takes the component from
+// the caller's identity.
+message WatchComponentEventsRequest {}
+
+// ComponentEvent is one lifecycle event for the calling component.
+message ComponentEvent {
+    string type = 1;                          // "secret_access_revoked" | "secret_rotated"
+    string secret_name = 2;                   // the manifest's declared name
+    string reason = 3;                        // set on secret_access_revoked
+    int64 version = 4;                        // set on secret_rotated, 0 = unknown
+    google.protobuf.Timestamp occurred_at = 5;
 }
 
 // GetTaxonomySchemaRequest requests the current taxonomy definition.
