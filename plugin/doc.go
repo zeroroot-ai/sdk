@@ -123,6 +123,12 @@
 //  2. Waits for in-flight handlers to complete up to drainTimeout (default 30s).
 //  3. Calls OnStop, transitions to Stopped, and returns nil.
 //
+// No daemon RPC delivers secret events to a plugin yet. [Serve] returns
+// [ErrEventStreamNotWired] and does not start when the manifest declares a
+// secret, because a revocation or a rotation=restart could never reach the
+// plugin. The two paragraphs below describe the behavior once the stream is
+// wired.
+//
 // When a manifest secret with rotation=restart is rotated by the operator:
 //  1. The events subscriber receives the secret_rotated event.
 //  2. In-flight handlers are drained.

@@ -8,8 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"sync/atomic"
@@ -70,48 +68,6 @@ func writeManifest(t *testing.T, yaml string) string {
 	path := filepath.Join(dir, "plugin.yaml")
 	require.NoError(t, os.WriteFile(path, []byte(yaml), 0600))
 	return path
-}
-
-// ----------------------------------------------------------------------------
-// Helpers: fake platform HTTP server for capabilitygrant
-// ----------------------------------------------------------------------------
-
-// fakePlatform starts an httptest.Server that implements the minimal
-// capability-grant HTTP API needed by the SDK.
-func fakePlatform(t *testing.T) *httptest.Server {
-	t.Helper()
-	mux := http.NewServeMux()
-
-	// Will be set once the server URL is known.
-	var registerURL atomic.Value
-
-	mux.HandleFunc("/.well-known/agent-configuration", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		// Return the discovery document pointing back to the same server.
-		resp := map[string]interface{}{
-			"version": "1",
-			"endpoints": map[string]string{
-				"register": registerURL.Load().(string),
-			},
-		}
-		json.NewEncoder(w).Encode(resp)
-	})
-
-	mux.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		resp := map[string]interface{}{
-			"agent_id":        "test-agent-id",
-			"capabilities":    []interface{}{},
-			"component_scope": "plugin:test-plugin",
-		}
-		json.NewEncoder(w).Encode(resp)
-	})
-
-	srv := httptest.NewTLSServer(mux)
-	t.Cleanup(srv.Close)
-
-	registerURL.Store(srv.URL + "/register")
-	return srv
 }
 
 // ----------------------------------------------------------------------------
@@ -313,36 +269,44 @@ func TestServe_InvalidManifestPath_ReturnsError(t *testing.T) {
 // and we bypass the capabilitygrant/gRPC steps with a fake daemon.
 // ----------------------------------------------------------------------------
 
-func TestServe_RequiredStartupSecretMissing_ReturnsError(t *testing.T) {
+func TestServe_DeclaredSecrets_RefusesWhileEventStreamIsStub(t *testing.T) {
+	// The manifest declares cred:api_key with rotation: restart. No daemon
+	// event stream can deliver a revocation or a rotation to this plugin, so
+	// Serve must refuse before it needs a platform URL or a daemon address.
 	path := writeManifest(t, testManifestWithSecretsYAML)
-
-	// Fake secrets client that returns an error for the required key.
-	fakeSecrets := newFakeSecretsClient(nil) // no values
-	fakeSecrets.errOnKey = "cred:api_key"
-
-	// We need to bypass capabilitygrant + gRPC. Use a fake platform to
-	// handle the discovery + register steps, then provide a fake daemon addr
-	// so gRPC NewClient connects quickly and we can intercept the startup
-	// secret resolution via WithSecretsClient.
-	srv := fakePlatform(t)
-
-	t.Setenv("GIBSON_DAEMON_ADDR", "localhost:1") // unreachable; registration happens via HTTP
-	t.Setenv("GIBSON_URL", srv.URL)
+	t.Setenv("GIBSON_URL", "")
+	t.Setenv("GIBSON_DAEMON_ADDR", "")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	err := Serve(ctx,
 		WithManifest(path),
-		WithSecretsClient(fakeSecrets),
-		WithHTTPClient(srv.Client()),
+		WithSecretsClient(newFakeSecretsClient(map[string][]byte{"cred:api_key": []byte("value")})),
 		WithHandler("Echo", func(_ context.Context, req string) (string, error) {
 			return req, nil
 		}),
 	)
-	// The error may come from capabilitygrant (gRPC to localhost:1 fails) OR
-	// from the missing secret depending on timing. Either way it's an error.
-	require.Error(t, err)
+	require.ErrorIs(t, err, ErrEventStreamNotWired)
+	assert.Contains(t, err.Error(), "cred:api_key")
+	assert.Contains(t, err.Error(), "1 with rotation=restart")
+	assert.NotContains(t, err.Error(), "platform URL", "the refusal must come before any platform contact")
+}
+
+func TestCheckEventStreamCoverage(t *testing.T) {
+	m, err := manifest.LoadBytes([]byte(testManifestYAML))
+	require.NoError(t, err)
+	require.NoError(t, checkEventStreamCoverage(m), "a manifest with no secrets starts")
+
+	m, err = manifest.LoadBytes([]byte(testManifestWithSecretsYAML))
+	require.NoError(t, err)
+	require.ErrorIs(t, checkEventStreamCoverage(m), ErrEventStreamNotWired)
+
+	// rotation: live is still revocable, so it is refused too.
+	m.Spec.Secrets[0].Rotation = "live"
+	err = checkEventStreamCoverage(m)
+	require.ErrorIs(t, err, ErrEventStreamNotWired)
+	assert.Contains(t, err.Error(), "0 with rotation=restart")
 }
 
 // ----------------------------------------------------------------------------
