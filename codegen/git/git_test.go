@@ -350,9 +350,8 @@ func TestCredentialCleanup(t *testing.T) {
 			if tt.credential.Type == types.CredentialTypeCustom {
 				// SSH key
 				if keyPath := sshKeyPathFromCommand(os.Getenv("GIT_SSH_COMMAND")); keyPath != "" {
-					tempFiles = append(tempFiles, keyPath)
-					// Also track parent directory
-					tempFiles = append(tempFiles, filepath.Dir(keyPath))
+					// Track the key and its parent directory
+					tempFiles = append(tempFiles, keyPath, filepath.Dir(keyPath))
 				}
 			} else {
 				// Token/basic auth

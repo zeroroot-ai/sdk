@@ -19,14 +19,14 @@ import (
 // contains a newline, a carriage return, or a NUL byte is refused.
 var ErrCredentialInvalid = errors.New("credential value is not a single line")
 
-// credentialHelperScript is the git credential helper the provider installs.
+// gitAuthHelperScript is the git credential helper the provider installs.
 // git runs it as "sh <script> get" and reads username= and password= lines
 // from its stdout, the credential-helper protocol.
 // The text is fixed. It holds no secret and takes no interpolated value.
 // The username and password live in files next to the script, readable by
 // the owner only. The script reads them at request time and prints them
 // with printf, so shell metacharacters in a secret are data, never code.
-const credentialHelperScript = `# Git credential helper installed by the Zero Root SDK.
+const gitAuthHelperScript = `# Git credential helper installed by the Zero Root SDK.
 # This file holds no secret. The secret is in files next to it.
 [ "$1" = "get" ] || exit 0
 dir=$(dirname -- "$0")
@@ -133,7 +133,7 @@ func (c *credentialProvider) configureHelperAuth(_ context.Context, username, pa
 	// The script is not executable. git runs it through sh, see the config
 	// entry below, so the file stays owner-only like the secret files.
 	helperPath := filepath.Join(tempDir, "git-credential-helper.sh")
-	if err := os.WriteFile(helperPath, []byte(credentialHelperScript), 0o600); err != nil {
+	if err := os.WriteFile(helperPath, []byte(gitAuthHelperScript), 0o600); err != nil {
 		cleanup()
 		return nil, fmt.Errorf("failed to write credential helper: %w", err)
 	}
