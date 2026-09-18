@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -145,16 +146,16 @@ func (d *fakeDaemon) Heartbeat(_ context.Context, _ *componentpb.HeartbeatReques
 func (d *fakeDaemon) WatchComponentEvents(_ *componentpb.WatchComponentEventsRequest, stream componentpb.ComponentService_WatchComponentEventsServer) error {
 	n := d.watchCount.Add(1)
 	if d.failFirstWatch && n == 1 {
-		return status.Error(codes.Unavailable, "daemon replica is rolling out")
+		return fmt.Errorf("fake daemon: %w", status.Error(codes.Unavailable, "daemon replica is rolling out"))
 	}
 	for {
 		select {
 		case ev := <-d.eventCh:
 			if err := stream.Send(ev); err != nil {
-				return err
+				return fmt.Errorf("fake daemon: send: %w", err)
 			}
 		case <-stream.Context().Done():
-			return stream.Context().Err()
+			return fmt.Errorf("fake daemon: %w", stream.Context().Err())
 		}
 	}
 }
@@ -198,7 +199,7 @@ func dialFakeDaemon(t *testing.T, daemon *fakeDaemon) componentpb.ComponentServi
 	t.Helper()
 	conn, err := grpc.NewClient(daemon.addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
-	t.Cleanup(func() { conn.Close() })
+	t.Cleanup(func() { _ = conn.Close() })
 	return componentpb.NewComponentServiceClient(conn)
 }
 

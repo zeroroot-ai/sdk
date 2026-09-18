@@ -309,6 +309,7 @@ func TestServe_DeclaredSecrets_RevocationMarksDegraded(t *testing.T) {
 
 	fakeSecrets := newFakeSecretsClient(map[string][]byte{"cred:api_key": []byte("value")})
 	degraded := make(chan string, 1)
+	m := secretsManifest(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -316,7 +317,7 @@ func TestServe_DeclaredSecrets_RevocationMarksDegraded(t *testing.T) {
 	serveErr := make(chan error, 1)
 	go func() {
 		serveErr <- Serve(ctx,
-			WithParsedManifest(secretsManifest(t)),
+			WithParsedManifest(m),
 			WithSecretsClient(fakeSecrets),
 			WithLifecycle(lifecycle.LifecycleHooks{
 				OnDegraded: func(reason string) { degraded <- reason },

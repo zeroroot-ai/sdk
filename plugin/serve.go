@@ -839,7 +839,7 @@ func (s *componentEventStream) Recv(ctx context.Context) (events.Event, error) {
 	for {
 		if ctx.Err() != nil {
 			s.closeStream()
-			return events.Event{}, ctx.Err()
+			return events.Event{}, fmt.Errorf("event stream: %w", ctx.Err())
 		}
 		if s.stream == nil {
 			if err := s.open(ctx); err != nil {
@@ -875,7 +875,7 @@ func (s *componentEventStream) open(ctx context.Context) error {
 	stream, err := s.client.WatchComponentEvents(streamCtx, &componentpb.WatchComponentEventsRequest{})
 	if err != nil {
 		cancel()
-		return err
+		return fmt.Errorf("WatchComponentEvents: %w", err)
 	}
 	s.stream = stream
 	s.cancelStream = cancel
@@ -893,12 +893,12 @@ func (s *componentEventStream) closeStream() {
 }
 
 // waitBackoff logs the failure, sleeps for the current backoff, and doubles
-// it up to maxBackoff. It returns ctx.Err() when ctx ends first, and nil
-// after the sleep. A failure while ctx is already done is the caller's
+// it up to maxBackoff. It returns the context error when ctx ends first, and
+// nil after the sleep. A failure while ctx is already done is the caller's
 // cancellation, not a stream fault, so it is not logged.
 func (s *componentEventStream) waitBackoff(ctx context.Context, op string, cause error) error {
 	if ctx.Err() != nil {
-		return ctx.Err()
+		return fmt.Errorf("event stream: %w", ctx.Err())
 	}
 	if s.backoff <= 0 {
 		s.backoff = s.initialBackoff
@@ -915,7 +915,7 @@ func (s *componentEventStream) waitBackoff(ctx context.Context, op string, cause
 	s.backoff = min(s.backoff*2, s.maxBackoff)
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		return fmt.Errorf("event stream: %w", ctx.Err())
 	case <-timer.C:
 		return nil
 	}
