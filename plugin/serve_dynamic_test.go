@@ -62,7 +62,7 @@ func fakeCGPlatform(t *testing.T) *httptest.Server {
 		})
 	})
 
-	srv := httptest.NewServer(mux)
+	srv := httptest.NewTLSServer(mux)
 	t.Cleanup(srv.Close)
 	baseURL.Store(srv.URL)
 	return srv
@@ -291,6 +291,7 @@ func TestServe_MethodSource_RegistersAndRoundTrips(t *testing.T) {
 		serveErr <- Serve(ctx,
 			WithParsedManifest(dynamicManifest()),
 			WithMethodSource(source),
+			WithHTTPClient(platform.Client()),
 			WithHealthAddr(":0"),
 		)
 	}()
@@ -356,6 +357,7 @@ func TestServe_MethodSource_CollisionWithStatic_ReturnsError(t *testing.T) {
 
 	err := Serve(ctx,
 		WithParsedManifest(m),
+		WithHTTPClient(platform.Client()),
 		WithHandler("vendor_echo", func(_ context.Context, req string) (string, error) {
 			return req, nil
 		}),
@@ -382,6 +384,7 @@ func TestServe_MethodSource_EmptySetNoStatic_ReturnsError(t *testing.T) {
 
 	err := Serve(ctx,
 		WithParsedManifest(dynamicManifest()),
+		WithHTTPClient(platform.Client()),
 		WithMethodSource(func(_ context.Context) ([]DiscoveredMethod, error) {
 			return nil, nil
 		}),

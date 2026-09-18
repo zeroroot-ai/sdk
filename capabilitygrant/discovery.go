@@ -10,8 +10,21 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 )
+
+// ErrPlatformURLNotHTTPS is returned when a platform URL does not use the
+// https scheme. Every credential this client sends, the bootstrap token, the
+// Kubernetes ServiceAccount token, or a JWT-SVID, travels in the Authorization
+// header, so a cleartext platform URL is refused.
+var ErrPlatformURLNotHTTPS = errors.New("capabilitygrant: platform URL must use https")
+
+// ErrEndpointOrigin is returned when a discovery document names an endpoint
+// whose scheme or host differs from the platform URL. The discovery document
+// is unauthenticated, so an endpoint on another origin would receive the
+// registration credential without any proof that it belongs to the platform.
+var ErrEndpointOrigin = errors.New("capabilitygrant: discovery endpoint is not on the platform origin")
 
 // MinProtocolVersion is the minimum Capability Grant Protocol version this client
 // accepts from a discovery document.
@@ -69,6 +82,11 @@ func Discover(ctx context.Context, baseURL string, httpClient *http.Client) (*Di
 		httpClient = http.DefaultClient
 	}
 
+	base, err := ParsePlatformURL(baseURL)
+	if err != nil {
+		return nil, err
+	}
+
 	targetURL := strings.TrimRight(baseURL, "/") + wellKnownPath
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURL, http.NoBody)
@@ -101,7 +119,70 @@ func Discover(ctx context.Context, baseURL string, httpClient *http.Client) (*Di
 		return nil, err
 	}
 
+	if err := checkEndpointOrigins(base, &doc); err != nil {
+		return nil, err
+	}
+
 	return &doc, nil
+}
+
+// ParsePlatformURL parses a platform base URL and enforces the https scheme.
+// It returns ErrPlatformURLNotHTTPS for any other scheme and an error for a
+// URL with no host or with user information.
+func ParsePlatformURL(raw string) (*url.URL, error) {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return nil, fmt.Errorf("capabilitygrant: parse platform URL: %w", err)
+	}
+	if !strings.EqualFold(u.Scheme, "https") {
+		return nil, fmt.Errorf("%w: %q", ErrPlatformURLNotHTTPS, raw)
+	}
+	if u.Host == "" {
+		return nil, fmt.Errorf("capabilitygrant: platform URL %q has no host", raw)
+	}
+	if u.User != nil {
+		return nil, fmt.Errorf("capabilitygrant: platform URL %q must not carry user information", raw)
+	}
+	return u, nil
+}
+
+// checkEndpointOrigins rejects any endpoint in doc whose scheme or host
+// differs from base. Every endpoint receives a credential, so each one must be
+// on the origin the caller configured.
+func checkEndpointOrigins(base *url.URL, doc *DiscoveryDocument) error {
+	endpoints := []struct {
+		name string
+		raw  string
+	}{
+		{"register", doc.Endpoints.Register},
+		{"execute", doc.Endpoints.Execute},
+		{"list", doc.Endpoints.List},
+		{"status", doc.Endpoints.Status},
+		{"revoke", doc.Endpoints.Revoke},
+		{"introspect", doc.Endpoints.Introspect},
+	}
+	for _, ep := range endpoints {
+		if ep.raw == "" {
+			continue
+		}
+		if err := checkEndpointOrigin(base, ep.name, ep.raw); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// checkEndpointOrigin rejects raw unless it is an absolute URL with the same
+// scheme and host as base.
+func checkEndpointOrigin(base *url.URL, name, raw string) error {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return fmt.Errorf("%w: %s endpoint %q: %w", ErrEndpointOrigin, name, raw, err)
+	}
+	if !strings.EqualFold(u.Scheme, base.Scheme) || !strings.EqualFold(u.Host, base.Host) {
+		return fmt.Errorf("%w: %s endpoint %q, platform %s://%s", ErrEndpointOrigin, name, raw, base.Scheme, base.Host)
+	}
+	return nil
 }
 
 // checkProtocolVersion returns an error if version is below MinProtocolVersion.

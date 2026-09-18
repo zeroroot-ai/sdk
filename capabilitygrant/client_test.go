@@ -42,21 +42,22 @@ func buildMockPlatform(t *testing.T, capabilities []Capability) (*httptest.Serve
 	mux.HandleFunc("/.well-known/agent-configuration", func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodGet, r.Method)
 		w.Header().Set("Content-Type", "application/json")
-		// The register URL is filled in after the server starts, so use a
-		// placeholder; the test overrides it in the registration handler itself.
+		// Every endpoint is an absolute URL on this server's origin, the way
+		// the daemon stamps them from GIBSON_PUBLIC_URL.
+		origin := "https://" + r.Host
 		doc := map[string]any{
 			"protocol_version": "1.0",
 			"provider_name":    "Gibson Test Platform",
-			"issuer":           r.Host,
+			"issuer":           origin,
 			"default_location": "us-east-1",
 			"supported_modes":  []string{"delegated", "autonomous"},
 			"endpoints": map[string]string{
-				"register":   "REPLACE_REGISTER_URL",
-				"execute":    "/agent-auth/execute",
-				"list":       "/agent-auth/agents",
-				"status":     "/agent-auth/status",
-				"revoke":     "/agent-auth/revoke",
-				"introspect": "/agent-auth/introspect",
+				"register":   origin + "/agent-auth/register",
+				"execute":    origin + "/agent-auth/execute",
+				"list":       origin + "/agent-auth/agents",
+				"status":     origin + "/agent-auth/status",
+				"revoke":     origin + "/agent-auth/revoke",
+				"introspect": origin + "/agent-auth/introspect",
 			},
 		}
 		_ = json.NewEncoder(w).Encode(doc)

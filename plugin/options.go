@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"reflect"
 	"time"
 
@@ -95,6 +96,10 @@ type config struct {
 	// bootstrapToken is an optional first-time registration token.
 	// When provided it overrides the GIBSON_BOOTSTRAP_TOKEN environment variable.
 	bootstrapToken string
+
+	// httpClient is the client for the platform HTTP calls, discovery and
+	// registration. nil means the default client.
+	httpClient *http.Client
 }
 
 // Option configures [Serve].
@@ -257,6 +262,15 @@ func WithDrainTimeout(d time.Duration) Option {
 func WithPlatformURL(url string) Option {
 	return func(c *config) {
 		c.platformURL = url
+	}
+}
+
+// WithHTTPClient sets the HTTP client [Serve] uses for the platform HTTP
+// calls, discovery and registration. Use it to trust a private certificate
+// authority. Tests use it to trust an httptest TLS server.
+func WithHTTPClient(hc *http.Client) Option {
+	return func(c *config) {
+		c.httpClient = hc
 	}
 }
 

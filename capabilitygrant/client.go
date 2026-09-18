@@ -29,6 +29,8 @@ const defaultHostKeyPath = ".gibson/host_key.json"
 type ClientConfig struct {
 	// PlatformURL is the base HTTPS URL of the Gibson platform dashboard.
 	// Example: "https://platform.example.com"
+	// The scheme must be https. NewClient rejects any other scheme, because
+	// the registration credential travels in the Authorization header.
 	PlatformURL string
 
 	// BootstrapToken is an optional one-time credential for first-time host
@@ -120,6 +122,9 @@ type jwtSVIDSource interface {
 func NewClient(cfg ClientConfig) (*Client, error) {
 	if cfg.PlatformURL == "" {
 		return nil, errors.New("capabilitygrant: NewClient: PlatformURL is required")
+	}
+	if _, err := ParsePlatformURL(cfg.PlatformURL); err != nil {
+		return nil, fmt.Errorf("capabilitygrant: NewClient: %w", err)
 	}
 	if cfg.AgentName == "" {
 		return nil, errors.New("capabilitygrant: NewClient: AgentName is required")
@@ -479,13 +484,25 @@ func (c *Client) SetHTTPClient(hc *http.Client) {
 // registration traffic to a mock server whose address is only known at runtime
 // (e.g., httptest.Server.URL).
 //
-// PatchDiscoveryRegisterURL is a no-op when Discover has not been called yet.
-func (c *Client) PatchDiscoveryRegisterURL(registerURL string) {
+// The new URL must be on the platform origin, like every endpoint a discovery
+// document names. PatchDiscoveryRegisterURL returns ErrEndpointOrigin
+// otherwise, and an error when Discover has not been called yet.
+func (c *Client) PatchDiscoveryRegisterURL(registerURL string) error {
+	base, err := ParsePlatformURL(c.config.PlatformURL)
+	if err != nil {
+		return err
+	}
+	if err := checkEndpointOrigin(base, "register", registerURL); err != nil {
+		return err
+	}
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if c.discovery != nil {
-		c.discovery.Endpoints.Register = registerURL
+	if c.discovery == nil {
+		return errors.New("capabilitygrant: PatchDiscoveryRegisterURL called before Discover")
 	}
+	c.discovery.Endpoints.Register = registerURL
+	return nil
 }
 
 // capabilityGrantCredentials implements credentials.PerRPCCredentials.
