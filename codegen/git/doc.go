@@ -633,7 +633,9 @@
 //	type: token
 //	value: ghp_xxxxxxxxxxxxx
 //
-//	Automatically used for clone, fetch, push operations.
+//	The token goes to git through a credential helper. The helper script is a
+//	fixed text and reads the token from an owner-only file, so the token never
+//	enters shell source, argv, or .git/config.
 //
 // SSH with Key:
 //
@@ -645,7 +647,15 @@
 //	  ...
 //	  -----END OPENSSH PRIVATE KEY-----
 //
-//	Automatically configured in SSH agent for Git operations.
+//	The key is written to an owner-only temporary file for the operation.
+//	ssh verifies the host key with StrictHostKeyChecking=yes against the
+//	default known_hosts file, or against the file given by
+//	git.WithKnownHostsFile. An unknown host is refused. To record a host key
+//	on first contact, opt in with git.WithAcceptNewHostKeys:
+//
+//	  provider := git.NewCredentialProvider(cred,
+//	      git.WithKnownHostsFile("/etc/gibson/known_hosts"),
+//	      git.WithAcceptNewHostKeys())
 //
 // # Examples
 //
