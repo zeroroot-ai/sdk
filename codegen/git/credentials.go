@@ -133,18 +133,18 @@ func (c *credentialProvider) configureHelperAuth(_ context.Context, username, pa
 	// The script is not executable. git runs it through sh, see the config
 	// entry below, so the file stays owner-only like the secret files.
 	helperPath := filepath.Join(tempDir, "git-credential-helper.sh")
-	if err := os.WriteFile(helperPath, []byte(credentialHelperScript), 0600); err != nil {
+	if err := os.WriteFile(helperPath, []byte(credentialHelperScript), 0o600); err != nil {
 		cleanup()
 		return nil, fmt.Errorf("failed to write credential helper: %w", err)
 	}
 
-	if err := os.WriteFile(filepath.Join(tempDir, "password"), []byte(password), 0600); err != nil {
+	if err := os.WriteFile(filepath.Join(tempDir, "password"), []byte(password), 0o600); err != nil {
 		cleanup()
 		return nil, fmt.Errorf("failed to write credential file: %w", err)
 	}
 
 	if username != "" {
-		if err := os.WriteFile(filepath.Join(tempDir, "username"), []byte(username), 0600); err != nil {
+		if err := os.WriteFile(filepath.Join(tempDir, "username"), []byte(username), 0o600); err != nil {
 			cleanup()
 			return nil, fmt.Errorf("failed to write credential file: %w", err)
 		}
@@ -155,7 +155,7 @@ func (c *credentialProvider) configureHelperAuth(_ context.Context, username, pa
 	gitConfigPath := filepath.Join(tempDir, "git-config")
 	helperCommand := "!sh " + shellQuote(helperPath)
 	configContent := fmt.Sprintf("[credential]\n\thelper = \n\thelper = %s\n", gitConfigQuote(helperCommand))
-	if err := os.WriteFile(gitConfigPath, []byte(configContent), 0600); err != nil {
+	if err := os.WriteFile(gitConfigPath, []byte(configContent), 0o600); err != nil {
 		cleanup()
 		return nil, fmt.Errorf("failed to write git config: %w", err)
 	}
@@ -180,9 +180,9 @@ func (c *credentialProvider) configureSSHAuth(_ context.Context, _ string) (func
 
 	keyPath := filepath.Join(tempDir, "id_rsa")
 
-	// Write the SSH key with 0600 permissions (read/write for owner only)
+	// Write the SSH key with 0o600 permissions (read/write for owner only)
 	// This is critical for SSH to accept the key
-	if err := os.WriteFile(keyPath, []byte(c.credential.Secret), 0600); err != nil {
+	if err := os.WriteFile(keyPath, []byte(c.credential.Secret), 0o600); err != nil {
 		os.RemoveAll(tempDir)
 		return nil, fmt.Errorf("failed to write SSH key: %w", err)
 	}
@@ -193,9 +193,9 @@ func (c *credentialProvider) configureSSHAuth(_ context.Context, _ string) (func
 		os.RemoveAll(tempDir)
 		return nil, fmt.Errorf("failed to stat SSH key: %w", err)
 	}
-	if info.Mode().Perm() != 0600 {
+	if info.Mode().Perm() != 0o600 {
 		os.RemoveAll(tempDir)
-		return nil, fmt.Errorf("SSH key permissions incorrect: got %o, expected 0600", info.Mode().Perm())
+		return nil, fmt.Errorf("SSH key permissions incorrect: got %o, expected 0o600", info.Mode().Perm())
 	}
 
 	// Host keys are verified against a persistent known_hosts file.

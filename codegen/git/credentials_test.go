@@ -122,7 +122,7 @@ func TestCredentialHelperSecretIsData(t *testing.T) {
 			for _, name := range []string{helperPath, filepath.Join(filepath.Dir(helperPath), "password")} {
 				info, err := os.Stat(name)
 				require.NoError(t, err)
-				assert.Equal(t, os.FileMode(0600), info.Mode().Perm(), name)
+				assert.Equal(t, os.FileMode(0o600), info.Mode().Perm(), name)
 			}
 
 			// git asks with "get" and receives the exact value
