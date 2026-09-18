@@ -113,6 +113,13 @@ func Serve(ctx context.Context, opts ...Option) error {
 		"runtime", m.Spec.Runtime,
 	)
 
+	// The event stream below is a stub that never delivers an event. A plugin
+	// that declares a secret would never learn of a revocation or a
+	// rotation=restart, so it refuses to start instead of running blind.
+	if err := checkEventStreamCoverage(m); err != nil {
+		return err
+	}
+
 	// -------------------------------------------------------------------------
 	// Step 2: Validate method handler registration vs manifest declarations.
 	// -------------------------------------------------------------------------
@@ -780,11 +787,43 @@ func (a *componentClientAdapter) SubmitResult(ctx context.Context, workID string
 
 // ----------------------------------------------------------------------------
 // componentEventStream provides a context-aware events.EventStream that
-// blocks until cancelled. It is replaced by a real stream in Phase 9 (CLI run).
-// In production integration, the daemon pushes events over a streaming RPC;
-// this placeholder allows the subscriber goroutine to park safely without
-// spinning. Tests inject a fake EventStream via the events.Subscriber API.
+// blocks until cancelled. No daemon RPC delivers secret events to a plugin
+// yet, so this stub is the only stream Serve has. The subscriber goroutine
+// parks on it without spinning. Tests inject a fake EventStream via the
+// events.Subscriber API.
+//
+// Because the stub never delivers, checkEventStreamCoverage refuses to start
+// a plugin whose manifest declares a secret. When a real stream replaces the
+// stub, delete that check with it.
 // ----------------------------------------------------------------------------
+
+// ErrEventStreamNotWired is returned by Serve when the manifest declares a
+// secret and no daemon event stream can deliver secret_access_revoked or
+// secret_rotated to this plugin. Without the stream a revoked secret keeps
+// working until the process restarts, and rotation=restart never fires.
+var ErrEventStreamNotWired = errors.New("plugin.Serve: daemon event stream is not wired, " +
+	"secret revocation and rotation events cannot reach this plugin")
+
+// checkEventStreamCoverage returns ErrEventStreamNotWired when m declares a
+// secret. Every declared secret is revocable by the platform, and one with
+// rotation=restart depends on the event to restart, so a plugin with any
+// declared secret cannot run correctly on the stub stream.
+func checkEventStreamCoverage(m *manifest.Manifest) error {
+	if len(m.Spec.Secrets) == 0 {
+		return nil
+	}
+	names := make([]string, 0, len(m.Spec.Secrets))
+	restart := 0
+	for _, s := range m.Spec.Secrets {
+		names = append(names, s.Name)
+		if s.Rotation == "restart" {
+			restart++
+		}
+	}
+	return fmt.Errorf("%w: manifest %q declares %d secret(s) %v, %d with rotation=restart; "+
+		"remove the secrets or run a plugin SDK with the event stream wired",
+		ErrEventStreamNotWired, m.Metadata.Name, len(names), names, restart)
+}
 
 // componentEventStream implements events.EventStream.
 // The production streaming path is wired by the per-plugin daemon subscription;
