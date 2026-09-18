@@ -214,6 +214,7 @@ func Serve(ctx context.Context, opts ...Option) error {
 	if err != nil {
 		return fmt.Errorf("plugin.Serve: capabilitygrant.NewClient: %w", err)
 	}
+	cgClient.SetHTTPClient(cfg.httpClient)
 
 	if err := cgClient.Discover(signalCtx); err != nil {
 		return fmt.Errorf("plugin.Serve: capabilitygrant.Discover: %w", err)

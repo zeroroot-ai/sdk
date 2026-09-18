@@ -107,7 +107,7 @@ func fakePlatform(t *testing.T) *httptest.Server {
 		json.NewEncoder(w).Encode(resp)
 	})
 
-	srv := httptest.NewServer(mux)
+	srv := httptest.NewTLSServer(mux)
 	t.Cleanup(srv.Close)
 
 	registerURL.Store(srv.URL + "/register")
@@ -335,6 +335,7 @@ func TestServe_RequiredStartupSecretMissing_ReturnsError(t *testing.T) {
 	err := Serve(ctx,
 		WithManifest(path),
 		WithSecretsClient(fakeSecrets),
+		WithHTTPClient(srv.Client()),
 		WithHandler("Echo", func(_ context.Context, req string) (string, error) {
 			return req, nil
 		}),

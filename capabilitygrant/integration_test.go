@@ -90,11 +90,11 @@ func newMockServer(t *testing.T, protoVersion string, caps []capabilitygrant.Cap
 			"supported_modes":  []string{"delegated", "autonomous"},
 			"endpoints": map[string]string{
 				"register":   scheme + "://" + r.Host + "/api/auth/agent/register",
-				"execute":    "/api/auth/capability/execute",
-				"list":       "/api/auth/capability/list",
-				"status":     "/api/auth/agent/status",
-				"revoke":     "/api/auth/agent/revoke",
-				"introspect": "/api/auth/token/introspect",
+				"execute":    scheme + "://" + r.Host + "/api/auth/capability/execute",
+				"list":       scheme + "://" + r.Host + "/api/auth/capability/list",
+				"status":     scheme + "://" + r.Host + "/api/auth/agent/status",
+				"revoke":     scheme + "://" + r.Host + "/api/auth/agent/revoke",
+				"introspect": scheme + "://" + r.Host + "/api/auth/token/introspect",
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -213,7 +213,7 @@ func newTestClient(t *testing.T, ms *mockServer, hostKeyPath string) *capability
 // it for tests that manipulate the discovery doc directly.
 func patchRegisterURL(t *testing.T, client *capabilitygrant.Client, baseURL string) {
 	t.Helper()
-	client.PatchDiscoveryRegisterURL(baseURL + "/api/auth/agent/register")
+	require.NoError(t, client.PatchDiscoveryRegisterURL(baseURL+"/api/auth/agent/register"))
 }
 
 // decodeJWT splits a compact JWT and returns the decoded header and payload.
