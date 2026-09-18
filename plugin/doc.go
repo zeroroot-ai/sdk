@@ -123,11 +123,19 @@
 //  2. Waits for in-flight handlers to complete up to drainTimeout (default 30s).
 //  3. Calls OnStop, transitions to Stopped, and returns nil.
 //
-// No daemon RPC delivers secret events to a plugin yet. [Serve] returns
-// [ErrEventStreamNotWired] and does not start when the manifest declares a
-// secret, because a revocation or a rotation=restart could never reach the
-// plugin. The two paragraphs below describe the behavior once the stream is
-// wired.
+// [Serve] subscribes to the daemon's ComponentService.WatchComponentEvents
+// stream. The daemon publishes secret_access_revoked and secret_rotated for
+// the calling plugin on it, and a heartbeat the SDK drops. When the stream
+// fails for a reason other than shutdown, the SDK reconnects with capped
+// exponential backoff, so a daemon rollout does not end the subscription.
+// The daemon replays nothing on subscribe: a plugin that connects after a
+// revocation learns it on its next credential resolve, which the daemon
+// denies.
+//
+// When a manifest secret is revoked by the operator:
+//  1. The events subscriber receives the secret_access_revoked event.
+//  2. The secrets client marks the name revoked and drops it from the cache.
+//  3. The lifecycle state machine moves to Degraded and calls OnDegraded.
 //
 // When a manifest secret with rotation=restart is rotated by the operator:
 //  1. The events subscriber receives the secret_rotated event.

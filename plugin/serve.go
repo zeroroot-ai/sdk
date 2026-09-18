@@ -26,6 +26,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	grpcInsecure "google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 
 	componentpb "github.com/zeroroot-ai/sdk/api/gen/gibson/component/v1"
 	harnesspb "github.com/zeroroot-ai/sdk/api/gen/gibson/harness/v1"
@@ -61,7 +62,7 @@ type MethodHandler = dispatch.MethodHandler
 //  6. Pre-resolves all manifest secrets with scope=startup, required=true.
 //  7. Starts the lifecycle state machine, invokes OnStart, transitions to Ready.
 //  8. Starts the health server on the configured port.
-//  9. Starts the events subscriber on the component callback stream.
+//  9. Starts the events subscriber on the WatchComponentEvents stream.
 //  10. Starts the dispatch loop (PollWork → handler → SubmitResult).
 //  11. Blocks until ctx is cancelled or a fatal error occurs.
 //  12. On SIGTERM/SIGINT: stops new work, drains in-flight handlers up to
@@ -112,13 +113,6 @@ func Serve(ctx context.Context, opts ...Option) error {
 		"version", m.Metadata.Version,
 		"runtime", m.Spec.Runtime,
 	)
-
-	// The event stream below is a stub that never delivers an event. A plugin
-	// that declares a secret would never learn of a revocation or a
-	// rotation=restart, so it refuses to start instead of running blind.
-	if err := checkEventStreamCoverage(m); err != nil {
-		return err
-	}
 
 	// -------------------------------------------------------------------------
 	// Step 2: Validate method handler registration vs manifest declarations.
@@ -449,7 +443,7 @@ func Serve(ctx context.Context, opts ...Option) error {
 	// -------------------------------------------------------------------------
 	// Step 14: Build the events subscriber and wire the Drainer.
 	// -------------------------------------------------------------------------
-	eventStream := &componentEventStream{ctx: make(chan struct{})}
+	eventStream := newComponentEventStream(componentSvcClient, m.Metadata.Name)
 
 	sub := events.NewWithDrainer(eventStream, secretsClient, sm, disp, m)
 	pluginName := m.Metadata.Name
@@ -786,59 +780,159 @@ func (a *componentClientAdapter) SubmitResult(ctx context.Context, workID string
 }
 
 // ----------------------------------------------------------------------------
-// componentEventStream provides a context-aware events.EventStream that
-// blocks until cancelled. No daemon RPC delivers secret events to a plugin
-// yet, so this stub is the only stream Serve has. The subscriber goroutine
-// parks on it without spinning. Tests inject a fake EventStream via the
-// events.Subscriber API.
-//
-// Because the stub never delivers, checkEventStreamCoverage refuses to start
-// a plugin whose manifest declares a secret. When a real stream replaces the
-// stub, delete that check with it.
+// componentEventStream adapts ComponentService.WatchComponentEvents to
+// events.EventStream. The daemon keys the subscription on the caller's
+// identity, so the request names nothing. The daemon replays nothing on
+// subscribe: a plugin that connects after a revocation learns it on its next
+// GetCredential, which the daemon denies.
 // ----------------------------------------------------------------------------
 
-// ErrEventStreamNotWired is returned by Serve when the manifest declares a
-// secret and no daemon event stream can deliver secret_access_revoked or
-// secret_rotated to this plugin. Without the stream a revoked secret keeps
-// working until the process restarts, and rotation=restart never fires.
-var ErrEventStreamNotWired = errors.New("plugin.Serve: daemon event stream is not wired, " +
-	"secret revocation and rotation events cannot reach this plugin")
+// eventTypeHeartbeat is the keepalive the daemon sends on an idle stream. The
+// adapter drops it after a debug log so the subscriber never sees it.
+const eventTypeHeartbeat = "heartbeat"
 
-// checkEventStreamCoverage returns ErrEventStreamNotWired when m declares a
-// secret. Every declared secret is revocable by the platform, and one with
-// rotation=restart depends on the event to restart, so a plugin with any
-// declared secret cannot run correctly on the stub stream.
-func checkEventStreamCoverage(m *manifest.Manifest) error {
-	if len(m.Spec.Secrets) == 0 {
+const (
+	// eventStreamInitialBackoff is the first wait after a stream error.
+	eventStreamInitialBackoff = 500 * time.Millisecond
+	// eventStreamMaxBackoff caps the wait between reconnect attempts.
+	eventStreamMaxBackoff = 30 * time.Second
+)
+
+// componentEventStream implements events.EventStream over the generated
+// WatchComponentEvents stream. One instance serves one subscriber goroutine;
+// it is not safe for concurrent Recv calls.
+type componentEventStream struct {
+	client     componentpb.ComponentServiceClient
+	pluginName string
+
+	// stream is the open server stream, nil until the first Recv opens one
+	// and again after a stream error.
+	stream grpc.ServerStreamingClient[componentpb.ComponentEvent]
+	// cancelStream ends the open stream's context on reconnect.
+	cancelStream context.CancelFunc
+
+	// backoff is the wait before the next reconnect attempt. It doubles on
+	// each consecutive failure up to maxBackoff and resets on a received
+	// message.
+	backoff        time.Duration
+	initialBackoff time.Duration
+	maxBackoff     time.Duration
+}
+
+// newComponentEventStream returns an adapter that opens the stream lazily on
+// the first Recv call.
+func newComponentEventStream(client componentpb.ComponentServiceClient, pluginName string) *componentEventStream {
+	return &componentEventStream{
+		client:         client,
+		pluginName:     pluginName,
+		initialBackoff: eventStreamInitialBackoff,
+		maxBackoff:     eventStreamMaxBackoff,
+	}
+}
+
+// Recv returns the next secret event. It opens the stream on first use,
+// drops heartbeats, and on any stream error other than the caller's
+// cancellation reconnects with capped exponential backoff, so a daemon
+// rollout does not end the subscription for good. Recv returns an error only
+// when ctx is done.
+func (s *componentEventStream) Recv(ctx context.Context) (events.Event, error) {
+	for {
+		if ctx.Err() != nil {
+			s.closeStream()
+			return events.Event{}, fmt.Errorf("event stream: %w", ctx.Err())
+		}
+		if s.stream == nil {
+			if err := s.open(ctx); err != nil {
+				if waitErr := s.waitBackoff(ctx, "open", err); waitErr != nil {
+					return events.Event{}, waitErr
+				}
+				continue
+			}
+		}
+
+		msg, err := s.stream.Recv()
+		if err != nil {
+			s.closeStream()
+			if waitErr := s.waitBackoff(ctx, "recv", err); waitErr != nil {
+				return events.Event{}, waitErr
+			}
+			continue
+		}
+		s.backoff = s.initialBackoff
+
+		if msg.GetType() == eventTypeHeartbeat {
+			slog.Debug("plugin: event stream heartbeat",
+				"plugin", s.pluginName)
+			continue
+		}
+		return componentEventToEvent(msg), nil
+	}
+}
+
+// open starts a WatchComponentEvents stream on a context derived from ctx.
+func (s *componentEventStream) open(ctx context.Context) error {
+	streamCtx, cancel := context.WithCancel(ctx)
+	stream, err := s.client.WatchComponentEvents(streamCtx, &componentpb.WatchComponentEventsRequest{})
+	if err != nil {
+		cancel()
+		return fmt.Errorf("WatchComponentEvents: %w", err)
+	}
+	s.stream = stream
+	s.cancelStream = cancel
+	slog.Info("plugin: event stream subscribed", "plugin", s.pluginName)
+	return nil
+}
+
+// closeStream cancels the open stream, if any, and forgets it.
+func (s *componentEventStream) closeStream() {
+	if s.cancelStream != nil {
+		s.cancelStream()
+	}
+	s.stream = nil
+	s.cancelStream = nil
+}
+
+// waitBackoff logs the failure, sleeps for the current backoff, and doubles
+// it up to maxBackoff. It returns the context error when ctx ends first, and
+// nil after the sleep. A failure while ctx is already done is the caller's
+// cancellation, not a stream fault, so it is not logged.
+func (s *componentEventStream) waitBackoff(ctx context.Context, op string, cause error) error {
+	if ctx.Err() != nil {
+		return fmt.Errorf("event stream: %w", ctx.Err())
+	}
+	if s.backoff <= 0 {
+		s.backoff = s.initialBackoff
+	}
+	slog.Warn("plugin: event stream failed, reconnecting",
+		"plugin", s.pluginName,
+		"op", op,
+		"code", status.Code(cause).String(),
+		"retry_in", s.backoff,
+		"err", cause,
+	)
+	timer := time.NewTimer(s.backoff)
+	defer timer.Stop()
+	s.backoff = min(s.backoff*2, s.maxBackoff)
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("event stream: %w", ctx.Err())
+	case <-timer.C:
 		return nil
 	}
-	names := make([]string, 0, len(m.Spec.Secrets))
-	restart := 0
-	for _, s := range m.Spec.Secrets {
-		names = append(names, s.Name)
-		if s.Rotation == "restart" {
-			restart++
-		}
+}
+
+// componentEventToEvent maps one wire message to the subscriber's Event.
+func componentEventToEvent(msg *componentpb.ComponentEvent) events.Event {
+	ev := events.Event{
+		Type:    msg.GetType(),
+		Name:    msg.GetSecretName(),
+		Reason:  msg.GetReason(),
+		Version: int(msg.GetVersion()),
 	}
-	return fmt.Errorf("%w: manifest %q declares %d secret(s) %v, %d with rotation=restart; "+
-		"remove the secrets or run a plugin SDK with the event stream wired",
-		ErrEventStreamNotWired, m.Metadata.Name, len(names), names, restart)
-}
-
-// componentEventStream implements events.EventStream.
-// The production streaming path is wired by the per-plugin daemon subscription;
-// this placeholder blocks on ctx cancellation so the subscriber goroutine exits
-// cleanly and does not spin.
-type componentEventStream struct {
-	// ctx is a sentinel channel closed when Serve exits; it is unused in
-	// production but satisfies the interface for the placeholder implementation.
-	ctx chan struct{}
-}
-
-// Recv blocks until ctx is cancelled.
-func (s *componentEventStream) Recv(ctx context.Context) (events.Event, error) {
-	<-ctx.Done()
-	return events.Event{}, ctx.Err()
+	if ts := msg.GetOccurredAt(); ts != nil {
+		ev.OccurredAt = ts.AsTime()
+	}
+	return ev
 }
 
 // normalizeContentTrust maps a manifest content_trust value to the canonical
