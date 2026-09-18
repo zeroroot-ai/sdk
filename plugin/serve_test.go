@@ -10,13 +10,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
+	componentpb "github.com/zeroroot-ai/sdk/api/gen/gibson/component/v1"
 	pluginpb "github.com/zeroroot-ai/sdk/api/gen/gibson/plugin/v1"
 	"github.com/zeroroot-ai/sdk/plugin/dispatch"
 	"github.com/zeroroot-ai/sdk/plugin/events"
@@ -124,6 +127,7 @@ func (f *fakeComponentClient) SubmitResult(ctx context.Context, workID string, r
 // ----------------------------------------------------------------------------
 
 type fakeSecretsClient struct {
+	mu       sync.Mutex
 	values   map[string][]byte
 	revoked  map[string]struct{}
 	errOnKey string // return error for this key
@@ -137,7 +141,7 @@ func newFakeSecretsClient(vals map[string][]byte) *fakeSecretsClient {
 }
 
 func (f *fakeSecretsClient) Resolve(_ context.Context, name string, _ ...pluginsecrets.Option) ([]byte, error) {
-	if _, ok := f.revoked[name]; ok {
+	if f.isRevoked(name) {
 		return nil, errors.New("permission denied")
 	}
 	if f.errOnKey == name {
@@ -154,7 +158,16 @@ func (f *fakeSecretsClient) Invalidate(name string) {
 }
 
 func (f *fakeSecretsClient) MarkRevoked(name string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	f.revoked[name] = struct{}{}
+}
+
+func (f *fakeSecretsClient) isRevoked(name string) bool {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	_, ok := f.revoked[name]
+	return ok
 }
 
 // ----------------------------------------------------------------------------
@@ -264,49 +277,226 @@ func TestServe_InvalidManifestPath_ReturnsError(t *testing.T) {
 }
 
 // ----------------------------------------------------------------------------
-// Test: Serve fails when required startup secret is unavailable
-// The fake secrets client returns an error for the declared secret name,
-// and we bypass the capabilitygrant/gRPC steps with a fake daemon.
+// Test: Serve delivers a revocation from WatchComponentEvents to the secrets
+// client and the lifecycle state machine. The fake daemon serves the stream,
+// the fake secrets client stands in for GetCredential.
 // ----------------------------------------------------------------------------
 
-func TestServe_DeclaredSecrets_RefusesWhileEventStreamIsStub(t *testing.T) {
-	// The manifest declares cred:api_key with rotation: restart. No daemon
-	// event stream can deliver a revocation or a rotation to this plugin, so
-	// Serve must refuse before it needs a platform URL or a daemon address.
-	path := writeManifest(t, testManifestWithSecretsYAML)
-	t.Setenv("GIBSON_URL", "")
-	t.Setenv("GIBSON_DAEMON_ADDR", "")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	err := Serve(ctx,
-		WithManifest(path),
-		WithSecretsClient(newFakeSecretsClient(map[string][]byte{"cred:api_key": []byte("value")})),
-		WithHandler("Echo", func(_ context.Context, req string) (string, error) {
-			return req, nil
-		}),
-	)
-	require.ErrorIs(t, err, ErrEventStreamNotWired)
-	assert.Contains(t, err.Error(), "cred:api_key")
-	assert.Contains(t, err.Error(), "1 with rotation=restart")
-	assert.NotContains(t, err.Error(), "platform URL", "the refusal must come before any platform contact")
+// secretsManifest returns the in-memory form of testManifestWithSecretsYAML.
+func secretsManifest(t *testing.T) *manifest.Manifest {
+	t.Helper()
+	m, err := manifest.LoadBytes([]byte(testManifestWithSecretsYAML))
+	require.NoError(t, err)
+	return m
 }
 
-func TestCheckEventStreamCoverage(t *testing.T) {
-	m, err := manifest.LoadBytes([]byte(testManifestYAML))
-	require.NoError(t, err)
-	require.NoError(t, checkEventStreamCoverage(m), "a manifest with no secrets starts")
+// revocationEvent is the wire message the daemon publishes when the operator
+// revokes the plugin's binding to name.
+func revocationEvent(name string) *componentpb.ComponentEvent {
+	return &componentpb.ComponentEvent{
+		Type:       events.EventTypeSecretAccessRevoked,
+		SecretName: name,
+		Reason:     "operator revoked the binding",
+		OccurredAt: timestamppb.Now(),
+	}
+}
 
-	m, err = manifest.LoadBytes([]byte(testManifestWithSecretsYAML))
-	require.NoError(t, err)
-	require.ErrorIs(t, checkEventStreamCoverage(m), ErrEventStreamNotWired)
+func TestServe_DeclaredSecrets_RevocationMarksDegraded(t *testing.T) {
+	t.Setenv("HOME", t.TempDir()) // keep capability-grant host keys out of the real home
+	platform := fakeCGPlatform(t)
+	t.Setenv("GIBSON_URL", platform.URL)
+	daemon := startFakeDaemon(t)
 
-	// rotation: live is still revocable, so it is refused too.
-	m.Spec.Secrets[0].Rotation = "live"
-	err = checkEventStreamCoverage(m)
-	require.ErrorIs(t, err, ErrEventStreamNotWired)
-	assert.Contains(t, err.Error(), "0 with rotation=restart")
+	fakeSecrets := newFakeSecretsClient(map[string][]byte{"cred:api_key": []byte("value")})
+	degraded := make(chan string, 1)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	serveErr := make(chan error, 1)
+	go func() {
+		serveErr <- Serve(ctx,
+			WithParsedManifest(secretsManifest(t)),
+			WithSecretsClient(fakeSecrets),
+			WithLifecycle(lifecycle.LifecycleHooks{
+				OnDegraded: func(reason string) { degraded <- reason },
+			}),
+			WithHandler("Echo", func(_ context.Context, req string) (string, error) {
+				return req, nil
+			}),
+			WithHTTPClient(platform.Client()),
+			WithHealthAddr(":0"),
+		)
+	}()
+
+	// A heartbeat first: the SDK must drop it without effect. Then the
+	// revocation for the declared secret.
+	daemon.eventCh <- &componentpb.ComponentEvent{Type: "heartbeat", OccurredAt: timestamppb.Now()}
+	daemon.eventCh <- revocationEvent("cred:api_key")
+
+	select {
+	case reason := <-degraded:
+		assert.Equal(t, "secret_revoked: cred:api_key", reason)
+	case err := <-serveErr:
+		t.Fatalf("Serve returned before the revocation was delivered: %v", err)
+	case <-ctx.Done():
+		t.Fatal("timeout waiting for OnDegraded")
+	}
+	assert.True(t, fakeSecrets.isRevoked("cred:api_key"), "MarkRevoked must have been called")
+	assert.Equal(t, int32(1), daemon.watchCount.Load(), "one subscription for one plugin")
+
+	cancel()
+	require.NoError(t, <-serveErr)
+}
+
+// ----------------------------------------------------------------------------
+// Test: componentEventStream adapter (unit-level, no Serve call)
+// ----------------------------------------------------------------------------
+
+// readyStateMachine returns a state machine walked to Ready, the state the
+// subscriber sees in production when an event arrives.
+func readyStateMachine(t *testing.T, hooks lifecycle.LifecycleHooks) *lifecycle.StateMachine {
+	t.Helper()
+	sm := lifecycle.New(hooks)
+	require.NoError(t, sm.Transition(lifecycle.Registering))
+	require.NoError(t, sm.Transition(lifecycle.ResolvingSecrets))
+	require.NoError(t, sm.Transition(lifecycle.Starting))
+	require.NoError(t, sm.RunOnStart(context.Background()))
+	require.Equal(t, lifecycle.Ready, sm.Current())
+	return sm
+}
+
+func TestComponentEventStream_DropsHeartbeatAndMapsEvent(t *testing.T) {
+	daemon := startFakeDaemon(t)
+	stream := newComponentEventStream(dialFakeDaemon(t, daemon), "secret-plugin")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	occurred := time.Date(2026, 9, 18, 12, 0, 0, 0, time.UTC)
+	daemon.eventCh <- &componentpb.ComponentEvent{Type: "heartbeat", OccurredAt: timestamppb.Now()}
+	daemon.eventCh <- &componentpb.ComponentEvent{
+		Type:       events.EventTypeSecretRotated,
+		SecretName: "cred:api_key",
+		Version:    7,
+		OccurredAt: timestamppb.New(occurred),
+	}
+
+	// The first event Recv returns is the rotation: the heartbeat before it
+	// never reaches the caller.
+	ev, err := stream.Recv(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, events.Event{
+		Type:       events.EventTypeSecretRotated,
+		Name:       "cred:api_key",
+		Version:    7,
+		OccurredAt: occurred,
+	}, ev)
+
+	daemon.eventCh <- revocationEvent("cred:api_key")
+	ev, err = stream.Recv(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, events.EventTypeSecretAccessRevoked, ev.Type)
+	assert.Equal(t, "cred:api_key", ev.Name)
+	assert.Equal(t, "operator revoked the binding", ev.Reason)
+	assert.False(t, ev.OccurredAt.IsZero())
+}
+
+func TestComponentEventStream_RevocationThroughSubscriber(t *testing.T) {
+	daemon := startFakeDaemon(t)
+	stream := newComponentEventStream(dialFakeDaemon(t, daemon), "secret-plugin")
+
+	fakeSecrets := newFakeSecretsClient(map[string][]byte{"cred:api_key": []byte("value")})
+	degraded := make(chan string, 1)
+	sm := readyStateMachine(t, lifecycle.LifecycleHooks{
+		OnDegraded: func(reason string) { degraded <- reason },
+	})
+	sub := events.NewWithDrainer(stream, fakeSecrets, sm, nil, secretsManifest(t))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	runErr := make(chan error, 1)
+	go func() { runErr <- sub.Run(ctx) }()
+
+	daemon.eventCh <- revocationEvent("cred:api_key")
+
+	select {
+	case reason := <-degraded:
+		assert.Equal(t, "secret_revoked: cred:api_key", reason)
+	case <-ctx.Done():
+		t.Fatal("timeout waiting for OnDegraded")
+	}
+	assert.Equal(t, lifecycle.Degraded, sm.Current())
+	assert.True(t, fakeSecrets.isRevoked("cred:api_key"))
+
+	cancel()
+	require.NoError(t, <-runErr, "cancellation is a clean exit")
+}
+
+func TestComponentEventStream_ReconnectsAfterStreamError(t *testing.T) {
+	daemon := startFakeDaemon(t)
+	daemon.failFirstWatch = true
+	stream := newComponentEventStream(dialFakeDaemon(t, daemon), "secret-plugin")
+	stream.initialBackoff = 5 * time.Millisecond
+	stream.maxBackoff = 20 * time.Millisecond
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	daemon.eventCh <- revocationEvent("cred:api_key")
+
+	ev, err := stream.Recv(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, events.EventTypeSecretAccessRevoked, ev.Type)
+	assert.Equal(t, int32(2), daemon.watchCount.Load(), "the first stream failed, the second delivered")
+}
+
+func TestComponentEventStream_CancelReturnsContextError(t *testing.T) {
+	daemon := startFakeDaemon(t)
+	stream := newComponentEventStream(dialFakeDaemon(t, daemon), "secret-plugin")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	type result struct {
+		ev  events.Event
+		err error
+	}
+	got := make(chan result, 1)
+	go func() {
+		ev, err := stream.Recv(ctx)
+		got <- result{ev, err}
+	}()
+
+	// Wait for the subscription, then cancel: the adapter must not reconnect.
+	require.Eventually(t, func() bool { return daemon.watchCount.Load() == 1 },
+		5*time.Second, 5*time.Millisecond)
+	cancel()
+
+	select {
+	case r := <-got:
+		require.ErrorIs(t, r.err, context.Canceled)
+	case <-time.After(5 * time.Second):
+		t.Fatal("Recv did not return after cancellation")
+	}
+	assert.Equal(t, int32(1), daemon.watchCount.Load(), "cancellation must not reconnect")
+}
+
+func TestComponentEventStream_BackoffDoublesToCap(t *testing.T) {
+	stream := newComponentEventStream(nil, "secret-plugin")
+	stream.initialBackoff = time.Millisecond
+	stream.maxBackoff = 4 * time.Millisecond
+
+	ctx := context.Background()
+	cause := errors.New("stream broke")
+	require.NoError(t, stream.waitBackoff(ctx, "recv", cause))
+	assert.Equal(t, 2*time.Millisecond, stream.backoff)
+	require.NoError(t, stream.waitBackoff(ctx, "recv", cause))
+	assert.Equal(t, 4*time.Millisecond, stream.backoff)
+	require.NoError(t, stream.waitBackoff(ctx, "recv", cause))
+	assert.Equal(t, 4*time.Millisecond, stream.backoff, "capped at maxBackoff")
+
+	cancelled, cancel := context.WithCancel(ctx)
+	cancel()
+	require.ErrorIs(t, stream.waitBackoff(cancelled, "recv", cause), context.Canceled)
 }
 
 // ----------------------------------------------------------------------------

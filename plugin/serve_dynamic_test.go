@@ -23,6 +23,9 @@ import (
 	componentpb "github.com/zeroroot-ai/sdk/api/gen/gibson/component/v1"
 	"github.com/zeroroot-ai/sdk/plugin/manifest"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
@@ -73,8 +76,9 @@ func fakeCGPlatform(t *testing.T) *httptest.Server {
 // ----------------------------------------------------------------------------
 
 // fakeDaemon implements the ComponentService RPCs Serve exercises:
-// RegisterComponent, PollWork, SubmitResult, Heartbeat. Work items are fed
-// through workCh; submitted results come out of resultCh.
+// RegisterComponent, PollWork, SubmitResult, Heartbeat, WatchComponentEvents.
+// Work items are fed through workCh; submitted results come out of resultCh;
+// component events are fed through eventCh to whichever stream is open.
 type fakeDaemon struct {
 	componentpb.UnimplementedComponentServiceServer
 
@@ -83,12 +87,25 @@ type fakeDaemon struct {
 
 	workCh   chan *componentpb.PollWorkResponse
 	resultCh chan *componentpb.SubmitResultRequest
+
+	// addr is the listen address once startFakeDaemon has bound it.
+	addr string
+
+	// eventCh feeds the open WatchComponentEvents stream.
+	eventCh chan *componentpb.ComponentEvent
+	// watchCount counts WatchComponentEvents calls, so a test can prove a
+	// reconnect happened.
+	watchCount atomic.Int32
+	// failFirstWatch ends the first WatchComponentEvents stream with
+	// Unavailable, like a daemon replica going away in a rollout.
+	failFirstWatch bool
 }
 
 func newFakeDaemon() *fakeDaemon {
 	return &fakeDaemon{
 		workCh:   make(chan *componentpb.PollWorkResponse, 16),
 		resultCh: make(chan *componentpb.SubmitResultRequest, 16),
+		eventCh:  make(chan *componentpb.ComponentEvent, 16),
 	}
 }
 
@@ -123,6 +140,25 @@ func (d *fakeDaemon) Heartbeat(_ context.Context, _ *componentpb.HeartbeatReques
 	return &componentpb.HeartbeatResponse{}, nil
 }
 
+// WatchComponentEvents forwards eventCh to the caller until the stream's
+// context ends. With failFirstWatch set, the first call fails at once.
+func (d *fakeDaemon) WatchComponentEvents(_ *componentpb.WatchComponentEventsRequest, stream componentpb.ComponentService_WatchComponentEventsServer) error {
+	n := d.watchCount.Add(1)
+	if d.failFirstWatch && n == 1 {
+		return status.Error(codes.Unavailable, "daemon replica is rolling out")
+	}
+	for {
+		select {
+		case ev := <-d.eventCh:
+			if err := stream.Send(ev); err != nil {
+				return err
+			}
+		case <-stream.Context().Done():
+			return stream.Context().Err()
+		}
+	}
+}
+
 func (d *fakeDaemon) registeredMethods(t *testing.T) []string {
 	t.Helper()
 	d.mu.Lock()
@@ -152,8 +188,18 @@ func startFakeDaemon(t *testing.T) *fakeDaemon {
 	go srv.Serve(lis)
 	t.Cleanup(srv.Stop)
 
-	t.Setenv("GIBSON_DAEMON_ADDR", lis.Addr().String())
+	daemon.addr = lis.Addr().String()
+	t.Setenv("GIBSON_DAEMON_ADDR", daemon.addr)
 	return daemon
+}
+
+// dialFakeDaemon returns a ComponentService client connected to daemon.
+func dialFakeDaemon(t *testing.T, daemon *fakeDaemon) componentpb.ComponentServiceClient {
+	t.Helper()
+	conn, err := grpc.NewClient(daemon.addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, err)
+	t.Cleanup(func() { conn.Close() })
+	return componentpb.NewComponentServiceClient(conn)
 }
 
 // dynamicManifest returns an in-memory manifest with dynamic methods enabled
