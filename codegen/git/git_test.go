@@ -173,50 +173,6 @@ func TestCloneCommandConstruction(t *testing.T) {
 	}
 }
 
-// TestURLSanitization tests that credentials are sanitized from URLs in logs.
-func TestURLSanitization(t *testing.T) {
-	tests := []struct {
-		name     string
-		url      string
-		expected string
-	}{
-		{
-			name:     "https with credentials",
-			url:      "https://user:pass@github.com/org/repo.git",
-			expected: "https://***:***@github.com/org/repo.git",
-		},
-		{
-			name:     "https without credentials",
-			url:      "https://github.com/org/repo.git",
-			expected: "https://github.com/org/repo.git",
-		},
-		{
-			name:     "ssh url",
-			url:      "git@github.com:org/repo.git",
-			expected: "git@github.com:org/repo.git",
-		},
-		{
-			name:     "https with token",
-			url:      "https://ghp_token12345@github.com/org/repo.git",
-			expected: "https://***:***@github.com/org/repo.git",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			sanitized := sanitizeGitURL(tt.url)
-			assert.Equal(t, tt.expected, sanitized)
-
-			// Verify credentials are not present in sanitized output
-			if strings.Contains(tt.url, "user:pass") || strings.Contains(tt.url, "ghp_token") {
-				assert.NotContains(t, sanitized, "user")
-				assert.NotContains(t, sanitized, "pass")
-				assert.NotContains(t, sanitized, "ghp_token")
-			}
-		})
-	}
-}
-
 // TestCredentialConfiguration tests credential provider configuration.
 func TestCredentialConfiguration(t *testing.T) {
 	tempDir := t.TempDir()
@@ -295,14 +251,7 @@ func TestCredentialConfiguration(t *testing.T) {
 				assert.Contains(t, sshCommand, "ssh -i")
 
 				// Extract key path from SSH command
-				parts := strings.Split(sshCommand, " ")
-				var keyPath string
-				for i, part := range parts {
-					if part == "-i" && i+1 < len(parts) {
-						keyPath = parts[i+1]
-						break
-					}
-				}
+				keyPath := sshKeyPathFromCommand(sshCommand)
 				assert.NotEmpty(t, keyPath)
 
 				// Verify key file exists with correct permissions
@@ -400,16 +349,9 @@ func TestCredentialCleanup(t *testing.T) {
 			var tempFiles []string
 			if tt.credential.Type == types.CredentialTypeCustom {
 				// SSH key
-				sshCommand := os.Getenv("GIT_SSH_COMMAND")
-				if sshCommand != "" {
-					parts := strings.Split(sshCommand, " ")
-					for i, part := range parts {
-						if part == "-i" && i+1 < len(parts) {
-							tempFiles = append(tempFiles, parts[i+1])
-							// Also track parent directory
-							tempFiles = append(tempFiles, filepath.Dir(parts[i+1]))
-						}
-					}
+				if keyPath := sshKeyPathFromCommand(os.Getenv("GIT_SSH_COMMAND")); keyPath != "" {
+					// Track the key and its parent directory
+					tempFiles = append(tempFiles, keyPath, filepath.Dir(keyPath))
 				}
 			} else {
 				// Token/basic auth
@@ -1056,48 +998,6 @@ func TestPushOptions(t *testing.T) {
 	}
 }
 
-// TestInlineCredentialProvider tests URL transformation with inline credentials.
-func TestInlineCredentialProvider(t *testing.T) {
-	tests := []struct {
-		name     string
-		username string
-		password string
-		url      string
-		expected string
-	}{
-		{
-			name:     "https url without credentials",
-			username: "user",
-			password: "pass",
-			url:      "https://github.com/org/repo.git",
-			expected: "https://user:pass@github.com/org/repo.git",
-		},
-		{
-			name:     "https url with existing credentials",
-			username: "user",
-			password: "pass",
-			url:      "https://olduser:oldpass@github.com/org/repo.git",
-			expected: "https://olduser:oldpass@github.com/org/repo.git",
-		},
-		{
-			name:     "ssh url unchanged",
-			username: "user",
-			password: "pass",
-			url:      "git@github.com:org/repo.git",
-			expected: "git@github.com:org/repo.git",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			provider := NewInlineCredentialProvider(tt.username, tt.password)
-			transformed, err := provider.TransformURL(tt.url)
-			require.NoError(t, err)
-			assert.Equal(t, tt.expected, transformed)
-		})
-	}
-}
-
 // TestSSHKeyPermissions tests that SSH keys are created with correct permissions.
 func TestSSHKeyPermissions(t *testing.T) {
 	tempDir := t.TempDir()
@@ -1117,14 +1017,7 @@ func TestSSHKeyPermissions(t *testing.T) {
 	sshCommand := os.Getenv("GIT_SSH_COMMAND")
 	require.NotEmpty(t, sshCommand)
 
-	parts := strings.Split(sshCommand, " ")
-	var keyPath string
-	for i, part := range parts {
-		if part == "-i" && i+1 < len(parts) {
-			keyPath = parts[i+1]
-			break
-		}
-	}
+	keyPath := sshKeyPathFromCommand(sshCommand)
 	require.NotEmpty(t, keyPath)
 
 	// Verify key exists and has 0600 permissions

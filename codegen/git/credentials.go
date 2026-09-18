@@ -5,29 +5,85 @@ package git
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/zeroroot-ai/sdk/types"
 )
 
+// ErrCredentialInvalid indicates that a credential value cannot be passed to git.
+// The credential-helper protocol is line based, so a username or secret that
+// contains a newline, a carriage return, or a NUL byte is refused.
+var ErrCredentialInvalid = errors.New("credential value is not a single line")
+
+// gitAuthHelperScript is the git credential helper the provider installs.
+// git runs it as "sh <script> get" and reads username= and password= lines
+// from its stdout, the credential-helper protocol.
+// The text is fixed. It holds no secret and takes no interpolated value.
+// The username and password live in files next to the script, readable by
+// the owner only. The script reads them at request time and prints them
+// with printf, so shell metacharacters in a secret are data, never code.
+const gitAuthHelperScript = `# Git credential helper installed by the Zero Root SDK.
+# This file holds no secret. The secret is in files next to it.
+[ "$1" = "get" ] || exit 0
+dir=$(dirname -- "$0")
+if [ -f "$dir/username" ]; then
+	printf 'username=%s\n' "$(cat -- "$dir/username")"
+fi
+printf 'password=%s\n' "$(cat -- "$dir/password")"
+`
+
 // credentialProvider implements CredentialProvider for different credential types.
 type credentialProvider struct {
 	credential *types.Credential
+
+	// knownHostsFile is the persistent known_hosts file ssh verifies host keys
+	// against. Empty means the ssh default, ~/.ssh/known_hosts.
+	knownHostsFile string
+
+	// acceptNewHostKeys opts in to StrictHostKeyChecking=accept-new. The
+	// default is StrictHostKeyChecking=yes, so an unknown host is refused.
+	acceptNewHostKeys bool
+}
+
+// Option configures a credential provider.
+type Option func(*credentialProvider)
+
+// WithKnownHostsFile points ssh at a persistent known_hosts file.
+// The file must already contain the host key of every git host the
+// provider connects to, unless WithAcceptNewHostKeys is also set.
+func WithKnownHostsFile(path string) Option {
+	return func(c *credentialProvider) {
+		c.knownHostsFile = path
+	}
+}
+
+// WithAcceptNewHostKeys relaxes host key verification to
+// StrictHostKeyChecking=accept-new. The first connection to a host records
+// its key in the known_hosts file, and later connections verify against it.
+// A changed key is still refused. This is an explicit opt-in. Use it only
+// for automation that cannot seed known_hosts ahead of time.
+func WithAcceptNewHostKeys() Option {
+	return func(c *credentialProvider) {
+		c.acceptNewHostKeys = true
+	}
 }
 
 // NewCredentialProvider creates a new credential provider from a types.Credential.
-func NewCredentialProvider(cred *types.Credential) CredentialProvider {
+func NewCredentialProvider(cred *types.Credential, opts ...Option) CredentialProvider {
 	if cred == nil {
 		return nil
 	}
-	return &credentialProvider{
+	c := &credentialProvider{
 		credential: cred,
 	}
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c
 }
 
 // ConfigureAuth configures Git authentication for the given repository path.
@@ -39,10 +95,10 @@ func (c *credentialProvider) ConfigureAuth(ctx context.Context, repoPath string)
 
 	switch c.credential.Type {
 	case types.CredentialTypeAPIKey, types.CredentialTypeBearer:
-		return c.configureTokenAuth(ctx, repoPath)
+		return c.configureHelperAuth(ctx, "", c.credential.Secret)
 
 	case types.CredentialTypeBasic:
-		return c.configureBasicAuth(ctx, repoPath)
+		return c.configureHelperAuth(ctx, c.credential.Username, c.credential.Secret)
 
 	case types.CredentialTypeCustom:
 		// Assume SSH key for custom type
@@ -53,91 +109,59 @@ func (c *credentialProvider) ConfigureAuth(ctx context.Context, repoPath string)
 	}
 }
 
-// configureTokenAuth configures HTTPS token authentication using a credential helper.
-func (c *credentialProvider) configureTokenAuth(ctx context.Context, repoPath string) (func(), error) {
-	// Use GIT_CONFIG_COUNT to set a local config for this operation
-	// This approach doesn't modify the global or repository config
-
-	// Create a credential helper script that provides the token
-	helperScript := fmt.Sprintf(`#!/bin/sh
-case "$1" in
-get)
-	echo "password=%s"
-	;;
-esac
-`, c.credential.Secret)
-
-	// Write helper script to a temporary file
-	tempDir, err := os.MkdirTemp("", "git-cred-*")
-	if err != nil {
-		return nil, fmt.Errorf("failed to create temp directory: %w", err)
+// configureHelperAuth installs a git credential helper for HTTPS token and
+// basic authentication. The helper script is a fixed text. The username and
+// password are written to owner-only files that the script reads at request
+// time, so no credential value ever enters shell source.
+func (c *credentialProvider) configureHelperAuth(_ context.Context, username, password string) (func(), error) {
+	if err := validateCredentialLine(password); err != nil {
+		return nil, fmt.Errorf("password: %w", err)
 	}
-
-	helperPath := filepath.Join(tempDir, "git-credential-helper.sh")
-	if err := os.WriteFile(helperPath, []byte(helperScript), 0700); err != nil {
-		os.RemoveAll(tempDir)
-		return nil, fmt.Errorf("failed to write credential helper: %w", err)
+	if err := validateCredentialLine(username); err != nil {
+		return nil, fmt.Errorf("username: %w", err)
 	}
-
-	// Configure git to use this credential helper via environment variables
-	// We'll set GIT_CONFIG_KEY and GIT_CONFIG_VALUE environment variables
-	cleanup := func() {
-		os.RemoveAll(tempDir)
-	}
-
-	// Note: The actual configuration happens via git config in the git command
-	// For now, we'll use a git credential helper approach
-	gitConfigPath := filepath.Join(tempDir, "git-config")
-	configContent := fmt.Sprintf("[credential]\n\thelper = \"%s\"\n", helperPath)
-	if err := os.WriteFile(gitConfigPath, []byte(configContent), 0600); err != nil {
-		cleanup()
-		return nil, fmt.Errorf("failed to write git config: %w", err)
-	}
-
-	// Set GIT_CONFIG_GLOBAL to use our temporary config
-	// This affects only git commands run in this process and its children
-	os.Setenv("GIT_CONFIG_GLOBAL", gitConfigPath)
-
-	return func() {
-		os.Unsetenv("GIT_CONFIG_GLOBAL")
-		cleanup()
-	}, nil
-}
-
-// configureBasicAuth configures HTTPS basic authentication.
-func (c *credentialProvider) configureBasicAuth(ctx context.Context, repoPath string) (func(), error) {
-	// Similar to token auth, but include both username and password
-	helperScript := fmt.Sprintf(`#!/bin/sh
-case "$1" in
-get)
-	echo "username=%s"
-	echo "password=%s"
-	;;
-esac
-`, c.credential.Username, c.credential.Secret)
 
 	tempDir, err := os.MkdirTemp("", "git-cred-*")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp directory: %w", err)
 	}
 
-	helperPath := filepath.Join(tempDir, "git-credential-helper.sh")
-	if err := os.WriteFile(helperPath, []byte(helperScript), 0700); err != nil {
-		os.RemoveAll(tempDir)
-		return nil, fmt.Errorf("failed to write credential helper: %w", err)
-	}
-
 	cleanup := func() {
 		os.RemoveAll(tempDir)
 	}
 
+	// The script is not executable. git runs it through sh, see the config
+	// entry below, so the file stays owner-only like the secret files.
+	helperPath := filepath.Join(tempDir, "git-credential-helper.sh")
+	if err := os.WriteFile(helperPath, []byte(gitAuthHelperScript), 0o600); err != nil {
+		cleanup()
+		return nil, fmt.Errorf("failed to write credential helper: %w", err)
+	}
+
+	if err := os.WriteFile(filepath.Join(tempDir, "password"), []byte(password), 0o600); err != nil {
+		cleanup()
+		return nil, fmt.Errorf("failed to write credential file: %w", err)
+	}
+
+	if username != "" {
+		if err := os.WriteFile(filepath.Join(tempDir, "username"), []byte(username), 0o600); err != nil {
+			cleanup()
+			return nil, fmt.Errorf("failed to write credential file: %w", err)
+		}
+	}
+
+	// The first empty helper entry clears any helper inherited from the
+	// system config, so only this helper answers for the operation.
 	gitConfigPath := filepath.Join(tempDir, "git-config")
-	configContent := fmt.Sprintf("[credential]\n\thelper = \"%s\"\n", helperPath)
-	if err := os.WriteFile(gitConfigPath, []byte(configContent), 0600); err != nil {
+	helperCommand := "!sh " + shellQuote(helperPath)
+	configContent := fmt.Sprintf("[credential]\n\thelper = \n\thelper = %s\n", gitConfigQuote(helperCommand))
+	if err := os.WriteFile(gitConfigPath, []byte(configContent), 0o600); err != nil {
 		cleanup()
 		return nil, fmt.Errorf("failed to write git config: %w", err)
 	}
 
+	// GIT_CONFIG_GLOBAL points git at the temporary config for this process
+	// and its children.
 	os.Setenv("GIT_CONFIG_GLOBAL", gitConfigPath)
 
 	return func() {
@@ -147,7 +171,7 @@ esac
 }
 
 // configureSSHAuth configures SSH key authentication.
-func (c *credentialProvider) configureSSHAuth(ctx context.Context, repoPath string) (func(), error) {
+func (c *credentialProvider) configureSSHAuth(_ context.Context, _ string) (func(), error) {
 	// Write SSH private key to a temporary file with secure permissions
 	tempDir, err := os.MkdirTemp("", "git-ssh-*")
 	if err != nil {
@@ -156,9 +180,9 @@ func (c *credentialProvider) configureSSHAuth(ctx context.Context, repoPath stri
 
 	keyPath := filepath.Join(tempDir, "id_rsa")
 
-	// Write the SSH key with 0600 permissions (read/write for owner only)
+	// Write the SSH key with 0o600 permissions (read/write for owner only)
 	// This is critical for SSH to accept the key
-	if err := os.WriteFile(keyPath, []byte(c.credential.Secret), 0600); err != nil {
+	if err := os.WriteFile(keyPath, []byte(c.credential.Secret), 0o600); err != nil {
 		os.RemoveAll(tempDir)
 		return nil, fmt.Errorf("failed to write SSH key: %w", err)
 	}
@@ -169,16 +193,24 @@ func (c *credentialProvider) configureSSHAuth(ctx context.Context, repoPath stri
 		os.RemoveAll(tempDir)
 		return nil, fmt.Errorf("failed to stat SSH key: %w", err)
 	}
-	if info.Mode().Perm() != 0600 {
+	if info.Mode().Perm() != 0o600 {
 		os.RemoveAll(tempDir)
-		return nil, fmt.Errorf("SSH key permissions incorrect: got %o, expected 0600", info.Mode().Perm())
+		return nil, fmt.Errorf("SSH key permissions incorrect: got %o, expected 0o600", info.Mode().Perm())
 	}
 
-	// Configure GIT_SSH_COMMAND to use this key
-	// We also disable strict host key checking for automation scenarios
-	// and add the host key automatically (you may want to make this configurable)
-	sshCommand := fmt.Sprintf("ssh -i %s -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=%s",
-		keyPath, filepath.Join(tempDir, "known_hosts"))
+	// Host keys are verified against a persistent known_hosts file.
+	// The default refuses an unknown host. WithAcceptNewHostKeys records
+	// the key of an unknown host on first contact and verifies it after.
+	strictHostKeyChecking := "yes"
+	if c.acceptNewHostKeys {
+		strictHostKeyChecking = "accept-new"
+	}
+
+	sshCommand := fmt.Sprintf("ssh -i %s -o IdentitiesOnly=yes -o StrictHostKeyChecking=%s",
+		shellQuote(keyPath), strictHostKeyChecking)
+	if c.knownHostsFile != "" {
+		sshCommand += " -o UserKnownHostsFile=" + shellQuote(c.knownHostsFile)
+	}
 
 	os.Setenv("GIT_SSH_COMMAND", sshCommand)
 
@@ -192,104 +224,25 @@ func (c *credentialProvider) configureSSHAuth(ctx context.Context, repoPath stri
 	return cleanup, nil
 }
 
-// InlineCredentialProvider creates a credential provider that embeds credentials
-// directly in the Git URL. This is less secure but works when credential helpers
-// are not available. USE WITH CAUTION.
-type InlineCredentialProvider struct {
-	username string
-	password string
-}
-
-// NewInlineCredentialProvider creates a provider that embeds credentials in URLs.
-// This should only be used when credential helpers are not available.
-func NewInlineCredentialProvider(username, password string) *InlineCredentialProvider {
-	return &InlineCredentialProvider{
-		username: username,
-		password: password,
+// validateCredentialLine refuses a value that cannot travel as one line of
+// the git credential-helper protocol.
+func validateCredentialLine(value string) error {
+	if strings.ContainsAny(value, "\n\r\x00") {
+		return ErrCredentialInvalid
 	}
-}
-
-// ConfigureAuth for inline credentials is a no-op since credentials are in the URL.
-func (i *InlineCredentialProvider) ConfigureAuth(ctx context.Context, repoPath string) (func(), error) {
-	// No configuration needed - credentials are embedded in URL
-	return func() {}, nil
-}
-
-// TransformURL adds credentials to an HTTPS URL.
-// Input:  https://github.com/org/repo.git
-// Output: https://username:password@github.com/org/repo.git
-func (i *InlineCredentialProvider) TransformURL(url string) (string, error) {
-	if !strings.HasPrefix(url, "https://") {
-		return url, nil // Don't transform non-HTTPS URLs
-	}
-
-	// Parse and inject credentials
-	url = strings.TrimPrefix(url, "https://")
-
-	// Check if credentials are already in URL
-	if strings.Contains(url, "@") {
-		return "https://" + url, nil
-	}
-
-	// Inject credentials
-	return fmt.Sprintf("https://%s:%s@%s", i.username, i.password, url), nil
-}
-
-// sanitizeGitURL removes credentials from a Git URL for safe logging.
-// This should be used whenever logging URLs to prevent credential leakage.
-func sanitizeGitURL(url string) string {
-	// Remove credentials from HTTPS URLs
-	// https://user:pass@host/path -> https://***:***@host/path
-	if strings.HasPrefix(url, "https://") {
-		url = strings.TrimPrefix(url, "https://")
-
-		if atIndex := strings.Index(url, "@"); atIndex != -1 {
-			// Found credentials in URL
-			host := url[atIndex:]
-			return "https://***:***" + host
-		}
-
-		return "https://" + url
-	}
-
-	// SSH URLs don't typically contain credentials
-	return url
-}
-
-// CloneWithInlineCredentials is a helper function that clones with inline credentials.
-// This is useful when credential helpers cannot be used.
-func CloneWithInlineCredentials(ctx context.Context, url, destPath, username, password string, opts CloneOptions) error {
-	provider := NewInlineCredentialProvider(username, password)
-	transformedURL, err := provider.TransformURL(url)
-	if err != nil {
-		return err
-	}
-
-	// Use the transformed URL with embedded credentials
-	args := []string{"clone"}
-
-	if opts.Depth > 0 {
-		args = append(args, "--depth", strconv.Itoa(opts.Depth))
-	}
-
-	if opts.Branch != "" {
-		args = append(args, "--branch", opts.Branch)
-	}
-
-	if opts.SingleBranch {
-		args = append(args, "--single-branch")
-	}
-
-	args = append(args, transformedURL, destPath)
-
-	cmd := exec.CommandContext(ctx, "git", args...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		// Sanitize URL in error message
-		sanitizedURL := sanitizeGitURL(url)
-		return fmt.Errorf("git clone failed for %s: %w (output: %s)",
-			sanitizedURL, err, strings.TrimSpace(string(output)))
-	}
-
 	return nil
+}
+
+// shellQuote wraps a value in single quotes for a POSIX shell command line.
+// A single quote inside the value is closed, escaped, and reopened.
+func shellQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", `'\''`) + "'"
+}
+
+// gitConfigQuote wraps a value in double quotes for a git config file.
+// Backslashes and double quotes inside the value are escaped.
+func gitConfigQuote(value string) string {
+	value = strings.ReplaceAll(value, `\`, `\\`)
+	value = strings.ReplaceAll(value, `"`, `\"`)
+	return `"` + value + `"`
 }
