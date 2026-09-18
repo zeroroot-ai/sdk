@@ -32,7 +32,7 @@ func TestNewClientRequiresHTTPS(t *testing.T) {
 			HostKeyPath: filepath.Join(t.TempDir(), "host_key.json"),
 		})
 		require.Error(t, err, raw)
-		assert.ErrorIs(t, err, ErrPlatformURLNotHTTPS, raw)
+		require.ErrorIs(t, err, ErrPlatformURLNotHTTPS, raw)
 	}
 
 	_, err := NewClient(ClientConfig{
