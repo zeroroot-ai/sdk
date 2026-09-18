@@ -5,8 +5,10 @@ package editor
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -685,4 +687,79 @@ func findSubstring(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+// TestEditorRejectsPathOutsideWorkspace verifies that an edit whose file path
+// climbs out of the workspace, or is absolute, is refused before any read or write.
+func TestEditorRejectsPathOutsideWorkspace(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// A file outside the workspace that the edit must not touch
+	outsideDir := t.TempDir()
+	outsideFile := filepath.Join(outsideDir, "x")
+	outsideContent := "func hello() {}\n"
+	if err := os.WriteFile(outsideFile, []byte(outsideContent), 0644); err != nil {
+		t.Fatalf("Failed to create outside file: %v", err)
+	}
+
+	// Compute a relative path from the workspace to the outside file
+	relToOutside, err := filepath.Rel(tmpDir, outsideFile)
+	if err != nil {
+		t.Fatalf("Failed to compute relative path: %v", err)
+	}
+	if !strings.HasPrefix(relToOutside, "..") {
+		t.Fatalf("expected a climbing path, got %s", relToOutside)
+	}
+
+	gitOps := NewMockGitOps()
+	gitOps.SetWorkspaceDir(tmpDir)
+	editor := NewEditor(tmpDir, gitOps, nil)
+
+	paths := []string{
+		"../../x",
+		relToOutside,
+		outsideFile,
+		filepath.Join("sub", "..", "..", "x"),
+	}
+
+	for _, p := range paths {
+		edit := Edit{
+			FilePath:     p,
+			SearchBlock:  "func hello() {}",
+			ReplaceBlock: "func pwned() {}",
+			Description:  "escape attempt",
+		}
+
+		result, err := editor.Apply(context.Background(), edit)
+		if err == nil {
+			t.Errorf("Apply(%q) succeeded, want refusal", p)
+			continue
+		}
+		if !errors.Is(err, codegen.ErrPathOutsideWorkspace) {
+			t.Errorf("Apply(%q) error = %v, want ErrPathOutsideWorkspace", p, err)
+		}
+		if result != nil {
+			t.Errorf("Apply(%q) returned a result on refusal", p)
+		}
+	}
+
+	got, err := os.ReadFile(outsideFile)
+	if err != nil {
+		t.Fatalf("Failed to read outside file: %v", err)
+	}
+	if string(got) != outsideContent {
+		t.Errorf("outside file was modified: %q", string(got))
+	}
+
+	// validateFile applies the same guard
+	lspManager := NewMockLSPManager()
+	editorWithLSP := NewEditor(tmpDir, gitOps, lspManager)
+	if _, err := editorWithLSP.validateFile(context.Background(), "../../x"); !errors.Is(err, codegen.ErrPathOutsideWorkspace) {
+		t.Errorf("validateFile(../../x) error = %v, want ErrPathOutsideWorkspace", err)
+	}
+
+	// A path inside the workspace still resolves
+	if _, err := editor.resolvePath(filepath.Join("sub", "..", "test.go")); err != nil {
+		t.Errorf("resolvePath(sub/../test.go) = %v, want nil", err)
+	}
 }

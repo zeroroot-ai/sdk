@@ -414,8 +414,11 @@ func (e *EditorImpl) SetValidationTimeout(timeout time.Duration) {
 // It attempts exact matching first, then falls back to fuzzy matching.
 // Results are written to the provided EditResult.
 func (e *EditorImpl) applyEdit(ctx context.Context, edit Edit, result *EditResult) error {
-	// Construct absolute file path
-	absPath := filepath.Join(e.workspaceRoot, edit.FilePath)
+	// Resolve the file path and refuse anything outside the workspace
+	absPath, err := e.resolvePath(edit.FilePath)
+	if err != nil {
+		return err
+	}
 
 	// Read current file content
 	content, err := os.ReadFile(absPath)
@@ -524,8 +527,11 @@ func (e *EditorImpl) validateFile(ctx context.Context, filePath string) ([]codeg
 	validationCtx, cancel := context.WithTimeout(ctx, e.validationTimeout)
 	defer cancel()
 
-	// Construct absolute path for LSP
-	absPath := filepath.Join(e.workspaceRoot, filePath)
+	// Resolve the file path and refuse anything outside the workspace
+	absPath, err := e.resolvePath(filePath)
+	if err != nil {
+		return nil, err
+	}
 
 	diagnostics, err := e.lsp.GetDiagnostics(validationCtx, absPath)
 	if err != nil {
@@ -540,6 +546,42 @@ func (e *EditorImpl) validateFile(ctx context.Context, filePath string) ([]codeg
 	}
 
 	return diagnostics, nil
+}
+
+// resolvePath joins a workspace-relative file path onto the workspace root
+// and refuses any path that does not stay inside the workspace.
+// File paths come from an LLM, so an absolute path or a path that climbs
+// out with ".." is rejected with codegen.ErrPathOutsideWorkspace.
+func (e *EditorImpl) resolvePath(filePath string) (string, error) {
+	if filepath.IsAbs(filePath) {
+		return "", fmt.Errorf("%w: path must be relative to workspace: %s", codegen.ErrPathOutsideWorkspace, filePath)
+	}
+
+	root, err := filepath.Abs(e.workspaceRoot)
+	if err != nil {
+		return "", fmt.Errorf("invalid workspace root: %w", err)
+	}
+
+	absPath, err := filepath.Abs(filepath.Join(root, filePath))
+	if err != nil {
+		return "", fmt.Errorf("invalid path: %w", err)
+	}
+
+	if !isSubPath(root, absPath) {
+		return "", fmt.Errorf("%w: %s", codegen.ErrPathOutsideWorkspace, filePath)
+	}
+
+	return absPath, nil
+}
+
+// isSubPath reports whether child is parent itself or a path below parent.
+func isSubPath(parent, child string) bool {
+	relPath, err := filepath.Rel(parent, child)
+	if err != nil {
+		return false
+	}
+
+	return relPath != ".." && !strings.HasPrefix(relPath, ".."+string(filepath.Separator))
 }
 
 // WithLogger sets a custom logger for the editor.

@@ -41,3 +41,9 @@ var ErrWorkspaceNotReady = errors.New("workspace not initialized")
 // are applied with a warning rather than being rejected, as the timeout
 // may be due to temporary server load rather than actual validation errors.
 var ErrLSPTimeout = errors.New("LSP validation timed out")
+
+// ErrPathOutsideWorkspace indicates that a file path named in an edit
+// or validation request resolves to a location outside the workspace root.
+// Edit file paths come from an LLM. The editor rejects absolute paths and
+// paths that escape the workspace before it reads or writes anything.
+var ErrPathOutsideWorkspace = errors.New("path is outside workspace")
