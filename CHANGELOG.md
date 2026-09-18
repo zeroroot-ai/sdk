@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.179.0](https://github.com/zeroroot-ai/sdk/compare/v0.178.0...v0.179.0) (2026-09-18)
+
+
+### Features
+
+* **plugin:** deliver secret events over WatchComponentEvents ([#58](https://github.com/zeroroot-ai/sdk/issues/58)) ([ae4aa3e](https://github.com/zeroroot-ai/sdk/commit/ae4aa3e800c9e4e0138fb3e5a6181b6bee065c18))
+
 ## [0.178.0](https://github.com/zeroroot-ai/sdk/compare/v0.177.4...v0.178.0) (2026-09-18)
 
 
