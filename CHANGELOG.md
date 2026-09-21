@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.179.1](https://github.com/zeroroot-ai/sdk/compare/v0.179.0...v0.179.1) (2026-09-21)
+
+
+### Bug Fixes
+
+* **plugin:** the heartbeat reports the lifecycle state, not a constant ([#61](https://github.com/zeroroot-ai/sdk/issues/61)) ([c8d38ed](https://github.com/zeroroot-ai/sdk/commit/c8d38ed64501f0df027030c89b003563a3e37f0b))
+
 ## [0.179.0](https://github.com/zeroroot-ai/sdk/compare/v0.178.0...v0.179.0) (2026-09-18)
 
 
