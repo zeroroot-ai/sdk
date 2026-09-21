@@ -369,6 +369,7 @@ func TestServe_DeclaredSecrets_RevocationReachesHeartbeat(t *testing.T) {
 
 	fakeSecrets := newFakeSecretsClient(map[string][]byte{"cred:api_key": []byte("value")})
 	degraded := make(chan string, 1)
+	m := secretsManifest(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -376,7 +377,7 @@ func TestServe_DeclaredSecrets_RevocationReachesHeartbeat(t *testing.T) {
 	serveErr := make(chan error, 1)
 	go func() {
 		serveErr <- Serve(ctx,
-			WithParsedManifest(secretsManifest(t)),
+			WithParsedManifest(m),
 			WithSecretsClient(fakeSecrets),
 			WithLifecycle(lifecycle.LifecycleHooks{
 				OnDegraded: func(reason string) { degraded <- reason },
@@ -473,6 +474,16 @@ func TestRunHeartbeat_ReportsLifecycleStateOnEveryTick(t *testing.T) {
 			return nil
 		}
 	}
+	// nextNot returns the first heartbeat whose status is not skip. One tick
+	// may have read the state before a transition, so the caller skips it.
+	nextNot := func(skip string) *componentpb.HeartbeatRequest {
+		for {
+			hb := next()
+			if hb.GetHealthStatus() != skip {
+				return hb
+			}
+		}
+	}
 
 	hb := next()
 	assert.Equal(t, "inst-1", hb.GetInstanceId())
@@ -480,16 +491,13 @@ func TestRunHeartbeat_ReportsLifecycleStateOnEveryTick(t *testing.T) {
 	assert.Equal(t, "ok", hb.GetHealthMessage())
 
 	require.NoError(t, sm.MarkDegraded("secret_revoked: cred:api_key"))
-	// Skip the heartbeat that may have read the state before the transition.
-	for hb = next(); hb.GetHealthStatus() == heartbeatHealthServing; hb = next() {
-	}
+	hb = nextNot(heartbeatHealthServing)
 	assert.Equal(t, heartbeatHealthDegraded, hb.GetHealthStatus())
 	assert.Equal(t, "secret_revoked: cred:api_key", hb.GetHealthMessage())
 
 	// Recovery: back to Ready reports serving again with no stale reason.
 	require.NoError(t, sm.Transition(lifecycle.Ready))
-	for hb = next(); hb.GetHealthStatus() == heartbeatHealthDegraded; hb = next() {
-	}
+	hb = nextNot(heartbeatHealthDegraded)
 	assert.Equal(t, heartbeatHealthServing, hb.GetHealthStatus())
 	assert.Equal(t, "ok", hb.GetHealthMessage())
 

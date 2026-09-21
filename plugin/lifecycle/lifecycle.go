@@ -192,7 +192,7 @@ func (s *StateMachine) Current() State {
 // every other state. Both values come from one read under the lock, so a
 // caller that reports them together never pairs a Ready state with a stale
 // reason. Safe for concurrent use.
-func (s *StateMachine) Status() (State, string) {
+func (s *StateMachine) Status() (state State, reason string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.state, s.reason

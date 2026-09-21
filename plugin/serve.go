@@ -728,7 +728,7 @@ type lifecycleStatus interface {
 // "secret_revoked: cred:github_token"). Every other state the heartbeat loop
 // runs in reports "serving": the loop starts after Ready and stops with the
 // errgroup before the drain, so Draining and Stopped never reach the wire.
-func heartbeatHealth(state lifecycle.State, reason string) (status, message string) {
+func heartbeatHealth(state lifecycle.State, reason string) (healthStatus, healthMessage string) {
 	if state == lifecycle.Degraded {
 		if reason == "" {
 			reason = "degraded"
@@ -757,11 +757,11 @@ func runHeartbeat(
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
-			status, message := heartbeatHealth(sm.Status())
+			healthStatus, healthMessage := heartbeatHealth(sm.Status())
 			_, err := client.Heartbeat(ctx, &componentpb.HeartbeatRequest{
 				InstanceId:    instanceID,
-				HealthStatus:  status,
-				HealthMessage: message,
+				HealthStatus:  healthStatus,
+				HealthMessage: healthMessage,
 			})
 			if err != nil {
 				slog.Warn("plugin: heartbeat failed", "err", err)
