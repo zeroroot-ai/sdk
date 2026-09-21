@@ -285,6 +285,36 @@ func TestMarkDegradedCallsOnDegraded(t *testing.T) {
 	}
 }
 
+// TestStatusCarriesDegradedReasonUntilRecovery verifies that Status reports
+// the MarkDegraded reason while Degraded and an empty reason after the
+// machine recovers to Ready.
+func TestStatusCarriesDegradedReasonUntilRecovery(t *testing.T) {
+	const reason = "secret_revoked: cred:api_key"
+	sm := lifecycle.New(lifecycle.LifecycleHooks{})
+	advanceToViaFunc(t, sm, lifecycle.Ready)
+
+	state, got := sm.Status()
+	if state != lifecycle.Ready || got != "" {
+		t.Fatalf("Status() = (%s, %q), want (Ready, \"\")", state, got)
+	}
+
+	if err := sm.MarkDegraded(reason); err != nil {
+		t.Fatalf("MarkDegraded returned error: %v", err)
+	}
+	state, got = sm.Status()
+	if state != lifecycle.Degraded || got != reason {
+		t.Fatalf("Status() = (%s, %q), want (Degraded, %q)", state, got, reason)
+	}
+
+	if err := sm.Transition(lifecycle.Ready); err != nil {
+		t.Fatalf("Transition(Ready) returned error: %v", err)
+	}
+	state, got = sm.Status()
+	if state != lifecycle.Ready || got != "" {
+		t.Fatalf("Status() after recovery = (%s, %q), want (Ready, \"\")", state, got)
+	}
+}
+
 // TestMarkDegradedFromIllegalStateReturnsError verifies rejection when
 // MarkDegraded is called from a state that does not allow Degraded.
 func TestMarkDegradedFromIllegalStateReturnsError(t *testing.T) {

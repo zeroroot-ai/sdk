@@ -463,7 +463,7 @@ func Serve(ctx context.Context, opts ...Option) error {
 
 	// Heartbeat loop.
 	eg.Go(func() error {
-		return runHeartbeat(egCtx, componentSvcClient, instanceID, heartbeatInterval, healthSrv)
+		return runHeartbeat(egCtx, componentSvcClient, instanceID, heartbeatInterval, sm, healthSrv)
 	})
 
 	// Events subscriber.
@@ -708,13 +708,46 @@ func buildSecretsClient(m *manifest.Manifest, hc harnesspb.HarnessCallbackServic
 	}, pluginsecrets.CacheConfig{})
 }
 
-// runHeartbeat sends periodic HeartbeatRequests until ctx is cancelled.
-// On each successful heartbeat it records the event in the health server.
+// Heartbeat health_status values the daemon maps to an install status
+// (gibson internal/platform/component InstallStatusFromHealth): "degraded"
+// marks the install DEGRADED, every other value keeps it SERVING.
+const (
+	heartbeatHealthServing  = "serving"
+	heartbeatHealthDegraded = "degraded"
+)
+
+// lifecycleStatus is the read side of the state machine the heartbeat
+// reports. *lifecycle.StateMachine satisfies it.
+type lifecycleStatus interface {
+	Status() (lifecycle.State, string)
+}
+
+// heartbeatHealth maps a lifecycle state and its Degraded reason to the
+// health_status and health_message fields of a HeartbeatRequest. Degraded
+// reports "degraded" with the reason the state machine recorded (for example
+// "secret_revoked: cred:github_token"). Every other state the heartbeat loop
+// runs in reports "serving": the loop starts after Ready and stops with the
+// errgroup before the drain, so Draining and Stopped never reach the wire.
+func heartbeatHealth(state lifecycle.State, reason string) (status, message string) {
+	if state == lifecycle.Degraded {
+		if reason == "" {
+			reason = "degraded"
+		}
+		return heartbeatHealthDegraded, reason
+	}
+	return heartbeatHealthServing, "ok"
+}
+
+// runHeartbeat sends periodic HeartbeatRequests until ctx is cancelled. Every
+// tick reads the lifecycle state, so the daemon learns of a Degraded plugin
+// within one interval. On each successful heartbeat it records the event in
+// the health server.
 func runHeartbeat(
 	ctx context.Context,
 	client componentpb.ComponentServiceClient,
 	instanceID string,
 	interval time.Duration,
+	sm lifecycleStatus,
 	srv *health.Server,
 ) error {
 	ticker := time.NewTicker(interval)
@@ -724,10 +757,11 @@ func runHeartbeat(
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
+			status, message := heartbeatHealth(sm.Status())
 			_, err := client.Heartbeat(ctx, &componentpb.HeartbeatRequest{
 				InstanceId:    instanceID,
-				HealthStatus:  "serving",
-				HealthMessage: "ok",
+				HealthStatus:  status,
+				HealthMessage: message,
 			})
 			if err != nil {
 				slog.Warn("plugin: heartbeat failed", "err", err)

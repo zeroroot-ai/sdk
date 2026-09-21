@@ -136,6 +136,8 @@
 //  1. The events subscriber receives the secret_access_revoked event.
 //  2. The secrets client marks the name revoked and drops it from the cache.
 //  3. The lifecycle state machine moves to Degraded and calls OnDegraded.
+//  4. The next heartbeat reports health_status "degraded" with the reason,
+//     so the daemon marks the install DEGRADED within one heartbeat interval.
 //
 // When a manifest secret with rotation=restart is rotated by the operator:
 //  1. The events subscriber receives the secret_rotated event.

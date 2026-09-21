@@ -162,8 +162,11 @@ type LifecycleHooks struct {
 // StateMachine is a concurrent-safe plugin lifecycle state machine.
 // Create one via [New]; the zero value is not valid.
 type StateMachine struct {
-	mu        sync.Mutex
-	state     State
+	mu    sync.Mutex
+	state State
+	// reason is the cause of the current Degraded state, as MarkDegraded
+	// received it. It is empty in every other state.
+	reason    string
 	hooks     LifecycleHooks
 	observers []func(from, to State)
 }
@@ -184,6 +187,17 @@ func (s *StateMachine) Current() State {
 	return s.state
 }
 
+// Status returns the machine's current state and, when that state is
+// [Degraded], the reason [MarkDegraded] received. The reason is empty in
+// every other state. Both values come from one read under the lock, so a
+// caller that reports them together never pairs a Ready state with a stale
+// reason. Safe for concurrent use.
+func (s *StateMachine) Status() (State, string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.state, s.reason
+}
+
 // OnTransition registers fn as an observer that is called synchronously after
 // every successful state transition. Multiple observers are called in
 // registration order. The observer must not call [Transition] or [Current]
@@ -200,6 +214,13 @@ func (s *StateMachine) OnTransition(fn func(from, to State)) {
 // Observer callbacks registered with [OnTransition] are invoked inside the
 // lock after the state update; they must not call back into the machine.
 func (s *StateMachine) Transition(target State) error {
+	return s.transition(target, "")
+}
+
+// transition is the locked core of [Transition] and [MarkDegraded]. reason is
+// stored as the Degraded reason when target is [Degraded] and cleared
+// otherwise, in the same critical section as the state change.
+func (s *StateMachine) transition(target State, reason string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -210,6 +231,10 @@ func (s *StateMachine) Transition(target State) error {
 	}
 
 	s.state = target
+	s.reason = ""
+	if target == Degraded {
+		s.reason = reason
+	}
 
 	// Fire observers while holding the lock so observers see a consistent state.
 	for _, fn := range s.observers {
@@ -268,13 +293,14 @@ func (s *StateMachine) RunOnStop(ctx context.Context) error {
 }
 
 // MarkDegraded transitions the machine to Degraded (if the current state
-// permits) and calls OnDegraded with reason. If OnDegraded is not configured
-// the call is a no-op beyond the state transition.
+// permits), records reason so [Status] reports it, and calls OnDegraded with
+// reason. If OnDegraded is not configured the call is a no-op beyond the
+// state transition.
 //
 // It returns a [*TransitionError] if transitioning to Degraded is not legal
 // from the current state.
 func (s *StateMachine) MarkDegraded(reason string) error {
-	if err := s.Transition(Degraded); err != nil {
+	if err := s.transition(Degraded, reason); err != nil {
 		return err
 	}
 
