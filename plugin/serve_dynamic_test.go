@@ -100,13 +100,23 @@ type fakeDaemon struct {
 	// failFirstWatch ends the first WatchComponentEvents stream with
 	// Unavailable, like a daemon replica going away in a rollout.
 	failFirstWatch bool
+
+	// heartbeatIntervalMs is what RegisterComponent tells the plugin. The
+	// default is one minute, so a test that does not read heartbeats never
+	// sees one.
+	heartbeatIntervalMs int32
+	// heartbeatCh receives every HeartbeatRequest the plugin sends. The send
+	// never blocks: a full buffer drops the request.
+	heartbeatCh chan *componentpb.HeartbeatRequest
 }
 
 func newFakeDaemon() *fakeDaemon {
 	return &fakeDaemon{
-		workCh:   make(chan *componentpb.PollWorkResponse, 16),
-		resultCh: make(chan *componentpb.SubmitResultRequest, 16),
-		eventCh:  make(chan *componentpb.ComponentEvent, 16),
+		workCh:              make(chan *componentpb.PollWorkResponse, 16),
+		resultCh:            make(chan *componentpb.SubmitResultRequest, 16),
+		eventCh:             make(chan *componentpb.ComponentEvent, 16),
+		heartbeatIntervalMs: 60_000,
+		heartbeatCh:         make(chan *componentpb.HeartbeatRequest, 64),
 	}
 }
 
@@ -117,7 +127,7 @@ func (d *fakeDaemon) RegisterComponent(_ context.Context, req *componentpb.Regis
 	return &componentpb.RegisterComponentResponse{
 		InstanceId:          "inst-test-1",
 		PollTimeoutMs:       50,
-		HeartbeatIntervalMs: 60_000,
+		HeartbeatIntervalMs: d.heartbeatIntervalMs,
 	}, nil
 }
 
@@ -137,7 +147,11 @@ func (d *fakeDaemon) SubmitResult(_ context.Context, req *componentpb.SubmitResu
 	return &componentpb.SubmitResultResponse{}, nil
 }
 
-func (d *fakeDaemon) Heartbeat(_ context.Context, _ *componentpb.HeartbeatRequest) (*componentpb.HeartbeatResponse, error) {
+func (d *fakeDaemon) Heartbeat(_ context.Context, req *componentpb.HeartbeatRequest) (*componentpb.HeartbeatResponse, error) {
+	select {
+	case d.heartbeatCh <- req:
+	default:
+	}
 	return &componentpb.HeartbeatResponse{}, nil
 }
 

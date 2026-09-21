@@ -17,12 +17,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	componentpb "github.com/zeroroot-ai/sdk/api/gen/gibson/component/v1"
 	pluginpb "github.com/zeroroot-ai/sdk/api/gen/gibson/plugin/v1"
 	"github.com/zeroroot-ai/sdk/plugin/dispatch"
 	"github.com/zeroroot-ai/sdk/plugin/events"
+	"github.com/zeroroot-ai/sdk/plugin/health"
 	"github.com/zeroroot-ai/sdk/plugin/lifecycle"
 	"github.com/zeroroot-ai/sdk/plugin/manifest"
 	pluginsecrets "github.com/zeroroot-ai/sdk/plugin/secrets"
@@ -348,6 +350,178 @@ func TestServe_DeclaredSecrets_RevocationMarksDegraded(t *testing.T) {
 
 	cancel()
 	require.NoError(t, <-serveErr)
+}
+
+// TestServe_DeclaredSecrets_RevocationReachesHeartbeat proves sdk#60: the
+// heartbeat reports the lifecycle state. Before the revocation every
+// heartbeat reads "serving". After the daemon publishes
+// secret_access_revoked the plugin turns Degraded, and the next heartbeat
+// tick reads "degraded" with the recorded reason. The daemon maps that value
+// to PLUGIN_INSTALL_STATUS_DEGRADED (gibson#199), so a plugin that lost its
+// secret no longer reads SERVING forever.
+func TestServe_DeclaredSecrets_RevocationReachesHeartbeat(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	platform := fakeCGPlatform(t)
+	t.Setenv("GIBSON_URL", platform.URL)
+	daemon := startFakeDaemon(t)
+	const interval = 100 * time.Millisecond
+	daemon.heartbeatIntervalMs = int32(interval / time.Millisecond)
+
+	fakeSecrets := newFakeSecretsClient(map[string][]byte{"cred:api_key": []byte("value")})
+	degraded := make(chan string, 1)
+	m := secretsManifest(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	serveErr := make(chan error, 1)
+	go func() {
+		serveErr <- Serve(ctx,
+			WithParsedManifest(m),
+			WithSecretsClient(fakeSecrets),
+			WithLifecycle(lifecycle.LifecycleHooks{
+				OnDegraded: func(reason string) { degraded <- reason },
+			}),
+			WithHandler("Echo", func(_ context.Context, req string) (string, error) {
+				return req, nil
+			}),
+			WithHTTPClient(platform.Client()),
+			WithHealthAddr(":0"),
+		)
+	}()
+
+	// The plugin is Ready: the first heartbeat reads serving.
+	select {
+	case hb := <-daemon.heartbeatCh:
+		assert.Equal(t, "inst-test-1", hb.GetInstanceId())
+		assert.Equal(t, heartbeatHealthServing, hb.GetHealthStatus())
+		assert.Equal(t, "ok", hb.GetHealthMessage())
+	case err := <-serveErr:
+		t.Fatalf("Serve returned before the first heartbeat: %v", err)
+	case <-ctx.Done():
+		t.Fatal("timeout waiting for the first heartbeat")
+	}
+
+	daemon.eventCh <- revocationEvent("cred:api_key")
+	select {
+	case reason := <-degraded:
+		assert.Equal(t, "secret_revoked: cred:api_key", reason)
+	case <-ctx.Done():
+		t.Fatal("timeout waiting for OnDegraded")
+	}
+	degradedAt := time.Now()
+
+	// The tick that fires after the transition reports degraded. One
+	// heartbeat may already be in flight with the old state, so at most one
+	// serving heartbeat may arrive after the transition, and the degraded
+	// one must land within two intervals of it.
+	deadline := time.After(2 * interval)
+	servingAfter := 0
+	for {
+		select {
+		case hb := <-daemon.heartbeatCh:
+			if hb.GetHealthStatus() == heartbeatHealthServing {
+				servingAfter++
+				require.LessOrEqual(t, servingAfter, 1,
+					"a second serving heartbeat after the revocation: the heartbeat ignores the lifecycle state")
+				continue
+			}
+			assert.Equal(t, heartbeatHealthDegraded, hb.GetHealthStatus())
+			assert.Equal(t, "secret_revoked: cred:api_key", hb.GetHealthMessage())
+			assert.Less(t, time.Since(degradedAt), 2*interval,
+				"the degraded heartbeat must land within one interval plus the tick in flight")
+			cancel()
+			require.NoError(t, <-serveErr)
+			return
+		case <-deadline:
+			t.Fatal("no degraded heartbeat within two intervals of the revocation")
+		}
+	}
+}
+
+// ----------------------------------------------------------------------------
+// Test: runHeartbeat reads the state machine on every tick (no Serve call)
+// ----------------------------------------------------------------------------
+
+// heartbeatRecorder is a ComponentServiceClient that records Heartbeat calls
+// and panics on every other RPC.
+type heartbeatRecorder struct {
+	componentpb.ComponentServiceClient
+	reqs chan *componentpb.HeartbeatRequest
+}
+
+func (r *heartbeatRecorder) Heartbeat(_ context.Context, req *componentpb.HeartbeatRequest, _ ...grpc.CallOption) (*componentpb.HeartbeatResponse, error) {
+	r.reqs <- req
+	return &componentpb.HeartbeatResponse{}, nil
+}
+
+func TestRunHeartbeat_ReportsLifecycleStateOnEveryTick(t *testing.T) {
+	sm := readyStateMachine(t, lifecycle.LifecycleHooks{})
+	rec := &heartbeatRecorder{reqs: make(chan *componentpb.HeartbeatRequest, 64)}
+	srv := health.New(sm, ":0", time.Minute)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	done := make(chan error, 1)
+	go func() { done <- runHeartbeat(ctx, rec, "inst-1", 5*time.Millisecond, sm, srv) }()
+
+	next := func() *componentpb.HeartbeatRequest {
+		select {
+		case hb := <-rec.reqs:
+			return hb
+		case <-ctx.Done():
+			t.Fatal("timeout waiting for a heartbeat")
+			return nil
+		}
+	}
+	// nextNot returns the first heartbeat whose status is not skip. One tick
+	// may have read the state before a transition, so the caller skips it.
+	nextNot := func(skip string) *componentpb.HeartbeatRequest {
+		for {
+			hb := next()
+			if hb.GetHealthStatus() != skip {
+				return hb
+			}
+		}
+	}
+
+	hb := next()
+	assert.Equal(t, "inst-1", hb.GetInstanceId())
+	assert.Equal(t, heartbeatHealthServing, hb.GetHealthStatus())
+	assert.Equal(t, "ok", hb.GetHealthMessage())
+
+	require.NoError(t, sm.MarkDegraded("secret_revoked: cred:api_key"))
+	hb = nextNot(heartbeatHealthServing)
+	assert.Equal(t, heartbeatHealthDegraded, hb.GetHealthStatus())
+	assert.Equal(t, "secret_revoked: cred:api_key", hb.GetHealthMessage())
+
+	// Recovery: back to Ready reports serving again with no stale reason.
+	require.NoError(t, sm.Transition(lifecycle.Ready))
+	hb = nextNot(heartbeatHealthDegraded)
+	assert.Equal(t, heartbeatHealthServing, hb.GetHealthStatus())
+	assert.Equal(t, "ok", hb.GetHealthMessage())
+
+	cancel()
+	require.NoError(t, <-done)
+}
+
+func TestHeartbeatHealth(t *testing.T) {
+	tests := []struct {
+		state       lifecycle.State
+		reason      string
+		wantStatus  string
+		wantMessage string
+	}{
+		{lifecycle.Ready, "", heartbeatHealthServing, "ok"},
+		{lifecycle.Degraded, "secret_revoked: cred:api_key", heartbeatHealthDegraded, "secret_revoked: cred:api_key"},
+		{lifecycle.Degraded, "", heartbeatHealthDegraded, "degraded"},
+		{lifecycle.Draining, "", heartbeatHealthServing, "ok"},
+	}
+	for _, tc := range tests {
+		status, message := heartbeatHealth(tc.state, tc.reason)
+		assert.Equal(t, tc.wantStatus, status, "state %s", tc.state)
+		assert.Equal(t, tc.wantMessage, message, "state %s", tc.state)
+	}
 }
 
 // ----------------------------------------------------------------------------
