@@ -6,7 +6,10 @@ package serve
 import (
 	"testing"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/zeroroot-ai/sdk/agent"
+	harnesspb "github.com/zeroroot-ai/sdk/api/gen/gibson/harness/v1"
 )
 
 func TestObservationToProto_Host(t *testing.T) {
@@ -154,5 +157,115 @@ func TestObservationToProto_LifecycleEntity_EmptyEdgesStayEmpty(t *testing.T) {
 	}
 	if len(e.Edges) != 0 {
 		t.Fatalf("expected no edges, got %+v", e.Edges)
+	}
+}
+
+// TestObservationToProto_Hypothesis: a hypothesis carries the proposer,
+// confidence, claim and referenced entities onto the wire (ADR-0021, sdk#70).
+// It is the agent's own reasoning, not a sighting, but it still rides the
+// normal emit-only ObserveRequest oneof — no raw graph write.
+func TestObservationToProto_Hypothesis(t *testing.T) {
+	req, err := observationToProto(agent.HypothesisObservation{
+		Proposer:   "triage-agent",
+		Confidence: 0.65,
+		Claim:      "port 6443 on 10.0.0.5 is unauthenticated",
+		References: []agent.ReferencedEntity{
+			{Label: "Host", IDProperties: map[string]string{"address": "10.0.0.5"}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	h := req.GetHypothesis()
+	if h == nil {
+		t.Fatal("expected hypothesis observation in request")
+	}
+	if h.Proposer != "triage-agent" {
+		t.Fatalf("proposer not mapped: %+v", h)
+	}
+	if h.Confidence != 0.65 {
+		t.Fatalf("confidence not mapped: %+v", h)
+	}
+	if h.Claim != "port 6443 on 10.0.0.5 is unauthenticated" {
+		t.Fatalf("claim not mapped: %+v", h)
+	}
+	if len(h.References) != 1 || h.References[0].Label != "Host" {
+		t.Fatalf("references not mapped: %+v", h.References)
+	}
+	if h.References[0].IdProperties["address"] != "10.0.0.5" {
+		t.Fatalf("reference id properties not mapped: %+v", h.References[0].IdProperties)
+	}
+	// Scope and tenant are server-side. The request must not carry context.
+	if req.Context != nil {
+		t.Fatalf("observation should not carry context/scope, got %+v", req.Context)
+	}
+}
+
+// TestObservationToProto_Hypothesis_EmptyReferencesStayEmpty: a hypothesis
+// need not name entities up front (some claims are about the environment in
+// general), and a nil slice must not become a phantom reference.
+func TestObservationToProto_Hypothesis_EmptyReferencesStayEmpty(t *testing.T) {
+	req, err := observationToProto(agent.HypothesisObservation{
+		Proposer:   "triage-agent",
+		Confidence: 0.2,
+		Claim:      "the cluster admission controller is misconfigured",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	h := req.GetHypothesis()
+	if h == nil {
+		t.Fatal("expected hypothesis observation in request")
+	}
+	if len(h.References) != 0 {
+		t.Fatalf("expected no references, got %+v", h.References)
+	}
+}
+
+// TestObservationToProto_Hypothesis_WireRoundTrip: the hypothesis must survive
+// an actual proto marshal/unmarshal, not just struct construction — this is
+// the "round-trips through the wire" acceptance criterion (sdk#70).
+func TestObservationToProto_Hypothesis_WireRoundTrip(t *testing.T) {
+	req, err := observationToProto(agent.HypothesisObservation{
+		Proposer:   "triage-agent",
+		Confidence: 0.9,
+		Claim:      "the lodash dependency is exploitable via prototype pollution",
+		References: []agent.ReferencedEntity{
+			{Label: "Package", IDProperties: map[string]string{"purl": "pkg:npm/lodash@4.17.20"}},
+			{Label: "Application", IDProperties: map[string]string{"key": "customer-portal"}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	wire, err := proto.Marshal(req)
+	if err != nil {
+		t.Fatalf("marshal failed: %v", err)
+	}
+
+	got := &harnesspb.ObserveRequest{}
+	if err := proto.Unmarshal(wire, got); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+
+	h := got.GetHypothesis()
+	if h == nil {
+		t.Fatal("expected hypothesis observation after round trip")
+	}
+	if h.Proposer != "triage-agent" || h.Confidence != 0.9 {
+		t.Fatalf("proposer/confidence lost in round trip: %+v", h)
+	}
+	if h.Claim != "the lodash dependency is exploitable via prototype pollution" {
+		t.Fatalf("claim lost in round trip: %+v", h)
+	}
+	if len(h.References) != 2 {
+		t.Fatalf("references lost in round trip: %+v", h.References)
+	}
+	if h.References[0].Label != "Package" || h.References[0].IdProperties["purl"] != "pkg:npm/lodash@4.17.20" {
+		t.Fatalf("first reference lost in round trip: %+v", h.References[0])
+	}
+	if h.References[1].Label != "Application" || h.References[1].IdProperties["key"] != "customer-portal" {
+		t.Fatalf("second reference lost in round trip: %+v", h.References[1])
 	}
 }

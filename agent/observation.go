@@ -191,6 +191,41 @@ type LifecycleEntityObservation struct {
 
 func (LifecycleEntityObservation) isObservation() {}
 
+// HypothesisObservation reports an agent's own reasoning: a proposed, unproven
+// claim it wants the fleet to test, not a sighting (ADR-0021). It is attributed
+// to the proposing agent and carries a confidence, and it stays unverified
+// until it settles (see the betting / settlement slices, ADR-0022 / ADR-0023).
+//
+// This keeps the agent write surface emit-only: an agent still only emits
+// observations, never a raw graph node or edge (ADR-0007). A HypothesisObservation
+// differs from every other Observation variant in kind, not in surface — it
+// carries the agent's inference rather than something it sensed.
+type HypothesisObservation struct {
+	// Proposer identifies the agent making the claim.
+	Proposer string
+	// Confidence is the proposer's calibrated confidence in the claim, in [0,1].
+	Confidence float64
+	// Claim states the hypothesis in a form the brain can later settle (see the
+	// settlement slice, ADR-0023), e.g. "port 6443 on 10.0.0.5 is unauthenticated".
+	Claim string
+	// References names the entities the claim is about, by label and identity —
+	// the agent does not know node ids, and must not be able to guess them.
+	References []ReferencedEntity
+}
+
+func (HypothesisObservation) isObservation() {}
+
+// ReferencedEntity names an entity a Hypothesis is about, by its Taxonomy label
+// and identity properties rather than a node id — the same identity scheme
+// LifecycleEntityEdge uses to name its target.
+type ReferencedEntity struct {
+	// Label is the Taxonomy label, e.g. "Host" / "Package".
+	Label string
+	// IDProperties identify the entity, folded the same way as
+	// LifecycleEntityObservation.IDProperties.
+	IDProperties map[string]string
+}
+
 // LifecycleEntityEdge is one outgoing relationship to another typed entity,
 // named by its label and identity rather than by a node id — the emitter does
 // not know node ids, and must not be able to guess them.
