@@ -1516,6 +1516,7 @@ message ObserveRequest {
         AccountObservation account = 6;
         MemoryObservation memory = 7;
         LifecycleEntityObservation lifecycle_entity = 8;
+        HypothesisObservation hypothesis = 9;
     }
 }
 
@@ -1648,6 +1649,35 @@ message MemoryObservation {
     repeated string tags = 3;
     // source_ref names where the fact came from: a path, a URL, or a work id.
     string source_ref = 4;
+}
+
+// HypothesisObservation reports an agent's own reasoning: a proposed, unproven
+// claim, not a sighting (ADR-0021). It is attributed to the proposing agent and
+// carries a confidence; it stays unverified until it settles (the betting /
+// settlement slices, ADR-0022 / ADR-0023). This keeps the agent write surface
+// emit-only — one more observation kind, never a raw graph write (ADR-0007).
+message HypothesisObservation {
+    // proposer identifies the agent making the claim.
+    string proposer = 1;
+    // confidence is the proposer's calibrated confidence in the claim.
+    double confidence = 2 [(buf.validate.field).double = { gte: 0.0, lte: 1.0 }];
+    // claim states the hypothesis in a form the brain can later settle, e.g.
+    // "port 6443 on this host is unauthenticated".
+    string claim = 3;
+    // references names the entities the claim is about, by label and identity —
+    // the emitter does not know node ids, and must not be able to guess them.
+    repeated ReferencedEntity references = 4;
+}
+
+// ReferencedEntity names an entity a Hypothesis is about, by its Taxonomy label
+// and identity properties rather than a node id (same scheme as
+// LifecycleEntityEdge's target).
+message ReferencedEntity {
+    // label is the Taxonomy label, e.g. "Host" / "Package".
+    string label = 1;
+    // id_properties identify the entity, folded the same way as
+    // LifecycleEntityObservation.id_properties.
+    map<string, string> id_properties = 2;
 }
 
 // ObserveResponse acknowledges an observation.
