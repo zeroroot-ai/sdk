@@ -8,6 +8,7 @@ package eval
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -353,7 +354,10 @@ func (r *RecordingHarness) PlaceBet(ctx context.Context, bet agent.Bet) error {
 	}
 	r.recordStep(step)
 
-	return err
+	if err != nil {
+		return fmt.Errorf("place bet: %w", err)
+	}
+	return nil
 }
 
 // ============================================================================
