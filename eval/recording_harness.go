@@ -335,6 +335,27 @@ func (r *RecordingHarness) Observe(ctx context.Context, obs agent.Observation) e
 	return err
 }
 
+// PlaceBet records a bet placement and delegates to the inner harness.
+func (r *RecordingHarness) PlaceBet(ctx context.Context, bet agent.Bet) error {
+	startTime := time.Now()
+
+	err := r.inner.PlaceBet(ctx, bet)
+
+	step := TrajectoryStep{
+		Type:      "bet",
+		Name:      "place_bet",
+		Input:     bet,
+		StartTime: startTime,
+		Duration:  time.Since(startTime),
+	}
+	if err != nil {
+		step.Error = err.Error()
+	}
+	r.recordStep(step)
+
+	return err
+}
+
 // ============================================================================
 // Planning Operations
 // ============================================================================

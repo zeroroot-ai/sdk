@@ -49,7 +49,7 @@ func TestHarnessMethodSetUnchanged(t *testing.T) {
 		"DelegateToAgent", "ListAgents",
 		"ListPlugins", "QueryPlugin",
 		"Logger", "Mission", "Target", "TokenUsage", "Tracer",
-		"Observe", "SubmitFinding",
+		"Observe", "PlaceBet", "SubmitFinding",
 		"PlanContext", "ReportStepHints",
 		"Workspace", "Workspaces",
 		"WorldView",
