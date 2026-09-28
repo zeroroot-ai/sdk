@@ -126,10 +126,43 @@ func observationToProto(obs agent.Observation) (*harnesspb.ObserveRequest, error
 		return &harnesspb.ObserveRequest{
 			Observation: &harnesspb.ObserveRequest_Hypothesis{
 				Hypothesis: &harnesspb.HypothesisObservation{
-					Proposer:   o.Proposer,
-					Confidence: o.Confidence,
-					Claim:      o.Claim,
+					HypothesisId: o.HypothesisID,
+					Proposer:     o.Proposer,
+					Confidence:   o.Confidence,
+					Claim:        o.Claim,
+					References:   refs,
+					Technique:    o.Technique,
+				},
+			},
+		}, nil
+	case agent.ReasoningStepObservation:
+		refs := make([]*harnesspb.ReferencedEntity, len(o.References))
+		for i, r := range o.References {
+			refs[i] = &harnesspb.ReferencedEntity{Label: r.Label, IdProperties: r.IDProperties}
+		}
+		return &harnesspb.ObserveRequest{
+			Observation: &harnesspb.ObserveRequest_ReasoningStep{
+				ReasoningStep: &harnesspb.ReasoningStepObservation{
+					Agent:      o.Agent,
+					PlanId:     o.PlanID,
+					StepIndex:  boundedInt32(o.StepIndex),
+					Step:       o.Step,
 					References: refs,
+				},
+			},
+		}, nil
+	case agent.AnalysisObservation:
+		evidence := make([]*harnesspb.ReferencedEntity, len(o.Evidence))
+		for i, e := range o.Evidence {
+			evidence[i] = &harnesspb.ReferencedEntity{Label: e.Label, IdProperties: e.IDProperties}
+		}
+		return &harnesspb.ObserveRequest{
+			Observation: &harnesspb.ObserveRequest_Analysis{
+				Analysis: &harnesspb.AnalysisObservation{
+					Agent:      o.Agent,
+					Conclusion: o.Conclusion,
+					Confidence: o.Confidence,
+					Evidence:   evidence,
 				},
 			},
 		}, nil

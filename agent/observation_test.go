@@ -22,17 +22,25 @@ func TestHypothesisObservation_IsObservation(t *testing.T) {
 	}
 }
 
-// TestHypothesisObservation_Fields: the type carries proposer, confidence, claim
-// and the referenced entities the claim is about (sdk#70 acceptance criteria).
+// TestHypothesisObservation_Fields: the type carries proposer, confidence, claim,
+// the technique it exercises, and the referenced entities the claim is about
+// (sdk#70 acceptance criteria; Technique added for gibson#333/#284 — reputation
+// keys on technique x environment, so it must ride on the Hypothesis, matching
+// Bet.Technique).
 func TestHypothesisObservation_Fields(t *testing.T) {
 	h := HypothesisObservation{
-		Proposer:   "triage-agent",
-		Confidence: 0.4,
-		Claim:      "the lodash dependency is exploitable via prototype pollution",
+		HypothesisID: "hyp-lodash-proto-pollution",
+		Proposer:     "triage-agent",
+		Confidence:   0.4,
+		Claim:        "the lodash dependency is exploitable via prototype pollution",
+		Technique:    "dependency-cve-match",
 		References: []ReferencedEntity{
 			{Label: "Package", IDProperties: map[string]string{"purl": "pkg:npm/lodash@4.17.20"}},
 			{Label: "Application", IDProperties: map[string]string{"key": "customer-portal"}},
 		},
+	}
+	if h.HypothesisID != "hyp-lodash-proto-pollution" {
+		t.Fatalf("hypothesis id not carried: %+v", h)
 	}
 	if h.Proposer != "triage-agent" {
 		t.Fatalf("proposer not carried: %+v", h)
@@ -42,6 +50,9 @@ func TestHypothesisObservation_Fields(t *testing.T) {
 	}
 	if h.Claim == "" {
 		t.Fatalf("claim not carried: %+v", h)
+	}
+	if h.Technique != "dependency-cve-match" {
+		t.Fatalf("technique not carried: %+v", h)
 	}
 	if len(h.References) != 2 {
 		t.Fatalf("expected 2 referenced entities, got %d: %+v", len(h.References), h.References)

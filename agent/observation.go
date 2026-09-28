@@ -201,6 +201,14 @@ func (LifecycleEntityObservation) isObservation() {}
 // differs from every other Observation variant in kind, not in surface — it
 // carries the agent's inference rather than something it sensed.
 type HypothesisObservation struct {
+	// HypothesisID is the agent-chosen identifier for this claim — the SAME
+	// value the agent later names as Bet.HypothesisID when it stakes on this
+	// claim, and that a settlement path (Engine.SettleBetByHITL, gibson#280)
+	// records against. This is the one join key across Hypothesis, Bet and
+	// BetSettlement (gibson#339). Optional: empty preserves a Hypothesis
+	// with no bettable identity — it still folds as a claim (ADR-0021), it
+	// just cannot be staked on or settled by id.
+	HypothesisID string
 	// Proposer identifies the agent making the claim.
 	Proposer string
 	// Confidence is the proposer's calibrated confidence in the claim, in [0,1].
@@ -211,6 +219,12 @@ type HypothesisObservation struct {
 	// References names the entities the claim is about, by label and identity —
 	// the agent does not know node ids, and must not be able to guess them.
 	References []ReferencedEntity
+	// Technique names the technique this hypothesis exercises. Reputation
+	// keys on technique x environment (ADR-0022, gibson#333/#284), so this
+	// must ride on the Hypothesis the same way it already rides on Bet.
+	// Optional and additive: empty means no technique signal (resolves to
+	// the neutral prior), the same behavior as before this field existed.
+	Technique string
 }
 
 func (HypothesisObservation) isObservation() {}

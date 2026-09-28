@@ -1528,6 +1528,8 @@ message ObserveRequest {
         MemoryObservation memory = 7;
         LifecycleEntityObservation lifecycle_entity = 8;
         HypothesisObservation hypothesis = 9;
+        ReasoningStepObservation reasoning_step = 10;
+        AnalysisObservation analysis = 11;
     }
 }
 
@@ -1678,6 +1680,22 @@ message HypothesisObservation {
     // references names the entities the claim is about, by label and identity —
     // the emitter does not know node ids, and must not be able to guess them.
     repeated ReferencedEntity references = 4;
+    // technique names the technique this hypothesis exercises. Reputation
+    // keys on technique x environment (ADR-0022, gibson#333/#284), so this
+    // must ride on the Hypothesis the same way it already rides on Bet.
+    // Optional and additive: empty means the hypothesis carries no technique
+    // signal (resolves to the neutral prior), same as before this field
+    // existed.
+    string technique = 5;
+    // hypothesis_id is the agent-chosen identifier for this claim. The SAME
+    // value the agent later names as Bet.hypothesis_id when it stakes on
+    // this claim, and that a settlement path (Engine.SettleBetByHITL,
+    // gibson#280) records against — the one join key across Hypothesis, Bet
+    // and BetSettlement (gibson#339). Optional: empty preserves the
+    // pre-existing behavior of a Hypothesis with no bettable identity (it
+    // still folds as a claim, ADR-0021, it just cannot be staked on or
+    // settled by id).
+    string hypothesis_id = 6;
 }
 
 // ReferencedEntity names an entity a Hypothesis is about, by its Taxonomy label
@@ -1689,6 +1707,53 @@ message ReferencedEntity {
     // id_properties identify the entity, folded the same way as
     // LifecycleEntityObservation.id_properties.
     map<string, string> id_properties = 2;
+}
+
+// ReasoningStepObservation reports one step of an agent's own structured,
+// multi-step reasoning over graph state (sdk#73): what it inferred, and the
+// entities its inference is about. It builds on the planning package's step
+// model — step_index is typically the mission's current step
+// (PlanningContext.CurrentStepIndex) — so a reasoning trace aligns with the
+// mission's own plan. Like every Observation, this is an emit: the daemon
+// folds it onto the Timeline (flight recorder), so a completed multi-step
+// trace is inspectable afterward by plan_id, in step order.
+message ReasoningStepObservation {
+    // agent identifies the agent doing the reasoning.
+    string agent = 1;
+    // plan_id groups every step of one reasoning trace. Agent-assigned: the
+    // SDK does not read node ids back, so a plan does not get one from the
+    // daemon.
+    string plan_id = 2;
+    // step_index orders steps within plan_id.
+    int32 step_index = 3;
+    // step states what the agent reasoned or decided at this step.
+    string step = 4;
+    // references names the entities this step's reasoning is about, by label
+    // and identity (the same scheme HypothesisObservation.references uses).
+    repeated ReferencedEntity references = 5;
+}
+
+// AnalysisObservation reports a typed analysis artifact (sdk#74): a
+// conclusion an agent draws FROM evidence already on the graph, with the
+// confidence it holds and the evidence it used — the bridge between raw
+// findings and reportable output. Unlike a Hypothesis (an unproven,
+// forward-looking claim awaiting settlement, ADR-0021), an Analysis is
+// backward-looking: it synthesizes what is already known rather than
+// proposing something new to test. Like every Observation, this feeds
+// hypotheses and findings as a typed artifact, never as free text, and it is
+// an emit: the daemon folds it onto the Timeline (ADR-0007).
+message AnalysisObservation {
+    // agent identifies the agent producing the analysis.
+    string agent = 1;
+    // conclusion states the typed conclusion in a form the brain can fold
+    // into a Finding or a Hypothesis, not free text.
+    string conclusion = 2;
+    // confidence is the agent's calibrated confidence in the conclusion.
+    double confidence = 3 [(buf.validate.field).double = { gte: 0.0, lte: 1.0 }];
+    // evidence names the entities on the graph this conclusion is based on,
+    // by label and identity (the same scheme HypothesisObservation.references
+    // uses) — the link from the conclusion back to the evidence it used.
+    repeated ReferencedEntity evidence = 4;
 }
 
 // ObserveResponse acknowledges an observation.
