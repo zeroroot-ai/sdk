@@ -87,7 +87,16 @@ func (s RunScope) String() string {
 // not. Only the graph nodes fall in the second case — their Go originals live in
 // gibson's internal packages, which the SDK cannot import.
 type KnowledgeReader interface {
-	// QueryNodes searches the knowledge graph with hybrid vector + graph scoring.
+	// QueryNodes is the SDK search primitive (ADR-0022): how an agent queries
+	// the shared knowledge graph and prior knowledge — entities, findings,
+	// hypotheses, reputation — instead of re-discovering what the fleet
+	// already knows. It searches with hybrid vector + graph scoring, by node
+	// type (query.NodeTypes), by text/relevance (query.Text / query.Embedding),
+	// and by relationship traversal (query.FromNodeId + query.RelationshipType:
+	// restrict results to nodes reachable from FromNodeId by that
+	// relationship). Every method on this interface derives its tenant from
+	// the call context, so results are FGA-scoped to the caller by
+	// construction — an agent cannot query another tenant's graph.
 	QueryNodes(ctx context.Context, query *graphragpb.GraphQuery) ([]*graphragpb.QueryResult, error)
 
 	// FindSimilarAttacks returns attack patterns semantically close to content.

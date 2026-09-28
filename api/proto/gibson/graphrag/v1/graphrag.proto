@@ -24,6 +24,15 @@ message GraphQuery {
   map<string, string> filters = 10;
   double vector_weight = 11;
   double graph_weight = 12;
+  // from_node_id anchors a relationship traversal: with relationship_type,
+  // restrict results to nodes reachable from this node by that relationship
+  // (sdk#72, the SDK search primitive). Optional; a query with neither this
+  // nor relationship_type is a plain type/text/relevance search, unchanged.
+  string from_node_id = 13;
+  // relationship_type names the relationship to traverse from from_node_id,
+  // e.g. "RESOLVES_TO" (sdk#72). Optional; requires from_node_id to have any
+  // effect.
+  string relationship_type = 14;
 }
 
 // QueryScope defines the scope of a graph query.
