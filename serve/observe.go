@@ -143,7 +143,7 @@ func observationToProto(obs agent.Observation) (*harnesspb.ObserveRequest, error
 				ReasoningStep: &harnesspb.ReasoningStepObservation{
 					Agent:      o.Agent,
 					PlanId:     o.PlanID,
-					StepIndex:  int32(o.StepIndex),
+					StepIndex:  boundedInt32(o.StepIndex),
 					Step:       o.Step,
 					References: refs,
 				},
