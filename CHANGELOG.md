@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.180.0](https://github.com/zeroroot-ai/sdk/compare/v0.179.1...v0.180.0) (2026-09-28)
+
+
+### Features
+
+* add hypothesis and bet primitives to the sdk ([#77](https://github.com/zeroroot-ai/sdk/issues/77)) ([aea2761](https://github.com/zeroroot-ai/sdk/commit/aea2761e1f512c22ff09713eb594d9f4dd3d9ef9))
+
 ## [0.179.1](https://github.com/zeroroot-ai/sdk/compare/v0.179.0...v0.179.1) (2026-09-21)
 
 
