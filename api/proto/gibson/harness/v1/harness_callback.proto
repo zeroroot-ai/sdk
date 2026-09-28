@@ -1680,6 +1680,13 @@ message HypothesisObservation {
     // references names the entities the claim is about, by label and identity —
     // the emitter does not know node ids, and must not be able to guess them.
     repeated ReferencedEntity references = 4;
+    // technique names the technique this hypothesis exercises. Reputation
+    // keys on technique x environment (ADR-0022, gibson#333/#284), so this
+    // must ride on the Hypothesis the same way it already rides on Bet.
+    // Optional and additive: empty means the hypothesis carries no technique
+    // signal (resolves to the neutral prior), same as before this field
+    // existed.
+    string technique = 5;
 }
 
 // ReferencedEntity names an entity a Hypothesis is about, by its Taxonomy label

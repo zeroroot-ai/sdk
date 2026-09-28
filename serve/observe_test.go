@@ -169,6 +169,7 @@ func TestObservationToProto_Hypothesis(t *testing.T) {
 		Proposer:   "triage-agent",
 		Confidence: 0.65,
 		Claim:      "port 6443 on 10.0.0.5 is unauthenticated",
+		Technique:  "unauthenticated-service-probe",
 		References: []agent.ReferencedEntity{
 			{Label: "Host", IDProperties: map[string]string{"address": "10.0.0.5"}},
 		},
@@ -188,6 +189,9 @@ func TestObservationToProto_Hypothesis(t *testing.T) {
 	}
 	if h.Claim != "port 6443 on 10.0.0.5 is unauthenticated" {
 		t.Fatalf("claim not mapped: %+v", h)
+	}
+	if h.Technique != "unauthenticated-service-probe" {
+		t.Fatalf("technique not mapped: %+v", h)
 	}
 	if len(h.References) != 1 || h.References[0].Label != "Host" {
 		t.Fatalf("references not mapped: %+v", h.References)
@@ -230,6 +234,7 @@ func TestObservationToProto_Hypothesis_WireRoundTrip(t *testing.T) {
 		Proposer:   "triage-agent",
 		Confidence: 0.9,
 		Claim:      "the lodash dependency is exploitable via prototype pollution",
+		Technique:  "dependency-cve-match",
 		References: []agent.ReferencedEntity{
 			{Label: "Package", IDProperties: map[string]string{"purl": "pkg:npm/lodash@4.17.20"}},
 			{Label: "Application", IDProperties: map[string]string{"key": "customer-portal"}},
@@ -258,6 +263,9 @@ func TestObservationToProto_Hypothesis_WireRoundTrip(t *testing.T) {
 	}
 	if h.Claim != "the lodash dependency is exploitable via prototype pollution" {
 		t.Fatalf("claim lost in round trip: %+v", h)
+	}
+	if h.Technique != "dependency-cve-match" {
+		t.Fatalf("technique lost in round trip: %+v", h)
 	}
 	if len(h.References) != 2 {
 		t.Fatalf("references lost in round trip: %+v", h.References)
