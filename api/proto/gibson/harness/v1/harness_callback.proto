@@ -1528,6 +1528,7 @@ message ObserveRequest {
         MemoryObservation memory = 7;
         LifecycleEntityObservation lifecycle_entity = 8;
         HypothesisObservation hypothesis = 9;
+        ReasoningStepObservation reasoning_step = 10;
     }
 }
 
@@ -1689,6 +1690,30 @@ message ReferencedEntity {
     // id_properties identify the entity, folded the same way as
     // LifecycleEntityObservation.id_properties.
     map<string, string> id_properties = 2;
+}
+
+// ReasoningStepObservation reports one step of an agent's own structured,
+// multi-step reasoning over graph state (sdk#73): what it inferred, and the
+// entities its inference is about. It builds on the planning package's step
+// model — step_index is typically the mission's current step
+// (PlanningContext.CurrentStepIndex) — so a reasoning trace aligns with the
+// mission's own plan. Like every Observation, this is an emit: the daemon
+// folds it onto the Timeline (flight recorder), so a completed multi-step
+// trace is inspectable afterward by plan_id, in step order.
+message ReasoningStepObservation {
+    // agent identifies the agent doing the reasoning.
+    string agent = 1;
+    // plan_id groups every step of one reasoning trace. Agent-assigned: the
+    // SDK does not read node ids back, so a plan does not get one from the
+    // daemon.
+    string plan_id = 2;
+    // step_index orders steps within plan_id.
+    int32 step_index = 3;
+    // step states what the agent reasoned or decided at this step.
+    string step = 4;
+    // references names the entities this step's reasoning is about, by label
+    // and identity (the same scheme HypothesisObservation.references uses).
+    repeated ReferencedEntity references = 5;
 }
 
 // ObserveResponse acknowledges an observation.
