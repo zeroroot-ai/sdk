@@ -185,8 +185,11 @@ jobs:
   # Design intent (CICD-CONTEXT.md decision 8): coverage is part of the
   # merge_group-only authoritative suite, not a per-PR gate. Mirrors gibson's
   # own `coverage` job placement in go-ci.yml exactly.
+  # Both lanes on purpose (gibson#1233): a merge_group-only gate that fails
+  # evicts the PR from the queue with no red check on the PR itself. On
+  # pull_request the uncovered lines show up as a normal red check before a
+  # queue slot is spent.
   coverage:
-    if: github.event_name == 'merge_group'
     runs-on: ubuntu-latest
     name: coverage gates (floor + diff)
     steps:
@@ -219,3 +222,50 @@ jobs:
       # 80% floor (baselined) + 85% diff-coverage.
       - name: Coverage gate (floor + diff, blocking)
         run: make check-coverage COVERAGE_BASE=origin/${{ github.base_ref || 'main' }}
+
+  # ---- selftest for the aggregator below ----
+  ci-required-selftest:
+    name: ci-required-selftest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Mutation-test the aggregation logic
+        run: bash scripts/__tests__/ci-required-gate.test.sh
+
+      - name: Every gate job is covered by ci-required's needs
+        run: bash scripts/check-ci-required-coverage.sh .github/workflows/go-ci.yml
+
+  # ---- THE required status check (sdk#79) ----
+  # One context, transitively covering every gate above. The ruleset in
+  # zeroroot-ai/.github (rulesets/repo/sdk.json) requires this job and no
+  # other from this workflow. See scripts/ci-required-gate.sh for why each
+  # semantic choice is what it is.
+  #
+  # `if: always()` is mandatory: GitHub skips a `needs:` job whenever ANY
+  # dependency is skipped, and this workflow's gates are lane-split (`fast`
+  # and `lint` on pull_request, `heavy` on merge_group), so without it this
+  # job would vanish on every run. An ABSENT required context does not fail
+  # the PR, it freezes merge-queue entry.
+  #
+  # `${{ toJSON(needs) }}` rather than a hand-written list of job names: the
+  # script then cannot skip a dependency listed here. A gate job never listed
+  # here at all is what ci-required-selftest's coverage check exists for.
+  ci-required:
+    name: ci-required
+    if: always()
+    needs:
+      - fast
+      - heavy
+      - lint
+      - sdk-checks
+      - coverage
+      - ci-required-selftest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Evaluate every gate result
+        env:
+          GATE_RESULTS: ${{ toJSON(needs) }}
+        run: bash scripts/ci-required-gate.sh
