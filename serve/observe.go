@@ -149,6 +149,21 @@ func observationToProto(obs agent.Observation) (*harnesspb.ObserveRequest, error
 				},
 			},
 		}, nil
+	case agent.AnalysisObservation:
+		evidence := make([]*harnesspb.ReferencedEntity, len(o.Evidence))
+		for i, e := range o.Evidence {
+			evidence[i] = &harnesspb.ReferencedEntity{Label: e.Label, IdProperties: e.IDProperties}
+		}
+		return &harnesspb.ObserveRequest{
+			Observation: &harnesspb.ObserveRequest_Analysis{
+				Analysis: &harnesspb.AnalysisObservation{
+					Agent:      o.Agent,
+					Conclusion: o.Conclusion,
+					Confidence: o.Confidence,
+					Evidence:   evidence,
+				},
+			},
+		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported observation type %T", obs)
 	}

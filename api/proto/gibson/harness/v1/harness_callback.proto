@@ -1529,6 +1529,7 @@ message ObserveRequest {
         LifecycleEntityObservation lifecycle_entity = 8;
         HypothesisObservation hypothesis = 9;
         ReasoningStepObservation reasoning_step = 10;
+        AnalysisObservation analysis = 11;
     }
 }
 
@@ -1714,6 +1715,29 @@ message ReasoningStepObservation {
     // references names the entities this step's reasoning is about, by label
     // and identity (the same scheme HypothesisObservation.references uses).
     repeated ReferencedEntity references = 5;
+}
+
+// AnalysisObservation reports a typed analysis artifact (sdk#74): a
+// conclusion an agent draws FROM evidence already on the graph, with the
+// confidence it holds and the evidence it used — the bridge between raw
+// findings and reportable output. Unlike a Hypothesis (an unproven,
+// forward-looking claim awaiting settlement, ADR-0021), an Analysis is
+// backward-looking: it synthesizes what is already known rather than
+// proposing something new to test. Like every Observation, this feeds
+// hypotheses and findings as a typed artifact, never as free text, and it is
+// an emit: the daemon folds it onto the Timeline (ADR-0007).
+message AnalysisObservation {
+    // agent identifies the agent producing the analysis.
+    string agent = 1;
+    // conclusion states the typed conclusion in a form the brain can fold
+    // into a Finding or a Hypothesis, not free text.
+    string conclusion = 2;
+    // confidence is the agent's calibrated confidence in the conclusion.
+    double confidence = 3 [(buf.validate.field).double = { gte: 0.0, lte: 1.0 }];
+    // evidence names the entities on the graph this conclusion is based on,
+    // by label and identity (the same scheme HypothesisObservation.references
+    // uses) — the link from the conclusion back to the evidence it used.
+    repeated ReferencedEntity evidence = 4;
 }
 
 // ObserveResponse acknowledges an observation.
