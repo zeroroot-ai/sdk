@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.181.0](https://github.com/zeroroot-ai/sdk/compare/v0.180.0...v0.181.0) (2026-09-28)
+
+
+### Features
+
+* **agent:** intelligence-layer SDK primitives ([#90](https://github.com/zeroroot-ai/sdk/issues/90)) ([e6af40e](https://github.com/zeroroot-ai/sdk/commit/e6af40e297db3f493f03d32e0b2f2288f3c1f3d3))
+
 ## [0.180.0](https://github.com/zeroroot-ai/sdk/compare/v0.179.1...v0.180.0) (2026-09-28)
 
 
