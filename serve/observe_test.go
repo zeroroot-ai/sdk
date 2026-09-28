@@ -166,10 +166,11 @@ func TestObservationToProto_LifecycleEntity_EmptyEdgesStayEmpty(t *testing.T) {
 // normal emit-only ObserveRequest oneof — no raw graph write.
 func TestObservationToProto_Hypothesis(t *testing.T) {
 	req, err := observationToProto(agent.HypothesisObservation{
-		Proposer:   "triage-agent",
-		Confidence: 0.65,
-		Claim:      "port 6443 on 10.0.0.5 is unauthenticated",
-		Technique:  "unauthenticated-service-probe",
+		HypothesisID: "hyp-unauth-6443",
+		Proposer:     "triage-agent",
+		Confidence:   0.65,
+		Claim:        "port 6443 on 10.0.0.5 is unauthenticated",
+		Technique:    "unauthenticated-service-probe",
 		References: []agent.ReferencedEntity{
 			{Label: "Host", IDProperties: map[string]string{"address": "10.0.0.5"}},
 		},
@@ -180,6 +181,9 @@ func TestObservationToProto_Hypothesis(t *testing.T) {
 	h := req.GetHypothesis()
 	if h == nil {
 		t.Fatal("expected hypothesis observation in request")
+	}
+	if h.HypothesisId != "hyp-unauth-6443" {
+		t.Fatalf("hypothesis id not mapped: %+v", h)
 	}
 	if h.Proposer != "triage-agent" {
 		t.Fatalf("proposer not mapped: %+v", h)
@@ -231,10 +235,11 @@ func TestObservationToProto_Hypothesis_EmptyReferencesStayEmpty(t *testing.T) {
 // the "round-trips through the wire" acceptance criterion (sdk#70).
 func TestObservationToProto_Hypothesis_WireRoundTrip(t *testing.T) {
 	req, err := observationToProto(agent.HypothesisObservation{
-		Proposer:   "triage-agent",
-		Confidence: 0.9,
-		Claim:      "the lodash dependency is exploitable via prototype pollution",
-		Technique:  "dependency-cve-match",
+		HypothesisID: "hyp-lodash-proto-pollution",
+		Proposer:     "triage-agent",
+		Confidence:   0.9,
+		Claim:        "the lodash dependency is exploitable via prototype pollution",
+		Technique:    "dependency-cve-match",
 		References: []agent.ReferencedEntity{
 			{Label: "Package", IDProperties: map[string]string{"purl": "pkg:npm/lodash@4.17.20"}},
 			{Label: "Application", IDProperties: map[string]string{"key": "customer-portal"}},
@@ -257,6 +262,9 @@ func TestObservationToProto_Hypothesis_WireRoundTrip(t *testing.T) {
 	h := got.GetHypothesis()
 	if h == nil {
 		t.Fatal("expected hypothesis observation after round trip")
+	}
+	if h.HypothesisId != "hyp-lodash-proto-pollution" {
+		t.Fatalf("hypothesis id lost in round trip: %+v", h)
 	}
 	if h.Proposer != "triage-agent" || h.Confidence != 0.9 {
 		t.Fatalf("proposer/confidence lost in round trip: %+v", h)

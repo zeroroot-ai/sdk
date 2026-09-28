@@ -29,14 +29,18 @@ func TestHypothesisObservation_IsObservation(t *testing.T) {
 // Bet.Technique).
 func TestHypothesisObservation_Fields(t *testing.T) {
 	h := HypothesisObservation{
-		Proposer:   "triage-agent",
-		Confidence: 0.4,
-		Claim:      "the lodash dependency is exploitable via prototype pollution",
-		Technique:  "dependency-cve-match",
+		HypothesisID: "hyp-lodash-proto-pollution",
+		Proposer:     "triage-agent",
+		Confidence:   0.4,
+		Claim:        "the lodash dependency is exploitable via prototype pollution",
+		Technique:    "dependency-cve-match",
 		References: []ReferencedEntity{
 			{Label: "Package", IDProperties: map[string]string{"purl": "pkg:npm/lodash@4.17.20"}},
 			{Label: "Application", IDProperties: map[string]string{"key": "customer-portal"}},
 		},
+	}
+	if h.HypothesisID != "hyp-lodash-proto-pollution" {
+		t.Fatalf("hypothesis id not carried: %+v", h)
 	}
 	if h.Proposer != "triage-agent" {
 		t.Fatalf("proposer not carried: %+v", h)
