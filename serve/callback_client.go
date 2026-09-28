@@ -674,6 +674,21 @@ func (c *CallbackClient) Observe(ctx context.Context, req *harnesspb.ObserveRequ
 	return resp, nil
 }
 
+// PlaceBet stakes a calibrated confidence on a Hypothesis (ADR-0022).
+func (c *CallbackClient) PlaceBet(ctx context.Context, req *harnesspb.PlaceBetRequest) (*harnesspb.PlaceBetResponse, error) {
+	if !c.IsConnected() {
+		return nil, errors.New("PlaceBet: client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.PlaceBet(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("PlaceBet: %w", err)
+	}
+	return resp, nil
+}
+
 // WorldView fetches the caller's slice of the tenant World (ADR-0012). The
 // context is stamped here, as on every other callback: it addresses the harness
 // the daemon should consult, and the daemon reads tenant and scope off that

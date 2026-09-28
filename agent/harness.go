@@ -409,6 +409,13 @@ type WorldEmitter interface {
 	// state is ambiently projected to them, ADR-0001). Scope is derived server-side
 	// from mission context, not carried on the observation.
 	Observe(ctx context.Context, obs Observation) error
+
+	// Betting
+	//
+	// PlaceBet stakes a calibrated confidence on a Hypothesis (ADR-0022). Betting
+	// is a first-class SDK primitive, parallel to Observe: the agent places a
+	// bet and storage, settlement and scoring are a gibson-side concern.
+	PlaceBet(ctx context.Context, bet Bet) error
 }
 
 // WorldReader is reading the tenant World. See WorldEmitter for why the halves are split.

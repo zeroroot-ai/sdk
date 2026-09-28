@@ -622,3 +622,10 @@ func (f *FeedbackHarness) Observe(ctx context.Context, obs agent.Observation) er
 	f.recordAndEvaluate(ctx)
 	return err
 }
+
+// PlaceBet places a bet, recording and evaluating the trajectory.
+func (f *FeedbackHarness) PlaceBet(ctx context.Context, bet agent.Bet) error {
+	err := f.recording.PlaceBet(ctx, bet)
+	f.recordAndEvaluate(ctx)
+	return err
+}

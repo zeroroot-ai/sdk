@@ -35,6 +35,7 @@ const (
 	HarnessCallbackService_ListAgents_FullMethodName            = "/gibson.harness.v1.HarnessCallbackService/ListAgents"
 	HarnessCallbackService_SubmitFinding_FullMethodName         = "/gibson.harness.v1.HarnessCallbackService/SubmitFinding"
 	HarnessCallbackService_Observe_FullMethodName               = "/gibson.harness.v1.HarnessCallbackService/Observe"
+	HarnessCallbackService_PlaceBet_FullMethodName              = "/gibson.harness.v1.HarnessCallbackService/PlaceBet"
 	HarnessCallbackService_WorldView_FullMethodName             = "/gibson.harness.v1.HarnessCallbackService/WorldView"
 	HarnessCallbackService_QueryNodes_FullMethodName            = "/gibson.harness.v1.HarnessCallbackService/QueryNodes"
 	HarnessCallbackService_FindSimilarAttacks_FullMethodName    = "/gibson.harness.v1.HarnessCallbackService/FindSimilarAttacks"
@@ -118,6 +119,10 @@ type HarnessCallbackServiceClient interface {
 	// Observe emits a typed observation into the World (ADR-0007). The brain
 	// resolves identity and topology; scope is derived server-side from context.
 	Observe(ctx context.Context, in *ObserveRequest, opts ...grpc.CallOption) (*ObserveResponse, error)
+	// PlaceBet stakes a calibrated confidence on a Hypothesis (ADR-0022). Betting
+	// is a first-class SDK primitive, parallel to Observe: storage, settlement
+	// and scoring of the bet are a gibson-side concern (ADR-0023).
+	PlaceBet(ctx context.Context, in *PlaceBetRequest, opts ...grpc.CallOption) (*PlaceBetResponse, error)
 	// WorldView returns the caller's server-projected slice of the tenant World
 	// (ADR-0012). It is the counterpart to Observe: Observe
 	// is the agent's only write, WorldView its only read.
@@ -454,6 +459,16 @@ func (c *harnessCallbackServiceClient) Observe(ctx context.Context, in *ObserveR
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ObserveResponse)
 	err := c.cc.Invoke(ctx, HarnessCallbackService_Observe_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *harnessCallbackServiceClient) PlaceBet(ctx context.Context, in *PlaceBetRequest, opts ...grpc.CallOption) (*PlaceBetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PlaceBetResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_PlaceBet_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -973,6 +988,10 @@ type HarnessCallbackServiceServer interface {
 	// Observe emits a typed observation into the World (ADR-0007). The brain
 	// resolves identity and topology; scope is derived server-side from context.
 	Observe(context.Context, *ObserveRequest) (*ObserveResponse, error)
+	// PlaceBet stakes a calibrated confidence on a Hypothesis (ADR-0022). Betting
+	// is a first-class SDK primitive, parallel to Observe: storage, settlement
+	// and scoring of the bet are a gibson-side concern (ADR-0023).
+	PlaceBet(context.Context, *PlaceBetRequest) (*PlaceBetResponse, error)
 	// WorldView returns the caller's server-projected slice of the tenant World
 	// (ADR-0012). It is the counterpart to Observe: Observe
 	// is the agent's only write, WorldView its only read.
@@ -1175,6 +1194,9 @@ func (UnimplementedHarnessCallbackServiceServer) SubmitFinding(context.Context, 
 }
 func (UnimplementedHarnessCallbackServiceServer) Observe(context.Context, *ObserveRequest) (*ObserveResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Observe not implemented")
+}
+func (UnimplementedHarnessCallbackServiceServer) PlaceBet(context.Context, *PlaceBetRequest) (*PlaceBetResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PlaceBet not implemented")
 }
 func (UnimplementedHarnessCallbackServiceServer) WorldView(context.Context, *WorldViewRequest) (*WorldViewResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method WorldView not implemented")
@@ -1599,6 +1621,24 @@ func _HarnessCallbackService_Observe_Handler(srv interface{}, ctx context.Contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(HarnessCallbackServiceServer).Observe(ctx, req.(*ObserveRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HarnessCallbackService_PlaceBet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PlaceBetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HarnessCallbackServiceServer).PlaceBet(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HarnessCallbackService_PlaceBet_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HarnessCallbackServiceServer).PlaceBet(ctx, req.(*PlaceBetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2475,6 +2515,10 @@ var HarnessCallbackService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Observe",
 			Handler:    _HarnessCallbackService_Observe_Handler,
+		},
+		{
+			MethodName: "PlaceBet",
+			Handler:    _HarnessCallbackService_PlaceBet_Handler,
 		},
 		{
 			MethodName: "WorldView",
