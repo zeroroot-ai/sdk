@@ -51,6 +51,11 @@ func TestObservationToProto_Analysis(t *testing.T) {
 
 // TestObservationToProto_Analysis_WireRoundTrip: the analysis artifact must
 // survive an actual proto marshal/unmarshal, not just struct construction.
+// This deliberately mirrors every other Observation variant's own
+// marshal/unmarshal round-trip test (Hypothesis, ReasoningStep); each variant
+// needs this same wire-survival check, not a shared copy-paste bug.
+//
+//nolint:dupl // see comment above
 func TestObservationToProto_Analysis_WireRoundTrip(t *testing.T) {
 	req, err := observationToProto(agent.AnalysisObservation{
 		Agent:      "exploit-agent",
