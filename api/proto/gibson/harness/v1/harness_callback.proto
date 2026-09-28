@@ -161,6 +161,17 @@ service HarnessCallbackService {
         allowed_identities: 4  // COMPONENT
       };
     }
+    // PlaceBet stakes a calibrated confidence on a Hypothesis (ADR-0022). Betting
+    // is a first-class SDK primitive, parallel to Observe: storage, settlement
+    // and scoring of the bet are a gibson-side concern (ADR-0023).
+    rpc PlaceBet(PlaceBetRequest) returns (PlaceBetResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
     // WorldView returns the caller's server-projected slice of the tenant World
     // (ADR-0012). It is the counterpart to Observe: Observe
     // is the agent's only write, WorldView its only read.
@@ -1682,6 +1693,33 @@ message ReferencedEntity {
 
 // ObserveResponse acknowledges an observation.
 message ObserveResponse {
+    HarnessError error = 1;
+}
+
+// PlaceBetRequest carries a calibrated stake on a Hypothesis (ADR-0022).
+message PlaceBetRequest {
+    ContextInfo context = 1;
+    Bet bet = 2;
+}
+
+// Bet is an agent's calibrated stake on a Hypothesis: a stake that later
+// settles, not a bare confidence number (ADR-0022). Reputation attaches to
+// technique × environment, never to an agent, so the technique the bet
+// exercises rides on the bet itself.
+message Bet {
+    // hypothesis_id names the Hypothesis this bet is on.
+    string hypothesis_id = 1;
+    // staking_agent identifies the agent placing the bet.
+    string staking_agent = 2;
+    // confidence is the staked calibrated confidence.
+    double confidence = 3 [(buf.validate.field).double = { gte: 0.0, lte: 1.0 }];
+    // technique names the technique this bet exercises. The reputation key is
+    // technique × environment, so this must ride on the bet.
+    string technique = 4;
+}
+
+// PlaceBetResponse acknowledges a bet placement.
+message PlaceBetResponse {
     HarnessError error = 1;
 }
 

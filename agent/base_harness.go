@@ -209,6 +209,11 @@ func (b *BaseHarness) Observe(_ context.Context, _ Observation) error {
 	return errors.New("Observe not implemented in BaseHarness")
 }
 
+// PlaceBet returns an error indicating this method is not implemented.
+func (b *BaseHarness) PlaceBet(_ context.Context, _ Bet) error {
+	return errors.New("PlaceBet not implemented in BaseHarness")
+}
+
 // ---------------------------------------------------------------------------
 // World Read
 // ---------------------------------------------------------------------------
