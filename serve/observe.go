@@ -126,11 +126,12 @@ func observationToProto(obs agent.Observation) (*harnesspb.ObserveRequest, error
 		return &harnesspb.ObserveRequest{
 			Observation: &harnesspb.ObserveRequest_Hypothesis{
 				Hypothesis: &harnesspb.HypothesisObservation{
-					Proposer:   o.Proposer,
-					Confidence: o.Confidence,
-					Claim:      o.Claim,
-					References: refs,
-					Technique:  o.Technique,
+					HypothesisId: o.HypothesisID,
+					Proposer:     o.Proposer,
+					Confidence:   o.Confidence,
+					Claim:        o.Claim,
+					References:   refs,
+					Technique:    o.Technique,
 				},
 			},
 		}, nil

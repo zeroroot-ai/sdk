@@ -1687,6 +1687,15 @@ message HypothesisObservation {
     // signal (resolves to the neutral prior), same as before this field
     // existed.
     string technique = 5;
+    // hypothesis_id is the agent-chosen identifier for this claim. The SAME
+    // value the agent later names as Bet.hypothesis_id when it stakes on
+    // this claim, and that a settlement path (Engine.SettleBetByHITL,
+    // gibson#280) records against — the one join key across Hypothesis, Bet
+    // and BetSettlement (gibson#339). Optional: empty preserves the
+    // pre-existing behavior of a Hypothesis with no bettable identity (it
+    // still folds as a claim, ADR-0021, it just cannot be staked on or
+    // settled by id).
+    string hypothesis_id = 6;
 }
 
 // ReferencedEntity names an entity a Hypothesis is about, by its Taxonomy label
