@@ -130,6 +130,7 @@ func observationToProto(obs agent.Observation) (*harnesspb.ObserveRequest, error
 					Confidence: o.Confidence,
 					Claim:      o.Claim,
 					References: refs,
+					Technique:  o.Technique,
 				},
 			},
 		}, nil

@@ -211,6 +211,12 @@ type HypothesisObservation struct {
 	// References names the entities the claim is about, by label and identity —
 	// the agent does not know node ids, and must not be able to guess them.
 	References []ReferencedEntity
+	// Technique names the technique this hypothesis exercises. Reputation
+	// keys on technique x environment (ADR-0022, gibson#333/#284), so this
+	// must ride on the Hypothesis the same way it already rides on Bet.
+	// Optional and additive: empty means no technique signal (resolves to
+	// the neutral prior), the same behavior as before this field existed.
+	Technique string
 }
 
 func (HypothesisObservation) isObservation() {}
