@@ -3,6 +3,11 @@ name: release-please
 on:
   push:
     branches: [main]
+  # Manual re-fire. A merge-queue merge can drop the push event that normally
+  # triggers this workflow (seen on sdk#94, commit 8b7776f: the merge landed on
+  # main with only merge_group runs, so no release PR was cut). workflow_dispatch
+  # lets an operator re-run release-please against main without a new commit.
+  workflow_dispatch:
 
 # The default GITHUB_TOKEN does no work here. release-please runs with the
 # zeroday-sdk-fanout App token minted below, so its release PR, commits and
