@@ -22,10 +22,8 @@ name: publish-mission-authoring
 # Spec: mission-authoring-cue Requirement 2 (publish on tag).
 
 on:
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
-      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+  # No on.push.tags: the tag event is unreliable, so release-please.yml
+  # dispatches this workflow with the tag it cut (-f tag=<tag>).
   workflow_dispatch:
     inputs:
       tag:

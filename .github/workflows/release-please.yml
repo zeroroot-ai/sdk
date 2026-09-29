@@ -33,7 +33,48 @@ jobs:
           repositories: sdk
 
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5
+        id: release
         with:
           token: ${{ steps.app-token.outputs.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+      # A tag pushed by this run's App token SHOULD fire the on.push.tags
+      # workflows, but that event is unreliable — it fired for v0.183.0 and
+      # dropped for v0.183.1, leaving BSR a release behind until buf-push was
+      # dispatched by hand (fd/a5, 2026-09-29). So this run dispatches the
+      # tag-triggered publishers explicitly for the tag it just cut, and those
+      # workflows have had their on.push.tags trigger removed so nothing
+      # double-fires (a doubled fan-out would open duplicate consumer PRs).
+      # A failed dispatch fails THIS run — a missing publish is red, not silent.
+      - name: Dispatch tag-triggered publishers for the cut release
+        if: ${{ steps.release.outputs.releases_created == 'true' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          # release-please manifest mode keys outputs by path ('.'); older/newer
+          # versions also expose a top-level tag_name. Try both, then fall back
+          # to the just-created release via the API, so a changed output name
+          # cannot silently drop the dispatch.
+          TAG_PATH: ${{ steps.release.outputs['.--tag_name'] }}
+          TAG_TOP: ${{ steps.release.outputs.tag_name }}
+        run: |
+          set -euo pipefail
+          TAG="${TAG_PATH:-${TAG_TOP:-}}"
+          if [ -z "$TAG" ]; then
+            TAG=$(gh release list -R "${{ github.repository }}" --limit 1 --json tagName --jq '.[0].tagName // empty')
+          fi
+          if [ -z "$TAG" ]; then
+            echo "::error::releases_created is true but the cut tag could not be resolved — cannot dispatch publishers"
+            exit 1
+          fi
+          echo "Dispatching downstream publishers for ${TAG}"
+          fail=0
+          gh workflow run buf-push.yml                  --ref "$TAG"                || fail=1
+          gh workflow run fan-out.yml                   --ref "$TAG" -f tag="$TAG"  || fail=1
+          gh workflow run docs-spec-sync.yml            --ref "$TAG" -f ref="$TAG"  || fail=1
+          gh workflow run publish-mission-authoring.yml --ref "$TAG" -f tag="$TAG"  || fail=1
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::one or more downstream publish dispatches failed for ${TAG} — BSR/fan-out/docs/mission-authoring may be behind"
+            exit 1
+          fi
+          echo "All downstream publishers dispatched for ${TAG}"

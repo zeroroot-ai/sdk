@@ -28,9 +28,8 @@ name: docs-spec-sync
 # nobody can fix is worse than a visible warning.
 
 on:
-  push:
-    tags:
-      - "v*"
+  # No on.push.tags: the tag event is unreliable, so release-please.yml
+  # dispatches this workflow (with ref=<tag>) for the release it cut.
   workflow_dispatch:
     inputs:
       ref:
