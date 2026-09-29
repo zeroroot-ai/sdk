@@ -172,6 +172,35 @@ service HarnessCallbackService {
         allowed_identities: 4  // COMPONENT
       };
     }
+    // SubmitProof triggers settlement of a Bet by submitting the raw evidence
+    // an agent's own tools captured (ADR-0030). The agent never submits a
+    // verdict or an interpretation — only raw evidence — because a
+    // deterministic, typed predicate on the daemon decides settlement, never
+    // an LLM and never the bet's own beneficiary. A non-destructive proof
+    // settles synchronously; a destructive proof settles only after a prior
+    // RequestDestructiveAuthorization approval, and this call never blocks on
+    // that decision (ADR-0032).
+    rpc SubmitProof(SubmitProofRequest) returns (SubmitProofResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    // RequestDestructiveAuthorization asks a human to approve an irreversible
+    // demonstration BEFORE the agent performs it (ADR-0032). It returns
+    // immediately with a pending request id — the fleet keeps working while
+    // the decision is pending. The agent performs the destructive act only
+    // after it reads back an approval, then calls SubmitProof.
+    rpc RequestDestructiveAuthorization(RequestDestructiveAuthorizationRequest) returns (RequestDestructiveAuthorizationResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
     // WorldView returns the caller's server-projected slice of the tenant World
     // (ADR-0012). It is the counterpart to Observe: Observe
     // is the agent's only write, WorldView its only read.
@@ -1786,6 +1815,109 @@ message Bet {
 // PlaceBetResponse acknowledges a bet placement.
 message PlaceBetResponse {
     HarnessError error = 1;
+}
+
+// ============================================================================
+// Proof settlement — ADR-0030 (agent-triggered, system-verified) and
+// ADR-0032 (the destructive-proof gate sits before the action)
+// ============================================================================
+
+// SubmitProofRequest carries the raw evidence an agent captured for a
+// Hypothesis it staked a Bet on. The agent supplies raw, uninterpreted tool
+// output — never a verdict (ADR-0030 decision 1) — and a deterministic,
+// typed predicate on the daemon decides whether the Bet settles.
+message SubmitProofRequest {
+    ContextInfo context = 1;
+    // hypothesis_id names the Hypothesis this proof settles. The same value
+    // the agent named on the HypothesisObservation and on the Bet it staked —
+    // the one join key across Hypothesis, Bet and BetSettlement.
+    string hypothesis_id = 2 [(buf.validate.field).string = { min_len: 1 }];
+    // technique names the technique this proof exercises, the same value
+    // carried on the Bet (reputation keys on technique x environment,
+    // ADR-0022).
+    string technique = 3;
+    // predicate_name names the enabled pack's CEL predicate the daemon
+    // evaluates against evidence to decide settlement. The agent names a
+    // predicate; it never evaluates one.
+    string predicate_name = 4 [(buf.validate.field).string = { min_len: 1 }];
+    // evidence is the raw tool output the predicate evaluates. It is never a
+    // verdict or an interpretation of what the evidence shows.
+    repeated gibson.types.v1.Evidence evidence = 5;
+    // destructive is true when this proof follows an irreversible
+    // demonstration. A destructive proof settles only after a prior
+    // RequestDestructiveAuthorization approval for this hypothesis_id
+    // (ADR-0032); a non-destructive proof settles synchronously.
+    bool destructive = 6;
+}
+
+// SettlementOutcome reports what SubmitProof did with the submitted proof.
+enum SettlementOutcome {
+    SETTLEMENT_OUTCOME_UNSPECIFIED = 0;
+    // SETTLEMENT_OUTCOME_SETTLED_TRUE means the predicate fired against the
+    // submitted evidence and the Bet settled true.
+    SETTLEMENT_OUTCOME_SETTLED_TRUE = 1;
+    // SETTLEMENT_OUTCOME_NOT_SETTLED means the predicate did not fire. The
+    // Bet stays unsettled.
+    SETTLEMENT_OUTCOME_NOT_SETTLED = 2;
+    // SETTLEMENT_OUTCOME_PENDING_AUTHORIZATION means the proof was destructive
+    // and settlement is deferred until the daemon reads back an approved
+    // authorization decision for this hypothesis_id (ADR-0032). SubmitProof
+    // never blocks on that decision.
+    SETTLEMENT_OUTCOME_PENDING_AUTHORIZATION = 3;
+}
+
+// SubmitProofResponse reports the settlement outcome. SubmitProof never
+// blocks on a human decision (ADR-0032 decision 2): a destructive proof
+// returns SETTLEMENT_OUTCOME_PENDING_AUTHORIZATION immediately rather than
+// waiting for the pending authorization to resolve.
+message SubmitProofResponse {
+    string hypothesis_id = 1;
+    SettlementOutcome outcome = 2;
+    HarnessError error = 3;
+}
+
+// Reversibility states whether a destructive action can be undone once it
+// runs.
+enum Reversibility {
+    REVERSIBILITY_UNSPECIFIED = 0;
+    REVERSIBILITY_REVERSIBLE = 1;
+    REVERSIBILITY_IRREVERSIBLE = 2;
+}
+
+// RequestDestructiveAuthorizationRequest asks a human to approve an
+// irreversible demonstration before the agent performs it (ADR-0032). It
+// carries what a human reviewer needs to decide (ADR-0028 decision 3): what
+// the action would do, its blast radius, its reversibility, and the
+// predicate it would satisfy.
+message RequestDestructiveAuthorizationRequest {
+    ContextInfo context = 1;
+    // hypothesis_id names the Hypothesis the destructive demonstration would
+    // prove, and the join key a later SubmitProof settles by.
+    string hypothesis_id = 2 [(buf.validate.field).string = { min_len: 1 }];
+    // technique names the technique the demonstration exercises.
+    string technique = 3;
+    // predicate_name names the CEL predicate the demonstration would
+    // satisfy — the same value a subsequent SubmitProof names.
+    string predicate_name = 4 [(buf.validate.field).string = { min_len: 1 }];
+    // action_description states, in plain words, what the demonstration
+    // would do. Shown to the human reviewer verbatim.
+    string action_description = 5 [(buf.validate.field).string = { min_len: 1 }];
+    // blast_radius states, in plain words, what the action would reach — one
+    // host, one tenant's data, a shared production resource. Empty means the
+    // caller has no signal to report; it is not a claim of zero blast radius.
+    string blast_radius = 6;
+    // reversibility states whether the action can be undone after it runs.
+    Reversibility reversibility = 7 [(buf.validate.field).enum = { defined_only: true }];
+}
+
+// RequestDestructiveAuthorizationResponse returns immediately: the fleet
+// keeps working while the human decision is pending (ADR-0028, ADR-0032).
+message RequestDestructiveAuthorizationResponse {
+    // authorization_request_id names the pending request. The agent reads
+    // the decision back before it performs the destructive act, then names
+    // this same hypothesis_id on the eventual SubmitProof.
+    string authorization_request_id = 1;
+    HarnessError error = 2;
 }
 
 // ============================================================================

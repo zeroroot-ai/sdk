@@ -19,69 +19,71 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	HarnessCallbackService_LLMComplete_FullMethodName           = "/gibson.harness.v1.HarnessCallbackService/LLMComplete"
-	HarnessCallbackService_LLMCompleteWithTools_FullMethodName  = "/gibson.harness.v1.HarnessCallbackService/LLMCompleteWithTools"
-	HarnessCallbackService_LLMCompleteStructured_FullMethodName = "/gibson.harness.v1.HarnessCallbackService/LLMCompleteStructured"
-	HarnessCallbackService_LLMStream_FullMethodName             = "/gibson.harness.v1.HarnessCallbackService/LLMStream"
-	HarnessCallbackService_CallToolProto_FullMethodName         = "/gibson.harness.v1.HarnessCallbackService/CallToolProto"
-	HarnessCallbackService_CallToolProtoStream_FullMethodName   = "/gibson.harness.v1.HarnessCallbackService/CallToolProtoStream"
-	HarnessCallbackService_ListTools_FullMethodName             = "/gibson.harness.v1.HarnessCallbackService/ListTools"
-	HarnessCallbackService_SearchTools_FullMethodName           = "/gibson.harness.v1.HarnessCallbackService/SearchTools"
-	HarnessCallbackService_QueueToolWork_FullMethodName         = "/gibson.harness.v1.HarnessCallbackService/QueueToolWork"
-	HarnessCallbackService_ToolResults_FullMethodName           = "/gibson.harness.v1.HarnessCallbackService/ToolResults"
-	HarnessCallbackService_QueryPlugin_FullMethodName           = "/gibson.harness.v1.HarnessCallbackService/QueryPlugin"
-	HarnessCallbackService_ListPlugins_FullMethodName           = "/gibson.harness.v1.HarnessCallbackService/ListPlugins"
-	HarnessCallbackService_DelegateToAgent_FullMethodName       = "/gibson.harness.v1.HarnessCallbackService/DelegateToAgent"
-	HarnessCallbackService_ListAgents_FullMethodName            = "/gibson.harness.v1.HarnessCallbackService/ListAgents"
-	HarnessCallbackService_SubmitFinding_FullMethodName         = "/gibson.harness.v1.HarnessCallbackService/SubmitFinding"
-	HarnessCallbackService_Observe_FullMethodName               = "/gibson.harness.v1.HarnessCallbackService/Observe"
-	HarnessCallbackService_PlaceBet_FullMethodName              = "/gibson.harness.v1.HarnessCallbackService/PlaceBet"
-	HarnessCallbackService_WorldView_FullMethodName             = "/gibson.harness.v1.HarnessCallbackService/WorldView"
-	HarnessCallbackService_QueryNodes_FullMethodName            = "/gibson.harness.v1.HarnessCallbackService/QueryNodes"
-	HarnessCallbackService_FindSimilarAttacks_FullMethodName    = "/gibson.harness.v1.HarnessCallbackService/FindSimilarAttacks"
-	HarnessCallbackService_GetAttackChains_FullMethodName       = "/gibson.harness.v1.HarnessCallbackService/GetAttackChains"
-	HarnessCallbackService_FindSimilarFindings_FullMethodName   = "/gibson.harness.v1.HarnessCallbackService/FindSimilarFindings"
-	HarnessCallbackService_GetRelatedFindings_FullMethodName    = "/gibson.harness.v1.HarnessCallbackService/GetRelatedFindings"
-	HarnessCallbackService_GetFindings_FullMethodName           = "/gibson.harness.v1.HarnessCallbackService/GetFindings"
-	HarnessCallbackService_ApplicationFindings_FullMethodName   = "/gibson.harness.v1.HarnessCallbackService/ApplicationFindings"
-	HarnessCallbackService_GetRunFindings_FullMethodName        = "/gibson.harness.v1.HarnessCallbackService/GetRunFindings"
-	HarnessCallbackService_GetMissionRunHistory_FullMethodName  = "/gibson.harness.v1.HarnessCallbackService/GetMissionRunHistory"
-	HarnessCallbackService_GetPlanContext_FullMethodName        = "/gibson.harness.v1.HarnessCallbackService/GetPlanContext"
-	HarnessCallbackService_ReportStepHints_FullMethodName       = "/gibson.harness.v1.HarnessCallbackService/ReportStepHints"
-	HarnessCallbackService_RecordSpan_FullMethodName            = "/gibson.harness.v1.HarnessCallbackService/RecordSpan"
-	HarnessCallbackService_RecordSpans_FullMethodName           = "/gibson.harness.v1.HarnessCallbackService/RecordSpans"
-	HarnessCallbackService_GetCredential_FullMethodName         = "/gibson.harness.v1.HarnessCallbackService/GetCredential"
-	HarnessCallbackService_GetTaxonomySchema_FullMethodName     = "/gibson.harness.v1.HarnessCallbackService/GetTaxonomySchema"
-	HarnessCallbackService_GenerateNodeID_FullMethodName        = "/gibson.harness.v1.HarnessCallbackService/GenerateNodeID"
-	HarnessCallbackService_ValidateFinding_FullMethodName       = "/gibson.harness.v1.HarnessCallbackService/ValidateFinding"
-	HarnessCallbackService_ValidateGraphNode_FullMethodName     = "/gibson.harness.v1.HarnessCallbackService/ValidateGraphNode"
-	HarnessCallbackService_ValidateRelationship_FullMethodName  = "/gibson.harness.v1.HarnessCallbackService/ValidateRelationship"
-	HarnessCallbackService_CreateMission_FullMethodName         = "/gibson.harness.v1.HarnessCallbackService/CreateMission"
-	HarnessCallbackService_RunMission_FullMethodName            = "/gibson.harness.v1.HarnessCallbackService/RunMission"
-	HarnessCallbackService_GetMissionStatus_FullMethodName      = "/gibson.harness.v1.HarnessCallbackService/GetMissionStatus"
-	HarnessCallbackService_WaitForMission_FullMethodName        = "/gibson.harness.v1.HarnessCallbackService/WaitForMission"
-	HarnessCallbackService_ListMissions_FullMethodName          = "/gibson.harness.v1.HarnessCallbackService/ListMissions"
-	HarnessCallbackService_CancelMission_FullMethodName         = "/gibson.harness.v1.HarnessCallbackService/CancelMission"
-	HarnessCallbackService_GetMissionResults_FullMethodName     = "/gibson.harness.v1.HarnessCallbackService/GetMissionResults"
-	HarnessCallbackService_Authorize_FullMethodName             = "/gibson.harness.v1.HarnessCallbackService/Authorize"
-	HarnessCallbackService_WorkspaceList_FullMethodName         = "/gibson.harness.v1.HarnessCallbackService/WorkspaceList"
-	HarnessCallbackService_WorkspaceGetInfo_FullMethodName      = "/gibson.harness.v1.HarnessCallbackService/WorkspaceGetInfo"
-	HarnessCallbackService_WorkspaceReadFile_FullMethodName     = "/gibson.harness.v1.HarnessCallbackService/WorkspaceReadFile"
-	HarnessCallbackService_WorkspaceWriteFile_FullMethodName    = "/gibson.harness.v1.HarnessCallbackService/WorkspaceWriteFile"
-	HarnessCallbackService_WorkspaceListFiles_FullMethodName    = "/gibson.harness.v1.HarnessCallbackService/WorkspaceListFiles"
-	HarnessCallbackService_WorkspaceCommit_FullMethodName       = "/gibson.harness.v1.HarnessCallbackService/WorkspaceCommit"
-	HarnessCallbackService_WorkspacePush_FullMethodName         = "/gibson.harness.v1.HarnessCallbackService/WorkspacePush"
-	HarnessCallbackService_DevboxExec_FullMethodName            = "/gibson.harness.v1.HarnessCallbackService/DevboxExec"
-	HarnessCallbackService_PutSessionContext_FullMethodName     = "/gibson.harness.v1.HarnessCallbackService/PutSessionContext"
-	HarnessCallbackService_GetSessionContext_FullMethodName     = "/gibson.harness.v1.HarnessCallbackService/GetSessionContext"
-	HarnessCallbackService_DeleteSessionContext_FullMethodName  = "/gibson.harness.v1.HarnessCallbackService/DeleteSessionContext"
-	HarnessCallbackService_SubscribeInput_FullMethodName        = "/gibson.harness.v1.HarnessCallbackService/SubscribeInput"
-	HarnessCallbackService_PullJob_FullMethodName               = "/gibson.harness.v1.HarnessCallbackService/PullJob"
-	HarnessCallbackService_ReportJobState_FullMethodName        = "/gibson.harness.v1.HarnessCallbackService/ReportJobState"
-	HarnessCallbackService_ReportDeliverable_FullMethodName     = "/gibson.harness.v1.HarnessCallbackService/ReportDeliverable"
-	HarnessCallbackService_OpenJob_FullMethodName               = "/gibson.harness.v1.HarnessCallbackService/OpenJob"
-	HarnessCallbackService_SendInput_FullMethodName             = "/gibson.harness.v1.HarnessCallbackService/SendInput"
-	HarnessCallbackService_CloseJob_FullMethodName              = "/gibson.harness.v1.HarnessCallbackService/CloseJob"
+	HarnessCallbackService_LLMComplete_FullMethodName                     = "/gibson.harness.v1.HarnessCallbackService/LLMComplete"
+	HarnessCallbackService_LLMCompleteWithTools_FullMethodName            = "/gibson.harness.v1.HarnessCallbackService/LLMCompleteWithTools"
+	HarnessCallbackService_LLMCompleteStructured_FullMethodName           = "/gibson.harness.v1.HarnessCallbackService/LLMCompleteStructured"
+	HarnessCallbackService_LLMStream_FullMethodName                       = "/gibson.harness.v1.HarnessCallbackService/LLMStream"
+	HarnessCallbackService_CallToolProto_FullMethodName                   = "/gibson.harness.v1.HarnessCallbackService/CallToolProto"
+	HarnessCallbackService_CallToolProtoStream_FullMethodName             = "/gibson.harness.v1.HarnessCallbackService/CallToolProtoStream"
+	HarnessCallbackService_ListTools_FullMethodName                       = "/gibson.harness.v1.HarnessCallbackService/ListTools"
+	HarnessCallbackService_SearchTools_FullMethodName                     = "/gibson.harness.v1.HarnessCallbackService/SearchTools"
+	HarnessCallbackService_QueueToolWork_FullMethodName                   = "/gibson.harness.v1.HarnessCallbackService/QueueToolWork"
+	HarnessCallbackService_ToolResults_FullMethodName                     = "/gibson.harness.v1.HarnessCallbackService/ToolResults"
+	HarnessCallbackService_QueryPlugin_FullMethodName                     = "/gibson.harness.v1.HarnessCallbackService/QueryPlugin"
+	HarnessCallbackService_ListPlugins_FullMethodName                     = "/gibson.harness.v1.HarnessCallbackService/ListPlugins"
+	HarnessCallbackService_DelegateToAgent_FullMethodName                 = "/gibson.harness.v1.HarnessCallbackService/DelegateToAgent"
+	HarnessCallbackService_ListAgents_FullMethodName                      = "/gibson.harness.v1.HarnessCallbackService/ListAgents"
+	HarnessCallbackService_SubmitFinding_FullMethodName                   = "/gibson.harness.v1.HarnessCallbackService/SubmitFinding"
+	HarnessCallbackService_Observe_FullMethodName                         = "/gibson.harness.v1.HarnessCallbackService/Observe"
+	HarnessCallbackService_PlaceBet_FullMethodName                        = "/gibson.harness.v1.HarnessCallbackService/PlaceBet"
+	HarnessCallbackService_SubmitProof_FullMethodName                     = "/gibson.harness.v1.HarnessCallbackService/SubmitProof"
+	HarnessCallbackService_RequestDestructiveAuthorization_FullMethodName = "/gibson.harness.v1.HarnessCallbackService/RequestDestructiveAuthorization"
+	HarnessCallbackService_WorldView_FullMethodName                       = "/gibson.harness.v1.HarnessCallbackService/WorldView"
+	HarnessCallbackService_QueryNodes_FullMethodName                      = "/gibson.harness.v1.HarnessCallbackService/QueryNodes"
+	HarnessCallbackService_FindSimilarAttacks_FullMethodName              = "/gibson.harness.v1.HarnessCallbackService/FindSimilarAttacks"
+	HarnessCallbackService_GetAttackChains_FullMethodName                 = "/gibson.harness.v1.HarnessCallbackService/GetAttackChains"
+	HarnessCallbackService_FindSimilarFindings_FullMethodName             = "/gibson.harness.v1.HarnessCallbackService/FindSimilarFindings"
+	HarnessCallbackService_GetRelatedFindings_FullMethodName              = "/gibson.harness.v1.HarnessCallbackService/GetRelatedFindings"
+	HarnessCallbackService_GetFindings_FullMethodName                     = "/gibson.harness.v1.HarnessCallbackService/GetFindings"
+	HarnessCallbackService_ApplicationFindings_FullMethodName             = "/gibson.harness.v1.HarnessCallbackService/ApplicationFindings"
+	HarnessCallbackService_GetRunFindings_FullMethodName                  = "/gibson.harness.v1.HarnessCallbackService/GetRunFindings"
+	HarnessCallbackService_GetMissionRunHistory_FullMethodName            = "/gibson.harness.v1.HarnessCallbackService/GetMissionRunHistory"
+	HarnessCallbackService_GetPlanContext_FullMethodName                  = "/gibson.harness.v1.HarnessCallbackService/GetPlanContext"
+	HarnessCallbackService_ReportStepHints_FullMethodName                 = "/gibson.harness.v1.HarnessCallbackService/ReportStepHints"
+	HarnessCallbackService_RecordSpan_FullMethodName                      = "/gibson.harness.v1.HarnessCallbackService/RecordSpan"
+	HarnessCallbackService_RecordSpans_FullMethodName                     = "/gibson.harness.v1.HarnessCallbackService/RecordSpans"
+	HarnessCallbackService_GetCredential_FullMethodName                   = "/gibson.harness.v1.HarnessCallbackService/GetCredential"
+	HarnessCallbackService_GetTaxonomySchema_FullMethodName               = "/gibson.harness.v1.HarnessCallbackService/GetTaxonomySchema"
+	HarnessCallbackService_GenerateNodeID_FullMethodName                  = "/gibson.harness.v1.HarnessCallbackService/GenerateNodeID"
+	HarnessCallbackService_ValidateFinding_FullMethodName                 = "/gibson.harness.v1.HarnessCallbackService/ValidateFinding"
+	HarnessCallbackService_ValidateGraphNode_FullMethodName               = "/gibson.harness.v1.HarnessCallbackService/ValidateGraphNode"
+	HarnessCallbackService_ValidateRelationship_FullMethodName            = "/gibson.harness.v1.HarnessCallbackService/ValidateRelationship"
+	HarnessCallbackService_CreateMission_FullMethodName                   = "/gibson.harness.v1.HarnessCallbackService/CreateMission"
+	HarnessCallbackService_RunMission_FullMethodName                      = "/gibson.harness.v1.HarnessCallbackService/RunMission"
+	HarnessCallbackService_GetMissionStatus_FullMethodName                = "/gibson.harness.v1.HarnessCallbackService/GetMissionStatus"
+	HarnessCallbackService_WaitForMission_FullMethodName                  = "/gibson.harness.v1.HarnessCallbackService/WaitForMission"
+	HarnessCallbackService_ListMissions_FullMethodName                    = "/gibson.harness.v1.HarnessCallbackService/ListMissions"
+	HarnessCallbackService_CancelMission_FullMethodName                   = "/gibson.harness.v1.HarnessCallbackService/CancelMission"
+	HarnessCallbackService_GetMissionResults_FullMethodName               = "/gibson.harness.v1.HarnessCallbackService/GetMissionResults"
+	HarnessCallbackService_Authorize_FullMethodName                       = "/gibson.harness.v1.HarnessCallbackService/Authorize"
+	HarnessCallbackService_WorkspaceList_FullMethodName                   = "/gibson.harness.v1.HarnessCallbackService/WorkspaceList"
+	HarnessCallbackService_WorkspaceGetInfo_FullMethodName                = "/gibson.harness.v1.HarnessCallbackService/WorkspaceGetInfo"
+	HarnessCallbackService_WorkspaceReadFile_FullMethodName               = "/gibson.harness.v1.HarnessCallbackService/WorkspaceReadFile"
+	HarnessCallbackService_WorkspaceWriteFile_FullMethodName              = "/gibson.harness.v1.HarnessCallbackService/WorkspaceWriteFile"
+	HarnessCallbackService_WorkspaceListFiles_FullMethodName              = "/gibson.harness.v1.HarnessCallbackService/WorkspaceListFiles"
+	HarnessCallbackService_WorkspaceCommit_FullMethodName                 = "/gibson.harness.v1.HarnessCallbackService/WorkspaceCommit"
+	HarnessCallbackService_WorkspacePush_FullMethodName                   = "/gibson.harness.v1.HarnessCallbackService/WorkspacePush"
+	HarnessCallbackService_DevboxExec_FullMethodName                      = "/gibson.harness.v1.HarnessCallbackService/DevboxExec"
+	HarnessCallbackService_PutSessionContext_FullMethodName               = "/gibson.harness.v1.HarnessCallbackService/PutSessionContext"
+	HarnessCallbackService_GetSessionContext_FullMethodName               = "/gibson.harness.v1.HarnessCallbackService/GetSessionContext"
+	HarnessCallbackService_DeleteSessionContext_FullMethodName            = "/gibson.harness.v1.HarnessCallbackService/DeleteSessionContext"
+	HarnessCallbackService_SubscribeInput_FullMethodName                  = "/gibson.harness.v1.HarnessCallbackService/SubscribeInput"
+	HarnessCallbackService_PullJob_FullMethodName                         = "/gibson.harness.v1.HarnessCallbackService/PullJob"
+	HarnessCallbackService_ReportJobState_FullMethodName                  = "/gibson.harness.v1.HarnessCallbackService/ReportJobState"
+	HarnessCallbackService_ReportDeliverable_FullMethodName               = "/gibson.harness.v1.HarnessCallbackService/ReportDeliverable"
+	HarnessCallbackService_OpenJob_FullMethodName                         = "/gibson.harness.v1.HarnessCallbackService/OpenJob"
+	HarnessCallbackService_SendInput_FullMethodName                       = "/gibson.harness.v1.HarnessCallbackService/SendInput"
+	HarnessCallbackService_CloseJob_FullMethodName                        = "/gibson.harness.v1.HarnessCallbackService/CloseJob"
 )
 
 // HarnessCallbackServiceClient is the client API for HarnessCallbackService service.
@@ -123,6 +125,21 @@ type HarnessCallbackServiceClient interface {
 	// is a first-class SDK primitive, parallel to Observe: storage, settlement
 	// and scoring of the bet are a gibson-side concern (ADR-0023).
 	PlaceBet(ctx context.Context, in *PlaceBetRequest, opts ...grpc.CallOption) (*PlaceBetResponse, error)
+	// SubmitProof triggers settlement of a Bet by submitting the raw evidence
+	// an agent's own tools captured (ADR-0030). The agent never submits a
+	// verdict or an interpretation — only raw evidence — because a
+	// deterministic, typed predicate on the daemon decides settlement, never
+	// an LLM and never the bet's own beneficiary. A non-destructive proof
+	// settles synchronously; a destructive proof settles only after a prior
+	// RequestDestructiveAuthorization approval, and this call never blocks on
+	// that decision (ADR-0032).
+	SubmitProof(ctx context.Context, in *SubmitProofRequest, opts ...grpc.CallOption) (*SubmitProofResponse, error)
+	// RequestDestructiveAuthorization asks a human to approve an irreversible
+	// demonstration BEFORE the agent performs it (ADR-0032). It returns
+	// immediately with a pending request id — the fleet keeps working while
+	// the decision is pending. The agent performs the destructive act only
+	// after it reads back an approval, then calls SubmitProof.
+	RequestDestructiveAuthorization(ctx context.Context, in *RequestDestructiveAuthorizationRequest, opts ...grpc.CallOption) (*RequestDestructiveAuthorizationResponse, error)
 	// WorldView returns the caller's server-projected slice of the tenant World
 	// (ADR-0012). It is the counterpart to Observe: Observe
 	// is the agent's only write, WorldView its only read.
@@ -469,6 +486,26 @@ func (c *harnessCallbackServiceClient) PlaceBet(ctx context.Context, in *PlaceBe
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(PlaceBetResponse)
 	err := c.cc.Invoke(ctx, HarnessCallbackService_PlaceBet_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *harnessCallbackServiceClient) SubmitProof(ctx context.Context, in *SubmitProofRequest, opts ...grpc.CallOption) (*SubmitProofResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SubmitProofResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_SubmitProof_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *harnessCallbackServiceClient) RequestDestructiveAuthorization(ctx context.Context, in *RequestDestructiveAuthorizationRequest, opts ...grpc.CallOption) (*RequestDestructiveAuthorizationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RequestDestructiveAuthorizationResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_RequestDestructiveAuthorization_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -992,6 +1029,21 @@ type HarnessCallbackServiceServer interface {
 	// is a first-class SDK primitive, parallel to Observe: storage, settlement
 	// and scoring of the bet are a gibson-side concern (ADR-0023).
 	PlaceBet(context.Context, *PlaceBetRequest) (*PlaceBetResponse, error)
+	// SubmitProof triggers settlement of a Bet by submitting the raw evidence
+	// an agent's own tools captured (ADR-0030). The agent never submits a
+	// verdict or an interpretation — only raw evidence — because a
+	// deterministic, typed predicate on the daemon decides settlement, never
+	// an LLM and never the bet's own beneficiary. A non-destructive proof
+	// settles synchronously; a destructive proof settles only after a prior
+	// RequestDestructiveAuthorization approval, and this call never blocks on
+	// that decision (ADR-0032).
+	SubmitProof(context.Context, *SubmitProofRequest) (*SubmitProofResponse, error)
+	// RequestDestructiveAuthorization asks a human to approve an irreversible
+	// demonstration BEFORE the agent performs it (ADR-0032). It returns
+	// immediately with a pending request id — the fleet keeps working while
+	// the decision is pending. The agent performs the destructive act only
+	// after it reads back an approval, then calls SubmitProof.
+	RequestDestructiveAuthorization(context.Context, *RequestDestructiveAuthorizationRequest) (*RequestDestructiveAuthorizationResponse, error)
 	// WorldView returns the caller's server-projected slice of the tenant World
 	// (ADR-0012). It is the counterpart to Observe: Observe
 	// is the agent's only write, WorldView its only read.
@@ -1197,6 +1249,12 @@ func (UnimplementedHarnessCallbackServiceServer) Observe(context.Context, *Obser
 }
 func (UnimplementedHarnessCallbackServiceServer) PlaceBet(context.Context, *PlaceBetRequest) (*PlaceBetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PlaceBet not implemented")
+}
+func (UnimplementedHarnessCallbackServiceServer) SubmitProof(context.Context, *SubmitProofRequest) (*SubmitProofResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SubmitProof not implemented")
+}
+func (UnimplementedHarnessCallbackServiceServer) RequestDestructiveAuthorization(context.Context, *RequestDestructiveAuthorizationRequest) (*RequestDestructiveAuthorizationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RequestDestructiveAuthorization not implemented")
 }
 func (UnimplementedHarnessCallbackServiceServer) WorldView(context.Context, *WorldViewRequest) (*WorldViewResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method WorldView not implemented")
@@ -1639,6 +1697,42 @@ func _HarnessCallbackService_PlaceBet_Handler(srv interface{}, ctx context.Conte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(HarnessCallbackServiceServer).PlaceBet(ctx, req.(*PlaceBetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HarnessCallbackService_SubmitProof_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SubmitProofRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HarnessCallbackServiceServer).SubmitProof(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HarnessCallbackService_SubmitProof_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HarnessCallbackServiceServer).SubmitProof(ctx, req.(*SubmitProofRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HarnessCallbackService_RequestDestructiveAuthorization_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequestDestructiveAuthorizationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HarnessCallbackServiceServer).RequestDestructiveAuthorization(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HarnessCallbackService_RequestDestructiveAuthorization_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HarnessCallbackServiceServer).RequestDestructiveAuthorization(ctx, req.(*RequestDestructiveAuthorizationRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2519,6 +2613,14 @@ var HarnessCallbackService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PlaceBet",
 			Handler:    _HarnessCallbackService_PlaceBet_Handler,
+		},
+		{
+			MethodName: "SubmitProof",
+			Handler:    _HarnessCallbackService_SubmitProof_Handler,
+		},
+		{
+			MethodName: "RequestDestructiveAuthorization",
+			Handler:    _HarnessCallbackService_RequestDestructiveAuthorization_Handler,
 		},
 		{
 			MethodName: "WorldView",
