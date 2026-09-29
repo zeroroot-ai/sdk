@@ -89,7 +89,7 @@ service DaemonService {
   // The stream remains open until the mission completes or is stopped.
   rpc RunMission(RunMissionRequest) returns (stream RunMissionResponse) {
       option (gibson.auth.v1.authz) = {
-        relation: "member"
+        relation: "writer"
         object_type: "tenant"
         object_deriver: "tenant_from_identity"
         allowed_identities: 3  // USER | SERVICE
@@ -99,7 +99,7 @@ service DaemonService {
   // StopMission gracefully stops a running mission.
   rpc StopMission(StopMissionRequest) returns (StopMissionResponse) {
       option (gibson.auth.v1.authz) = {
-        relation: "member"
+        relation: "writer"
         object_type: "tenant"
         object_deriver: "tenant_from_identity"
         allowed_identities: 3  // USER | SERVICE
@@ -110,7 +110,7 @@ service DaemonService {
   // Supports both referenced and inline configurations.
   rpc CreateMission(CreateMissionRequest) returns (CreateMissionResponse) {
       option (gibson.auth.v1.authz) = {
-        relation: "member"
+        relation: "writer"
         object_type: "tenant"
         object_deriver: "tenant_from_identity"
         allowed_identities: 3  // USER | SERVICE
@@ -121,7 +121,7 @@ service DaemonService {
   // The id field of the supplied target is ignored; the daemon mints it.
   rpc CreateTarget(CreateTargetRequest) returns (CreateTargetResponse) {
       option (gibson.auth.v1.authz) = {
-        relation: "member"
+        relation: "writer"
         object_type: "tenant"
         object_deriver: "tenant_from_identity"
         allowed_identities: 3  // USER | SERVICE
@@ -152,7 +152,7 @@ service DaemonService {
   // and is never changed.
   rpc UpdateTarget(UpdateTargetRequest) returns (UpdateTargetResponse) {
       option (gibson.auth.v1.authz) = {
-        relation: "member"
+        relation: "writer"
         object_type: "tenant"
         object_deriver: "tenant_from_identity"
         allowed_identities: 3  // USER | SERVICE
@@ -162,7 +162,7 @@ service DaemonService {
   // DeleteTarget removes a target by its UUID.
   rpc DeleteTarget(DeleteTargetRequest) returns (DeleteTargetResponse) {
       option (gibson.auth.v1.authz) = {
-        relation: "member"
+        relation: "writer"
         object_type: "tenant"
         object_deriver: "tenant_from_identity"
         allowed_identities: 3  // USER | SERVICE
@@ -183,7 +183,7 @@ service DaemonService {
   // If force is true, pauses immediately without waiting for a clean boundary.
   rpc PauseMission(PauseMissionRequest) returns (PauseMissionResponse) {
       option (gibson.auth.v1.authz) = {
-        relation: "member"
+        relation: "writer"
         object_type: "tenant"
         object_deriver: "tenant_from_identity"
         allowed_identities: 3  // USER | SERVICE
@@ -194,7 +194,7 @@ service DaemonService {
   // Returns a stream of mission events as execution continues.
   rpc ResumeMission(ResumeMissionRequest) returns (stream ResumeMissionResponse) {
       option (gibson.auth.v1.authz) = {
-        relation: "member"
+        relation: "writer"
         object_type: "tenant"
         object_deriver: "tenant_from_identity"
         allowed_identities: 3  // USER | SERVICE
