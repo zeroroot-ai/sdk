@@ -370,6 +370,21 @@ service HarnessCallbackService {
         allowed_identities: 4  // COMPONENT
       };
     }
+    // ProposeOntologyExtension proposes a new Taxonomy node label or
+    // relationship type discovered by an agent at runtime (ADR-0024 §2,
+    // ADR-0033 decision 2). The agent proposes; it never promotes — the
+    // daemon checks the identifier against its safety gate before recording
+    // it as a per-tenant proposal, and the resulting recurrence only ever
+    // feeds a later, explicit tenant-owner approval. This call never blocks
+    // on that approval.
+    rpc ProposeOntologyExtension(ProposeOntologyExtensionRequest) returns (ProposeOntologyExtensionResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
     rpc GenerateNodeID(GenerateNodeIDRequest) returns (GenerateNodeIDResponse) {
       option (gibson.auth.v1.authz) = {
         relation: "can_use"
@@ -2238,6 +2253,66 @@ message TaxonomyProperty {
     string description = 4;
     repeated string enum_values = 5;
     string default_value = 6;  // JSON-encoded
+}
+
+// ============================================================================
+// Ontology extension proposals — ADR-0024 §2, ADR-0033 decision 2
+//
+// ADR-0033's lifecycle is "Agent captures -> proposal (through the
+// ValidIdentifier safety gate; PromotionGate observes recurrence and
+// de-dupes) -> explicit tenant-owner approval -> tenant extension -> ...".
+// ProposeOntologyExtension is the FIRST arrow only: an agent proposing a new
+// Taxonomy node label or relationship type at runtime. Promotion into a live
+// tenant extension is a separate, later, explicit tenant-owner decision, not
+// part of this call.
+// ============================================================================
+
+// OntologyExtensionKind distinguishes what an agent is proposing: a new
+// Taxonomy node label or a new relationship type. These are Taxonomy's own
+// two vocabularies (ADR-0024 §2) — the HEAVY safety gate, because a
+// promoted label becomes Cypher query structure. This is deliberately not
+// the LIGHT gate for ontology triples (classes/equivalences/inverse-
+// functional properties, ADR-0024 §1): that is a separate proposal kind
+// with no identifier-safety concern, and is not carried by this RPC.
+enum OntologyExtensionKind {
+    ONTOLOGY_EXTENSION_KIND_UNSPECIFIED = 0;
+    ONTOLOGY_EXTENSION_KIND_NODE_LABEL = 1;
+    ONTOLOGY_EXTENSION_KIND_RELATIONSHIP_TYPE = 2;
+}
+
+// ProposeOntologyExtensionRequest carries an agent-proposed Taxonomy node
+// label or relationship type discovered at runtime. The agent supplies the
+// identifier and its rationale; a deterministic safety gate on the daemon
+// (taxonomy.ValidIdentifier) decides whether it is even recorded as a
+// sighting — an invalid identifier is refused outright and never reaches
+// the Timeline.
+message ProposeOntologyExtensionRequest {
+    ContextInfo context = 1;
+    // kind distinguishes a proposed node label from a proposed relationship
+    // type.
+    OntologyExtensionKind kind = 2 [(buf.validate.field).enum = { defined_only: true }];
+    // label is the proposed identifier — the node label or relationship
+    // type name itself.
+    string label = 3 [(buf.validate.field).string = { min_len: 1 }];
+    // proposer identifies the agent (or agent run) that proposed this
+    // extension, carried through for audit/attribution.
+    string proposer = 4 [(buf.validate.field).string = { min_len: 1 }];
+    // claim is a short, free-text rationale for the proposal, carried
+    // through for the tenant owner's eventual review.
+    string claim = 5 [(buf.validate.field).string = { min_len: 1 }];
+}
+
+// ProposeOntologyExtensionResponse acknowledges the proposal. accepted is
+// true when the identifier passed the safety gate and the proposal was
+// recorded as a sighting; false means it was refused outright (see
+// rejection_reason) and never recorded, so it can never accumulate
+// recurrence.
+message ProposeOntologyExtensionResponse {
+    bool accepted = 1;
+    // rejection_reason states, in plain words, why an unaccepted proposal
+    // was refused — e.g. an invalid identifier. Empty when accepted is true.
+    string rejection_reason = 2;
+    HarnessError error = 3;
 }
 
 message GenerateNodeIDRequest {
