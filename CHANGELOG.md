@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.183.0](https://github.com/zeroroot-ai/sdk/compare/v0.182.0...v0.183.0) (2026-09-29)
+
+
+### Features
+
+* **harness:** add ProposeOntologyExtension RPC ([#94](https://github.com/zeroroot-ai/sdk/issues/94)) ([8b7776f](https://github.com/zeroroot-ai/sdk/commit/8b7776f38736eda473feb3682592070e6fb193a4))
+
 ## [0.182.0](https://github.com/zeroroot-ai/sdk/compare/v0.181.0...v0.182.0) (2026-09-29)
 
 
