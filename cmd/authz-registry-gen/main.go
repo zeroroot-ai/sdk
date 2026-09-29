@@ -99,6 +99,44 @@ func validateIdentityBits(bits int32) error {
 	return nil
 }
 
+// viewerReadVerbs are the method-name prefixes that read tenant state. A
+// rule-form RPC a Viewer may call (relation "member" on the tenant, caller
+// class USER) must start with one of these, or carry own_state: true, or it
+// is a Viewer changing tenant state, which the four tenant roles (ADR-0093
+// decision 2) forbid. The list is a prefix match on the bare method name;
+// a new verb that reads is added here, a new verb that writes needs
+// "writer" or above.
+var viewerReadVerbs = []string{
+	"Get", "List", "Stream", "Watch", "Search", "Describe", "Count", "Export",
+	"Check", "Fetch", "Read", "Query", "Subscribe", "Tail", "Preview", "Resolve",
+	"Lookup", "Has", "Is", "Show", "Inspect", "Download", "Status", "WhoAmI",
+	"Health", "Ping", "Validate", "Diff", "Render", "Estimate", "Suggest", "Compute",
+}
+
+func startsWithReadVerb(name string) bool {
+	for _, v := range viewerReadVerbs {
+		if strings.HasPrefix(name, v) {
+			return true
+		}
+	}
+	return false
+}
+
+// validateViewerRule enforces "a Viewer reads and never changes tenant
+// state" on one rule-form annotation. name is the bare method name, method
+// the full /pkg.Service/Name key for messages.
+func validateViewerRule(method, name string, ao *authv1.AuthOptions) error {
+	user := ao.AllowedIdentities&int32(authv1.IdentityClass_IDENTITY_CLASS_USER) != 0
+	viewerCallable := user && ao.ObjectType == "tenant" && ao.Relation == "member"
+	if ao.OwnState && !viewerCallable {
+		return fmt.Errorf("%s: own_state is only meaningful on relation \"member\", object_type \"tenant\", callable by IDENTITY_CLASS_USER; it cannot widen a %q rule", method, ao.Relation)
+	}
+	if viewerCallable && !ao.OwnState && !startsWithReadVerb(name) {
+		return fmt.Errorf("%s: a Viewer (relation \"member\") may only read tenant state, and %q does not start with a reading verb (%s). Require \"writer\" or above, or set own_state: true when the RPC changes only the caller's own records (ADR-0093 decision 2)", method, name, strings.Join(viewerReadVerbs, ", "))
+	}
+	return nil
+}
+
 // detectDuplicateMethodKeys reports an error if any two entries share the same
 // method key (/<pkg>.<svc>/<method>). Duplicate keys arise when the same proto
 // service is compiled into multiple files or when a rename collision occurs;
@@ -279,6 +317,9 @@ func collectEntries(req *pluginpb.CodeGeneratorRequest) ([]Entry, []string, erro
 					missing = append(missing, method)
 					continue
 				}
+				if ao.OwnState && (ao.Unauthenticated || ao.Self) {
+					return nil, nil, fmt.Errorf("%s: own_state belongs to the rule form only; it cannot be combined with unauthenticated or self", method)
+				}
 				if ao.Unauthenticated && (ao.Relation != "" || ao.ObjectType != "" || ao.ObjectDeriver != "" || ao.AllowedIdentities != 0) {
 					return nil, nil, fmt.Errorf("%s: unauthenticated:true cannot be combined with relation/object/identities", method)
 				}
@@ -316,6 +357,10 @@ func collectEntries(req *pluginpb.CodeGeneratorRequest) ([]Entry, []string, erro
 					// Req 10.2: reject unknown identity bits.
 					if err := validateIdentityBits(ao.AllowedIdentities); err != nil {
 						return nil, nil, fmt.Errorf("%s: %w", method, err)
+					}
+					// A Viewer reads and never changes tenant state.
+					if err := validateViewerRule(method, m.GetName(), ao); err != nil {
+						return nil, nil, err
 					}
 				}
 				entries = append(entries, Entry{

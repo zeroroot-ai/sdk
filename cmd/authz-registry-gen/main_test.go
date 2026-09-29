@@ -17,7 +17,8 @@ import (
 )
 
 // fixtureRequest builds a CodeGeneratorRequest containing one tiny
-// service with two methods: an authenticated DoThing and an
+// service with two methods: an authenticated DoThing (a write, so relation
+// writer under the Viewer rule) and an
 // unauthenticated Ping. Used by every test in this file.
 func fixtureRequest(t *testing.T, withAnnotations bool) *pluginpb.CodeGeneratorRequest {
 	t.Helper()
@@ -29,7 +30,7 @@ func fixtureRequest(t *testing.T, withAnnotations bool) *pluginpb.CodeGeneratorR
 
 	if withAnnotations {
 		proto.SetExtension(doThingOpts, authv1.E_Authz, &authv1.AuthOptions{
-			Relation:          "member",
+			Relation:          "writer",
 			ObjectType:        "tenant",
 			ObjectDeriver:     "tenant_from_identity",
 			AllowedIdentities: int32(authv1.IdentityClass_IDENTITY_CLASS_USER) | int32(authv1.IdentityClass_IDENTITY_CLASS_SERVICE),
@@ -363,7 +364,7 @@ func TestRun_RejectsInvalidObjectDeriver(t *testing.T) {
 	pkg := "gibson.example.v1"
 	opts := &descriptorpb.MethodOptions{}
 	proto.SetExtension(opts, authv1.E_Authz, &authv1.AuthOptions{
-		Relation:          "member",
+		Relation:          "writer",
 		ObjectType:        "tenant",
 		ObjectDeriver:     "from_request_field", // invalid — not in allowlist
 		AllowedIdentities: int32(authv1.IdentityClass_IDENTITY_CLASS_USER),
@@ -397,7 +398,7 @@ func TestRun_RejectsUnknownIdentityBits(t *testing.T) {
 	pkg := "gibson.example.v1"
 	opts := &descriptorpb.MethodOptions{}
 	proto.SetExtension(opts, authv1.E_Authz, &authv1.AuthOptions{
-		Relation:          "member",
+		Relation:          "writer",
 		ObjectType:        "tenant",
 		ObjectDeriver:     "tenant_from_identity",
 		AllowedIdentities: 0x10, // bit 4 (0x10) is outside the valid mask
@@ -585,5 +586,100 @@ func TestRun_SelfMode_RejectsMissingIdentities(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "self-mode-authz") {
 		t.Errorf("expected spec name 'self-mode-authz' in error, got: %v", err)
+	}
+}
+
+// oneMethodRequest builds a request with one annotated method named name.
+func oneMethodRequest(name string, ao *authv1.AuthOptions) *pluginpb.CodeGeneratorRequest {
+	opts := &descriptorpb.MethodOptions{}
+	proto.SetExtension(opts, authv1.E_Authz, ao)
+	file := &descriptorpb.FileDescriptorProto{
+		Name:    proto.String("gibson/example/v1/example.proto"),
+		Package: proto.String("gibson.example.v1"),
+		Service: []*descriptorpb.ServiceDescriptorProto{{
+			Name: proto.String("ExampleService"),
+			Method: []*descriptorpb.MethodDescriptorProto{{
+				Name:       proto.String(name),
+				InputType:  proto.String(".gibson.example.v1.Req"),
+				OutputType: proto.String(".gibson.example.v1.Resp"),
+				Options:    opts,
+			}},
+		}},
+	}
+	return &pluginpb.CodeGeneratorRequest{ProtoFile: []*descriptorpb.FileDescriptorProto{file}, FileToGenerate: []string{file.GetName()}}
+}
+
+func viewerRule(ownState bool, identities int32) *authv1.AuthOptions {
+	return &authv1.AuthOptions{
+		Relation:          "member",
+		ObjectType:        "tenant",
+		ObjectDeriver:     "tenant_from_identity",
+		AllowedIdentities: identities,
+		OwnState:          ownState,
+	}
+}
+
+// A Viewer reads and never changes tenant state (ADR-0093 decision 2).
+// These fixtures fail on a generator without validateViewerRule.
+func TestRun_ViewerNeverChangesTenantState(t *testing.T) {
+	user := int32(authv1.IdentityClass_IDENTITY_CLASS_USER)
+	_, err := runFixture(t, oneMethodRequest("CreateThing", viewerRule(false, user)))
+	if err == nil {
+		t.Fatal("expected an error: CreateThing at relation member without own_state")
+	}
+	for _, want := range []string{"/gibson.example.v1.ExampleService/CreateThing", "own_state", "writer"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("error %q does not mention %q", err.Error(), want)
+		}
+	}
+}
+
+func TestRun_ViewerMayRead(t *testing.T) {
+	user := int32(authv1.IdentityClass_IDENTITY_CLASS_USER)
+	for _, name := range []string{"ListThings", "GetThing", "WatchThings", "ExportThings", "ValidateThing", "WhoAmI", "Status"} {
+		if _, err := runFixture(t, oneMethodRequest(name, viewerRule(false, user))); err != nil {
+			t.Errorf("%s at relation member must pass: %v", name, err)
+		}
+	}
+}
+
+func TestRun_OwnStateAllowsAPersonalWrite(t *testing.T) {
+	user := int32(authv1.IdentityClass_IDENTITY_CLASS_USER)
+	if _, err := runFixture(t, oneMethodRequest("SaveUserLayout", viewerRule(true, user))); err != nil {
+		t.Fatalf("own_state must allow a personal write at relation member: %v", err)
+	}
+}
+
+func TestRun_OwnStateCannotWidenAnotherRule(t *testing.T) {
+	user := int32(authv1.IdentityClass_IDENTITY_CLASS_USER)
+	ao := viewerRule(true, user)
+	ao.Relation = "writer"
+	if _, err := runFixture(t, oneMethodRequest("SaveUserLayout", ao)); err == nil {
+		t.Fatal("own_state on relation writer must be refused")
+	}
+	ao = viewerRule(true, user)
+	ao.ObjectType = "component"
+	ao.Relation = "can_use"
+	if _, err := runFixture(t, oneMethodRequest("SaveUserLayout", ao)); err == nil {
+		t.Fatal("own_state on a component rule must be refused")
+	}
+	if _, err := runFixture(t, oneMethodRequest("Ping", &authv1.AuthOptions{Unauthenticated: true, OwnState: true})); err == nil {
+		t.Fatal("own_state with unauthenticated must be refused")
+	}
+}
+
+func TestRun_ComponentOnlyCallersAreNotViewers(t *testing.T) {
+	component := int32(authv1.IdentityClass_IDENTITY_CLASS_COMPONENT)
+	if _, err := runFixture(t, oneMethodRequest("Execute", viewerRule(false, component))); err != nil {
+		t.Fatalf("a component-only RPC at relation member is not a Viewer rule: %v", err)
+	}
+}
+
+func TestRun_WriterVerbsPass(t *testing.T) {
+	user := int32(authv1.IdentityClass_IDENTITY_CLASS_USER)
+	ao := viewerRule(false, user)
+	ao.Relation = "writer"
+	if _, err := runFixture(t, oneMethodRequest("CreateThing", ao)); err != nil {
+		t.Fatalf("CreateThing at relation writer must pass: %v", err)
 	}
 }
