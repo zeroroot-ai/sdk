@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.182.0](https://github.com/zeroroot-ai/sdk/compare/v0.181.0...v0.182.0) (2026-09-29)
+
+
+### Features
+
+* **harness:** add SubmitProof and RequestDestructiveAuthorization RPCs ([#92](https://github.com/zeroroot-ai/sdk/issues/92)) ([ddd9457](https://github.com/zeroroot-ai/sdk/commit/ddd94571a5fa79631ba7c58f8bc039b1f5804f83))
+
 ## [0.181.0](https://github.com/zeroroot-ai/sdk/compare/v0.180.0...v0.181.0) (2026-09-28)
 
 
