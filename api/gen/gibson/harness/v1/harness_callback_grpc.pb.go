@@ -54,6 +54,7 @@ const (
 	HarnessCallbackService_RecordSpans_FullMethodName                     = "/gibson.harness.v1.HarnessCallbackService/RecordSpans"
 	HarnessCallbackService_GetCredential_FullMethodName                   = "/gibson.harness.v1.HarnessCallbackService/GetCredential"
 	HarnessCallbackService_GetTaxonomySchema_FullMethodName               = "/gibson.harness.v1.HarnessCallbackService/GetTaxonomySchema"
+	HarnessCallbackService_ProposeOntologyExtension_FullMethodName        = "/gibson.harness.v1.HarnessCallbackService/ProposeOntologyExtension"
 	HarnessCallbackService_GenerateNodeID_FullMethodName                  = "/gibson.harness.v1.HarnessCallbackService/GenerateNodeID"
 	HarnessCallbackService_ValidateFinding_FullMethodName                 = "/gibson.harness.v1.HarnessCallbackService/ValidateFinding"
 	HarnessCallbackService_ValidateGraphNode_FullMethodName               = "/gibson.harness.v1.HarnessCallbackService/ValidateGraphNode"
@@ -193,6 +194,14 @@ type HarnessCallbackServiceClient interface {
 	GetCredential(ctx context.Context, in *GetCredentialRequest, opts ...grpc.CallOption) (*GetCredentialResponse, error)
 	// Taxonomy Operations
 	GetTaxonomySchema(ctx context.Context, in *GetTaxonomySchemaRequest, opts ...grpc.CallOption) (*GetTaxonomySchemaResponse, error)
+	// ProposeOntologyExtension proposes a new Taxonomy node label or
+	// relationship type discovered by an agent at runtime (ADR-0024 §2,
+	// ADR-0033 decision 2). The agent proposes; it never promotes — the
+	// daemon checks the identifier against its safety gate before recording
+	// it as a per-tenant proposal, and the resulting recurrence only ever
+	// feeds a later, explicit tenant-owner approval. This call never blocks
+	// on that approval.
+	ProposeOntologyExtension(ctx context.Context, in *ProposeOntologyExtensionRequest, opts ...grpc.CallOption) (*ProposeOntologyExtensionResponse, error)
 	GenerateNodeID(ctx context.Context, in *GenerateNodeIDRequest, opts ...grpc.CallOption) (*GenerateNodeIDResponse, error)
 	ValidateFinding(ctx context.Context, in *ValidateFindingRequest, opts ...grpc.CallOption) (*ValidateFindingResponse, error)
 	ValidateGraphNode(ctx context.Context, in *ValidateGraphNodeRequest, opts ...grpc.CallOption) (*ValidateGraphNodeResponse, error)
@@ -672,6 +681,16 @@ func (c *harnessCallbackServiceClient) GetTaxonomySchema(ctx context.Context, in
 	return out, nil
 }
 
+func (c *harnessCallbackServiceClient) ProposeOntologyExtension(ctx context.Context, in *ProposeOntologyExtensionRequest, opts ...grpc.CallOption) (*ProposeOntologyExtensionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ProposeOntologyExtensionResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_ProposeOntologyExtension_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *harnessCallbackServiceClient) GenerateNodeID(ctx context.Context, in *GenerateNodeIDRequest, opts ...grpc.CallOption) (*GenerateNodeIDResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GenerateNodeIDResponse)
@@ -1097,6 +1116,14 @@ type HarnessCallbackServiceServer interface {
 	GetCredential(context.Context, *GetCredentialRequest) (*GetCredentialResponse, error)
 	// Taxonomy Operations
 	GetTaxonomySchema(context.Context, *GetTaxonomySchemaRequest) (*GetTaxonomySchemaResponse, error)
+	// ProposeOntologyExtension proposes a new Taxonomy node label or
+	// relationship type discovered by an agent at runtime (ADR-0024 §2,
+	// ADR-0033 decision 2). The agent proposes; it never promotes — the
+	// daemon checks the identifier against its safety gate before recording
+	// it as a per-tenant proposal, and the resulting recurrence only ever
+	// feeds a later, explicit tenant-owner approval. This call never blocks
+	// on that approval.
+	ProposeOntologyExtension(context.Context, *ProposeOntologyExtensionRequest) (*ProposeOntologyExtensionResponse, error)
 	GenerateNodeID(context.Context, *GenerateNodeIDRequest) (*GenerateNodeIDResponse, error)
 	ValidateFinding(context.Context, *ValidateFindingRequest) (*ValidateFindingResponse, error)
 	ValidateGraphNode(context.Context, *ValidateGraphNodeRequest) (*ValidateGraphNodeResponse, error)
@@ -1303,6 +1330,9 @@ func (UnimplementedHarnessCallbackServiceServer) GetCredential(context.Context, 
 }
 func (UnimplementedHarnessCallbackServiceServer) GetTaxonomySchema(context.Context, *GetTaxonomySchemaRequest) (*GetTaxonomySchemaResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTaxonomySchema not implemented")
+}
+func (UnimplementedHarnessCallbackServiceServer) ProposeOntologyExtension(context.Context, *ProposeOntologyExtensionRequest) (*ProposeOntologyExtensionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ProposeOntologyExtension not implemented")
 }
 func (UnimplementedHarnessCallbackServiceServer) GenerateNodeID(context.Context, *GenerateNodeIDRequest) (*GenerateNodeIDResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateNodeID not implemented")
@@ -2025,6 +2055,24 @@ func _HarnessCallbackService_GetTaxonomySchema_Handler(srv interface{}, ctx cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HarnessCallbackService_ProposeOntologyExtension_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProposeOntologyExtensionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HarnessCallbackServiceServer).ProposeOntologyExtension(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HarnessCallbackService_ProposeOntologyExtension_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HarnessCallbackServiceServer).ProposeOntologyExtension(ctx, req.(*ProposeOntologyExtensionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _HarnessCallbackService_GenerateNodeID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GenerateNodeIDRequest)
 	if err := dec(in); err != nil {
@@ -2685,6 +2733,10 @@ var HarnessCallbackService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTaxonomySchema",
 			Handler:    _HarnessCallbackService_GetTaxonomySchema_Handler,
+		},
+		{
+			MethodName: "ProposeOntologyExtension",
+			Handler:    _HarnessCallbackService_ProposeOntologyExtension_Handler,
 		},
 		{
 			MethodName: "GenerateNodeID",
