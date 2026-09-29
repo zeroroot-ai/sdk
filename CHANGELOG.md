@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.183.1](https://github.com/zeroroot-ai/sdk/compare/v0.183.0...v0.183.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* **authz:** a Viewer reads and never changes tenant state, enforced at registry generation ([#97](https://github.com/zeroroot-ai/sdk/issues/97)) ([4bbcb6f](https://github.com/zeroroot-ai/sdk/commit/4bbcb6f11c7ab9f74b949ab8adc57e867f5a8733))
+
 ## [0.183.0](https://github.com/zeroroot-ai/sdk/compare/v0.182.0...v0.183.0) (2026-09-29)
 
 
