@@ -38,9 +38,9 @@
 name: fan-out
 
 on:
-  push:
-    tags:
-      - "v*"
+  # No on.push.tags: the tag event is unreliable (a doubled fan-out would
+  # open duplicate consumer PRs), so release-please.yml dispatches this
+  # workflow with the tag it cut (-f tag=<tag>).
   # workflow_dispatch is the manual escape hatch when the tag-triggered
   # run failed for an infra reason (e.g. a token_repos misconfiguration —
   # see fix/fan-out-platform-clients-token-access for the historical

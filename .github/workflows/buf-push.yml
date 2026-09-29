@@ -26,13 +26,13 @@ name: buf-push
 # registry.
 
 on:
-  push:
-    tags:
-      - 'v*'
+  # No on.push.tags: the tag event is unreliable (dropped for v0.183.1),
+  # so release-please.yml dispatches this workflow at the release tag it cut.
+  # Manual dispatch stays for backfill/bootstrap.
   workflow_dispatch:
     inputs:
       label:
-        description: 'BSR label to apply to this push'
+        description: 'BSR label for a NON-tag (bootstrap) push; ignored on a tag ref, where the tag is the version'
         required: false
         default: 'manual-bootstrap'
   schedule:
@@ -83,15 +83,26 @@ jobs:
             exit 1
           fi
 
-      - name: Push to BSR (tag)
-        if: github.event_name == 'push'
+      # Tag ref (release-please dispatches this workflow at the release tag):
+      # --git-metadata reads the checked-out tag and labels the BSR commit
+      # with that version. This is the release publish.
+      # Tag ref (release-please dispatches this workflow at the release tag):
+      # --git-metadata reads the checked-out tag and labels the BSR commit
+      # with that version. This is the release publish. Gated to
+      # workflow_dispatch so the weekly `schedule` run stays a credential
+      # check only and never pushes.
+      - name: Push to BSR (tag = version)
+        if: github.event_name == 'workflow_dispatch' && github.ref_type == 'tag'
         env:
           BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
         run: |
           buf push --git-metadata
 
-      - name: Push to BSR (manual)
-        if: github.event_name == 'workflow_dispatch'
+      # Non-tag ref (manual bootstrap/backfill on a branch): apply the
+      # explicit bootstrap label, NEVER a version — a branch commit must not
+      # be labeled as a released version. Also workflow_dispatch-only.
+      - name: Push to BSR (non-tag = bootstrap label)
+        if: github.event_name == 'workflow_dispatch' && github.ref_type != 'tag'
         env:
           BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
         run: |
