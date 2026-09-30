@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.184.0](https://github.com/zeroroot-ai/sdk/compare/v0.183.1...v0.184.0) (2026-09-30)
+
+
+### Features
+
+* **daemon:** missions record who created them ([#102](https://github.com/zeroroot-ai/sdk/issues/102)) ([55d165a](https://github.com/zeroroot-ai/sdk/commit/55d165ab7fcf49b73d9ed20a7ee89758a8142af4))
+
+
+### Bug Fixes
+
+* **ci:** link-check checks only the Markdown a PR touched (.github v0.7.2) ([#100](https://github.com/zeroroot-ai/sdk/issues/100)) ([f6ed267](https://github.com/zeroroot-ai/sdk/commit/f6ed267dcd41d4d195a859c9cbfa849e83c615f0))
+
 ## [0.183.1](https://github.com/zeroroot-ai/sdk/compare/v0.183.0...v0.183.1) (2026-09-29)
 
 
