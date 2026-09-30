@@ -73,13 +73,24 @@ jobs:
           # repository" on v0.183.1 and v0.184.0 and the BSR fell behind
           # until a hand-run backfill. Name the repository on every call.
           REPO="${{ github.repository }}"
+          # dispatch <workflow> [input=value]: one line per failure names the
+          # publisher that is behind, so a partial failure is not a guess.
+          dispatch() {
+            local wf="$1"; shift
+            local args=()
+            for kv in "$@"; do args+=(-f "$kv"); done
+            if ! gh workflow run "$wf" -R "$REPO" --ref "$TAG" "${args[@]}"; then
+              echo "::error::dispatch of ${wf} for ${TAG} failed; run it by hand: gh workflow run ${wf} -R ${REPO} --ref ${TAG} $*"
+              return 1
+            fi
+          }
           fail=0
-          gh workflow run buf-push.yml                  -R "$REPO" --ref "$TAG"                || fail=1
-          gh workflow run fan-out.yml                   -R "$REPO" --ref "$TAG" -f tag="$TAG"  || fail=1
-          gh workflow run docs-spec-sync.yml            -R "$REPO" --ref "$TAG" -f ref="$TAG"  || fail=1
-          gh workflow run publish-mission-authoring.yml -R "$REPO" --ref "$TAG" -f tag="$TAG"  || fail=1
+          dispatch buf-push.yml                                 || fail=1
+          dispatch fan-out.yml                   "tag=${TAG}"   || fail=1
+          dispatch docs-spec-sync.yml            "ref=${TAG}"   || fail=1
+          dispatch publish-mission-authoring.yml "tag=${TAG}"   || fail=1
           if [ "$fail" -ne 0 ]; then
-            echo "::error::one or more downstream publish dispatches failed for ${TAG} — BSR/fan-out/docs/mission-authoring may be behind"
+            echo "::error::one or more downstream publish dispatches failed for ${TAG}; the lines above name them"
             exit 1
           fi
           echo "All downstream publishers dispatched for ${TAG}"
