@@ -68,11 +68,16 @@ jobs:
             exit 1
           fi
           echo "Dispatching downstream publishers for ${TAG}"
+          # This job has no checkout, so gh cannot infer the repository from
+          # a git remote: every dispatch below failed with "not a git
+          # repository" on v0.183.1 and v0.184.0 and the BSR fell behind
+          # until a hand-run backfill. Name the repository on every call.
+          REPO="${{ github.repository }}"
           fail=0
-          gh workflow run buf-push.yml                  --ref "$TAG"                || fail=1
-          gh workflow run fan-out.yml                   --ref "$TAG" -f tag="$TAG"  || fail=1
-          gh workflow run docs-spec-sync.yml            --ref "$TAG" -f ref="$TAG"  || fail=1
-          gh workflow run publish-mission-authoring.yml --ref "$TAG" -f tag="$TAG"  || fail=1
+          gh workflow run buf-push.yml                  -R "$REPO" --ref "$TAG"                || fail=1
+          gh workflow run fan-out.yml                   -R "$REPO" --ref "$TAG" -f tag="$TAG"  || fail=1
+          gh workflow run docs-spec-sync.yml            -R "$REPO" --ref "$TAG" -f ref="$TAG"  || fail=1
+          gh workflow run publish-mission-authoring.yml -R "$REPO" --ref "$TAG" -f tag="$TAG"  || fail=1
           if [ "$fail" -ne 0 ]; then
             echo "::error::one or more downstream publish dispatches failed for ${TAG} — BSR/fan-out/docs/mission-authoring may be behind"
             exit 1
