@@ -1208,6 +1208,13 @@ message MissionInfo {
   // inline-YAML state because they can no longer be constructed that way.
   reserved 2, 8;
   reserved "workflow_path", "workflow_yaml";
+
+  // created_by is the principal that created the mission: the person who
+  // asked for the run, or the service that scheduled it. A reader resolves
+  // the id to a name at read time; a person who has left the tenant resolves
+  // to nobody, and the dashboard shows "removed user". Empty on a mission
+  // created before the field existed.
+  gibson.common.v1.Principal created_by = 13;
 }
 
 // PauseMissionRequest requests pausing a running mission.
@@ -1440,6 +1447,10 @@ message Mission {
   // Reserved name from prior schema; field 5 is now mission_definition_id.
   // Rename performed under spec mission-api-only-cleanup (Phase 3).
   reserved "workflow_id";
+
+  // created_by is the principal that created the mission. See
+  // MissionInfo.created_by.
+  gibson.common.v1.Principal created_by = 14;
 }
 
 // MissionConstraints message removed under ADR 0004,
