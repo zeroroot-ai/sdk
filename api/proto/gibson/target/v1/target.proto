@@ -54,11 +54,18 @@ message Target {
   // capabilities lists capability tags advertised by the target.
   repeated string capabilities = 8;
 
-  // auth_type is the authentication scheme for the target.
+  // auth_type tells the consumer what shape the resolved secret has, so a
+  // tool can refuse the wrong kind instead of mis-parsing it. Examples are
+  // "bearer", "basic" and "kubeconfig". It is meaningful only when
+  // secret_name is set. Empty means the target needs no secret.
   string auth_type = 9;
 
-  // credential_id references a stored credential. Empty when none.
-  string credential_id = 10;
+  // Field 10 was credential_id. It referenced a row in the credentials
+  // table, which gibson migration 006 (006_tenant_secrets.up.sql) dropped.
+  // The live secret store is keyed by name and has no id column. Never
+  // reuse this number. Use secret_name (field 19) instead.
+  reserved 10;
+  reserved "credential_id";
 
   // status is the target lifecycle status.
   string status = 11;
@@ -83,6 +90,14 @@ message Target {
 
   // headers are default HTTP headers. Deprecated: prefer connection["headers"].
   map<string, string> headers = 18;
+
+  // secret_name is the name of the tenant secret this target authenticates
+  // with. It is a name only and never carries a secret value. The daemon
+  // resolves it server-side through the secrets broker, under the same FGA
+  // check that GetCredential makes. Empty means the target has no secret.
+  // A target that names a secret that does not exist must fail loudly.
+  // Never drop the name silently. auth_type states the shape of the secret.
+  string secret_name = 19;
 }
 
 // TargetFilter narrows ListTargets results. Mirrors types.TargetFilter.

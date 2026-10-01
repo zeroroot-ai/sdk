@@ -46,11 +46,11 @@ import "time"
 	// capabilities lists capability tags advertised by the target.
 	capabilities?: [...string] @protobuf(8,string)
 
-	// auth_type is the authentication scheme for the target.
+	// auth_type tells the consumer what shape the resolved secret has, so a
+	// tool can refuse the wrong kind instead of mis-parsing it. Examples are
+	// "bearer", "basic" and "kubeconfig". It is meaningful only when
+	// secret_name is set. Empty means the target needs no secret.
 	authType?: string @protobuf(9,string,name=auth_type)
-
-	// credential_id references a stored credential. Empty when none.
-	credentialId?: string @protobuf(10,string,name=credential_id)
 
 	// status is the target lifecycle status.
 	status?: string @protobuf(11,string)
@@ -77,6 +77,14 @@ import "time"
 	headers?: {
 		[string]: string
 	} @protobuf(18,map[string]string)
+
+	// secret_name is the name of the tenant secret this target authenticates
+	// with. It is a name only and never carries a secret value. The daemon
+	// resolves it server-side through the secrets broker, under the same FGA
+	// check that GetCredential makes. Empty means the target has no secret.
+	// A target that names a secret that does not exist must fail loudly.
+	// Never drop the name silently. auth_type states the shape of the secret.
+	secretName?: string @protobuf(19,string,name=secret_name)
 }
 
 // TargetFilter narrows ListTargets results. Mirrors types.TargetFilter.
