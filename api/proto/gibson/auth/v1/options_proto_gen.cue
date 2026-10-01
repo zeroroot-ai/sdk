@@ -66,6 +66,10 @@ package authv1
 // AuthOptions is the per-method authorization annotation. It is attached to
 // every RPC via the (gibson.auth.v1.authz) extension.
 //
+// Every rule-form RPC a Viewer may call is a read, or is marked own_state
+// (see that field). A changing verb at relation "member" without it fails
+// codegen, in this repo and in every consumer that regenerates its registry.
+//
 // Three mutually-exclusive forms (at most one may be set per RPC):
 //   1) unauthenticated = true: the RPC is callable without identity (Ping,
 //      health checks). The relation/object/allowed_identities fields MUST be
@@ -138,4 +142,24 @@ package authv1
 	// (relation/object_type/object_deriver). Setting self = true without
 	// allowed_identities is a codegen error. Spec: self-mode-authz.
 	self?: bool @protobuf(6,bool)
+
+	// own_state, when true, declares that the RPC changes only the calling
+	// person's own records: their layout, alerts, conversations, profile,
+	// sessions, uploads, onboarding progress, or their own place in the
+	// tenant. Nothing another tenant user can see changes. A Viewer may call
+	// it, so the rule form stays relation "member" on the tenant.
+	//
+	// This is the ONE way a Viewer-callable RPC may carry a changing verb.
+	// The four tenant roles (ADR-0093 decision 2: Owner, Admin, Editor,
+	// Viewer; FGA owner, admin, writer, member) promise that a Viewer reads
+	// and never changes tenant state. authz-registry-gen enforces it: an RPC
+	// callable by IDENTITY_CLASS_USER, on object_type "tenant", with relation
+	// "member", whose name does not start with a reading verb (Get, List,
+	// Watch, Query, Export, Validate, ...) must either require "writer" or
+	// above, or set own_state: true. own_state is refused on any other
+	// relation, object type or caller class, so it cannot widen anything.
+	//
+	// The daemon handler owns the promise: it scopes the write to the caller's
+	// subject and refuses any target that is not the caller.
+	ownState?: bool @protobuf(7,bool,name=own_state)
 }
