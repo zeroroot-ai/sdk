@@ -65,6 +65,24 @@ const GRANDFATHER_LIST = [
   // — same rationale as ListAuditEvents above. Justification: sdk#250.
   { file: 'gibson/tenant/v1/user.proto',    method: 'ListAlerts' },
   { file: 'gibson/tenant/v1/user.proto',    method: 'ListConversations' },
+  // ListSecrets RETURNS. The note above records that this entry was dropped
+  // when secrets.proto left the SDK in E6; ADR-0096 brought the proto back as
+  // its own wire package gibson.secrets.v1, so the entry comes back with it and
+  // its path is corrected the same way PluginAdminService's was. This is not a
+  // new List* RPC and the guard's rule is unchanged.
+  //
+  // Wire-locked, but not by `make proto-breaking`: the proto is new in this
+  // module, so there is no previous version here for that gate to compare
+  // against. It is locked by live callers — `ListSecretsRequest` is
+  // {category_filter, limit, offset, name_prefix} and the dashboard's secrets
+  // UI and gibson's handler both speak it today. Renaming `limit` to
+  // `page_size` and replacing `offset` with `page_token` would turn the
+  // dashboard's package switch from a call-site rename into a rewrite of its
+  // pagination, which ADR-0096 explicitly scoped out.
+  //
+  // Converting it to AIP-158 is a worthwhile separate change: one deliberate
+  // migration across sdk, gibson and dashboard together. Justification: ADR-0096.
+  { file: 'gibson/secrets/v1/secrets.proto', method: 'ListSecrets' },
 ];
 
 function isGrandfathered(relPath, methodName) {
