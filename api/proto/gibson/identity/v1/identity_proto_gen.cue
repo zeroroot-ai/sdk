@@ -23,18 +23,23 @@ import "github.com/zeroroot-ai/sdk/api/proto/gibson/capability/v1:capabilityv1"
 	#PRINCIPAL_KIND_UNSPECIFIED |
 	#PRINCIPAL_KIND_AGENT |
 	#PRINCIPAL_KIND_TOOL |
-	#PRINCIPAL_KIND_PLUGIN
+	#PRINCIPAL_KIND_PLUGIN |
+	#PRINCIPAL_KIND_USER
 
 #PRINCIPAL_KIND_UNSPECIFIED: 0
 #PRINCIPAL_KIND_AGENT:       1
 #PRINCIPAL_KIND_TOOL:        2
 #PRINCIPAL_KIND_PLUGIN:      3
 
+// A person who signed in through OIDC. Not a component principal.
+#PRINCIPAL_KIND_USER: 4
+
 #PrincipalKind_value: {
 	PRINCIPAL_KIND_UNSPECIFIED: 0
 	PRINCIPAL_KIND_AGENT:       1
 	PRINCIPAL_KIND_TOOL:        2
 	PRINCIPAL_KIND_PLUGIN:      3
+	PRINCIPAL_KIND_USER:        4
 }
 
 // WhoAmIRequest carries an optional target_principal_id for admin

@@ -31,6 +31,8 @@ enum PrincipalKind {
   PRINCIPAL_KIND_AGENT = 1;
   PRINCIPAL_KIND_TOOL = 2;
   PRINCIPAL_KIND_PLUGIN = 3;
+  // A person who signed in through OIDC. Not a component principal.
+  PRINCIPAL_KIND_USER = 4;
 }
 
 // IdentityService exposes the "describe me" RPC.
