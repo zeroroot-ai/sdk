@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.188.0](https://github.com/zeroroot-ai/sdk/compare/v0.187.0...v0.188.0) (2026-10-01)
+
+
+### Features
+
+* **secrets:** the SDK gains SecretsService as gibson.secrets.v1 ([#116](https://github.com/zeroroot-ai/sdk/issues/116)) ([98a502a](https://github.com/zeroroot-ai/sdk/commit/98a502a43339c2c4dcff819fa7e43a00cc421af2))
+
 ## [0.187.0](https://github.com/zeroroot-ai/sdk/compare/v0.186.0...v0.187.0) (2026-10-01)
 
 
