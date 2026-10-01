@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.189.0](https://github.com/zeroroot-ai/sdk/compare/v0.188.0...v0.189.0) (2026-10-01)
+
+
+### Features
+
+* **mission:** for_each nodes, one template run once per target ([#120](https://github.com/zeroroot-ai/sdk/issues/120)) ([015e677](https://github.com/zeroroot-ai/sdk/commit/015e677e4686ec320bef26bb74d192f44417f130))
+
+
+### Bug Fixes
+
+* **ci:** govulncheck that can read Go 1.27, in both of sdk's call sites ([#122](https://github.com/zeroroot-ai/sdk/issues/122)) ([a9430a7](https://github.com/zeroroot-ai/sdk/commit/a9430a77a2c8e57b250ff54a01010b96e4f86975))
+* **cueschemas:** the freshness gate now checks freshness ([#121](https://github.com/zeroroot-ai/sdk/issues/121)) ([6db92db](https://github.com/zeroroot-ai/sdk/commit/6db92dbd3b11c111c47940c76d764f326d0ed44a))
+* **eval:** the partial-score test raced the worker it was measuring ([#117](https://github.com/zeroroot-ai/sdk/issues/117)) ([2ab0329](https://github.com/zeroroot-ai/sdk/commit/2ab03291b0acb160f545bca978866260ca9ab73f))
+* **target:** reserve 9, 10 and 19 — a Target names no credential ([#119](https://github.com/zeroroot-ai/sdk/issues/119)) ([0c196b6](https://github.com/zeroroot-ai/sdk/commit/0c196b64687f5ac0eb17b1152ebeea39b957bf2d))
+
 ## [0.188.0](https://github.com/zeroroot-ai/sdk/compare/v0.187.0...v0.188.0) (2026-10-01)
 
 
