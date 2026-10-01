@@ -112,6 +112,33 @@
       },
       "type": "object"
     },
+    "ForEachNodeConfig": {
+      "additionalProperties": false,
+      "description": "ForEachNodeConfig configures a for_each node: ONE template node, run once per item in a source set.  The distinction from ParallelNodeConfig is the point. Parallel runs N DIFFERENT declared sub_nodes concurrently. ForEach runs ONE declared node N times, where N is discovered from the source rather than written down. A mission that fans a scan across every target in its target set declares the scan once.",
+      "properties": {
+        "maxConcurrency": {
+          "description": "max_concurrency limits instances in flight (0 = unlimited), the same semantics as ParallelNodeConfig.max_concurrency.",
+          "format": "int32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "source": {
+          "description": "source is required and must be a named value. Omission is NOT taken to mean the target set: an unset source is a mission that did not say what it iterates, and a future second source would silently change what the omission meant.",
+          "enum": [
+            "SOURCE_TARGET_SET"
+          ],
+          "type": "string"
+        },
+        "template": {
+          "$ref": "#/$defs/MissionNode",
+          "description": "template is the node run once per item.  It must not itself be a for_each node. That is a submit-time check in the daemon rather than a protovalidate rule, because protovalidate cannot express \"this nested MissionNode's config is not this variant\"."
+        }
+      },
+      "required": [
+        "template"
+      ],
+      "type": "object"
+    },
     "JobNodeConfig": {
       "additionalProperties": false,
       "description": "RetryPolicy defines the retry behavior for a mission node JobNodeConfig contains configuration for job nodes. JOB = a unit of work driven on a bank of always-on coding agents. The executor opens a job on the bank, then runs the verify loop: it dispatches the acceptance step to the declared verifier component, and on failure sends the verifier's report as the next input to the SAME job, so the agent keeps its conversation and its worktrees. When the verifier passes, or the passes run out, the executor calls CloseJob with a verdict and a score.  The loop lives inside this node. The mission graph stays a DAG: a job node never adds a loop edge.",
@@ -437,6 +464,17 @@
           "required": [
             "jobConfig"
           ]
+        },
+        {
+          "properties": {
+            "forEachConfig": {
+              "$ref": "#/$defs/ForEachNodeConfig",
+              "description": "ForEachConfig for for_each nodes. Field number 18 as the next free tag; 13 is NOT free despite looking it, because data_policy is `= 13 [deprecated = true]` and a field-number scan that expects a trailing semicolon misses it."
+            }
+          },
+          "required": [
+            "forEachConfig"
+          ]
         }
       ],
       "properties": {
@@ -491,7 +529,8 @@
             "NODE_TYPE_CONDITION",
             "NODE_TYPE_PARALLEL",
             "NODE_TYPE_JOIN",
-            "NODE_TYPE_JOB"
+            "NODE_TYPE_JOB",
+            "NODE_TYPE_FOR_EACH"
           ],
           "type": "string"
         }

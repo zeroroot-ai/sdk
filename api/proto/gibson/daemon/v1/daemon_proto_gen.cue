@@ -773,6 +773,13 @@ import (
 
 	// target_id is the registered target this mission ran against.
 	targetId?: string @protobuf(12,string,name=target_id)
+
+	// created_by is the principal that created the mission: the person who
+	// asked for the run, or the service that scheduled it. A reader resolves
+	// the id to a name at read time; a person who has left the tenant resolves
+	// to nobody, and the dashboard shows "removed user". Empty on a mission
+	// created before the field existed.
+	createdBy?: commonpb.#Principal @protobuf(13,gibson.common.v1.Principal,name=created_by)
 }
 
 // PauseMissionRequest requests pausing a running mission.
@@ -997,6 +1004,10 @@ import (
 
 	// completed_at is when the mission execution completed (Unix timestamp in milliseconds, 0 if not completed)
 	completedAt?: int64 @protobuf(13,int64,name=completed_at)
+
+	// created_by is the principal that created the mission. See
+	// MissionInfo.created_by.
+	createdBy?: commonpb.#Principal @protobuf(14,gibson.common.v1.Principal,name=created_by)
 }
 
 // MissionMetrics contains execution metrics for a mission.

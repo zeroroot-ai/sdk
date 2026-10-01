@@ -41,6 +41,16 @@ DataPolicy defines how data is handled for a node.  Deprecated: superseded by th
 | `encryption` | `bool` | 4 | Encryption determines whether data should be encrypted at rest |
 | `access_control` | `repeated string` | 5 | AccessControl specifies who can access this data |
 
+## `gibson.mission.v1.ForEachNodeConfig`
+
+ForEachNodeConfig configures a for_each node: ONE template node, run once per item in a source set.  The distinction from ParallelNodeConfig is the point. Parallel runs N DIFFERENT declared sub_nodes concurrently. ForEach runs ONE declared node N times, where N is discovered from the source rather than written down. A mission that fans a scan across every target in its target set declares the scan once.
+
+| Field | Type | Tag | Description |
+|---|---|---|---|
+| `template` | `gibson.mission.v1.MissionNode` | 1 | template is the node run once per item.  It must not itself be a for_each node. That is a submit-time check in the daemon rather than a protovalidate rule, because protovalidate cannot express "this nested MissionNode's config is not this variant". |
+| `source` | `gibson.mission.v1.ForEachNodeConfig.Source` | 2 | source is required and must be a named value. Omission is NOT taken to mean the target set: an unset source is a mission that did not say what it iterates, and a future second source would silently change what the omission meant. |
+| `max_concurrency` | `int32` | 3 | max_concurrency limits instances in flight (0 = unlimited), the same semantics as ParallelNodeConfig.max_concurrency. |
+
 ## `gibson.mission.v1.JobNodeConfig`
 
 RetryPolicy defines the retry behavior for a mission node JobNodeConfig contains configuration for job nodes. JOB = a unit of work driven on a bank of always-on coding agents. The executor opens a job on the bank, then runs the verify loop: it dispatches the acceptance step to the declared verifier component, and on failure sends the verifier's report as the next input to the SAME job, so the agent keeps its conversation and its worktrees. When the verifier passes, or the passes run out, the executor calls CloseJob with a verdict and a score.  The loop lives inside this node. The mission graph stays a DAG: a job node never adds a loop edge.
@@ -152,6 +162,7 @@ MissionNode represents a single node in a mission DAG
 | `parallel_config` | `gibson.mission.v1.ParallelNodeConfig` | 9 | ParallelConfig for parallel nodes |
 | `join_config` | `gibson.mission.v1.JoinNodeConfig` | 15 | JoinConfig for join nodes (mission-verb-noun-registry). Field number 15 because 10-14 are sibling MissionNode fields (dependencies, timeout, retry_policy, data_policy, metadata). |
 | `job_config` | `gibson.mission.v1.JobNodeConfig` | 17 | JobConfig for job nodes. Field number 17 because 16 is the sibling reuse_policy field. |
+| `for_each_config` | `gibson.mission.v1.ForEachNodeConfig` | 18 | ForEachConfig for for_each nodes. Field number 18 as the next free tag; 13 is NOT free despite looking it, because data_policy is `= 13 [deprecated = true]` and a field-number scan that expects a trailing semicolon misses it. |
 | `dependencies` | `repeated string` | 10 | Dependencies lists node IDs that must complete before this node executes |
 | `timeout` | `google.protobuf.Duration` | 11 | Timeout is the maximum execution time for this node |
 | `retry_policy` | `gibson.mission.v1.RetryPolicy` | 12 | RetryPolicy defines retry behavior for this node |

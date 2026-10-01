@@ -49,6 +49,12 @@ Job node drives a job on a bank of always-on agents. Its executor opens the job,
 
 **Enum value:** `7` &middot; **Config message:** `JobNodeConfig`
 
+## `NODE_TYPE_FOR_EACH`
+
+ForEach node runs ONE template node once per item in a source set. It is a CONTAINER, so one graph node remains one execution unit and JoinNodeConfig.wait_for keeps meaning "this node", not "one of its instances". A boolean on MissionNode would have made every consumer of a node 1:N and made wait_for ambiguous between one instance and all.
+
+**Enum value:** `8` &middot; **Config message:** `ForEachNodeConfig`
+
 ## MergeStrategy (JOIN)
 
 MergeStrategy declares how a JoinNodeConfig combines results from its `wait_for` upstream sources.  Spec: mission-verb-noun-registry Requirement 7.
