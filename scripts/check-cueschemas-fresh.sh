@@ -20,11 +20,29 @@
 # WHAT THIS DOES NOT DO: it is a structural check, not a regeneration. It
 # compares declared NAMES, so it catches an added or renamed message, field or
 # enum value — the way this actually breaks — and would miss a changed
-# protovalidate constraint or a reordering. The exact check is `make cue-defs`
-# followed by `git diff --exit-code`, which needs cue and a populated buf
-# validate cache in CI. That is a heavier gate and worth doing if this one ever
-# proves insufficient; a cheap gate that runs is worth more than an exact one
-# that gets switched off.
+# protovalidate constraint or a reordering.
+#
+# The exact check is `make cue-defs` followed by `git diff --exit-code`, and that
+# pattern ALREADY EXISTS in this repo, in the same CI job, for the other two
+# mission artifacts:
+#
+#     make mission-jsonschema mission-docs
+#     git diff --exit-code gen/mission-definition.schema.json gen/mission-docs/
+#
+# So upgrading this gate to the exact form is consistent rather than novel. Two
+# concrete things are in the way, both solvable:
+#
+#   1. `cue` is not installed in that job. It needs
+#      `go install cuelang.org/go/cmd/cue@v0.16.1`, the version ensure-cue pins.
+#   2. `cue-defs` resolves BUF_VALIDATE_DIR from the buf module cache and errors
+#      out without it, so the job needs a `buf dep update` first.
+#
+# Scope the diff to the four EMBEDDED files when doing it: cue-defs also rewrites
+# the non-embedded intermediates, and pre-existing drift in those would redden
+# unrelated PRs.
+#
+# Until then: a cheap gate that runs is worth more than an exact one that gets
+# switched off, and this one catches the way the drift actually happens.
 #
 # Spec: sdk#147.
 
