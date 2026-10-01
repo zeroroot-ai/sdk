@@ -42,7 +42,21 @@ jobs:
 
       - name: install govulncheck
         # Pinned: Scorecard Pinned-Dependencies flags `@latest` (sdk#18).
-        run: go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
+        #
+        # Must be a release whose VENDORED x/tools can analyse this module's
+        # language version. govulncheck ships its own SSA builder, so the
+        # toolchain that compiles it does not decide this — rebuilding v1.1.4
+        # with go1.27.1 still panics part-way through the scan:
+        #
+        #   panic: unexpected expr: *ast.KeyValueExpr
+        #   golang.org/x/tools@v0.29.0/go/ssa/builder.go:958
+        #
+        # A Go panic exits 2, so the job reads as a scan failure rather than as
+        # a tool that never ran. v1.8.0 vendors x/tools v0.50.0.
+        #
+        # Keep at or above the x/tools this module's Go floor needs. Same class
+        # as golangci-lint below v2.14.0 and deadcode below v0.49.0.
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.8.0
 
       - name: run govulncheck on examples/custom-tool
         working-directory: examples/custom-tool
