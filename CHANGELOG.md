@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.187.0](https://github.com/zeroroot-ai/sdk/compare/v0.186.0...v0.187.0) (2026-10-01)
+
+
+### Features
+
+* **go:** move the toolchain floor to 1.27.1 ([#113](https://github.com/zeroroot-ai/sdk/issues/113)) ([7eba7d6](https://github.com/zeroroot-ai/sdk/commit/7eba7d698e9b75189e9c09c4d6a3b8795f15a407))
+
 ## [0.186.0](https://github.com/zeroroot-ai/sdk/compare/v0.185.0...v0.186.0) (2026-10-01)
 
 
