@@ -485,7 +485,6 @@ type TypedValue struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Kind:
-	//
 	//	*TypedValue_NullValue
 	//	*TypedValue_StringValue
 	//	*TypedValue_IntValue

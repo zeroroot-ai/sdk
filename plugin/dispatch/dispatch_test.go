@@ -591,3 +591,44 @@ func min(a, b time.Duration) time.Duration {
 	}
 	return b
 }
+
+// ----------------------------------------------------------------------------
+// truncate
+// ----------------------------------------------------------------------------
+
+// TestTruncate covers the cap that handlePluginInvoke puts on a panic stack
+// before it reaches the log. The truncating branch is the one that fires in
+// production: a Go stack trace is almost always longer than the 512-byte head.
+func TestTruncate(t *testing.T) {
+	cases := []struct {
+		name string
+		s    string
+		n    int
+		want string
+	}{
+		{name: "shorter than the cap", s: "abc", n: 8, want: "abc"},
+		{name: "exactly the cap", s: "abcd", n: 4, want: "abcd"},
+		{name: "longer than the cap", s: "abcdef", n: 3, want: "abc…"},
+		{name: "zero cap", s: "abc", n: 0, want: "…"},
+		{name: "empty string", s: "", n: 4, want: ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := truncate(tc.s, tc.n); got != tc.want {
+				t.Fatalf("truncate(%q, %d) = %q, want %q", tc.s, tc.n, got, tc.want)
+			}
+		})
+	}
+}
+
+// TestTruncateCountsBytesNotRunes pins the documented contract: the cap is a
+// byte count, so a multi-byte rune on the boundary is cut. Stack traces are
+// ASCII, so this never bites the one caller, but a future caller must not
+// assume the result is valid UTF-8.
+func TestTruncateCountsBytesNotRunes(t *testing.T) {
+	const twoByteRune = "é" // 2 bytes
+	got := truncate(twoByteRune+"x", 1)
+	if want := twoByteRune[:1] + "…"; got != want {
+		t.Fatalf("truncate(%q, 1) = %q, want %q", twoByteRune+"x", got, want)
+	}
+}

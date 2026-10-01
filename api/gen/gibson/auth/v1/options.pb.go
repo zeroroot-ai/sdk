@@ -184,11 +184,10 @@ type AuthOptions struct {
 	// that requires a valid JWT identity but does not need an OpenFGA tuple
 	// lookup (the caller IS the subject — there is nothing to check). ext-authz
 	// will:
-	//
-	//	(a) still validate that Envoy ran jwt_authn (subject header is non-empty);
-	//	(b) skip the FGA Check call entirely;
-	//	(c) apply the allowed_identities bitfield to reject wrong caller classes;
-	//	(d) return OK, relying on the daemon handler to self-scope the response.
+	//   (a) still validate that Envoy ran jwt_authn (subject header is non-empty);
+	//   (b) skip the FGA Check call entirely;
+	//   (c) apply the allowed_identities bitfield to reject wrong caller classes;
+	//   (d) return OK, relying on the daemon handler to self-scope the response.
 	//
 	// Mutually exclusive with unauthenticated and with the rule form
 	// (relation/object_type/object_deriver). Setting self = true without
