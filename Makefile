@@ -12,7 +12,20 @@ PROTOC_GEN_GO_GRPC_VERSION := v1.5.1
 # .tool-versions). v2 schema (.golangci.yml `version: "2"`). Built from source
 # with the repo's own Go toolchain so its internal Go version is never lower
 # than go.mod's `go` directive (golangci refuses to load a newer target).
-GOLANGCI_LINT_VERSION := v2.4.0
+# The toolchain golangci-lint is BUILT with, read from go.mod so it cannot
+# drift from the floor. Without it, `go install` under GOTOOLCHAIN=auto
+# builds the linter with golangci's OWN older go directive, and the binary
+# then cannot read this module's export data:
+#
+#   buildssa: failed to load package bytes: could not load export data:
+#   cannot decode "bytes", export data version 4 is greater than maximum
+#   supported version 2
+#
+# That is what the Go 1.27.1 bump hit. The linter version does not have to
+# move; the toolchain that compiles it does.
+GO_TOOLCHAIN := go$(shell awk '$$1=="go"{print $$2; exit}' go.mod)
+
+GOLANGCI_LINT_VERSION := v2.14.0
 
 # Go parameters
 GOCMD=go
@@ -120,7 +133,7 @@ GOLANGCI_LINT := bin/tools/golangci-lint
 $(GOLANGCI_LINT):
 	@echo "Installing golangci-lint $(GOLANGCI_LINT_VERSION) to $(CURDIR)/bin/tools..."
 	@mkdir -p $(CURDIR)/bin/tools
-	@GOBIN=$(CURDIR)/bin/tools GOFLAGS=-mod=mod \
+	@GOBIN=$(CURDIR)/bin/tools GOFLAGS=-mod=mod GOTOOLCHAIN=$(GO_TOOLCHAIN) \
 		go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 
 # Baseline revision for the incremental lint gate. PRs lint against the
