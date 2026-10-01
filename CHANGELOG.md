@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.185.0](https://github.com/zeroroot-ai/sdk/compare/v0.184.0...v0.185.0) (2026-10-01)
+
+
+### Features
+
+* **identity:** add PRINCIPAL_KIND_USER for a person ([#106](https://github.com/zeroroot-ai/sdk/issues/106)) ([130510d](https://github.com/zeroroot-ai/sdk/commit/130510d684165455ce5c5b7d482646441c91d714))
+
+
+### Bug Fixes
+
+* **release:** name the repository on every publisher dispatch ([#103](https://github.com/zeroroot-ai/sdk/issues/103)) ([7980cc9](https://github.com/zeroroot-ai/sdk/commit/7980cc9cadff635578876d3e507d1980b62ddc75))
+
 ## [0.184.0](https://github.com/zeroroot-ai/sdk/compare/v0.183.1...v0.184.0) (2026-09-30)
 
 
