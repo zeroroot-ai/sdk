@@ -349,7 +349,6 @@ type StreamExecuteRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Payload:
-	//
 	//	*StreamExecuteRequest_Start
 	//	*StreamExecuteRequest_Cancel
 	Payload isStreamExecuteRequest_Payload `protobuf_oneof:"payload"`
@@ -551,7 +550,6 @@ type StreamExecuteResponse struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Payload:
-	//
 	//	*StreamExecuteResponse_Progress
 	//	*StreamExecuteResponse_Partial
 	//	*StreamExecuteResponse_Warning

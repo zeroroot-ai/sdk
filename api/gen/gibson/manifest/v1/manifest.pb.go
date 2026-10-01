@@ -468,7 +468,6 @@ type ComponentCapability struct {
 	OwnerTenant  string   `protobuf:"bytes,7,opt,name=owner_tenant,json=ownerTenant,proto3" json:"owner_tenant,omitempty"`
 	Permissions  []string `protobuf:"bytes,10,rep,name=permissions,proto3" json:"permissions,omitempty"`
 	// Types that are assignable to Contract:
-	//
 	//	*ComponentCapability_AgentContract
 	//	*ComponentCapability_ToolContract
 	//	*ComponentCapability_PluginContract

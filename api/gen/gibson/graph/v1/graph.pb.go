@@ -592,7 +592,6 @@ type QueryPathsRequest struct {
 	// Exactly one of to_node_id or to_node_kind must be set.
 	//
 	// Types that are assignable to To:
-	//
 	//	*QueryPathsRequest_ToNodeId
 	//	*QueryPathsRequest_ToNodeKind
 	To isQueryPathsRequest_To `protobuf_oneof:"to"`
@@ -805,7 +804,6 @@ type GraphUpdate struct {
 
 	Kind GraphUpdate_Kind `protobuf:"varint,1,opt,name=kind,proto3,enum=gibson.graph.v1.GraphUpdate_Kind" json:"kind,omitempty"`
 	// Types that are assignable to Entity:
-	//
 	//	*GraphUpdate_Node
 	//	*GraphUpdate_Edge
 	Entity isGraphUpdate_Entity   `protobuf_oneof:"entity"`

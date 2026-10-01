@@ -222,14 +222,12 @@ type DaemonServiceClient interface {
 	// called before the active-tenant cookie is set (which made the earlier
 	// `tenant_from_identity` FGA check fail with "no tenant derivable"), so no
 	// FGA tuple lookup is performed. The four defense layers are preserved:
-	//
-	//	(a) Envoy `jwt_authn` validates the Zitadel JWT before ext-authz.
-	//	(b) ext-authz mints X-Gibson-Identity-Subject from the verified sub —
-	//	    clients cannot forge it.
-	//	(c) The daemon's SPIFFE mTLS init is fail-closed (zero-trust-hardening
-	//	    Req 1) so non-Envoy callers cannot reach the listener.
-	//	(d) ext-authz enforces allowed_identities: only USER tokens are accepted.
-	//
+	//   (a) Envoy `jwt_authn` validates the Zitadel JWT before ext-authz.
+	//   (b) ext-authz mints X-Gibson-Identity-Subject from the verified sub —
+	//       clients cannot forge it.
+	//   (c) The daemon's SPIFFE mTLS init is fail-closed (zero-trust-hardening
+	//       Req 1) so non-Envoy callers cannot reach the listener.
+	//   (d) ext-authz enforces allowed_identities: only USER tokens are accepted.
 	// The handler scopes the response strictly to the caller's verified subject.
 	GetMyPermissions(ctx context.Context, in *GetMyPermissionsRequest, opts ...grpc.CallOption) (*GetMyPermissionsResponse, error)
 	// ListMyMemberships returns every tenant the authenticated caller is a
@@ -879,14 +877,12 @@ type DaemonServiceServer interface {
 	// called before the active-tenant cookie is set (which made the earlier
 	// `tenant_from_identity` FGA check fail with "no tenant derivable"), so no
 	// FGA tuple lookup is performed. The four defense layers are preserved:
-	//
-	//	(a) Envoy `jwt_authn` validates the Zitadel JWT before ext-authz.
-	//	(b) ext-authz mints X-Gibson-Identity-Subject from the verified sub —
-	//	    clients cannot forge it.
-	//	(c) The daemon's SPIFFE mTLS init is fail-closed (zero-trust-hardening
-	//	    Req 1) so non-Envoy callers cannot reach the listener.
-	//	(d) ext-authz enforces allowed_identities: only USER tokens are accepted.
-	//
+	//   (a) Envoy `jwt_authn` validates the Zitadel JWT before ext-authz.
+	//   (b) ext-authz mints X-Gibson-Identity-Subject from the verified sub —
+	//       clients cannot forge it.
+	//   (c) The daemon's SPIFFE mTLS init is fail-closed (zero-trust-hardening
+	//       Req 1) so non-Envoy callers cannot reach the listener.
+	//   (d) ext-authz enforces allowed_identities: only USER tokens are accepted.
 	// The handler scopes the response strictly to the caller's verified subject.
 	GetMyPermissions(context.Context, *GetMyPermissionsRequest) (*GetMyPermissionsResponse, error)
 	// ListMyMemberships returns every tenant the authenticated caller is a

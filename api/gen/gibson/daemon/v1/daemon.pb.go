@@ -1727,7 +1727,6 @@ type Event struct {
 	// Specific event types (only one will be set)
 	//
 	// Types that are assignable to Event:
-	//
 	//	*Event_MissionEvent
 	//	*Event_AgentEvent
 	//	*Event_FindingEvent
@@ -1961,7 +1960,6 @@ type SubscribeResponse struct {
 	// Specific event types (only one will be set)
 	//
 	// Types that are assignable to Event:
-	//
 	//	*SubscribeResponse_MissionEvent
 	//	*SubscribeResponse_AgentEvent
 	//	*SubscribeResponse_FindingEvent
@@ -4247,10 +4245,9 @@ type CreateMissionRequest struct {
 	// re-supply all fields they wish to preserve.
 	//
 	// Token budget precedence for per-call caps:
-	//
-	//	dispatch constraints.max_tokens_per_call
-	//	  > definition constraints.max_tokens_per_call
-	//	  > per-node *NodeConfig.max_tokens_per_call (lowest; wins if set)
+	//   dispatch constraints.max_tokens_per_call
+	//     > definition constraints.max_tokens_per_call
+	//     > per-node *NodeConfig.max_tokens_per_call (lowest; wins if set)
 	//
 	// Spec: ADR 0004, mission-schema-canonicalization (M4).
 	Constraints *v11.MissionConstraints `protobuf:"bytes,5,opt,name=constraints,proto3" json:"constraints,omitempty"`

@@ -2044,7 +2044,6 @@ type CallToolProtoStreamResponse struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Payload:
-	//
 	//	*CallToolProtoStreamResponse_Progress
 	//	*CallToolProtoStreamResponse_Partial
 	//	*CallToolProtoStreamResponse_Warning
@@ -3926,7 +3925,6 @@ type DelegateToAgentRequest struct {
 	// launch.
 	//
 	// Types that are assignable to Target:
-	//
 	//	*DelegateToAgentRequest_Ephemeral
 	//	*DelegateToAgentRequest_BankId
 	//	*DelegateToAgentRequest_JobId
@@ -6805,7 +6803,6 @@ type ObserveRequest struct {
 
 	Context *ContextInfo `protobuf:"bytes,1,opt,name=context,proto3" json:"context,omitempty"`
 	// Types that are assignable to Observation:
-	//
 	//	*ObserveRequest_Host
 	//	*ObserveRequest_Domain
 	//	*ObserveRequest_Subdomain
@@ -9351,7 +9348,6 @@ type AnyValue struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Value:
-	//
 	//	*AnyValue_StringValue
 	//	*AnyValue_BoolValue
 	//	*AnyValue_IntValue
@@ -10038,7 +10034,6 @@ type Credential struct {
 	Name string         `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Type CredentialType `protobuf:"varint,2,opt,name=type,proto3,enum=gibson.harness.v1.CredentialType" json:"type,omitempty"`
 	// Types that are assignable to SecretData:
-	//
 	//	*Credential_ApiKey
 	//	*Credential_BearerToken
 	//	*Credential_Basic
@@ -14529,7 +14524,6 @@ type DevboxExecResponse struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Payload:
-	//
 	//	*DevboxExecResponse_Stdout
 	//	*DevboxExecResponse_Stderr
 	//	*DevboxExecResponse_Exit

@@ -576,9 +576,9 @@ type MissionConstraints struct {
 	// provider call; the provider never sees more than this many output tokens.
 	//
 	// Precedence cascade (highest → lowest):
-	//  1. Per-node *NodeConfig.max_tokens_per_call (when set on a specific node)
-	//  2. This field (mission-level default)
-	//  3. 0 — no cap from this mechanism
+	//   1. Per-node *NodeConfig.max_tokens_per_call (when set on a specific node)
+	//   2. This field (mission-level default)
+	//   3. 0 — no cap from this mechanism
 	//
 	// When a per-node override is set it completely supersedes this field for
 	// that node (including 0, which explicitly disables the cap for that node
@@ -793,7 +793,6 @@ type MissionNode struct {
 	// Config contains the type-specific configuration (oneof)
 	//
 	// Types that are assignable to Config:
-	//
 	//	*MissionNode_AgentConfig
 	//	*MissionNode_ToolConfig
 	//	*MissionNode_PluginConfig
