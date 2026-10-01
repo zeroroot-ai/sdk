@@ -5,7 +5,12 @@ package eval
 
 import (
 	"context"
+	"encoding/json"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -109,8 +114,24 @@ func TestExportPartialScore_BelowConfidenceThreshold(t *testing.T) {
 // TestExportPartialScore_AboveConfidenceThreshold verifies that scores above
 // the confidence threshold are queued for export.
 func TestExportPartialScore_AboveConfidenceThreshold(t *testing.T) {
+	// Buffered by 1 so the handler never blocks if the test has already moved on.
+	exported := make(chan langfuseScore, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		var got langfuseScore
+		if err := json.Unmarshal(body, &got); err != nil {
+			t.Errorf("export body is not a langfuseScore: %v", err)
+		}
+		select {
+		case exported <- got:
+		default:
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
 	exporter := NewLangfuseExporter(LangfuseOptions{
-		BaseURL:   "https://cloud.langfuse.com",
+		BaseURL:   server.URL,
 		PublicKey: "test-public",
 		SecretKey: "test-secret",
 	})
@@ -131,8 +152,23 @@ func TestExportPartialScore_AboveConfidenceThreshold(t *testing.T) {
 	err := exporter.ExportPartialScore(ctx, "trace-123", "tool_correctness", score)
 	assert.NoError(t, err)
 
-	// Queue should have one item
-	assert.Len(t, exporter.partialScoreQueue, 1)
+	// Wait for the export the enqueue causes, rather than inspecting the queue.
+	// partialScoreQueue is a buffered channel with a worker goroutine draining it
+	// from the moment NewLangfuseExporter returns (langfuse.go:166), so
+	// `assert.Len(queue, 1)` only passes while the worker has not yet received —
+	// a race that fails whenever it wins. Measured at 9 failures in 40 runs under
+	// -race, which is why it only ever showed up in the merge queue's heavy tier.
+	//
+	// The export arriving is also the behaviour this test is named for. The queue
+	// was a proxy for it.
+	select {
+	case got := <-exported:
+		assert.Equal(t, "trace-123", got.TraceID)
+		assert.Equal(t, "tool_correctness_partial", got.Name)
+		assert.InDelta(t, 0.8, got.Value, 1e-9)
+	case <-time.After(5 * time.Second):
+		t.Fatal("score above the confidence threshold was never exported")
+	}
 }
 
 // TestExportPartialScore_Closed verifies that ExportPartialScore returns an error
