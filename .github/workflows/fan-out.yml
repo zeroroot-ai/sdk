@@ -92,15 +92,26 @@ jobs:
     name: ${{ matrix.consumer }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # continue-on-error: true keeps a single shard's failure from
-    # marking the parent workflow run as red, which would block the
-    # `summary` job from posting a clean per-consumer outcome. The
-    # summary job below explicitly re-checks every shard and fails
-    # iff at least one failed, so org-level visibility is preserved.
-    # `fail-fast: false` was already in place but does not prevent
-    # the overall run status from going red; that's what this flag
-    # changes. See sdk#66.
-    continue-on-error: true
+    # No continue-on-error here, deliberately. It used to carry
+    # `continue-on-error: true` so one shard's failure would not redden the
+    # run, on the stated grounds that the `summary` job below "explicitly
+    # re-checks every shard and fails iff at least one failed". That was not
+    # true. GitHub reports such a job's failure in its CONCLUSION but sets
+    # `needs.<job>.result` to 'success', so the gate's
+    # `if: needs.fan-out.result != 'success'` was never true, the step was
+    # skipped, and the run was green with consumers unbumped. sdk#66 built
+    # the gate; this flag is what disabled it.
+    #
+    # Measured on the v0.187.0 fan-out, run 36917226668: the `gibson` and
+    # `gibson-executor` shards FAILED, the gate step was SKIPPED, the run
+    # reported success, and gibson-executor sat on v0.186.0 until someone
+    # compared go.mod files by hand.
+    #
+    # What actually does the two jobs that flag was credited with:
+    #   fail-fast: false       every shard still runs when one fails
+    #   if: always() (summary) the summary still reports when one fails
+    # Neither needs it, and scripts/check-fanout-failure-visible.sh now fails
+    # the build if it comes back.
     strategy:
       fail-fast: false
       matrix:
@@ -263,9 +274,13 @@ jobs:
           go get github.com/zeroroot-ai/sdk@${{ needs.resolve-tag.outputs.tag }}
           go mod tidy
 
+      # No continue-on-error: the body cannot fail. `make -n` guards the
+      # branch and `make ... || echo` turns a regen failure into a warning, so
+      # the step always exits 0 and the flag was dead text. Keeping it would
+      # also leave a second copy in this file for the next reader to imitate,
+      # which is how the job-level one above earned its place.
       - name: Regenerate authz registry (gibson only)
         if: matrix.regen_authz == 'true'
-        continue-on-error: true
         run: |
           # Best-effort: regen needs SDK as a workspace sibling, which fresh CI
           # doesn't have. On failure we still want to ship the go.mod/go.sum bump;
@@ -346,11 +361,16 @@ jobs:
     needs: [resolve-tag, fan-out]
     if: always()
     steps:
-      # Explicit fail-the-run gate: per-shard `continue-on-error: true`
-      # would otherwise let the entire workflow run be marked green even
-      # if one or more consumers failed to bump. Mirror the matrix result
-      # here so org-level visibility (red workflow badge, push-event
-      # failure email) still fires. sdk#66.
+      # Explicit fail-the-run gate. It reads `needs.fan-out.result`, which is
+      # 'success' for a job that failed under continue-on-error — so this gate
+      # works only because the fan-out job no longer sets that flag. The two
+      # are a pair: see the comment on `strategy:` above, and
+      # scripts/check-fanout-failure-visible.sh, which fails the build if the
+      # flag returns or this gate is removed.
+      #
+      # Still worth gating on the job result rather than leaving it to the run
+      # status, because this is what posts the per-consumer summary and fires
+      # the failure mail. sdk#66.
       - name: Fail run if any consumer shard failed
         if: needs.fan-out.result != 'success'
         run: |

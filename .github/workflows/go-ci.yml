@@ -236,6 +236,16 @@ jobs:
       - name: Every gate job is covered by ci-required's needs
         run: bash scripts/check-ci-required-coverage.sh .github/workflows/go-ci.yml
 
+      # Same failure shape as the aggregator above, in the other workflow: a
+      # gate that is SKIPPED reports the same as a gate that PASSED. The
+      # fan-out run went green with two consumers unbumped because its summary
+      # gate read needs.<job>.result for a job carrying continue-on-error.
+      - name: Mutation-test the fan-out failure-visibility check
+        run: bash scripts/__tests__/check-fanout-failure-visible.test.sh
+
+      - name: A failed fan-out shard can still redden the run
+        run: bash scripts/check-fanout-failure-visible.sh .github/workflows/fan-out.yml
+
   # ---- THE required status check (sdk#79) ----
   # One context, transitively covering every gate above. The ruleset in
   # zeroroot-ai/.github (rulesets/repo/sdk.json) requires this job and no
