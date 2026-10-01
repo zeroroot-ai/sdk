@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.186.0](https://github.com/zeroroot-ai/sdk/compare/v0.185.0...v0.186.0) (2026-10-01)
+
+
+### Features
+
+* **target:** replace credential_id with name-shaped secret_name ([#107](https://github.com/zeroroot-ai/sdk/issues/107)) ([94c9ccb](https://github.com/zeroroot-ai/sdk/commit/94c9ccbeba65b5cc314a7484bdca71837c4041c8))
+
 ## [0.185.0](https://github.com/zeroroot-ai/sdk/compare/v0.184.0...v0.185.0) (2026-10-01)
 
 
