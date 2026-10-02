@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.190.0](https://github.com/zeroroot-ai/sdk/compare/v0.189.1...v0.190.0) (2026-10-02)
+
+
+### Features
+
+* **plugin:** a method's description moves into Go, beside its handler ([#131](https://github.com/zeroroot-ai/sdk/issues/131)) ([1c871ff](https://github.com/zeroroot-ai/sdk/commit/1c871ff7fe3fe37ddc69bdaf5e4ff651c80c9b3b))
+* **serve:** two environment variables are the whole boot path ([#144](https://github.com/zeroroot-ai/sdk/issues/144)) ([1c80526](https://github.com/zeroroot-ai/sdk/commit/1c805262a9a1b1bd71d16cae831397635defbe37)), closes [#128](https://github.com/zeroroot-ai/sdk/issues/128)
+* **taxonomy-gen:** enum numbers are declared, so a type can be retired ([#137](https://github.com/zeroroot-ai/sdk/issues/137)) ([156e08a](https://github.com/zeroroot-ai/sdk/commit/156e08a00265b036d76ba6789070668d604c445d)), closes [#132](https://github.com/zeroroot-ai/sdk/issues/132) [#111](https://github.com/zeroroot-ai/sdk/issues/111)
+
+
+### Bug Fixes
+
+* **auth:** the identity freshness window is not an operator knob ([#136](https://github.com/zeroroot-ai/sdk/issues/136)) ([502c07d](https://github.com/zeroroot-ai/sdk/commit/502c07df0d35567571d98c9b57c49b87e422cf25))
+* **capabilitygrant:** the no-token error never named GIBSON_BOOTSTRAP_TOKEN ([#140](https://github.com/zeroroot-ai/sdk/issues/140)) ([86881fc](https://github.com/zeroroot-ai/sdk/commit/86881fc8a1e95ef0a1e5d27757b017ea0bd79286))
+* **graphrag:** compliance_signals is the seam ADR-0013 forbids leaving behind ([#133](https://github.com/zeroroot-ai/sdk/issues/133)) ([b23197d](https://github.com/zeroroot-ai/sdk/commit/b23197d4631a9eb0c0e8309e584ccad3db8e972f))
+* **graphrag:** DiscoveryResult.compliance_signals is the seam ADR-0013 forbids ([b23197d](https://github.com/zeroroot-ai/sdk/commit/b23197d4631a9eb0c0e8309e584ccad3db8e972f))
+* **serve:** the documented enrol variables are not the ones serve reads ([#134](https://github.com/zeroroot-ai/sdk/issues/134)) ([447bca8](https://github.com/zeroroot-ai/sdk/commit/447bca890836b41dc929e32c7e9f8ea48a869752))
+* **taxonomy:** deprecate the compliance catalog, whose two consumers never existed ([#139](https://github.com/zeroroot-ai/sdk/issues/139)) ([959f519](https://github.com/zeroroot-ai/sdk/commit/959f519b4b15fff686e57ae922ce87f194a6a8b2))
+
 ## [0.189.1](https://github.com/zeroroot-ai/sdk/compare/v0.189.0...v0.189.1) (2026-10-02)
 
 
