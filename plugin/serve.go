@@ -14,6 +14,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -300,7 +301,7 @@ func Serve(ctx context.Context, opts ...Option) error {
 	// Assemble the method set: names (back-compat, RegisterComponentRequest.methods)
 	// plus rich descriptors (method_descriptors) so the connector catalog and
 	// SearchTools can surface per-method descriptions to agents.
-	methodNames, methodDescriptors := buildMethodMetadata(m.Spec.Methods, discovered, cfg.methodSchemas)
+	methodNames, methodDescriptors := buildMethodMetadata(m.Spec.Methods, discovered, cfg.methodSchemas, cfg.methodDescriptions)
 	if len(methodNames) == 0 {
 		return errors.New("plugin.Serve: no methods to register; the method " +
 			"source returned an empty set and the manifest declares none")
@@ -539,16 +540,45 @@ func gracefulShutdown(
 // RegisterComponentRequest.methods) and the rich per-method descriptors
 // (method_descriptors). Descriptions flow through so the connector catalog and
 // SearchTools can surface them; declared methods come first, then discovered.
-func buildMethodMetadata(declared []manifest.MethodDecl, discovered []DiscoveredMethod, schemas map[string]methodSchema) ([]string, []*componentpb.ComponentMethod) {
+func buildMethodMetadata(declared []manifest.MethodDecl, discovered []DiscoveredMethod, schemas map[string]methodSchema, descriptions map[string]string) ([]string, []*componentpb.ComponentMethod) {
 	n := len(declared) + len(discovered)
 	names := make([]string, 0, n)
 	detailed := make([]*componentpb.ComponentMethod, 0, n)
 	for _, d := range declared {
 		names = append(names, d.Name)
-		cm := &componentpb.ComponentMethod{Name: d.Name, Description: d.Description}
+		// The handler's description wins over the manifest's. WithHandler
+		// requires one, so for any method with a registered handler this is
+		// always the Go-side value; the manifest's `methods:` description is a
+		// fallback that exists only until the manifest is deleted (sdk#127,
+		// sdk#129, ADR-0097).
+		desc := d.Description
+		if h, ok := descriptions[d.Name]; ok {
+			desc = h
+		}
+		cm := &componentpb.ComponentMethod{Name: d.Name, Description: desc}
 		// The Go-first request schema derived from the handler's typed struct
 		// travels to the daemon as the method's tool-input contract.
 		if s, ok := schemas[d.Name]; ok {
+			cm.InputSchemaJson = s.input
+		}
+		detailed = append(detailed, cm)
+	}
+	// Methods with a handler but no manifest declaration: once the manifest is
+	// gone this is every method, so the registered set is already the source.
+	// Sorted, because ranging a map would let Go's randomised iteration order
+	// into the RegisterComponent payload and make the registered method list
+	// differ between two runs of the same plugin.
+	extra := make([]string, 0, len(descriptions))
+	for name := range descriptions {
+		if !hasMethod(names, name) {
+			extra = append(extra, name)
+		}
+	}
+	sort.Strings(extra)
+	for _, name := range extra {
+		names = append(names, name)
+		cm := &componentpb.ComponentMethod{Name: name, Description: descriptions[name]}
+		if s, ok := schemas[name]; ok {
 			cm.InputSchemaJson = s.input
 		}
 		detailed = append(detailed, cm)
@@ -558,6 +588,11 @@ func buildMethodMetadata(declared []manifest.MethodDecl, discovered []Discovered
 		detailed = append(detailed, &componentpb.ComponentMethod{Name: dm.Name, Description: dm.Description})
 	}
 	return names, detailed
+}
+
+// hasMethod reports whether name is already in the accumulated method list.
+func hasMethod(names []string, name string) bool {
+	return slices.Contains(names, name)
 }
 
 // validateMethods cross-checks the handler map against the manifest's method

@@ -15,7 +15,7 @@
 //	func main() {
 //	    if err := plugin.Serve(ctx,
 //	        plugin.WithManifest("plugin.yaml"),
-//	        plugin.WithHandler("CreateIncident", createIncident),
+//	        plugin.WithHandler("CreateIncident", "opens an incident from a finding", createIncident),
 //	    ); err != nil {
 //	        log.Fatal(err)
 //	    }

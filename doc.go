@@ -89,7 +89,7 @@
 //	func main() {
 //	    if err := plugin.Serve(ctx,
 //	        plugin.WithManifest("plugin.yaml"),
-//	        plugin.WithHandler("Echo", echoHandler),
+//	        plugin.WithHandler("Echo", "echoes the request back unchanged", echoHandler),
 //	    ); err != nil {
 //	        log.Fatal(err)
 //	    }
