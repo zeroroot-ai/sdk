@@ -567,8 +567,29 @@ mission-authoring-bundle: mission-jsonschema mission-docs
 	@echo "Bundle: gen/mission-authoring-bundle.tar.gz"
 	@ls -la gen/mission-authoring-bundle.tar.gz
 
+# proto-breaking compares against the REMOTE base, not a local branch.
+#
+# It used to resolve to the bare branch name `main` when GITHUB_BASE_REF was
+# unset, which is every local run. `.git#branch=main` reads the LOCAL main, so a
+# checkout whose main is behind origin compares the change against an old tree
+# and reports "no breaking changes" for a change that does break against what is
+# actually on the remote. The failure is silent and in the reassuring direction.
+#
+# In CI GITHUB_BASE_REF is set and this resolved correctly, so the gap was
+# local-only — which is worse, because local is where someone checks before
+# pushing. sdk#108 part 3.
+#
+# origin/<branch> is used when it exists and the bare name is the fallback, so a
+# detached CI checkout without remote refs still works.
 proto-breaking:
-	@TARGET=$${GITHUB_BASE_REF:-$${CI_MERGE_REQUEST_TARGET_BRANCH:-main}}; \
+	@BASE=$${GITHUB_BASE_REF:-$${CI_MERGE_REQUEST_TARGET_BRANCH:-main}}; \
+	if git rev-parse --verify --quiet "refs/remotes/origin/$$BASE" >/dev/null; then \
+		TARGET="origin/$$BASE"; \
+	else \
+		echo "note: no refs/remotes/origin/$$BASE; comparing against local $$BASE"; \
+		TARGET="$$BASE"; \
+	fi; \
+	echo "proto-breaking: comparing against $$TARGET"; \
 	if $(BUF) breaking --against ".git#branch=$$TARGET"; then \
 		echo "✅ No breaking proto changes detected"; \
 	else \
