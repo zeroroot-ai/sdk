@@ -121,24 +121,14 @@ func WithHostKey(path string) Option {
 	}
 }
 
-// WithCapabilityGrantFromEnv reads Capability Grant configuration from environment variables:
+// WithCapabilityGrantFromEnv re-reads the capability-grant environment.
 //
-//	GIBSON_URL          — platform HTTPS base URL (required)
-//	GIBSON_BOOTSTRAP_TOKEN — one-time registration token (only needed on first run; host key persists after that)
-//	GIBSON_HOST_KEY_PATH         — path to Ed25519 host key file (optional)
-//
-// **Required.** The serve entry points return an error if PlatformURL is not set.
-// GIBSON_URL is the only required variable; GIBSON_BOOTSTRAP_TOKEN
-// is only needed on first run, after which the host key is persisted to disk and
-// reused on subsequent runs.
-//
-// Environment variables that are empty or unset are silently ignored so that
-// this option can be combined with WithBootstrapToken or WithHostKey without
-// conflict.
-//
-// Example:
-//
-//	serve.Agent(myAgent, serve.WithCapabilityGrantFromEnv())
+// Deprecated: DefaultConfig already reads GIBSON_URL,
+// GIBSON_BOOTSTRAP_TOKEN and GIBSON_HOST_KEY_PATH, so serve.Agent and
+// serve.Tool enrol from the environment with no option at all (sdk#128). This
+// option remains only so that existing callers keep compiling, and because it
+// is still the way to let the environment override an explicit option that was
+// listed before it. It will be removed in the first release after v0.190.0.
 func WithCapabilityGrantFromEnv() Option {
 	return func(cfg *Config) {
 		if v := os.Getenv("GIBSON_URL"); v != "" {
