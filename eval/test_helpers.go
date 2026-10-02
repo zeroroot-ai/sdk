@@ -19,24 +19,11 @@ type mockLLMProvider struct {
 	shouldError   bool
 	errorAfterN   int
 	recordedCalls [][]llm.Message
-
-	// Legacy fields for backward compatibility
-	response *llm.CompletionResponse
-	err      error
 }
 
 func (m *mockLLMProvider) Complete(ctx context.Context, messages []llm.Message, opts ...llm.CompletionOption) (*llm.CompletionResponse, error) {
 	m.recordedCalls = append(m.recordedCalls, messages)
 
-	// Support legacy single response/err pattern
-	if m.err != nil {
-		return nil, m.err
-	}
-	if m.response != nil {
-		return m.response, nil
-	}
-
-	// Support new multi-response pattern
 	if m.shouldError && (m.errorAfterN == 0 || m.callCount >= m.errorAfterN) {
 		m.callCount++
 		return nil, errors.New("mock LLM error")
