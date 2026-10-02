@@ -5,6 +5,7 @@ package serve
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -77,7 +78,9 @@ func TestNoRetiredEnvVarNamesRemain(t *testing.T) {
 			if e.Name() == "selfenrol_test.go" {
 				continue
 			}
-			b, err := os.ReadFile(root + "/" + e.Name())
+			// #nosec G304 -- the path comes from reading this repository's own
+			// source directories, listed above; there is no external input.
+			b, err := os.ReadFile(filepath.Join(root, e.Name()))
 			if err != nil {
 				t.Fatalf("read %s/%s: %v", root, e.Name(), err)
 			}
@@ -86,6 +89,44 @@ func TestNoRetiredEnvVarNamesRemain(t *testing.T) {
 					t.Errorf("%s/%s still names the retired variable %s", root, e.Name(), name)
 				}
 			}
+		}
+	}
+}
+
+// WithPlatformFromEnv reads the same two canonical names. It is a separate
+// option covering SPIFFE and daemon address as well, and it carried its own
+// copy of the retired names — which is how the two halves of `serve` drifted
+// apart from capabilitygrant without anything failing.
+func TestWithPlatformFromEnv_ReadsTheCanonicalNames(t *testing.T) {
+	t.Setenv("GIBSON_URL", "https://api.platform.test")
+	t.Setenv("GIBSON_BOOTSTRAP_TOKEN", "tok-platform")
+	t.Setenv("GIBSON_HOST_KEY_PATH", "/tmp/hk-platform")
+
+	cfg := &Config{}
+	WithPlatformFromEnv()(cfg)
+
+	if cfg.PlatformURL != "https://api.platform.test" {
+		t.Errorf("PlatformURL = %q, want the value of GIBSON_URL", cfg.PlatformURL)
+	}
+	if cfg.BootstrapToken != "tok-platform" {
+		t.Errorf("BootstrapToken = %q, want the value of GIBSON_BOOTSTRAP_TOKEN", cfg.BootstrapToken)
+	}
+	if cfg.HostKeyPath != "/tmp/hk-platform" {
+		t.Errorf("HostKeyPath = %q", cfg.HostKeyPath)
+	}
+}
+
+func TestWithPlatformFromEnv_RetiredNamesAreNotRead(t *testing.T) {
+	for _, retired := range []string{"GIBSON_AGENT_BOOTSTRAP_TOKEN", "GIBSON_PLATFORM_URL"} {
+		t.Setenv("GIBSON_URL", "")
+		t.Setenv("GIBSON_BOOTSTRAP_TOKEN", "")
+		t.Setenv(retired, "should-be-ignored")
+
+		cfg := &Config{}
+		WithPlatformFromEnv()(cfg)
+
+		if cfg.PlatformURL == "should-be-ignored" || cfg.BootstrapToken == "should-be-ignored" {
+			t.Errorf("%s is still read by WithPlatformFromEnv", retired)
 		}
 	}
 }
