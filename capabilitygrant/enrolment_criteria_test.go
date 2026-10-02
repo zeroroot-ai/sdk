@@ -4,6 +4,8 @@
 package capabilitygrant
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"os"
 	"path/filepath"
@@ -23,16 +25,29 @@ import (
 // window, and a later writer can widen it), and "no token in a format string" is
 // a negative established by reading, which goes stale on the next edit.
 
-const (
-	// A token shaped like a real one, so a substring search for it cannot match
-	// by accident and cannot be confused with a test fixture name. It has to look
-	// like a credential: these tests search persisted files and error strings for
-	// it, and a value like "token" would match prose and pass for the wrong
-	// reason.
-	//
-	//nolint:gosec // G101: a deliberate fake. Nothing accepts it; it exists to be searched for.
-	probeToken = "bst_PROBE_f4e1c0a9b7d23e5884ab61fd90c7"
-)
+// probeToken returns a credential-shaped value, GENERATED PER RUN rather than
+// committed.
+//
+// It has to look like a credential: these tests search persisted files and error
+// strings for it, and a value like "token" would match prose and pass for the
+// wrong reason. But a credential-shaped LITERAL in the tree is a secret as far as
+// any scanner is concerned, and gitleaks rejected the first version of this file
+// for exactly that — correctly. The gitleaks gate's own selftest solves it the
+// same way and says so: "The fixture is generated at run time, so no
+// credential-shaped string is committed here."
+//
+// Generating it is also strictly better than a constant: a random value cannot
+// collide with prose, a field name, or another fixture.
+func probeToken(t *testing.T) string {
+	t.Helper()
+	raw := make([]byte, 16)
+	if _, err := rand.Read(raw); err != nil {
+		t.Fatalf("rand: %v", err)
+	}
+	// Assembled from fragments so no part of the committed source is itself
+	// credential-shaped.
+	return "bst" + "_" + "PROBE" + "_" + hex.EncodeToString(raw)
+}
 
 // TestSavedCredentialFilesAreNotWorldReadable is acceptance criterion 5. A
 // world-readable runtime credential is "the equivalent of the agent key" by
@@ -109,6 +124,7 @@ func TestSaveHostKeyOverwriteStaysRestrictive(t *testing.T) {
 // it.
 func TestTheBootstrapTokenNeverReachesAPersistedFile(t *testing.T) {
 	dir := t.TempDir()
+	probe := probeToken(t)
 
 	key, err := GenerateHostKey()
 	if err != nil {
@@ -140,7 +156,7 @@ func TestTheBootstrapTokenNeverReachesAPersistedFile(t *testing.T) {
 		if err != nil {
 			t.Fatalf("read %s: %v", e.Name(), err)
 		}
-		if strings.Contains(string(b), probeToken) {
+		if strings.Contains(string(b), probe) {
 			t.Errorf("%s contains the bootstrap token", e.Name())
 		}
 		// And no field named like a bootstrap credential, which would invite a
@@ -159,9 +175,10 @@ func TestTheBootstrapTokenNeverReachesAPersistedFile(t *testing.T) {
 func TestResolveBootstrapErrorsDoNotQuoteTheToken(t *testing.T) {
 	// A token that is syntactically unacceptable, so the failure path formats it
 	// if it formats anything at all.
-	bad := probeToken + " not a token\n\t"
+	probe := probeToken(t)
+	bad := probe + " not a token\n\t"
 	if _, err := ResolveBootstrap(bad); err != nil {
-		if strings.Contains(err.Error(), probeToken) {
+		if strings.Contains(err.Error(), probe) {
 			t.Errorf("ResolveBootstrap quoted the token in its error: %v", err)
 		}
 	}
@@ -169,7 +186,7 @@ func TestResolveBootstrapErrorsDoNotQuoteTheToken(t *testing.T) {
 	// The same through the environment, which is the documented path.
 	t.Setenv("GIBSON_BOOTSTRAP_TOKEN", bad)
 	if _, err := ResolveBootstrap(""); err != nil {
-		if strings.Contains(err.Error(), probeToken) {
+		if strings.Contains(err.Error(), probe) {
 			t.Errorf("ResolveBootstrap quoted the env token in its error: %v", err)
 		}
 	}
