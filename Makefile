@@ -718,16 +718,37 @@ help:
 	@echo ""
 	@echo "Note: The SDK is a library. 'make examples' builds the example applications."
 
-# ast-checks ships the per-declaration read counter behind #112. Pinned, because
-# a floating version would change the count without a commit.
-UNWIRED_VERSION ?= v0.4.0
+# ast-checks ships the per-declaration read counter behind #112. The version is
+# read from go.mod and never written here.
+#
+# It used to be a second, hand-written pin, and the two drifted: go.mod required
+# v0.5.0 while this line still said v0.4.0, so the repo compiled against one
+# version of ast-checks and measured .unwired-baseline.txt with another. Nothing
+# failed, which is the problem. go.mod is the source, so a Dependabot bump moves
+# both and there is nothing left to forget.
+#
+# Pinned, not floating: a version that moved on its own would change the count
+# without a commit. := rather than ?=, because an override would put the second
+# source back.
+UNWIRED_VERSION := $(shell awk '$$1=="github.com/zeroroot-ai/ast-checks"{print $$2; exit}' go.mod)
+
+# unwired-version refuses to run the counter with no version resolved. An empty
+# @version means `go run ...@` at whatever the proxy serves, which is the one
+# thing the pin exists to prevent, and it would otherwise look like a working
+# measurement.
+.PHONY: unwired-version
+unwired-version:
+	@case "$(UNWIRED_VERSION)" in \
+	  v*) echo "unwired $(UNWIRED_VERSION) (from go.mod)" ;; \
+	  *) echo "::error::no ast-checks version in go.mod, so the unwired baseline has no pinned measurer" >&2; exit 1 ;; \
+	esac
 
 .PHONY: lint-unwired
-lint-unwired: ## Fail if a declaration nothing reads is added (#112). Baseline only shrinks.
+lint-unwired: unwired-version ## Fail if a declaration nothing reads is added (#112). Baseline only shrinks.
 	@go run github.com/zeroroot-ai/ast-checks/cmd/unwired@$(UNWIRED_VERSION) -dir . -baseline .unwired-baseline.txt
 
 .PHONY: lint-unwired-write
-lint-unwired-write: ## Re-measure #112 and rewrite the baseline.
+lint-unwired-write: unwired-version ## Re-measure #112 and rewrite the baseline.
 	@go run github.com/zeroroot-ai/ast-checks/cmd/unwired@$(UNWIRED_VERSION) -dir . -baseline .unwired-baseline.txt -write
 
 .PHONY: check-taxonomy-numbers
