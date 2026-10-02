@@ -114,6 +114,22 @@ type Config struct {
 }
 
 // DefaultConfig returns default serve configuration.
+//
+// The capability-grant environment is part of the default, not an opt-in. A
+// component enrols itself at boot from two environment variables and nothing
+// else: GIBSON_URL and GIBSON_BOOTSTRAP_TOKEN (sdk#128, ADR-0097).
+//
+// It was opt-in through WithCapabilityGrantFromEnv, and plugin.Serve read
+// GIBSON_URL on its own, so the three entry points disagreed: a developer who
+// set both variables and called serve.Agent(a) got
+//
+//	create platform client: platformURL cannot be empty
+//
+// while the same two variables worked for plugin.Serve. Reading them here makes
+// all three behave the same way.
+//
+// Explicit options still win. They run after this function, so
+// WithPlatformURL or WithBootstrapToken overrides what the environment said.
 func DefaultConfig() *Config {
 	healthPort := 8080
 	if envHealth := os.Getenv("GIBSON_HEALTH_PORT"); envHealth != "" {
@@ -128,5 +144,8 @@ func DefaultConfig() *Config {
 		GracefulTimeout:   30 * time.Second,
 		PollInterval:      1 * time.Second,
 		HeartbeatInterval: 10 * time.Second,
+		PlatformURL:       os.Getenv("GIBSON_URL"),
+		BootstrapToken:    os.Getenv("GIBSON_BOOTSTRAP_TOKEN"),
+		HostKeyPath:       os.Getenv("GIBSON_HOST_KEY_PATH"),
 	}
 }
