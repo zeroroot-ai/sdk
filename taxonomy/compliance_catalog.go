@@ -1,31 +1,33 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Zero Root AI
 
-// DEPRECATED FILE. The compliance rule catalog in this file has no producer and
-// no consumer anywhere in the estate, and the two it claimed to have never
-// existed.
+// Package taxonomy holds the graph ontology: the loader, the schema and the
+// validator that every component and the daemon share. See embed.go, schema.go,
+// ontology_schema.go and validator.go.
 //
-// The doc comment here used to say that "the evaluator in
+// The rest of THIS FILE is deprecated. The compliance rule catalog below has no
+// producer and no consumer anywhere in the estate, and the two it claimed to
+// have never existed.
+//
+// The comment here used to say that "the evaluator in
 // core/gibson/internal/harness/compliance_evaluator.go runs each rule's Matcher"
 // and that "both the daemon and the CI validator consume it". Neither is true:
-// that path does not exist anywhere in gibson at origin/main, and no CI
-// validator reads the catalog. The only file that ever referenced
-// taxonomy/compliance_rules.yaml is this package's own test. This is the defect
-// class where a comment describes a consumer that does not exist, and here the
-// comment was the only evidence the feature was wired.
+// that path exists nowhere in gibson at origin/main, and no CI validator reads
+// the catalog. The only file that has ever referenced
+// taxonomy/compliance_rules.yaml is this package's own test, and embed.go embeds
+// ontology only, so the YAML is not even compiled in. This is the defect class
+// where a comment describes a consumer that does not exist, and here the comment
+// was the only evidence the feature was wired.
 //
-// ADR-0013 moved compliance evidence to query time, and ADR-0027 forbids
-// leaving the seam behind for someone to re-wire. sdk#137 retired the
-// compliance_signal node type the catalog maps from: its CoreNodeType value 17
-// is now reserved, so nothing can construct one.
+// ADR-0013 moved compliance evidence to query time, and ADR-0027 forbids leaving
+// the seam behind for someone to re-wire. sdk#137 retired the compliance_signal
+// node type the catalog maps from: its CoreNodeType value 17 is now reserved, so
+// nothing can construct one.
 //
-// Everything exported here is therefore deprecated and scheduled for removal.
-// It is NOT deleted in this change because this module is published under
+// Everything the catalog exports is therefore deprecated and scheduled for
+// removal. It is NOT deleted here because this module is published under
 // Apache-2.0 and an external consumer may compile against any of it. Removal
 // lands in the first release after v0.190.0, tracked by sdk#111.
-//
-// Package taxonomy also holds the live ontology loader and validator, which are
-// unaffected: see embed.go, schema.go, validator.go and ontology_schema.go.
 package taxonomy
 
 import (
