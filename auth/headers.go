@@ -6,7 +6,6 @@ package auth
 import (
 	"errors"
 	"fmt"
-	"os"
 	"strconv"
 	"time"
 
@@ -47,31 +46,25 @@ var ErrMissingIdentity = errors.New("auth: identity headers absent")
 // message.
 var ErrInvalidIdentity = errors.New("auth: identity header invalid")
 
-// defaultFreshnessSkewSeconds is the maximum allowed deviation (in
-// seconds) between the x-gibson-identity-issued-at header value and the
-// daemon's time.Now() at the moment the request is processed.
+// freshnessSkewSeconds is the maximum allowed deviation (in seconds) between
+// the x-gibson-identity-issued-at header value and the daemon's time.Now() at
+// the moment the request is processed. It is the anti-replay window on the
+// Envoy -> daemon hop.
 //
-// Configurable at process startup via GIBSON_IDENTITY_FRESHNESS_SKEW_SEC.
-// Hardened deployments should NOT raise this above 300 seconds.
+// NOT configurable. It used to be read from GIBSON_IDENTITY_FRESHNESS_SKEW_SEC
+// at process startup, and the doc comment asked hardened deployments not to
+// raise it above 300 seconds — a ceiling nothing enforced. Any value above zero
+// was accepted, so a hand-edited pod spec could widen the replay window to a
+// day with no error and no audit trail. A security bound is not an operator
+// knob (owner decision 2026-10-02); the chart stopped setting the variable in
+// zeroroot-ai/charts#323, so this constant is already what runs everywhere.
 //
 // Spec: admin-services-completion Requirement 6.2.
-const defaultFreshnessSkewSeconds = 60
+const freshnessSkewSeconds = 60
 
-// identityFreshnessSkew is the process-level skew threshold, initialized
-// once from the environment. It is package-level so tests can substitute
-// a controlled value via identityFreshnessSkewForTest.
-var identityFreshnessSkew = func() time.Duration {
-	const envKey = "GIBSON_IDENTITY_FRESHNESS_SKEW_SEC"
-	raw := os.Getenv(envKey)
-	if raw == "" {
-		return defaultFreshnessSkewSeconds * time.Second
-	}
-	n, err := strconv.ParseInt(raw, 10, 64)
-	if err != nil || n <= 0 {
-		return defaultFreshnessSkewSeconds * time.Second
-	}
-	return time.Duration(n) * time.Second
-}()
+// identityFreshnessSkew is the process-level skew threshold. Package-level so
+// tests can substitute a controlled value via identityFreshnessSkewForTest.
+var identityFreshnessSkew = freshnessSkewSeconds * time.Second
 
 // identityFreshnessSkewForTest overrides identityFreshnessSkew in tests.
 // Call it from a test helper; restore the original value in t.Cleanup.
