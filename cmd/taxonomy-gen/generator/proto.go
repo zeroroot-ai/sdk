@@ -16,7 +16,12 @@ import (
 )
 
 // GenerateProto generates a protobuf definition file from the taxonomy.
-func GenerateProto(taxonomy *schema.Taxonomy, outputPath string) error {
+// GenerateProto writes taxonomy.proto.
+//
+// taxonomy is the LIVE taxonomy. retiredNodes and retiredRels are the entries
+// taken out of service, which appear in the enums as reserved numbers and
+// reserved names and nowhere else.
+func GenerateProto(taxonomy *schema.Taxonomy, retiredNodes []schema.NodeType, retiredRels []schema.RelationshipType, outputPath string) error {
 	tmpl, err := template.New("proto").Funcs(protoFuncMap()).Parse(protoTemplate)
 	if err != nil {
 		return fmt.Errorf("failed to parse template: %w", err)
@@ -24,10 +29,14 @@ func GenerateProto(taxonomy *schema.Taxonomy, outputPath string) error {
 
 	data := struct {
 		*schema.Taxonomy
-		SourcePath string
+		SourcePath   string
+		RetiredNodes []schema.NodeType
+		RetiredRels  []schema.RelationshipType
 	}{
-		Taxonomy:   taxonomy,
-		SourcePath: "taxonomy/core.yaml",
+		Taxonomy:     taxonomy,
+		SourcePath:   "taxonomy/core.yaml",
+		RetiredNodes: retiredNodes,
+		RetiredRels:  retiredRels,
 	}
 
 	var buf bytes.Buffer
@@ -86,7 +95,17 @@ func toProtoComment(s string) string {
 // toUpperSnake converts a string to UPPER_SNAKE_CASE.
 // e.g., "mission_run" -> "MISSION_RUN", "HAS_PORT" -> "HAS_PORT"
 func toUpperSnake(s string) string {
-	// If already has underscores, just uppercase
+	// Already UPPER_SNAKE: pass it through. A single ALL-CAPS word has no
+	// underscore to detect, so it used to fall through to the camelCase branch,
+	// which puts a separator before every capital. That produced
+	// CORE_RELATION_TYPE_T_R_I_G_G_E_R_E_D from TRIGGERED and
+	// CORE_RELATION_TYPE_A_F_F_E_C_T_S from AFFECTS, both of which shipped.
+	// Enum NUMBERS were never affected, so this renames two members and breaks
+	// no wire value. Nothing hand-written referenced either name.
+	if s == strings.ToUpper(s) {
+		return s
+	}
+	// Has underscores and some lowercase: uppercase it as it stands.
 	if strings.Contains(s, "_") {
 		return strings.ToUpper(s)
 	}
@@ -141,16 +160,33 @@ option csharp_namespace = "Taxonomy.V1";
 // Custom types use string directly, not this enum.
 enum CoreNodeType {
   CORE_NODE_TYPE_UNSPECIFIED = 0;
-{{- range $i, $nt := .NodeTypes}}
-  CORE_NODE_TYPE_{{$nt.Name | toUpperSnake}} = {{add $i 1}};
+{{- range $nt := .NodeTypes}}
+  CORE_NODE_TYPE_{{$nt.Name | toUpperSnake}} = {{$nt.Number}};
+{{- end}}
+{{- if .RetiredNodes}}
+
+  // Retired. The number and the name are reserved so neither can be reused:
+  // a reused number changes the meaning of data already on the wire.
+{{- range $nt := .RetiredNodes}}
+  reserved {{$nt.Number}};
+  reserved "CORE_NODE_TYPE_{{$nt.Name | toUpperSnake}}";
+{{- end}}
 {{- end}}
 }
 
 // CoreRelationType enumerates all core relationship types.
 enum CoreRelationType {
   CORE_RELATION_TYPE_UNSPECIFIED = 0;
-{{- range $i, $rt := .RelationshipTypes}}
-  CORE_RELATION_TYPE_{{$rt.Name | toUpperSnake}} = {{add $i 1}};
+{{- range $rt := .RelationshipTypes}}
+  CORE_RELATION_TYPE_{{$rt.Name | toUpperSnake}} = {{$rt.Number}};
+{{- end}}
+{{- if .RetiredRels}}
+
+  // Retired. See the note in CoreNodeType.
+{{- range $rt := .RetiredRels}}
+  reserved {{$rt.Number}};
+  reserved "CORE_RELATION_TYPE_{{$rt.Name | toUpperSnake}}";
+{{- end}}
 {{- end}}
 }
 

@@ -308,7 +308,7 @@ check-no-gibson:
 # resident, a full core for minutes), and the repos in this workspace share one
 # 8-core machine. CI runs it directly (`go-ci.yml` calls `make lint LINT_BASE=…`),
 # so nothing is lost here. Run `make lint` by hand when you want it.
-check: fmt vet test check-coverage check-no-gibson check-buf-pinned proto-breaking
+check: fmt vet test check-coverage check-no-gibson check-buf-pinned proto-breaking check-taxonomy-numbers
 	@echo "All checks passed! (golangci-lint not included — run 'make lint' separately)"
 
 # Proto generation
@@ -717,3 +717,11 @@ help:
 	@echo "  make help          - Show this help message"
 	@echo ""
 	@echo "Note: The SDK is a library. 'make examples' builds the example applications."
+
+.PHONY: check-taxonomy-numbers
+check-taxonomy-numbers: ## Fail if a CoreNodeType/CoreRelationType number changed meaning since origin/main (sdk#132).
+	@python3 scripts/check-taxonomy-numbers.py
+
+.PHONY: check-taxonomy-numbers-selftest
+check-taxonomy-numbers-selftest: ## Prove every rule of the taxonomy number guard can fail.
+	@python3 scripts/check-taxonomy-numbers.py --selftest

@@ -78,14 +78,6 @@ var ParentRelationships = map[string]ParentRelationship{
 		Relationship: "HAS_EVIDENCE",
 		Required:     true,
 	},
-	"compliance_signal": {
-		ChildType:    "compliance_signal",
-		ParentType:   "agent_run",
-		RefField:     "agent_run_id",
-		ParentField:  "id",
-		Relationship: "EMITTED_SIGNAL",
-		Required:     false,
-	},
 }
 
 // RootNodeTypes lists node types that have no parent (can attach to MissionRun).

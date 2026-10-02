@@ -18,6 +18,7 @@ kind: core
 node_types:
   # -------------------- EXECUTION TYPES --------------------
   - name: mission
+    number: 1
     category: execution
     description: "Top-level security assessment mission"
     properties:
@@ -51,6 +52,7 @@ node_types:
         message: "mission target cannot be empty"
 
   - name: mission_run
+    number: 2
     category: execution
     description: "Single execution of a mission pipeline"
     properties:
@@ -94,6 +96,7 @@ node_types:
     identifying_properties: [run_number]
 
   - name: agent_run
+    number: 3
     category: execution
     description: "Single execution of an agent within a mission"
     properties:
@@ -157,6 +160,7 @@ node_types:
     identifying_properties: [agent_name, started_at]
 
   - name: tool_execution
+    number: 4
     category: execution
     description: "Execution of a security tool"
     properties:
@@ -216,6 +220,7 @@ node_types:
     identifying_properties: [tool_name, started_at]
 
   - name: llm_call
+    number: 5
     category: execution
     description: "Call to a large language model"
     properties:
@@ -279,6 +284,7 @@ node_types:
 
   # -------------------- ASSET TYPES --------------------
   - name: domain
+    number: 6
     category: asset
     description: "Root domain entity (e.g., example.com)"
     properties:
@@ -305,6 +311,7 @@ node_types:
         message: "domain name cannot be empty"
 
   - name: subdomain
+    number: 7
     category: asset
     description: "Subdomain under a root domain"
     properties:
@@ -326,6 +333,7 @@ node_types:
         message: "subdomain name cannot be empty"
 
   - name: host
+    number: 8
     category: asset
     description: "IP address or hostname"
     properties:
@@ -355,6 +363,7 @@ node_types:
         message: "host requires either ip or hostname"
 
   - name: port
+    number: 9
     category: asset
     description: "Network port on a host"
     properties:
@@ -385,6 +394,7 @@ node_types:
         message: "port number must be between 1 and 65535"
 
   - name: service
+    number: 10
     category: asset
     description: "Service running on a port"
     properties:
@@ -415,6 +425,7 @@ node_types:
     identifying_properties: [name]
 
   - name: endpoint
+    number: 11
     category: asset
     description: "Web endpoint or URL"
     properties:
@@ -449,6 +460,7 @@ node_types:
         message: "endpoint URL cannot be empty"
 
   - name: technology
+    number: 12
     category: asset
     description: "Technology/framework detected"
     properties:
@@ -472,6 +484,7 @@ node_types:
     identifying_properties: [name, version]
 
   - name: certificate
+    number: 13
     category: asset
     description: "TLS/SSL certificate"
     properties:
@@ -501,6 +514,7 @@ node_types:
 
   # -------------------- FINDING TYPES --------------------
   - name: finding
+    number: 14
     category: finding
     description: "Security vulnerability or issue"
     properties:
@@ -556,6 +570,7 @@ node_types:
         message: "CVSS score must be between 0.0 and 10.0"
 
   - name: evidence
+    number: 15
     category: finding
     description: "Supporting evidence for a finding"
     properties:
@@ -581,6 +596,7 @@ node_types:
 
   # -------------------- ATTACK TYPES --------------------
   - name: technique
+    number: 16
     category: attack
     description: "Attack technique (MITRE/Gibson)"
     properties:
@@ -615,6 +631,13 @@ node_types:
   # about external targets — they are compliance signals about platform behaviour.
 
   - name: compliance_signal
+    number: 17
+    # RETIRED. ADR-0013 moved compliance evidence to query time and ADR-0027
+    # forbids leaving the seam behind, so nothing emits or reads a
+    # compliance_signal. The entry stays here to reserve enum value 17: deleting
+    # it would free 17 for the next node type, which would change the meaning of
+    # any value 17 already recorded.
+    retired: true
     category: meta
     description: |
       Daemon-emitted observation of a single harness call. Append-only. Immutable.
@@ -843,6 +866,7 @@ node_types:
   # -------------------- ECS-BRAIN ADDITIONS (epic #37, sdk#340) --------------------
   # Appended at the END of node_types so CoreNodeType enum values append (no renumber).
   - name: scope
+    number: 18
     category: asset
     description: "Network/addressing context (vantage) an observation was made within; declared in the mission (RoE) or minted on pivot. The coordinate of an asset is (scope, address)."
     properties:
@@ -871,6 +895,7 @@ node_types:
     identifying_properties: [scope_id]
 
   - name: credential
+    number: 19
     category: asset
     description: "A credential (secret material), identified by the hash of its secret. May work across scopes."
     properties:
@@ -896,6 +921,7 @@ node_types:
     identifying_properties: [hash]
 
   - name: account
+    number: 20
     category: asset
     description: "A principal/account on a target system or identity provider."
     properties:
@@ -953,24 +979,36 @@ nested_types:
 relationship_types:
   # Execution hierarchy (parent relationships defined in node_types)
   - name: USED_TOOL
+    number: 1
     description: "Agent run used a tool"
     from_types: [agent_run]
     to_types: [tool_execution]
     cardinality: one_to_many
 
   - name: DELEGATED_TO
+    number: 2
     description: "Agent run delegated to another agent"
     from_types: [agent_run]
     to_types: [agent_run]
     cardinality: many_to_many
 
   - name: EMITTED_SIGNAL
+    number: 3
+    # RETIRED with the compliance_signal node it pointed at. Enum value 3 is
+    # reserved for the same reason.
+    retired: true
     description: "Agent run emitted a compliance signal (one signal per harness call)"
     from_types: [agent_run]
     to_types: [compliance_signal]
     cardinality: one_to_many
 
   - name: TRIGGERED
+    number: 4
+    # RETIRED. Its only from_types entry was compliance_signal, which is retired,
+    # so nothing can be the source of a TRIGGERED edge. A live relationship whose
+    # endpoints are all retired generates a traversal that can never match, and
+    # the generator now refuses one rather than emitting it.
+    retired: true
     description: "Compliance signal triggered a finding (one signal may trigger zero or more findings)"
     from_types: [compliance_signal]
     to_types: [finding]
@@ -978,42 +1016,49 @@ relationship_types:
 
   # Asset hierarchy
   - name: HAS_SUBDOMAIN
+    number: 5
     description: "Domain has subdomain"
     from_types: [domain]
     to_types: [subdomain]
     cardinality: one_to_many
 
   - name: RESOLVES_TO
+    number: 6
     description: "Domain/subdomain resolves to host"
     from_types: [domain, subdomain]
     to_types: [host]
     cardinality: many_to_many
 
   - name: HAS_PORT
+    number: 7
     description: "Host has port"
     from_types: [host]
     to_types: [port]
     cardinality: one_to_many
 
   - name: RUNS_SERVICE
+    number: 8
     description: "Port runs service"
     from_types: [port]
     to_types: [service]
     cardinality: one_to_many
 
   - name: HAS_ENDPOINT
+    number: 9
     description: "Service has endpoint"
     from_types: [service]
     to_types: [endpoint]
     cardinality: one_to_many
 
   - name: USES_TECHNOLOGY
+    number: 10
     description: "Asset uses technology"
     from_types: [host, service, endpoint]
     to_types: [technology]
     cardinality: many_to_many
 
   - name: SERVES_CERTIFICATE
+    number: 11
     description: "Host serves certificate"
     from_types: [host]
     to_types: [certificate]
@@ -1021,24 +1066,28 @@ relationship_types:
 
   # Findings
   - name: AFFECTS
+    number: 12
     description: "Finding affects an asset"
     from_types: [finding]
     to_types: [host, port, service, endpoint, technology]
     cardinality: many_to_many
 
   - name: HAS_EVIDENCE
+    number: 13
     description: "Finding has evidence"
     from_types: [finding]
     to_types: [evidence]
     cardinality: one_to_many
 
   - name: USES_TECHNIQUE
+    number: 14
     description: "Finding uses attack technique"
     from_types: [finding]
     to_types: [technique]
     cardinality: many_to_many
 
   - name: LEADS_TO
+    number: 15
     description: "Finding leads to another finding (attack chain)"
     from_types: [finding]
     to_types: [finding]

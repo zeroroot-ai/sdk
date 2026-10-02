@@ -32,10 +32,14 @@ enum CoreNodeType {
   CORE_NODE_TYPE_FINDING = 14;
   CORE_NODE_TYPE_EVIDENCE = 15;
   CORE_NODE_TYPE_TECHNIQUE = 16;
-  CORE_NODE_TYPE_COMPLIANCE_SIGNAL = 17;
   CORE_NODE_TYPE_SCOPE = 18;
   CORE_NODE_TYPE_CREDENTIAL = 19;
   CORE_NODE_TYPE_ACCOUNT = 20;
+
+  // Retired. The number and the name are reserved so neither can be reused:
+  // a reused number changes the meaning of data already on the wire.
+  reserved 17;
+  reserved "CORE_NODE_TYPE_COMPLIANCE_SIGNAL";
 }
 
 // CoreRelationType enumerates all core relationship types.
@@ -43,8 +47,6 @@ enum CoreRelationType {
   CORE_RELATION_TYPE_UNSPECIFIED = 0;
   CORE_RELATION_TYPE_USED_TOOL = 1;
   CORE_RELATION_TYPE_DELEGATED_TO = 2;
-  CORE_RELATION_TYPE_EMITTED_SIGNAL = 3;
-  CORE_RELATION_TYPE_T_R_I_G_G_E_R_E_D = 4;
   CORE_RELATION_TYPE_HAS_SUBDOMAIN = 5;
   CORE_RELATION_TYPE_RESOLVES_TO = 6;
   CORE_RELATION_TYPE_HAS_PORT = 7;
@@ -52,10 +54,16 @@ enum CoreRelationType {
   CORE_RELATION_TYPE_HAS_ENDPOINT = 9;
   CORE_RELATION_TYPE_USES_TECHNOLOGY = 10;
   CORE_RELATION_TYPE_SERVES_CERTIFICATE = 11;
-  CORE_RELATION_TYPE_A_F_F_E_C_T_S = 12;
+  CORE_RELATION_TYPE_AFFECTS = 12;
   CORE_RELATION_TYPE_HAS_EVIDENCE = 13;
   CORE_RELATION_TYPE_USES_TECHNIQUE = 14;
   CORE_RELATION_TYPE_LEADS_TO = 15;
+
+  // Retired. See the note in CoreNodeType.
+  reserved 3;
+  reserved "CORE_RELATION_TYPE_EMITTED_SIGNAL";
+  reserved 4;
+  reserved "CORE_RELATION_TYPE_TRIGGERED";
 }
 
 // ==================== VALUE TYPES ====================
@@ -381,54 +389,6 @@ message Technique {
   optional string tactic = 5;
   optional string description = 6;
   optional string url = 7;
-}
-
-// ComplianceSignal represents: Daemon-emitted observation of a single harness call. Append-only. Immutable.
-// The graph projection of the Redis Streams audit log entry for one platform
-// action. Every compliance_signal is an objective observation; evidence,
-// violation, and attestation classifications are queries over the stream,
-// never stored types. No kind discriminator field exists on this node type.
-message ComplianceSignal {
-  string id = 1;
-
-  // Properties
-  string signal_id = 2;
-  string actor_id = 3;
-  string actor_tenant_id = 4;
-  optional string api_key_id = 5;
-  optional string on_behalf_of = 6;
-  repeated string roles_snapshot = 7;
-  optional string mission_id = 8;
-  optional string mission_run_id = 9;
-  optional string agent_run_id = 10;
-  optional string parent_agent_run_id = 11;
-  optional int32 delegation_depth = 12;
-  optional string trace_id = 13;
-  repeated string caller_chain = 14;
-  string caller_component = 15;
-  string caller_component_version = 16;
-  string target_component = 17;
-  string target_component_version = 18;
-  bool system_owned = 19;
-  string action = 20;
-  string effect = 21;
-  string resource_type = 22;
-  optional string resource_node_id = 23;
-  optional string resource_uri = 24;
-  string decision = 25;
-  optional string policy_id = 26;
-  optional string decision_reason = 27;
-  bool success = 28;
-  optional string error_code = 29;
-  int64 latency_ms = 30;
-  optional int64 bytes_in = 31;
-  optional int64 bytes_out = 32;
-  optional int32 tokens_prompt = 33;
-  optional int32 tokens_completion = 34;
-  int64 occurred_at = 35;
-  optional string resource_tags = 36;
-  optional string custom = 37;
-  repeated string control_ids = 38;
 }
 
 // Scope represents: Network/addressing context (vantage) an observation was made within; declared in the mission (RoE) or minted on pivot. The coordinate of an asset is (scope, address).

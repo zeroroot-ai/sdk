@@ -40,8 +40,6 @@ const (
 	NodeTypeEvidence = "evidence"
 	// NodeTypeTechnique is the "technique" node type.
 	NodeTypeTechnique = "technique"
-	// NodeTypeComplianceSignal is the "compliance_signal" node type.
-	NodeTypeComplianceSignal = "compliance_signal"
 	// NodeTypeScope is the "scope" node type.
 	NodeTypeScope = "scope"
 	// NodeTypeCredential is the "credential" node type.
@@ -58,10 +56,6 @@ const (
 	RelTypeUSEDTOOL = "USED_TOOL"
 	// RelTypeDELEGATEDTO is the "DELEGATED_TO" relationship type.
 	RelTypeDELEGATEDTO = "DELEGATED_TO"
-	// RelTypeEMITTEDSIGNAL is the "EMITTED_SIGNAL" relationship type.
-	RelTypeEMITTEDSIGNAL = "EMITTED_SIGNAL"
-	// RelTypeTRIGGERED is the "TRIGGERED" relationship type.
-	RelTypeTRIGGERED = "TRIGGERED"
 	// RelTypeHASSUBDOMAIN is the "HAS_SUBDOMAIN" relationship type.
 	RelTypeHASSUBDOMAIN = "HAS_SUBDOMAIN"
 	// RelTypeRESOLVESTO is the "RESOLVES_TO" relationship type.
@@ -90,26 +84,25 @@ const (
 
 // CoreTypes is a set of all core (validated) node types.
 var CoreTypes = map[string]bool{
-	"mission":           true,
-	"mission_run":       true,
-	"agent_run":         true,
-	"tool_execution":    true,
-	"llm_call":          true,
-	"domain":            true,
-	"subdomain":         true,
-	"host":              true,
-	"port":              true,
-	"service":           true,
-	"endpoint":          true,
-	"technology":        true,
-	"certificate":       true,
-	"finding":           true,
-	"evidence":          true,
-	"technique":         true,
-	"compliance_signal": true,
-	"scope":             true,
-	"credential":        true,
-	"account":           true,
+	"mission":        true,
+	"mission_run":    true,
+	"agent_run":      true,
+	"tool_execution": true,
+	"llm_call":       true,
+	"domain":         true,
+	"subdomain":      true,
+	"host":           true,
+	"port":           true,
+	"service":        true,
+	"endpoint":       true,
+	"technology":     true,
+	"certificate":    true,
+	"finding":        true,
+	"evidence":       true,
+	"technique":      true,
+	"scope":          true,
+	"credential":     true,
+	"account":        true,
 }
 
 // IsCoreType returns true if the node type is a core (validated) type.
@@ -163,11 +156,6 @@ var ParentRequirements = map[string]ParentRequirement{
 		Relationship: "HAS_EVIDENCE",
 		Required:     true,
 	},
-	"compliance_signal": {
-		ParentType:   "agent_run",
-		Relationship: "EMITTED_SIGNAL",
-		Required:     false,
-	},
 }
 
 // GetParentRequirement returns the parent requirement for a node type.
@@ -196,7 +184,6 @@ var AllNodeTypes = []string{
 	"finding",
 	"evidence",
 	"technique",
-	"compliance_signal",
 	"scope",
 	"credential",
 	"account",
@@ -208,8 +195,6 @@ var AllNodeTypes = []string{
 var AllRelationshipTypes = []string{
 	"USED_TOOL",
 	"DELEGATED_TO",
-	"EMITTED_SIGNAL",
-	"TRIGGERED",
 	"HAS_SUBDOMAIN",
 	"RESOLVES_TO",
 	"HAS_PORT",

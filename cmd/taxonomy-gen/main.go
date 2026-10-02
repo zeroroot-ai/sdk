@@ -78,12 +78,26 @@ func main() {
 		fmt.Printf("  Merged relationship types: %d\n", len(taxonomy.RelationshipTypes))
 	}
 
+	// Retired entries leave the taxonomy here, once, before any generator sees
+	// it. Only the proto enum needs them, and only to reserve their numbers.
+	full := taxonomy
+	taxonomy, retiredNodes, retiredRels := full.Retire()
+	if n := len(retiredNodes) + len(retiredRels); n > 0 {
+		fmt.Printf("  Retired (number reserved, nothing generated): %d\n", n)
+		for _, nt := range retiredNodes {
+			fmt.Printf("    node %s = %d\n", nt.Name, nt.Number)
+		}
+		for _, rt := range retiredRels {
+			fmt.Printf("    relationship %s = %d\n", rt.Name, rt.Number)
+		}
+	}
+
 	// Generate outputs
 	generated := 0
 
 	if *outputProto != "" {
 		fmt.Printf("Generating proto: %s\n", *outputProto)
-		if err := generator.GenerateProto(taxonomy, *outputProto); err != nil {
+		if err := generator.GenerateProto(taxonomy, retiredNodes, retiredRels, *outputProto); err != nil {
 			fmt.Fprintf(os.Stderr, "error generating proto: %v\n", err)
 			os.Exit(1)
 		}

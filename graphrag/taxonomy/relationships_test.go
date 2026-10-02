@@ -16,7 +16,6 @@ func TestParentRelationships_ContainsExpectedChildTypes(t *testing.T) {
 		"service",
 		"endpoint",
 		"evidence",
-		"compliance_signal",
 	}
 
 	for _, childType := range expectedChildTypes {
@@ -29,9 +28,9 @@ func TestParentRelationships_ContainsExpectedChildTypes(t *testing.T) {
 }
 
 func TestParentRelationships_MapSize(t *testing.T) {
-	// v4.0: agent_run and llm_call promoted to root; compliance_signal added as child of agent_run.
-	// Net change: -2 + 1 = -1 from v3 count of 9.
-	expectedSize := 8
+	// agent_run and llm_call are root. compliance_signal was a child of
+	// agent_run and is retired (sdk#132), so it is gone from this map: 7, not 8.
+	expectedSize := 7
 	actualSize := len(ParentRelationships)
 
 	if actualSize != expectedSize {
@@ -51,7 +50,6 @@ func TestParentRelationships_CorrectParentTypes(t *testing.T) {
 		{"service", "port"},
 		{"endpoint", "service"},
 		{"evidence", "finding"},
-		{"compliance_signal", "agent_run"},
 	}
 
 	for _, tt := range tests {
@@ -112,7 +110,6 @@ func TestParentRelationships_RefFieldMatchesExpectedPattern(t *testing.T) {
 		{"service", "port_id"},
 		{"endpoint", "service_id"},
 		{"evidence", "finding_id"},
-		{"compliance_signal", "agent_run_id"},
 	}
 
 	for _, tt := range tests {
@@ -141,7 +138,6 @@ func TestParentRelationships_RelationshipNames(t *testing.T) {
 		{"service", "RUNS_SERVICE"},
 		{"endpoint", "HAS_ENDPOINT"},
 		{"evidence", "HAS_EVIDENCE"},
-		{"compliance_signal", "EMITTED_SIGNAL"},
 	}
 
 	for _, tt := range tests {
@@ -159,7 +155,8 @@ func TestParentRelationships_RelationshipNames(t *testing.T) {
 }
 
 func TestParentRelationships_RequiredField(t *testing.T) {
-	// Most parent relationships are required; compliance_signal is optional.
+	// Every remaining parent relationship is required. compliance_signal was the
+	// one optional case and it is retired (sdk#132).
 	tests := []struct {
 		childType string
 		required  bool
@@ -171,7 +168,6 @@ func TestParentRelationships_RequiredField(t *testing.T) {
 		{"service", true},
 		{"endpoint", true},
 		{"evidence", true},
-		{"compliance_signal", false},
 	}
 
 	for _, tt := range tests {
@@ -294,7 +290,6 @@ func TestIsRootNodeType_ReturnsFalseForChildTypes(t *testing.T) {
 		{"service", false},
 		{"endpoint", false},
 		{"evidence", false},
-		{"compliance_signal", false},
 	}
 
 	for _, tt := range tests {
@@ -327,7 +322,6 @@ func TestIsRootNodeType_ReturnsFalseForUnknownTypes(t *testing.T) {
 
 func TestGetParentRelationship_ReturnsCorrectRelationship(t *testing.T) {
 	// v4.0: agent_run and llm_call are root nodes (wantNil=true).
-	// compliance_signal added as child of agent_run.
 	tests := []struct {
 		childType    string
 		wantNil      bool
@@ -343,7 +337,6 @@ func TestGetParentRelationship_ReturnsCorrectRelationship(t *testing.T) {
 		{"service", false, "port", "port_id"},
 		{"endpoint", false, "service", "service_id"},
 		{"evidence", false, "finding", "finding_id"},
-		{"compliance_signal", false, "agent_run", "agent_run_id"},
 	}
 
 	for _, tt := range tests {
