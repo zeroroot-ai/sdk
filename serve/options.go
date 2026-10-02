@@ -123,12 +123,12 @@ func WithHostKey(path string) Option {
 
 // WithCapabilityGrantFromEnv reads Capability Grant configuration from environment variables:
 //
-//	GIBSON_PLATFORM_URL          — platform HTTPS base URL (required)
-//	GIBSON_AGENT_BOOTSTRAP_TOKEN — one-time registration token (only needed on first run; host key persists after that)
+//	GIBSON_URL          — platform HTTPS base URL (required)
+//	GIBSON_BOOTSTRAP_TOKEN — one-time registration token (only needed on first run; host key persists after that)
 //	GIBSON_HOST_KEY_PATH         — path to Ed25519 host key file (optional)
 //
 // **Required.** The serve entry points return an error if PlatformURL is not set.
-// GIBSON_PLATFORM_URL is the only required variable; GIBSON_AGENT_BOOTSTRAP_TOKEN
+// GIBSON_URL is the only required variable; GIBSON_BOOTSTRAP_TOKEN
 // is only needed on first run, after which the host key is persisted to disk and
 // reused on subsequent runs.
 //
@@ -141,10 +141,10 @@ func WithHostKey(path string) Option {
 //	serve.Agent(myAgent, serve.WithCapabilityGrantFromEnv())
 func WithCapabilityGrantFromEnv() Option {
 	return func(cfg *Config) {
-		if v := os.Getenv("GIBSON_PLATFORM_URL"); v != "" {
+		if v := os.Getenv("GIBSON_URL"); v != "" {
 			cfg.PlatformURL = v
 		}
-		if v := os.Getenv("GIBSON_AGENT_BOOTSTRAP_TOKEN"); v != "" {
+		if v := os.Getenv("GIBSON_BOOTSTRAP_TOKEN"); v != "" {
 			cfg.BootstrapToken = v
 		}
 		if v := os.Getenv("GIBSON_HOST_KEY_PATH"); v != "" {
@@ -226,13 +226,13 @@ func WithPlatform(platformURL, bootstrapToken string) Option {
 //
 // Environment variables read:
 //
-//	GIBSON_PLATFORM_URL          — platform HTTPS base URL (required)
-//	GIBSON_AGENT_BOOTSTRAP_TOKEN — one-time registration token (only needed on first run)
+//	GIBSON_URL          — platform HTTPS base URL (required)
+//	GIBSON_BOOTSTRAP_TOKEN — one-time registration token (only needed on first run)
 //	GIBSON_HOST_KEY_PATH         — path to Ed25519 host key file (optional)
 //	SPIFFE_ENDPOINT_SOCKET       — SPIRE Workload API socket (default: /run/spire/sockets/agent.sock)
 //	GIBSON_DAEMON_ADDRESS        — daemon gRPC address for SPIFFE transport (default: gibson.gibson.svc.cluster.local:50002)
 //
-// CG vars (GIBSON_PLATFORM_URL) are required. If SPIFFE_ENDPOINT_SOCKET is set
+// CG vars (GIBSON_URL) are required. If SPIFFE_ENDPOINT_SOCKET is set
 // and the socket exists at runtime, the serve loop upgrades to SPIFFE mTLS
 // transport while continuing to present CG JWTs as the application-level
 // credential. SPIFFE is a transport upgrade, not a competing auth mode.
@@ -254,10 +254,10 @@ func WithPlatformFromEnv() Option {
 			cfg.DaemonAddress = DefaultDaemonAddress
 		}
 		// Capability Grant config
-		if v := os.Getenv("GIBSON_PLATFORM_URL"); v != "" {
+		if v := os.Getenv("GIBSON_URL"); v != "" {
 			cfg.PlatformURL = v
 		}
-		if v := os.Getenv("GIBSON_AGENT_BOOTSTRAP_TOKEN"); v != "" {
+		if v := os.Getenv("GIBSON_BOOTSTRAP_TOKEN"); v != "" {
 			cfg.BootstrapToken = v
 		}
 		if v := os.Getenv("GIBSON_HOST_KEY_PATH"); v != "" {
