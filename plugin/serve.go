@@ -312,13 +312,28 @@ func Serve(ctx context.Context, opts ...Option) error {
 	// (internal/platform/component/service.go) — runtime mode, setec_required,
 	// host id (the RFC-7638 thumbprint that keys per-host install uniqueness),
 	// manifest hash, and content-trust classification. gibson#997.
-	// Declared secrets this plugin resolves at runtime, sent so the daemon can
-	// bind can_resolve for this plugin's principal on each at registration
-	// (ADR-0066). A first-party plugin's manifest is operator-approved via
-	// GitOps, and can_resolve only reads a value the operator separately
-	// provisions — see the daemon's RegisterComponent binding. Comma-joined
-	// because a secret ref (e.g. "cred:github_token") contains a colon but never
-	// a comma.
+	// Declared secrets this plugin resolves at runtime. From the SDK's side the
+	// list is a DECLARATION, not a grant: it travels as metadata so the platform
+	// knows what this plugin will ask for, and every authorization decision is
+	// made server-side.
+	//
+	// This comment used to justify the daemon's handling of it here, with "a
+	// first-party plugin's manifest is operator-approved via GitOps". There is no
+	// such review step, so the sentence argued for a safety property out of
+	// something that does not happen. Naming the daemon's current rule instead
+	// would be the same mistake one layer along: this repo cannot see that code,
+	// the rule is being narrowed, and a copy of it here goes stale without
+	// anything failing. The daemon's RegisterComponent is the single place that
+	// decides, and it is where a reader has to look.
+	//
+	// What the SDK does guarantee is fail-fast, in step 10: a secret declared
+	// `scope: startup, required: true` that cannot be resolved fails Serve with
+	// the secret named, rather than at the first call that needs it. That holds
+	// whatever the daemon grants, and it is the behaviour that must survive the
+	// manifest's deletion (sdk#129).
+	//
+	// Comma-joined because a secret ref (e.g. "cred:github_token") contains a
+	// colon but never a comma.
 	declaredSecrets := make([]string, 0, len(m.Spec.Secrets))
 	for _, s := range m.Spec.Secrets {
 		if s.Name != "" {
@@ -344,8 +359,9 @@ func Serve(ctx context.Context, opts ...Option) error {
 			// untrusted plugin invocation through the dispatch policy
 			// (ADR-0010). Normalised so an unset value is "trusted".
 			"plugin:content_trust": normalizeContentTrust(m.Spec.Policy.ContentTrust),
-			// plugin:secrets is the comma-joined list of declared secret refs;
-			// the daemon binds can_resolve for each (ADR-0066).
+			// plugin:secrets is the comma-joined list of declared secret refs.
+			// A declaration, not a grant: the daemon decides what it authorizes
+			// from it. See the block above RegisterComponent.
 			"plugin:secrets": strings.Join(declaredSecrets, ","),
 		},
 	})
