@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.189.1](https://github.com/zeroroot-ai/sdk/compare/v0.189.0...v0.189.1) (2026-10-02)
+
+
+### Bug Fixes
+
+* **proto:** proto-breaking compares against the remote base, not a local branch ([#124](https://github.com/zeroroot-ai/sdk/issues/124)) ([e7a4d9d](https://github.com/zeroroot-ai/sdk/commit/e7a4d9decfce871b28cf2f3bd589757ed043eacd)), closes [#108](https://github.com/zeroroot-ai/sdk/issues/108)
+
 ## [0.189.0](https://github.com/zeroroot-ai/sdk/compare/v0.188.0...v0.189.0) (2026-10-01)
 
 
