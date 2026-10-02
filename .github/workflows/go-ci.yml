@@ -181,6 +181,20 @@ jobs:
       - name: check-cueschemas-fresh
         run: bash scripts/check-cueschemas-fresh.sh
 
+      # sdk#132. taxonomy/core.yaml declares each CoreNodeType and
+      # CoreRelationType value, so the generated proto cannot catch a renumber:
+      # edit the YAML, run `make generate`, and both sides agree on the new,
+      # wrong answer. The only record of what a number used to mean is history,
+      # so this compares against the base revision of core.yaml. A depth-1 fetch
+      # of main is enough -- the guard reads one file at one revision.
+      - name: taxonomy enum numbers still mean what they did
+        run: |
+          git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main
+          python3 scripts/check-taxonomy-numbers.py
+
+      - name: taxonomy enum number guard selftest
+        run: python3 scripts/check-taxonomy-numbers.py --selftest
+
   # ---- sdk-specific coverage gates (heavy tier / merge_group) ----
   # Design intent (CICD-CONTEXT.md decision 8): coverage is part of the
   # merge_group-only authoritative suite, not a per-PR gate. Mirrors gibson's

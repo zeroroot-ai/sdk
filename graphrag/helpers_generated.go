@@ -230,35 +230,6 @@ func NewTechnique(technique_id string, name string) *taxonomypb.Technique {
 	}
 }
 
-// NewComplianceSignal creates a ComplianceSignal linked to parent AgentRun.
-// Panics if parent.Id is empty.
-func NewComplianceSignal(parent *taxonomypb.AgentRun, signal_id string, actor_id string, actor_tenant_id string, caller_component string, caller_component_version string, target_component string, target_component_version string, system_owned bool, action string, effect string, resource_type string, decision string, success bool, latency_ms int64, occurred_at int64) *taxonomypb.ComplianceSignal {
-	if parent.Id == "" {
-		panic("parent AgentRun must have Id set - use NewAgentRun() or set Id manually")
-	}
-	id := uuid.New().String()
-	_parentId := parent.Id
-	return &taxonomypb.ComplianceSignal{
-		Id:                     id,
-		AgentRunId:             &_parentId,
-		SignalId:               signal_id,
-		ActorId:                actor_id,
-		ActorTenantId:          actor_tenant_id,
-		CallerComponent:        caller_component,
-		CallerComponentVersion: caller_component_version,
-		TargetComponent:        target_component,
-		TargetComponentVersion: target_component_version,
-		SystemOwned:            system_owned,
-		Action:                 action,
-		Effect:                 effect,
-		ResourceType:           resource_type,
-		Decision:               decision,
-		Success:                success,
-		LatencyMs:              latency_ms,
-		OccurredAt:             occurred_at,
-	}
-}
-
 // NewScope creates a Scope with auto-generated UUID.
 func NewScope(scope_id string) *taxonomypb.Scope {
 	id := uuid.New().String()

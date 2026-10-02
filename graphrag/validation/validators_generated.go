@@ -27,38 +27,36 @@ var (
 
 	// Core types set
 	coreTypes = map[string]bool{
-		"mission":           true,
-		"mission_run":       true,
-		"agent_run":         true,
-		"tool_execution":    true,
-		"llm_call":          true,
-		"domain":            true,
-		"subdomain":         true,
-		"host":              true,
-		"port":              true,
-		"service":           true,
-		"endpoint":          true,
-		"technology":        true,
-		"certificate":       true,
-		"finding":           true,
-		"evidence":          true,
-		"technique":         true,
-		"compliance_signal": true,
-		"scope":             true,
-		"credential":        true,
-		"account":           true,
+		"mission":        true,
+		"mission_run":    true,
+		"agent_run":      true,
+		"tool_execution": true,
+		"llm_call":       true,
+		"domain":         true,
+		"subdomain":      true,
+		"host":           true,
+		"port":           true,
+		"service":        true,
+		"endpoint":       true,
+		"technology":     true,
+		"certificate":    true,
+		"finding":        true,
+		"evidence":       true,
+		"technique":      true,
+		"scope":          true,
+		"credential":     true,
+		"account":        true,
 	}
 
 	// Parent requirements
 	parentRequirements = map[string]ParentRequirement{
-		"mission_run":       {ParentType: "mission", Relationship: "BELONGS_TO", Required: true},
-		"tool_execution":    {ParentType: "agent_run", Relationship: "USED_TOOL", Required: true},
-		"subdomain":         {ParentType: "domain", Relationship: "HAS_SUBDOMAIN", Required: true},
-		"port":              {ParentType: "host", Relationship: "HAS_PORT", Required: true},
-		"service":           {ParentType: "port", Relationship: "RUNS_SERVICE", Required: true},
-		"endpoint":          {ParentType: "service", Relationship: "HAS_ENDPOINT", Required: true},
-		"evidence":          {ParentType: "finding", Relationship: "HAS_EVIDENCE", Required: true},
-		"compliance_signal": {ParentType: "agent_run", Relationship: "EMITTED_SIGNAL", Required: false},
+		"mission_run":    {ParentType: "mission", Relationship: "BELONGS_TO", Required: true},
+		"tool_execution": {ParentType: "agent_run", Relationship: "USED_TOOL", Required: true},
+		"subdomain":      {ParentType: "domain", Relationship: "HAS_SUBDOMAIN", Required: true},
+		"port":           {ParentType: "host", Relationship: "HAS_PORT", Required: true},
+		"service":        {ParentType: "port", Relationship: "RUNS_SERVICE", Required: true},
+		"endpoint":       {ParentType: "service", Relationship: "HAS_ENDPOINT", Required: true},
+		"evidence":       {ParentType: "finding", Relationship: "HAS_EVIDENCE", Required: true},
 	}
 )
 
@@ -414,14 +412,6 @@ func ValidateEvidence(p *taxonomypb.Evidence) error {
 
 // ValidateTechnique validates a Technique proto.
 func ValidateTechnique(p *taxonomypb.Technique) error {
-	if initErr != nil {
-		return fmt.Errorf("validator initialization failed: %w", initErr)
-	}
-	return nil
-}
-
-// ValidateComplianceSignal validates a ComplianceSignal proto.
-func ValidateComplianceSignal(p *taxonomypb.ComplianceSignal) error {
 	if initErr != nil {
 		return fmt.Errorf("validator initialization failed: %w", initErr)
 	}

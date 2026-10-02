@@ -19,9 +19,7 @@ func TestParentRelationshipsExist(t *testing.T) {
 		{"evidence", "finding", "finding_id", "HAS_EVIDENCE"},
 		{"mission_run", "mission", "mission_id", "BELONGS_TO"},
 		{"tool_execution", "agent_run", "agent_run_id", "USED_TOOL"},
-		// compliance_signal has a parent relationship to agent_run (EMITTED_SIGNAL).
 		// agent_run and llm_call are root nodes in v4.0 (parent: null).
-		{"compliance_signal", "agent_run", "agent_run_id", "EMITTED_SIGNAL"},
 	}
 
 	for _, tt := range tests {
@@ -66,10 +64,10 @@ func TestRootNodeTypes(t *testing.T) {
 }
 
 func TestNonRootNodeTypes(t *testing.T) {
-	// In v4.0: agent_run and llm_call are root; compliance_signal has agent_run as parent.
+	// agent_run and llm_call are root.
 	nonRootTypes := []string{
 		"port", "service", "endpoint", "subdomain", "evidence",
-		"mission_run", "tool_execution", "compliance_signal",
+		"mission_run", "tool_execution",
 	}
 	for _, nodeType := range nonRootTypes {
 		t.Run(nodeType, func(t *testing.T) {

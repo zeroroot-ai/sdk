@@ -17,6 +17,7 @@ version: "1.0.0"
 kind: core
 node_types:
   - name: host
+    number: 1
     category: asset
     description: A network host
     properties:
@@ -30,6 +31,7 @@ node_types:
 
 relationship_types:
   - name: HAS_PORT
+    number: 1
     description: Host has a port
     from_types: [host]
     to_types: [port]
@@ -52,6 +54,7 @@ func TestParseYAMLBytes_MissingVersion(t *testing.T) {
 	yaml := `
 node_types:
   - name: host
+    number: 1
     category: asset
     description: A network host
 `
@@ -66,6 +69,7 @@ func TestParseYAMLBytes_MissingKind(t *testing.T) {
 version: "1.0.0"
 node_types:
   - name: host
+    number: 1
     category: asset
 `
 
@@ -116,6 +120,7 @@ version: "1.0.0"
 kind: core
 node_types:
   - name: host
+    number: 1
     category: asset
     description: A network host
     properties:
@@ -134,6 +139,7 @@ version: "1.0.0"
 kind: core
 node_types:
   - name: port
+    number: 1
     category: asset
     description: A network port
     properties:
@@ -159,6 +165,7 @@ version: "1.0.0"
 kind: core
 node_types:
   - name: port
+    number: 1
     category: asset
     description: A network port
     properties:

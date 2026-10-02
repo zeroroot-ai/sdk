@@ -14,21 +14,26 @@ import (
 )
 
 func TestIsCoreType(t *testing.T) {
-	// v4.0: all 17 taxonomy node types are core types (including execution-tier types).
+	// Every live taxonomy node type is a core type, execution-tier included.
+	// compliance_signal is NOT here: it is retired (sdk#132), so it is reserved
+	// in the enum and generated nowhere.
 	coreTypes := []string{
 		"mission", "mission_run", "agent_run", "tool_execution", "llm_call",
 		"domain", "subdomain", "host", "port", "service", "endpoint",
 		"technology", "certificate", "finding", "evidence", "technique",
-		"compliance_signal",
+		"scope", "credential", "account",
 	}
 
 	for _, ct := range coreTypes {
 		assert.True(t, IsCoreType(ct), "type %s should be a core type", ct)
 	}
 
-	// Non-taxonomy types should return false.
+	// Non-taxonomy types should return false. compliance_signal is in this list
+	// because retiring a type must take it out of the core set: if it were
+	// still core, something could still validate and persist one.
 	customTypes := []string{
 		"custom_type", "my_node", "unknown", "", "HOST", "Domain",
+		"compliance_signal",
 	}
 
 	for _, ct := range customTypes {
