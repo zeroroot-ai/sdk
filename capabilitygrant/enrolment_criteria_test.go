@@ -25,7 +25,12 @@ import (
 
 const (
 	// A token shaped like a real one, so a substring search for it cannot match
-	// by accident and cannot be confused with a test fixture name.
+	// by accident and cannot be confused with a test fixture name. It has to look
+	// like a credential: these tests search persisted files and error strings for
+	// it, and a value like "token" would match prose and pass for the wrong
+	// reason.
+	//
+	//nolint:gosec // G101: a deliberate fake. Nothing accepts it; it exists to be searched for.
 	probeToken = "bst_PROBE_f4e1c0a9b7d23e5884ab61fd90c7"
 )
 
@@ -72,7 +77,11 @@ func TestSaveHostKeyOverwriteStaysRestrictive(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "host.jwk")
 
-	// A pre-existing, deliberately world-readable file at the target.
+	// A pre-existing, deliberately world-readable file at the target. 0644 is the
+	// hazard under test: SaveHostKey must leave 0600 even when it overwrites a
+	// loose file, and writing it tightly here would test nothing.
+	//
+	//nolint:gosec // G306: the permissive mode IS the fixture.
 	if err := os.WriteFile(path, []byte("{}"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -124,6 +133,9 @@ func TestTheBootstrapTokenNeverReachesAPersistedFile(t *testing.T) {
 		t.Fatal("no credential files were written, so this test would measure nothing")
 	}
 	for _, e := range entries {
+		// The path is a t.TempDir() entry this test wrote moments ago; no caller
+		// value reaches it.
+		//nolint:gosec // G304: path is from os.ReadDir of this test's own temp dir.
 		b, err := os.ReadFile(filepath.Join(dir, e.Name()))
 		if err != nil {
 			t.Fatalf("read %s: %v", e.Name(), err)
