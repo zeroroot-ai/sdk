@@ -37,7 +37,7 @@ func ExampleServe() {
 
 	err := plugin.Serve(ctx,
 		plugin.WithManifest("./plugin.yaml"),
-		plugin.WithHandler("Echo", echo),
+		plugin.WithHandler("Echo", "test handler for Echo", echo),
 	)
 	if err != nil {
 		log.Fatal(err)

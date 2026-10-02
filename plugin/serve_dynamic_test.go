@@ -289,7 +289,7 @@ func TestServe_MethodSourceWithoutDynamicMethods_ReturnsError(t *testing.T) {
 
 	err := Serve(ctx,
 		WithManifest(path),
-		WithHandler("Echo", func(_ context.Context, req string) (string, error) {
+		WithHandler("Echo", "test handler for Echo", func(_ context.Context, req string) (string, error) {
 			return req, nil
 		}),
 		WithMethodSource(func(_ context.Context) ([]DiscoveredMethod, error) {
@@ -419,7 +419,7 @@ func TestServe_MethodSource_CollisionWithStatic_ReturnsError(t *testing.T) {
 	err := Serve(ctx,
 		WithParsedManifest(m),
 		WithHTTPClient(platform.Client()),
-		WithHandler("vendor_echo", func(_ context.Context, req string) (string, error) {
+		WithHandler("vendor_echo", "test handler for vendor_echo", func(_ context.Context, req string) (string, error) {
 			return req, nil
 		}),
 		WithMethodSource(func(_ context.Context) ([]DiscoveredMethod, error) {

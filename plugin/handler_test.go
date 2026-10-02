@@ -48,7 +48,7 @@ func TestWithHandler_DerivesSchemaAndDispatches(t *testing.T) {
 		return createIncidentResp{ID: "INC-42"}, nil
 	}
 
-	c := applyOptions(WithHandler("CreateIncident", handler))
+	c := applyOptions(WithHandler("CreateIncident", "test handler for CreateIncident", handler))
 	require.Empty(t, c.optionErrs, "no derivation errors expected for a plain struct handler")
 
 	// The derived request schema travels to the daemon as the tool-input contract.
@@ -87,7 +87,7 @@ func TestWithHandler_UnderivableTypeRecordsError(t *testing.T) {
 	handler := func(_ context.Context, _ badReq) (createIncidentResp, error) {
 		return createIncidentResp{}, nil
 	}
-	c := applyOptions(WithHandler("Bad", handler))
+	c := applyOptions(WithHandler("Bad", "test handler for Bad", handler))
 	require.NotEmpty(t, c.optionErrs)
 	assert.Contains(t, c.optionErrs[0].Error(), "request schema")
 }
@@ -99,8 +99,8 @@ func TestWithHandler_DuplicateRegistrationRecordsError(t *testing.T) {
 		return createIncidentResp{}, nil
 	}
 	c := applyOptions(
-		WithHandler("Dup", h),
-		WithHandler("Dup", h),
+		WithHandler("Dup", "test handler for Dup", h),
+		WithHandler("Dup", "test handler for Dup", h),
 	)
 	require.NotEmpty(t, c.optionErrs)
 	assert.Contains(t, c.optionErrs[0].Error(), "registered more than once")
@@ -114,7 +114,7 @@ func TestWithHandler_EmptyRequestBody(t *testing.T) {
 		assert.Empty(t, req.Title)
 		return createIncidentResp{ID: "zero"}, nil
 	}
-	c := applyOptions(WithHandler("M", handler))
+	c := applyOptions(WithHandler("M", "test handler for M", handler))
 	require.Empty(t, c.optionErrs)
 	respJSON, err := c.handlers["M"](context.Background(), nil)
 	require.NoError(t, err)

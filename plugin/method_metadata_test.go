@@ -24,7 +24,7 @@ func TestBuildMethodMetadata(t *testing.T) {
 	schemas := map[string]methodSchema{
 		"Echo": {input: `{"type":"object","properties":{"msg":{"type":"string"}}}`, output: `{"type":"string"}`},
 	}
-	names, detailed := buildMethodMetadata(declared, discovered, schemas)
+	names, detailed := buildMethodMetadata(declared, discovered, schemas, nil)
 
 	wantNames := []string{"Echo", "create_issue", "list_issues"}
 	if len(names) != len(wantNames) {
@@ -64,7 +64,7 @@ func TestBuildMethodMetadata(t *testing.T) {
 }
 
 func TestBuildMethodMetadataEmpty(t *testing.T) {
-	names, detailed := buildMethodMetadata(nil, nil, nil)
+	names, detailed := buildMethodMetadata(nil, nil, nil, nil)
 	if len(names) != 0 || len(detailed) != 0 {
 		t.Fatalf("empty inputs = (%v, %v), want empty", names, detailed)
 	}

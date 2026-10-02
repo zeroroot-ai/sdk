@@ -242,7 +242,7 @@ func TestServe_MethodMismatch_ReturnsStartupError(t *testing.T) {
 
 	err := Serve(ctx,
 		WithManifest(path),
-		WithHandler("UndeclaredMethod", func(_ context.Context, req string) (string, error) {
+		WithHandler("UndeclaredMethod", "test handler for UndeclaredMethod", func(_ context.Context, req string) (string, error) {
 			return req, nil
 		}),
 	)
@@ -256,7 +256,7 @@ func TestServe_MissingManifestPath_ReturnsError(t *testing.T) {
 	defer cancel()
 
 	err := Serve(ctx,
-		WithHandler("Echo", func(_ context.Context, req string) (string, error) {
+		WithHandler("Echo", "test handler for Echo", func(_ context.Context, req string) (string, error) {
 			return req, nil
 		}),
 	)
@@ -270,7 +270,7 @@ func TestServe_InvalidManifestPath_ReturnsError(t *testing.T) {
 
 	err := Serve(ctx,
 		WithManifest("/nonexistent/path/plugin.yaml"),
-		WithHandler("Echo", func(_ context.Context, req string) (string, error) {
+		WithHandler("Echo", "test handler for Echo", func(_ context.Context, req string) (string, error) {
 			return req, nil
 		}),
 	)
@@ -324,7 +324,7 @@ func TestServe_DeclaredSecrets_RevocationMarksDegraded(t *testing.T) {
 			WithLifecycle(lifecycle.LifecycleHooks{
 				OnDegraded: func(reason string) { degraded <- reason },
 			}),
-			WithHandler("Echo", func(_ context.Context, req string) (string, error) {
+			WithHandler("Echo", "test handler for Echo", func(_ context.Context, req string) (string, error) {
 				return req, nil
 			}),
 			WithHTTPClient(platform.Client()),
@@ -382,7 +382,7 @@ func TestServe_DeclaredSecrets_RevocationReachesHeartbeat(t *testing.T) {
 			WithLifecycle(lifecycle.LifecycleHooks{
 				OnDegraded: func(reason string) { degraded <- reason },
 			}),
-			WithHandler("Echo", func(_ context.Context, req string) (string, error) {
+			WithHandler("Echo", "test handler for Echo", func(_ context.Context, req string) (string, error) {
 				return req, nil
 			}),
 			WithHTTPClient(platform.Client()),
@@ -844,7 +844,7 @@ func TestWithHandler_RegistersHandler(t *testing.T) {
 	handler := func(_ context.Context, req string) (string, error) {
 		return "ok", nil
 	}
-	WithHandler("Echo", handler)(c)
+	WithHandler("Echo", "test handler for Echo", handler)(c)
 	require.NotNil(t, c.handlers["Echo"])
 }
 

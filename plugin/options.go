@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/zeroroot-ai/sdk/plugin/lifecycle"
@@ -69,6 +70,11 @@ type config struct {
 	// the handler's Go request/response types. Built alongside handlers by
 	// [WithHandler]; consumed by Serve to populate the registration descriptors.
 	methodSchemas map[string]methodSchema
+
+	// methodDescriptions maps method name → the human-readable description an
+	// agent reads to disambiguate tools in the catalog. Required per method,
+	// supplied to WithHandler beside the handler it describes.
+	methodDescriptions map[string]string
 
 	// optionErrs collects errors raised while applying options (e.g. a schema
 	// that cannot be derived, or a duplicate handler). An Option cannot return
@@ -140,7 +146,14 @@ func WithManifest(path string) Option {
 // to return a startup error before the daemon connection attempt.
 //
 // Registering the same method name twice is a startup error.
-func WithHandler[Req, Resp any](name string, fn func(ctx context.Context, req Req) (Resp, error)) Option {
+//
+// description is REQUIRED and must be non-empty. It is what an agent reads to
+// choose between tools in the catalog (RegisterComponent.method_descriptors →
+// SearchTools), so an empty one silently degrades tool selection rather than
+// failing anything. It used to live in the plugin manifest's `methods:` list;
+// it lives here now, beside the handler whose contract it describes, so the
+// manifest is not the only place that knows it (sdk#127, ADR-0097).
+func WithHandler[Req, Resp any](name, description string, fn func(ctx context.Context, req Req) (Resp, error)) Option {
 	return func(c *config) {
 		if c.handlers == nil {
 			c.handlers = make(map[string]MethodHandler)
@@ -148,10 +161,20 @@ func WithHandler[Req, Resp any](name string, fn func(ctx context.Context, req Re
 		if c.methodSchemas == nil {
 			c.methodSchemas = make(map[string]methodSchema)
 		}
+		if c.methodDescriptions == nil {
+			c.methodDescriptions = make(map[string]string)
+		}
 		if _, dup := c.handlers[name]; dup {
 			c.optionErrs = append(c.optionErrs, fmt.Errorf("WithHandler: method %q registered more than once", name))
 			return
 		}
+		if strings.TrimSpace(description) == "" {
+			c.optionErrs = append(c.optionErrs, fmt.Errorf("WithHandler %q: description is required; "+
+				"an agent reads it to choose between tools in the catalog, and an empty one degrades "+
+				"tool selection without failing anything", name))
+			return
+		}
+		c.methodDescriptions[name] = description
 
 		reqType := reflect.TypeOf((*Req)(nil)).Elem()
 		respType := reflect.TypeOf((*Resp)(nil)).Elem()
