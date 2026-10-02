@@ -5,11 +5,10 @@ package auth
 
 import (
 	"errors"
-	"io/fs"
-
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -72,45 +71,48 @@ func TestFreshnessSkewIsAConstant(t *testing.T) {
 // the environment at package load is invisible to the behavioural test above:
 // it runs before any t.Setenv can take effect.
 func TestNoEnvTunableBoundsInThisPackage(t *testing.T) {
-	fset := token.NewFileSet()
-	pkgs, err := parser.ParseDir(fset, ".", func(fi fs.FileInfo) bool {
-		return !strings.HasSuffix(fi.Name(), "_test.go")
-	}, 0)
+	names, err := filepath.Glob("*.go")
 	if err != nil {
-		t.Fatalf("ParseDir: %v", err)
-	}
-	if len(pkgs) == 0 {
-		t.Fatal("parsed no packages; this test would pass by measuring nothing")
+		t.Fatalf("Glob: %v", err)
 	}
 
-	files := 0
-	for _, pkg := range pkgs {
-		for name, file := range pkg.Files {
-			files++
-			ast.Inspect(file, func(n ast.Node) bool {
-				call, ok := n.(*ast.CallExpr)
-				if !ok {
-					return true
-				}
-				sel, ok := call.Fun.(*ast.SelectorExpr)
-				if !ok {
-					return true
-				}
-				ident, ok := sel.X.(*ast.Ident)
-				if !ok || ident.Name != "os" {
-					return true
-				}
-				switch sel.Sel.Name {
-				case "Getenv", "LookupEnv":
-					t.Errorf("%s: os.%s at %s makes a bound in this package operator-tunable",
-						name, sel.Sel.Name, fset.Position(call.Pos()))
-				}
-				return true
-			})
+	fset := token.NewFileSet()
+	scanned := 0
+	for _, name := range names {
+		if strings.HasSuffix(name, "_test.go") {
+			continue
 		}
+		file, err := parser.ParseFile(fset, name, nil, 0)
+		if err != nil {
+			t.Fatalf("ParseFile %s: %v", name, err)
+		}
+		scanned++
+		ast.Inspect(file, func(n ast.Node) bool {
+			call, ok := n.(*ast.CallExpr)
+			if !ok {
+				return true
+			}
+			sel, ok := call.Fun.(*ast.SelectorExpr)
+			if !ok {
+				return true
+			}
+			ident, ok := sel.X.(*ast.Ident)
+			if !ok || ident.Name != "os" {
+				return true
+			}
+			switch sel.Sel.Name {
+			case "Getenv", "LookupEnv":
+				t.Errorf("os.%s at %s makes a bound in this package operator-tunable",
+					sel.Sel.Name, fset.Position(call.Pos()))
+			}
+			return true
+		})
 	}
-	if files == 0 {
-		t.Fatal("parsed no files; this test would pass by measuring nothing")
+
+	// A glob that matched nothing, or a package that is all tests, would make
+	// this test pass by measuring nothing.
+	if scanned == 0 {
+		t.Fatal("scanned no non-test files")
 	}
-	t.Logf("scanned %d non-test files for os.Getenv", files)
+	t.Logf("scanned %d non-test files for os.Getenv", scanned)
 }
