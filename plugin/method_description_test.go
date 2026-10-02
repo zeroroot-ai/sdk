@@ -81,7 +81,7 @@ func TestBuildMethodMetadata_RegisteredOnlyOrderIsStable(t *testing.T) {
 	descriptions := map[string]string{"Zeta": "z", "Alpha": "a", "Mid": "m"}
 
 	var first []string
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		names, _ := buildMethodMetadata(nil, nil, nil, descriptions)
 		if first == nil {
 			first = names

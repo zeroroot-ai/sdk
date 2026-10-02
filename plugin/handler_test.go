@@ -99,8 +99,8 @@ func TestWithHandler_DuplicateRegistrationRecordsError(t *testing.T) {
 		return createIncidentResp{}, nil
 	}
 	c := applyOptions(
-		WithHandler("Dup", "test handler for Dup", h),
-		WithHandler("Dup", "test handler for Dup", h),
+		WithHandler("Dup", "first registration", h),
+		WithHandler("Dup", "second registration, same name", h),
 	)
 	require.NotEmpty(t, c.optionErrs)
 	assert.Contains(t, c.optionErrs[0].Error(), "registered more than once")
