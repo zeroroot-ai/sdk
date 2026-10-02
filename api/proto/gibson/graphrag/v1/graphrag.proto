@@ -142,12 +142,15 @@ message DiscoveryResult {
   repeated CustomNode custom_nodes = 20;
   repeated ExplicitRelationship explicit_relationships = 21;
 
-  // Compliance signals — daemon-emitted observations of harness calls.
-  // Populated exclusively by the daemon ComplianceMiddleware (agents and tools
-  // never self-report). Routed through the same DiscoveryResult → processor →
-  // loader pipeline as asset discoveries so signals land in Neo4j with the
-  // EMITTED_SIGNAL parent relationship to the originating agent_run.
-  repeated taxonomy.v1.ComplianceSignal compliance_signals = 22;
+  // Field 22 was `compliance_signals`. Its comment named
+  // `ComplianceMiddleware` as the exclusive producer, and gibson ADR-0013
+  // deleted that middleware along with the whole compliance_signal emission
+  // pipeline — "no parallel codepath, no flag, no seam left behind for someone
+  // to re-wire". The field was the seam. Control mapping is derived at read
+  // time from the audit log, which is the one evidence base (ADR-0013,
+  // ADR-0097).
+  reserved 22;
+  reserved "compliance_signals";
 }
 
 // Host discovered by a tool.
