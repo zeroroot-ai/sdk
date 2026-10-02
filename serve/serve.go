@@ -17,7 +17,7 @@ import (
 // without it. Returns a descriptive error if PlatformURL is empty.
 func validateConfig(cfg *Config) error {
 	if cfg.PlatformURL == "" {
-		return errors.New("capability grant is required: set GIBSON_PLATFORM_URL or call WithCapabilityGrant()")
+		return errors.New("capability grant is required: set GIBSON_URL or call WithCapabilityGrant()")
 	}
 	return nil
 }
@@ -63,13 +63,13 @@ type Config struct {
 
 	// PlatformURL is the Gibson platform HTTPS base URL.
 	// Required for platform mode. Set via WithCapabilityGrant(), WithCapabilityGrantFromEnv(),
-	// or the GIBSON_PLATFORM_URL environment variable read by WithCapabilityGrantFromEnv().
+	// or the GIBSON_URL environment variable read by WithCapabilityGrantFromEnv().
 	PlatformURL string
 
 	// BootstrapToken is the one-time host registration credential used on the
 	// first call to Register. After the host key is persisted to disk the token
 	// is not needed for subsequent runs. Set via WithBootstrapToken() or the
-	// GIBSON_AGENT_BOOTSTRAP_TOKEN environment variable read by WithCapabilityGrantFromEnv().
+	// GIBSON_BOOTSTRAP_TOKEN environment variable read by WithCapabilityGrantFromEnv().
 	BootstrapToken string
 
 	// HostKeyPath is the path to the on-disk Ed25519 host keypair (JWK JSON, 0600).
