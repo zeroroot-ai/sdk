@@ -308,7 +308,7 @@ check-no-gibson:
 # resident, a full core for minutes), and the repos in this workspace share one
 # 8-core machine. CI runs it directly (`go-ci.yml` calls `make lint LINT_BASE=…`),
 # so nothing is lost here. Run `make lint` by hand when you want it.
-check: fmt vet test check-coverage check-no-gibson check-buf-pinned proto-breaking check-taxonomy-numbers
+check: fmt vet test check-coverage check-no-gibson check-buf-pinned proto-breaking check-taxonomy-numbers lint-unwired
 	@echo "All checks passed! (golangci-lint not included — run 'make lint' separately)"
 
 # Proto generation
@@ -717,6 +717,18 @@ help:
 	@echo "  make help          - Show this help message"
 	@echo ""
 	@echo "Note: The SDK is a library. 'make examples' builds the example applications."
+
+# ast-checks ships the per-declaration read counter behind #112. Pinned, because
+# a floating version would change the count without a commit.
+UNWIRED_VERSION ?= v0.4.0
+
+.PHONY: lint-unwired
+lint-unwired: ## Fail if a declaration nothing reads is added (#112). Baseline only shrinks.
+	@go run github.com/zeroroot-ai/ast-checks/cmd/unwired@$(UNWIRED_VERSION) -dir . -baseline .unwired-baseline.txt
+
+.PHONY: lint-unwired-write
+lint-unwired-write: ## Re-measure #112 and rewrite the baseline.
+	@go run github.com/zeroroot-ai/ast-checks/cmd/unwired@$(UNWIRED_VERSION) -dir . -baseline .unwired-baseline.txt -write
 
 .PHONY: check-taxonomy-numbers
 check-taxonomy-numbers: ## Fail if a CoreNodeType/CoreRelationType number changed meaning since origin/main (sdk#132).

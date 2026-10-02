@@ -187,6 +187,12 @@ jobs:
       # wrong answer. The only record of what a number used to mean is history,
       # so this compares against the base revision of core.yaml. A depth-1 fetch
       # of main is enough -- the guard reads one file at one revision.
+      # #112: the standing tracker for declarations nothing reads. The baseline
+      # only shrinks, so adding one fails here. ast-checks#13 built the scanner;
+      # before it existed the tracker could not be re-measured at all.
+      - name: lint-unwired
+        run: make lint-unwired
+
       - name: taxonomy enum numbers still mean what they did
         run: |
           git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main
