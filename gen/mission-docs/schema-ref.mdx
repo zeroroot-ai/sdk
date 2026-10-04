@@ -123,6 +123,7 @@ MissionDefinition represents a mission template/definition. This is the shareabl
 | `workspace` | `gibson.mission.v1.WorkspaceConfig` | 15 | Workspace configures repository cloning + workspace management for agents that need code access. Optional; missions without code interaction omit this field.  Spec: mission-schema-canonicalization (mirror migration). |
 | `constraints` | `gibson.mission.v1.MissionConstraints` | 16 | Constraints declares mission-level operational limits. When present, these are the authoritative constraints for the mission DAG — they make the mission self-describing so authors do not have to supply limits out-of-band at dispatch time. The daemon merges these with any dispatch-time overrides (dispatch wins on conflict). Optional: absent means no constraints are baked into the definition.  Spec: MissionConstraints proto promotion. |
 | `decider_slot` | `gibson.mission.v1.LLMSlotConfig` | 17 | DeciderSlot names the mission-level LLM the brain's Decider runs on — the orchestration decision-maker, distinct from per-node agent slots. Only the provider+model are used (the slot name is implicitly "decider"). Absent means the brain uses the tenant's dashboard-default provider/model, so missions need not set it. |
+| `secrets` | `gibson.mission.v1.MissionSecrets` | 18 | Secrets declares which named tenant secrets this mission's components may be handed at dispatch. Names only; a value never appears here. |
 
 ## `gibson.mission.v1.MissionDependencies`
 
@@ -169,6 +170,20 @@ MissionNode represents a single node in a mission DAG
 | `data_policy` | `gibson.mission.v1.DataPolicy` | 13 | DataPolicy defines data handling policy for this node.  Deprecated: data reuse + scoping are no longer node-declared. Under the ECS brain (ADR-0008) reuse is implicit in the event-sourced World and scoping flows from scope-relative identity (ADR-0002) + ambient projection. The field is retained wire-compatibly for old definitions but is ignored by the engine. |
 | `metadata` | `map<string, string>` | 14 | Metadata contains additional custom metadata for this node |
 | `reuse_policy` | `gibson.mission.v1.ReusePolicy` | 16 | ReusePolicy declares how this node's I/O is scoped + reused across mission runs.  Deprecated: superseded by the ECS brain (ADR-0008). Reuse is implicit in the World; scoping is via scope-relative identity (ADR-0002) + ambient projection. Retained wire-compatibly but ignored by the engine. |
+
+## `gibson.mission.v1.MissionSecrets`
+
+MissionSecrets declares which named tenant secrets the components of a mission may be handed, and to which of them.  NAMES ONLY. A secret's value is resolved server-side at dispatch by the daemon, which holds the KEK and the broker, and is handed to the component as environment. A value never appears in a mission definition, which is stored, listed, rendered, validated and displayed. A component never names a secret itself: the same property ScopeID has, where an agent-supplied value would make the decision attacker-influenceable.  This does NOT widen FGA. `secret.can_resolve` admits only plugin_principal, and the non-plugin-secret-isolation spec asserts an agent and a tool are each denied (gibson tests/e2e/secrets/non_plugin_deny_test.go). That property is preserved exactly: a component still cannot ask for a secret. This declares what the daemon may hand it, and the daemon resolves as itself.  The wide lists and the per-name maps UNION. A tool named T in a mission whose definition sets `mission`, `tools` and `tool[T]` may be handed any name in any of the three. An absent block means no component is handed anything, which is the behavior before this field existed.
+
+| Field | Type | Tag | Description |
+|---|---|---|---|
+| `mission` | `repeated string` | 1 | Mission is handed to every component in the run, whatever its kind. |
+| `agents` | `repeated string` | 2 | Agents, Tools and Plugins are handed to every component of that kind. |
+| `tools` | `repeated string` | 3 |  |
+| `plugins` | `repeated string` | 4 |  |
+| `agent` | `map<string, gibson.mission.v1.SecretNames>` | 5 | Agent, Tool and Plugin are handed to one NAMED component. The key is the component name as the catalog and the mission node spell it.  Three explicit maps rather than one keyed by a ComponentKind enum: no such enum exists in this module, adding one to express three cases is a permanent API surface for no gain, and a map per kind is what the file already does for nodes (`map<string, MissionNode> nodes = 6`). |
+| `tool` | `map<string, gibson.mission.v1.SecretNames>` | 6 |  |
+| `plugin` | `map<string, gibson.mission.v1.SecretNames>` | 7 |  |
 
 ## `gibson.mission.v1.ParallelNodeConfig`
 
@@ -222,6 +237,14 @@ ReusePolicy declares how a node's I/O is scoped + reused across mission runs.  D
 | `output_scope` | `string` | 1 | OutputScope: "mission_run" | "mission" | "global". Default: "mission". |
 | `input_scope` | `string` | 2 | InputScope: "mission_run" | "mission" | "global". Default: "mission". |
 | `reuse` | `string` | 3 | Reuse: "skip" | "rerun" | "merge". Controls behavior when an existing output is found in scope. Default: "rerun". |
+
+## `gibson.mission.v1.SecretNames`
+
+SecretNames is a list of secret names, as the value of a per-component map. proto3 has no repeated map value, so the list needs a message.
+
+| Field | Type | Tag | Description |
+|---|---|---|---|
+| `names` | `repeated string` | 1 |  |
 
 ## `gibson.mission.v1.ToolNodeConfig`
 
