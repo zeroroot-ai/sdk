@@ -64,8 +64,8 @@ type Claims struct {
 	// Method names use the slash-prefixed format
 	// `/<package>.<Service>/<Method>` (matching grpc.UnaryServerInfo's
 	// FullMethod). ext-authz performs an O(N) substring match; the
-	// expected size of AllowedRPCs is small (the agent's
-	// component.yaml capability set, typically <20 entries).
+	// expected size of AllowedRPCs is small (the capability set the
+	// agent was granted, typically <20 entries).
 	AllowedRPCs []string
 
 	// IssuedAt is the JWT iat claim, second precision UTC.

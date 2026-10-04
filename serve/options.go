@@ -167,20 +167,6 @@ func WithHeartbeatInterval(d time.Duration) Option {
 	}
 }
 
-// WithSkipBinaryCheck disables the startup binary validation that normally
-// checks all system dependencies declared in component.yaml before registering
-// with the platform. Use this for development and testing scenarios where the
-// real binary is not available.
-//
-// Example:
-//
-//	serve.Tool(myTool, serve.WithSkipBinaryCheck())
-func WithSkipBinaryCheck() Option {
-	return func(c *Config) {
-		c.SkipBinaryCheck = true
-	}
-}
-
 // WithExtractor sets an EntityExtractor that auto-populates proto field 100
 // (DiscoveryResult) on tool responses after each successful ExecuteProto call.
 // The extraction runs in the tool process before results are submitted to the

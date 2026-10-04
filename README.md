@@ -300,10 +300,10 @@ The "auto-populate the graph" magic is one rule: **proto field 100 in your respo
 ```bash
 gh repo create my-nmap-tool --template zeroroot-ai/component-skeleton --public
 cd my-nmap-tool
-# You get: main.go, Dockerfile, Makefile, component.yaml, CLAUDE.md
+# You get: main.go, Dockerfile, Makefile, CLAUDE.md
 ```
 
-Edit `component.yaml`: `name: my-nmap-tool`, `kind: tool`, version, description.
+Set the name, the version and the description of the tool in `main.go`. A tool declares itself in code, and no manifest file exists.
 
 **Step 2 — Define the proto (field 100 is the magic)**
 
