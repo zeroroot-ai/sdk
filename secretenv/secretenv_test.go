@@ -18,7 +18,7 @@ func TestKey(t *testing.T) {
 		{"goat.kubeconfig", "GIBSON_SECRET_GOAT_KUBECONFIG"},
 		{"goat kubeconfig", "GIBSON_SECRET_GOAT_KUBECONFIG"},
 		{"prod/db", "GIBSON_SECRET_PROD_DB"},
-		{"api-key-2", "GIBSON_SECRET_API_KEY_2"},
+		{"cluster-2", "GIBSON_SECRET_CLUSTER_2"},
 		{"", "GIBSON_SECRET_"},
 	} {
 		if got := Key(tc.name); got != tc.want {
