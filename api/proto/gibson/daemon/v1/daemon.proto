@@ -227,6 +227,49 @@ service DaemonService {
       };
     }
 
+  // ListCatalogMissions returns the mission definitions gibson ships compiled
+  // into its own binary (ADR-0018), with what each one declares.
+  //
+  // Until this RPC, the catalog had exactly one reader: the agent-facing
+  // harness callback, which takes catalog_mission + catalog_params. A person
+  // could neither list what the platform ships nor submit one of them, so the
+  // only way to run a first-party mission by hand was to copy its CUE out of
+  // the gibson repository and submit the copy — a second definition of one
+  // mission, which ADR-0027 forbids and which would silently stop tracking the
+  // checked-in one (gibson#631).
+  //
+  // A read. Nothing here is per-tenant: the catalog is the same for every
+  // tenant, and a mission is not gated — the components it dispatches are.
+  rpc ListCatalogMissions(ListCatalogMissionsRequest) returns (ListCatalogMissionsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // RenderCatalogMission renders one checked-in mission with the parameters it
+  // declares, and returns the definition the daemon would run.
+  //
+  // Rendered SERVER-SIDE, which is the whole point. The parameter set is
+  // closed, so an unrecognised key is refused rather than dropped — a caller
+  // that could send an ignored key would believe a parameter bound when it did
+  // not. No mission declares a target or a host, so the runtime target still
+  // binds from the mission's target at submit and from nowhere else.
+  //
+  // A caller registers the result with CreateMissionDefinition and runs it the
+  // way it runs any definition. That is referencing the authoritative
+  // definition, not rebuilding it: the graph came from the gibson binary.
+  rpc RenderCatalogMission(RenderCatalogMissionRequest) returns (RenderCatalogMissionResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
   // CreateMissionDefinition registers a structured mission definition with the
   // daemon. This is the API-only replacement for the removed InstallMission RPC:
   // the daemon does not clone git repositories or parse YAML; callers submit a
@@ -1583,6 +1626,59 @@ message CreateMissionRequest {
   reserved 10, 11, 12;
   reserved "inline_target", "inline_workflow", "workflow_yaml", "workflow_id",
            "target_config", "workflow_config";
+}
+
+// ListCatalogMissionsRequest takes nothing. The catalog is the same for every
+// tenant and is not filtered.
+message ListCatalogMissionsRequest {}
+
+// CatalogMission is one checked-in mission, and what a caller must supply to
+// render it.
+message CatalogMission {
+  // name is the catalog name, which is also what catalog_mission and
+  // RenderCatalogMissionRequest.name take.
+  string name = 1;
+
+  // description is the one-line description from the mission's own definition.
+  string description = 2;
+
+  // version is the mission's declared version.
+  string version = 3;
+
+  // declared_params names every parameter this mission requires, sorted. The
+  // set is closed: RenderCatalogMission refuses a key that is not here, and
+  // refuses a render that omits one.
+  repeated string declared_params = 4;
+}
+
+// ListCatalogMissionsResponse lists the catalog, sorted by name.
+message ListCatalogMissionsResponse {
+  repeated CatalogMission missions = 1;
+}
+
+// RenderCatalogMissionRequest names a checked-in mission and supplies its
+// parameters.
+message RenderCatalogMissionRequest {
+  // name is the catalog name. An unknown name is InvalidArgument and the error
+  // names what the catalog does ship.
+  string name = 1;
+
+  // params carries the parameters the named mission declares, keyed by its own
+  // parameter names. CLOSED: an unrecognised key is refused rather than
+  // ignored, and every missing one is reported at once rather than one render
+  // at a time.
+  map<string, string> params = 2;
+}
+
+// RenderCatalogMissionResponse returns the rendered definition.
+message RenderCatalogMissionResponse {
+  // mission is the definition the daemon would run. Register it with
+  // CreateMissionDefinition to run it.
+  gibson.mission.v1.MissionDefinition mission = 1;
+
+  // source is the mission's CUE, verbatim, so a person can read what the daemon
+  // will run rather than trusting a rendered summary.
+  string source = 2;
 }
 
 // CreateMissionResponse returns the result of creating a mission.
