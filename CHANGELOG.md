@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.191.0](https://github.com/zeroroot-ai/sdk/compare/v0.190.0...v0.191.0) (2026-10-04)
+
+
+### Features
+
+* **mission:** a mission declares which secrets its components may receive ([#156](https://github.com/zeroroot-ai/sdk/issues/156)) ([8f2f352](https://github.com/zeroroot-ai/sdk/commit/8f2f352ad73600877cb77689c8ec212b5394503a))
+* **secretenv:** one rule for the environment name a declared secret arrives in ([#158](https://github.com/zeroroot-ai/sdk/issues/158)) ([75f0bcf](https://github.com/zeroroot-ai/sdk/commit/75f0bcf2dd2252c1eafb0aa519fdd77788b143dc))
+
 ## [0.190.0](https://github.com/zeroroot-ai/sdk/compare/v0.189.1...v0.190.0) (2026-10-02)
 
 
