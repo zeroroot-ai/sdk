@@ -502,11 +502,11 @@ func (m *mockDaemonServiceClient) RenewCapabilityGrant(ctx context.Context, req 
 	return &daemonpb.RenewCapabilityGrantResponse{}, nil
 }
 
-func (m *mockDaemonServiceClient) ListCatalogMissions(ctx context.Context, req *daemonpb.ListCatalogMissionsRequest, opts ...grpc.CallOption) (*daemonpb.ListCatalogMissionsResponse, error) {
+func (m *mockDaemonServiceClient) ListCatalogMissions(_ context.Context, _ *daemonpb.ListCatalogMissionsRequest, _ ...grpc.CallOption) (*daemonpb.ListCatalogMissionsResponse, error) {
 	return &daemonpb.ListCatalogMissionsResponse{}, nil
 }
 
-func (m *mockDaemonServiceClient) RenderCatalogMission(ctx context.Context, req *daemonpb.RenderCatalogMissionRequest, opts ...grpc.CallOption) (*daemonpb.RenderCatalogMissionResponse, error) {
+func (m *mockDaemonServiceClient) RenderCatalogMission(_ context.Context, _ *daemonpb.RenderCatalogMissionRequest, _ ...grpc.CallOption) (*daemonpb.RenderCatalogMissionResponse, error) {
 	return &daemonpb.RenderCatalogMissionResponse{}, nil
 }
 
