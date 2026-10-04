@@ -68,6 +68,12 @@ func (m *extendedMockClient) ListMyMemberships(ctx context.Context, req *daemonp
 func (m *extendedMockClient) RenewCapabilityGrant(ctx context.Context, req *daemonpb.RenewCapabilityGrantRequest, opts ...grpc.CallOption) (*daemonpb.RenewCapabilityGrantResponse, error) {
 	return &daemonpb.RenewCapabilityGrantResponse{}, nil
 }
+func (m *extendedMockClient) ListCatalogMissions(_ context.Context, _ *daemonpb.ListCatalogMissionsRequest, _ ...grpc.CallOption) (*daemonpb.ListCatalogMissionsResponse, error) {
+	return &daemonpb.ListCatalogMissionsResponse{}, nil
+}
+func (m *extendedMockClient) RenderCatalogMission(_ context.Context, _ *daemonpb.RenderCatalogMissionRequest, _ ...grpc.CallOption) (*daemonpb.RenderCatalogMissionResponse, error) {
+	return &daemonpb.RenderCatalogMissionResponse{}, nil
+}
 func (m *extendedMockClient) ListMissions(ctx context.Context, req *daemonpb.ListMissionsRequest, opts ...grpc.CallOption) (*daemonpb.ListMissionsResponse, error) {
 	return m.listMissionsResp, m.listMissionsErr
 }

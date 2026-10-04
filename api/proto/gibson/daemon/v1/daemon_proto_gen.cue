@@ -1122,6 +1122,61 @@ import (
 	sourceYaml?: string @protobuf(9,string,name=source_yaml)
 }
 
+// ListCatalogMissionsRequest takes nothing. The catalog is the same for every
+// tenant and is not filtered.
+#ListCatalogMissionsRequest: {}
+
+// CatalogMission is one checked-in mission, and what a caller must supply to
+// render it.
+#CatalogMission: {
+	// name is the catalog name, which is also what catalog_mission and
+	// RenderCatalogMissionRequest.name take.
+	name?: string @protobuf(1,string)
+
+	// description is the one-line description from the mission's own definition.
+	description?: string @protobuf(2,string)
+
+	// version is the mission's declared version.
+	version?: string @protobuf(3,string)
+
+	// declared_params names every parameter this mission requires, sorted. The
+	// set is closed: RenderCatalogMission refuses a key that is not here, and
+	// refuses a render that omits one.
+	declaredParams?: [...string] @protobuf(4,string,name=declared_params)
+}
+
+// ListCatalogMissionsResponse lists the catalog, sorted by name.
+#ListCatalogMissionsResponse: {
+	missions?: [...#CatalogMission] @protobuf(1,CatalogMission)
+}
+
+// RenderCatalogMissionRequest names a checked-in mission and supplies its
+// parameters.
+#RenderCatalogMissionRequest: {
+	// name is the catalog name. An unknown name is InvalidArgument and the error
+	// names what the catalog does ship.
+	name?: string @protobuf(1,string)
+
+	// params carries the parameters the named mission declares, keyed by its own
+	// parameter names. CLOSED: an unrecognised key is refused rather than
+	// ignored, and every missing one is reported at once rather than one render
+	// at a time.
+	params?: {
+		[string]: string
+	} @protobuf(2,map[string]string)
+}
+
+// RenderCatalogMissionResponse returns the rendered definition.
+#RenderCatalogMissionResponse: {
+	// mission is the definition the daemon would run. Register it with
+	// CreateMissionDefinition to run it.
+	mission?: missionpb.#MissionDefinition @protobuf(1,gibson.mission.v1.MissionDefinition)
+
+	// source is the mission's CUE, verbatim, so a person can read what the daemon
+	// will run rather than trusting a rendered summary.
+	source?: string @protobuf(2,string)
+}
+
 // CreateMissionResponse returns the result of creating a mission.
 #CreateMissionResponse: {
 	// success indicates if the mission was created successfully
