@@ -782,6 +782,11 @@ func sdk.WithToolTags	# options.go:211
 func sdk.WithToolVersion	# options.go:195
 func sdk.WithTracer	# options.go:49
 func sdk.WithVersion	# options.go:94
+# secretenv.Lookup is read by the components the daemon dispatches, not by the
+# SDK: gibson writes GIBSON_SECRET_* at dispatch and gibson-executor's parsers
+# read it back. The rule lives here so the two sides cannot disagree, which is
+# why it has no in-module consumer.
+func secretenv.Lookup	# secretenv/secretenv.go:65
 func secrets.WithCache	# plugin/secrets/client.go:59
 func security.GetCVSS	# finding/security/security.go:98
 func security.GetCWE	# finding/security/security.go:110
