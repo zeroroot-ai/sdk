@@ -6,12 +6,12 @@ require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.12-20260825204119-511051f7f437.2
 	buf.build/go/protovalidate v1.4.0
 	github.com/agnivade/levenshtein v1.2.1
-	github.com/go-jose/go-jose/v4 v4.1.4
+	github.com/go-jose/go-jose/v4 v4.1.5
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/cel-go v0.30.0
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_golang v1.24.1
-	github.com/spiffe/go-spiffe/v2 v2.8.1
+	github.com/spiffe/go-spiffe/v2 v2.8.2
 	github.com/stretchr/testify v1.12.1
 	github.com/zeroroot-ai/ast-checks v0.5.0
 	go.opentelemetry.io/otel v1.46.0
