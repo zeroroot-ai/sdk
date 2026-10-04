@@ -4,6 +4,18 @@ updates:
     directory: "/"
     schedule: { interval: "weekly" }
     labels: ["dependencies", "go"]
+    ignore:
+      # GO-2026-6443 (CVE-2026-84445, a server panic via a missing authority
+      # or Host header) is fixed in 1.82.2 and in 1.83.2, and then REOPENS at
+      # 1.84.0-dev. Its only later fix is a pseudo-version on the dev branch,
+      # so 1.84.x is an upgrade INTO a reachable advisory with no release to
+      # move to. #149 made exactly that bump and gibson's merge-queue
+      # govulncheck caught it two releases later.
+      #
+      # Keyed to the minor, not to 1.84.0: the whole 1.84 line is inside the
+      # reopened range. Delete this entry when 1.85.0 ships.
+      - dependency-name: "google.golang.org/grpc"
+        versions: ["1.84.x"]
   - package-ecosystem: "gomod"
     directory: "/examples/custom-tool"
     schedule: { interval: "weekly" }
