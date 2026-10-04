@@ -3,7 +3,7 @@ module github.com/zeroroot-ai/sdk/examples/custom-tool
 go 1.27.1
 
 require (
-	github.com/zeroroot-ai/sdk v0.179.1
+	github.com/zeroroot-ai/sdk v0.184.0
 	google.golang.org/protobuf v1.36.12
 )
 
