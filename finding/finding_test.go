@@ -1182,10 +1182,10 @@ func TestMetadataWellKnownKeys(t *testing.T) {
 	// Test well-known keys from metadata.go
 	finding.SetMetadata(MetaKeyCVSS, 7.5)
 	finding.SetMetadata(MetaKeyCWE, "CWE-79")
-	finding.SetMetadata(MetaKeyRiskScore, 8.0)
-	finding.SetMetadata(MetaKeyComplianceFramework, "PCI-DSS")
-	finding.SetMetadata(MetaKeyCostImpact, 1000.00)
-	finding.SetMetadata(MetaKeyResourceARN, "arn:aws:s3:::bucket-name")
+	finding.SetMetadata("risk_score", 8.0)
+	finding.SetMetadata("compliance_framework", "PCI-DSS")
+	finding.SetMetadata("cost_impact", 1000.00)
+	finding.SetMetadata("resource_arn", "arn:aws:s3:::bucket-name")
 
 	// Verify retrieval
 	cvss, ok := finding.GetFloat64Metadata(MetaKeyCVSS)
@@ -1198,7 +1198,7 @@ func TestMetadataWellKnownKeys(t *testing.T) {
 		t.Errorf("CWE metadata = %v, %v, want CWE-79, true", cwe, ok)
 	}
 
-	framework, ok := finding.GetStringMetadata(MetaKeyComplianceFramework)
+	framework, ok := finding.GetStringMetadata("compliance_framework")
 	if !ok || framework != "PCI-DSS" {
 		t.Errorf("Compliance framework = %v, %v, want PCI-DSS, true", framework, ok)
 	}
@@ -1216,8 +1216,8 @@ func TestFindingWithMetadataValidation(t *testing.T) {
 	)
 
 	// Add domain-specific metadata
-	finding.SetMetadata(MetaKeyComplianceFramework, "SOC2")
-	finding.SetMetadata(MetaKeyComplianceControl, "CC6.1")
+	finding.SetMetadata("compliance_framework", "SOC2")
+	finding.SetMetadata("compliance_control", "CC6.1")
 	finding.SetMetadata("violation_type", "encryption_missing")
 
 	// Validation should pass with custom category and metadata
@@ -1227,7 +1227,7 @@ func TestFindingWithMetadataValidation(t *testing.T) {
 	}
 
 	// Verify metadata survived validation
-	framework, ok := finding.GetStringMetadata(MetaKeyComplianceFramework)
+	framework, ok := finding.GetStringMetadata("compliance_framework")
 	if !ok || framework != "SOC2" {
 		t.Error("Metadata should be preserved after validation")
 	}

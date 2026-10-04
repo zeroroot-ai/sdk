@@ -34,7 +34,7 @@ go get github.com/zeroroot-ai/sdk@latest
 | `graphrag` | The knowledge-graph client: nodes, relationships, query builders, CEL validators, generated domain types and node-ID generation |
 | `extraction` | The `EntityExtractor` framework that turns a tool's proto response into a standard `DiscoveryResult` |
 | `finding` | Structured security findings: categories, severities, evidence and SARIF-shaped output |
-| `taxonomy` | The compliance rule catalog loader that maps graph signals to SOC 2, NIST AI RMF and MITRE control IDs |
+| `taxonomy` | The taxonomy and ontology schemas, their embedded definitions and their validator |
 | `mission` | Mission context types, and the types an agent uses to create and monitor sub-missions |
 | `planning` | Planning-aware interfaces: where the agent sits in mission execution, and the hints it reports back |
 | `types` | Targets, techniques, mission context and health status shared across the SDK |
