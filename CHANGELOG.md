@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.191.1](https://github.com/zeroroot-ai/sdk/compare/v0.191.0...v0.191.1) (2026-10-04)
+
+
+### Bug Fixes
+
+* **deps:** grpc 1.84.0 reopens the server-panic advisory, go back to 1.83.2 ([#159](https://github.com/zeroroot-ai/sdk/issues/159)) ([031475c](https://github.com/zeroroot-ai/sdk/commit/031475c6846ce327fcd23dea3aedf0228fe91842))
+
 ## [0.191.0](https://github.com/zeroroot-ai/sdk/compare/v0.190.0...v0.191.0) (2026-10-04)
 
 
