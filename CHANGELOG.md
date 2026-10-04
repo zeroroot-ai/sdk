@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.192.1](https://github.com/zeroroot-ai/sdk/compare/v0.192.0...v0.192.1) (2026-10-04)
+
+
+### Bug Fixes
+
+* **sdk:** the unread declarations of [#111](https://github.com/zeroroot-ai/sdk/issues/111) with no reader anywhere are deleted ([27d419f](https://github.com/zeroroot-ai/sdk/commit/27d419ff562d57dd7237e90b7b150b1c7f974b0a))
+* **sdk:** the unread declarations with no reader anywhere are deleted ([#168](https://github.com/zeroroot-ai/sdk/issues/168)) ([27d419f](https://github.com/zeroroot-ai/sdk/commit/27d419ff562d57dd7237e90b7b150b1c7f974b0a))
+* **serve:** a tool reads no component.yaml, because the parser is gone ([#166](https://github.com/zeroroot-ai/sdk/issues/166)) ([b89a06a](https://github.com/zeroroot-ai/sdk/commit/b89a06adb1d0c65c39f0d4d3f44ec159a6f5ce06)), closes [#165](https://github.com/zeroroot-ai/sdk/issues/165)
+
 ## [0.192.0](https://github.com/zeroroot-ai/sdk/compare/v0.191.1...v0.192.0) (2026-10-04)
 
 
