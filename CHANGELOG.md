@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.192.0](https://github.com/zeroroot-ai/sdk/compare/v0.191.1...v0.192.0) (2026-10-04)
+
+
+### Features
+
+* **daemon:** the mission catalog is readable by a person ([#163](https://github.com/zeroroot-ai/sdk/issues/163)) ([ca28851](https://github.com/zeroroot-ai/sdk/commit/ca288512282e7f0c7ae2dc3cdd0ed51b0fda167d))
+
 ## [0.191.1](https://github.com/zeroroot-ai/sdk/compare/v0.191.0...v0.191.1) (2026-10-04)
 
 
