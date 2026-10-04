@@ -686,7 +686,6 @@ func TestMetadataKeyConstants(t *testing.T) {
 		{"MetaKeyMitreAtlas", MetaKeyMitreAtlas},
 		{"MetaKeyCVSS", MetaKeyCVSS},
 		{"MetaKeyCWE", MetaKeyCWE},
-		{"MetaKeyRiskScore", MetaKeyRiskScore},
 	}
 
 	for _, key := range keys {

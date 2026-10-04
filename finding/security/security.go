@@ -13,7 +13,6 @@ const (
 	MetaKeyMitreAtlas  = finding.MetaKeyMitreAtlas
 	MetaKeyCVSS        = finding.MetaKeyCVSS
 	MetaKeyCWE         = finding.MetaKeyCWE
-	MetaKeyRiskScore   = finding.MetaKeyRiskScore
 )
 
 // Re-exported security category constants for import convenience

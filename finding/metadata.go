@@ -14,15 +14,6 @@ const (
 	MetaKeyMitreAtlas  = "mitre_atlas"
 	MetaKeyCVSS        = "cvss"
 	MetaKeyCWE         = "cwe"
-	MetaKeyRiskScore   = "risk_score"
-
-	// Compliance domain metadata keys
-	MetaKeyComplianceFramework = "compliance_framework"
-	MetaKeyComplianceControl   = "compliance_control"
-
-	// Infrastructure domain metadata keys
-	MetaKeyCostImpact  = "cost_impact"
-	MetaKeyResourceARN = "resource_arn"
 )
 
 // GetTypedMetadata retrieves metadata from a finding with type safety using Go generics.

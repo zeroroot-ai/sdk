@@ -16,13 +16,13 @@ func TestSetMetadata(t *testing.T) {
 	}
 
 	// Test setting metadata
-	f.SetMetadata(MetaKeyRiskScore, 7.5)
+	f.SetMetadata("risk_score", 7.5)
 
 	if f.Metadata == nil {
 		t.Fatal("Metadata map should be initialized")
 	}
 
-	val, exists := f.Metadata[MetaKeyRiskScore]
+	val, exists := f.Metadata["risk_score"]
 	if !exists {
 		t.Error("Metadata key should exist")
 	}
@@ -39,11 +39,11 @@ func TestGetMetadata(t *testing.T) {
 		AgentName: "test-agent",
 		Title:     "Test Finding",
 		Metadata: map[string]any{
-			MetaKeyCostImpact: 100.50,
+			"cost_impact": 100.50,
 		},
 	}
 
-	val, exists := f.GetMetadata(MetaKeyCostImpact)
+	val, exists := f.GetMetadata("cost_impact")
 	if !exists {
 		t.Error("Metadata key should exist")
 	}
@@ -66,14 +66,14 @@ func TestGetTypedMetadata(t *testing.T) {
 		AgentName: "test-agent",
 		Title:     "Test Finding",
 		Metadata: map[string]any{
-			MetaKeyRiskScore:           8.5,
-			MetaKeyResourceARN:         "arn:aws:ec2:us-east-1:123456789012:instance/i-1234567890abcdef0",
-			MetaKeyComplianceFramework: "SOC2",
+			"risk_score":           8.5,
+			"resource_arn":         "arn:aws:ec2:us-east-1:123456789012:instance/i-1234567890abcdef0",
+			"compliance_framework": "SOC2",
 		},
 	}
 
 	// Test float64
-	score, ok := GetTypedMetadata[float64](f, MetaKeyRiskScore)
+	score, ok := GetTypedMetadata[float64](f, "risk_score")
 	if !ok {
 		t.Error("Should successfully get float64 metadata")
 	}
@@ -82,7 +82,7 @@ func TestGetTypedMetadata(t *testing.T) {
 	}
 
 	// Test string
-	arn, ok := GetTypedMetadata[string](f, MetaKeyResourceARN)
+	arn, ok := GetTypedMetadata[string](f, "resource_arn")
 	if !ok {
 		t.Error("Should successfully get string metadata")
 	}
@@ -98,7 +98,7 @@ func TestGetTypedMetadata(t *testing.T) {
 	}
 
 	// Test wrong type
-	_, ok = GetTypedMetadata[string](f, MetaKeyRiskScore)
+	_, ok = GetTypedMetadata[string](f, "risk_score")
 	if ok {
 		t.Error("Wrong type should return false")
 	}
@@ -220,14 +220,14 @@ func TestDeleteMetadata(t *testing.T) {
 		AgentName: "test-agent",
 		Title:     "Test Finding",
 		Metadata: map[string]any{
-			MetaKeyRiskScore: 7.5,
-			MetaKeyCWE:       []string{"CWE-79"},
+			"risk_score": 7.5,
+			MetaKeyCWE:   []string{"CWE-79"},
 		},
 	}
 
-	f.DeleteMetadata(MetaKeyRiskScore)
+	f.DeleteMetadata("risk_score")
 
-	if f.HasMetadata(MetaKeyRiskScore) {
+	if f.HasMetadata("risk_score") {
 		t.Error("Metadata should be deleted")
 	}
 
@@ -243,9 +243,9 @@ func TestGetMetadataKeys(t *testing.T) {
 		AgentName: "test-agent",
 		Title:     "Test Finding",
 		Metadata: map[string]any{
-			MetaKeyRiskScore:  7.5,
-			MetaKeyCWE:        []string{"CWE-79"},
-			MetaKeyCostImpact: 100.0,
+			"risk_score":  7.5,
+			MetaKeyCWE:    []string{"CWE-79"},
+			"cost_impact": 100.0,
 		},
 	}
 
@@ -260,7 +260,7 @@ func TestGetMetadataKeys(t *testing.T) {
 		keyMap[k] = true
 	}
 
-	if !keyMap[MetaKeyRiskScore] || !keyMap[MetaKeyCWE] || !keyMap[MetaKeyCostImpact] {
+	if !keyMap["risk_score"] || !keyMap[MetaKeyCWE] || !keyMap["cost_impact"] {
 		t.Error("Not all keys were returned")
 	}
 
@@ -335,11 +335,6 @@ func TestMetadataKeyConstants(t *testing.T) {
 		{MetaKeyMitreAtlas, "mitre_atlas"},
 		{MetaKeyCVSS, "cvss"},
 		{MetaKeyCWE, "cwe"},
-		{MetaKeyRiskScore, "risk_score"},
-		{MetaKeyComplianceFramework, "compliance_framework"},
-		{MetaKeyComplianceControl, "compliance_control"},
-		{MetaKeyCostImpact, "cost_impact"},
-		{MetaKeyResourceARN, "resource_arn"},
 	}
 
 	for _, tt := range tests {

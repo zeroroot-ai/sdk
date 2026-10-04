@@ -20,19 +20,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// ToolCall represents a single tool invocation request for parallel execution
-type ToolCall struct {
-	Name  string         // Tool name to invoke
-	Input map[string]any // Tool input parameters
-}
-
-// ToolResult represents the result of a tool invocation
-type ToolResult struct {
-	Name   string         // Tool name that was invoked
-	Output map[string]any // Tool output (nil if error)
-	Error  error          // Error if tool failed (nil if success)
-}
-
 // QueuedToolResult represents the result of a single tool execution from QueueToolWork.
 // Results arrive in completion order, not submission order.
 // Use Index to correlate results with the original input slice position.
