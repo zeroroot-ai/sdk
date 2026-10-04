@@ -22,7 +22,6 @@ import (
 	commonpb "github.com/zeroroot-ai/sdk/api/gen/gibson/common/v1"
 	toolpb "github.com/zeroroot-ai/sdk/api/gen/gibson/tool/v1"
 	"github.com/zeroroot-ai/sdk/enum"
-	"github.com/zeroroot-ai/sdk/startup"
 	"github.com/zeroroot-ai/sdk/tool"
 	"github.com/zeroroot-ai/sdk/types"
 )
@@ -621,123 +620,30 @@ func TestToolExecute_WithoutEnumMappings(t *testing.T) {
 		"target should pass through unchanged")
 }
 
-func TestTool_SkipBinaryCheck(t *testing.T) {
-	// When SkipBinaryCheck is set, the tool should not attempt binary validation.
-	// Since we don't have a component.yaml and PlatformURL is set to a non-connectable
-	// address, we verify the function gets past the binary check phase.
-	mockT := &mockTool{
-		name:    "skip-check-tool",
-		version: "1.0.0",
-	}
-
-	// Tool will fail at the platform connection stage (expected), but crucially
-	// it should NOT fail at binary validation since we're skipping it.
-	// Disable the HTTP health server so tests stay hermetic and do not need
-	// to bind the default :8080 port.
-	err := Tool(mockT,
-		WithSkipBinaryCheck(),
-		WithHealthPort(-1),
-		WithPlatform("localhost:0", "test-key"),
-	)
-
-	// The error should be about platform connection, NOT about binary validation
-	require.Error(t, err)
-	assert.NotContains(t, err.Error(), "system dependency check failed")
-	assert.NotContains(t, err.Error(), "binary")
-}
-
-func TestTool_BinaryCheckFailsBeforePlatformConnect(t *testing.T) {
-	// Create a temp dir with a component.yaml referencing a nonexistent binary
+// A component.yaml left on disk is inert (ADR-0097): the SDK has no parser for
+// it, so a system dependency it names cannot stop a tool from starting. Before
+// the parser was deleted this test failed with "system dependency check failed".
+func TestTool_ALeftoverComponentYAMLIsInert(t *testing.T) {
 	dir := t.TempDir()
-	componentYAML := filepath.Join(dir, "component.yaml")
-	err := os.WriteFile(componentYAML, []byte(`
+	err := os.WriteFile(filepath.Join(dir, "component.yaml"), []byte(`
 kind: tool
 name: test-tool
 dependencies:
   system:
     - nonexistent_binary_xyz
-`), 0644)
+`), 0o600)
 	require.NoError(t, err)
-
-	// Change to the temp dir so discoverComponentYAML finds the file
-	origDir, err := os.Getwd()
-	require.NoError(t, err)
-	defer func() { require.NoError(t, os.Chdir(origDir)) }()
-	require.NoError(t, os.Chdir(dir))
+	t.Chdir(dir)
 
 	mockT := &mockTool{
 		name:    "test-tool",
 		version: "1.0.0",
 	}
 
+	// The tool still fails, at the platform connection, which is unreachable
+	// here. It must not fail on the file.
 	err = Tool(mockT, WithHealthPort(-1), WithPlatform("localhost:0", "test-key"))
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "system dependency check failed")
-	assert.Contains(t, err.Error(), "nonexistent_binary_xyz")
-}
-
-func TestDiscoverComponentYAML(t *testing.T) {
-	// Save original working directory
-	origDir, err := os.Getwd()
-	require.NoError(t, err)
-	defer func() { require.NoError(t, os.Chdir(origDir)) }()
-
-	// Create temp dir with component.yaml
-	dir := t.TempDir()
-	componentPath := filepath.Join(dir, "component.yaml")
-	err = os.WriteFile(componentPath, []byte("kind: tool\nname: test\n"), 0644)
-	require.NoError(t, err)
-
-	// Change to temp dir and verify discovery
-	require.NoError(t, os.Chdir(dir))
-	found := discoverComponentYAML()
-	assert.NotEmpty(t, found, "should find component.yaml in current directory")
-
-	// Change to a dir without component.yaml
-	emptyDir := t.TempDir()
-	require.NoError(t, os.Chdir(emptyDir))
-	found = discoverComponentYAML()
-	assert.Empty(t, found, "should not find component.yaml in empty directory")
-}
-
-func TestGetDegradedDependencies(t *testing.T) {
-	// Reset state
-	setDegradedDependencies(nil)
-	defer setDegradedDependencies(nil)
-
-	// Initially empty
-	deps := GetDegradedDependencies()
-	assert.Nil(t, deps)
-
-	// Set some degraded deps
-	degraded := []startup.MissingBinary{
-		{Name: "ncat", Required: false, PATH: "/usr/bin"},
-	}
-	setDegradedDependencies(degraded)
-
-	deps = GetDegradedDependencies()
-	require.Len(t, deps, 1)
-	assert.Equal(t, "ncat", deps[0].Name)
-}
-
-func TestCheckBinaryAvailable(t *testing.T) {
-	// Reset state
-	setDegradedDependencies(nil)
-	defer setDegradedDependencies(nil)
-
-	// No degraded binaries -- everything is available
-	assert.NoError(t, CheckBinaryAvailable("mytool"))
-
-	// Set a degraded binary
-	setDegradedDependencies([]startup.MissingBinary{
-		{Name: "ncat", Required: false, PATH: "/usr/bin"},
-	})
-
-	// ncat is degraded
-	err := CheckBinaryAvailable("ncat")
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "capability requires binary 'ncat' which is not available")
-
-	// mytool is still available (not in degraded list)
-	assert.NoError(t, CheckBinaryAvailable("mytool"))
+	assert.NotContains(t, err.Error(), "system dependency check failed")
+	assert.NotContains(t, err.Error(), "nonexistent_binary_xyz")
 }

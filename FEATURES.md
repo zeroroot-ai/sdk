@@ -24,7 +24,6 @@ go get github.com/zeroroot-ai/sdk@latest
 | `tool` | The `Tool` interface and builders for executable components with protobuf inputs and outputs |
 | `plugin` | The plugin SDK: the `Plugin` interface, manifest handling and `plugin.Serve` |
 | `toolrunner` | The worker runtime that pulls tool work and returns results |
-| `startup` | Pre-registration validation: parses `component.yaml` and checks that required binaries are on `PATH` |
 | `examples` | Runnable agent, tool and tool-runner programs |
 
 ## Reasoning and data

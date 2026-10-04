@@ -85,10 +85,6 @@ type Config struct {
 	// Default: 10 seconds. Can be overridden by platform config response.
 	HeartbeatInterval time.Duration
 
-	// SkipBinaryCheck disables startup validation of system dependencies
-	// declared in component.yaml. Use for development/testing only.
-	SkipBinaryCheck bool
-
 	// Extractor is an optional EntityExtractor that auto-populates proto
 	// field 100 (DiscoveryResult) on tool responses after ExecuteProto.
 	// If nil, no extraction is performed and field 100 is left as-is.

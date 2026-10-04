@@ -5,18 +5,14 @@ package serve
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
-	"sync"
 	"time"
 
 	commonpb "github.com/zeroroot-ai/sdk/api/gen/gibson/common/v1"
 	toolpb "github.com/zeroroot-ai/sdk/api/gen/gibson/tool/v1"
 	"github.com/zeroroot-ai/sdk/enum"
-	"github.com/zeroroot-ai/sdk/startup"
 	"github.com/zeroroot-ai/sdk/tool"
-	"github.com/zeroroot-ai/sdk/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -53,112 +49,11 @@ func Tool(t tool.Tool, opts ...Option) error {
 		opt(cfg)
 	}
 
-	// System binary validation: validate before any network connections
-	if !cfg.SkipBinaryCheck {
-		logger := slog.Default().With("component", "tool", "name", t.Name())
-
-		manifestPath := discoverComponentYAML()
-		if manifestPath == "" {
-			logger.Warn("component.yaml not found -- skipping binary checks",
-				"searched", []string{"./component.yaml", "/etc/gibson/component.yaml"},
-			)
-		} else {
-			result, err := startup.ValidateSystemDependencies(logger, manifestPath)
-			if err != nil {
-				return fmt.Errorf("system dependency check failed for tool %q: %w", t.Name(), err)
-			}
-			// Store degraded state for health endpoint reporting
-			if result != nil && len(result.Degraded) > 0 {
-				setDegradedDependencies(result.Degraded)
-			}
-		}
-	}
-
 	if err := validateConfig(cfg); err != nil {
 		return err
 	}
 	slog.Info("connecting to platform", "name", t.Name(), "platform_url", cfg.PlatformURL)
 	return servePlatformTool(t, cfg)
-}
-
-// discoverComponentYAML looks for component.yaml in standard locations.
-// Returns the first path found, or empty string if not found.
-func discoverComponentYAML() string {
-	candidates := []string{
-		"./component.yaml",
-		"/etc/gibson/component.yaml",
-	}
-	for _, path := range candidates {
-		if _, err := os.Stat(path); err == nil {
-			return path
-		}
-	}
-	return ""
-}
-
-var (
-	degradedMu   sync.RWMutex
-	degradedDeps []startup.MissingBinary
-)
-
-// setDegradedDependencies stores optional binaries that were missing at startup.
-func setDegradedDependencies(deps []startup.MissingBinary) {
-	degradedMu.Lock()
-	defer degradedMu.Unlock()
-	degradedDeps = deps
-}
-
-// GetDegradedDependencies returns optional binaries that were missing at startup.
-func GetDegradedDependencies() []startup.MissingBinary {
-	degradedMu.RLock()
-	defer degradedMu.RUnlock()
-	return degradedDeps
-}
-
-// CheckBinaryAvailable checks if a binary is in the degraded (missing optional) list.
-// Returns an error if the binary is missing, nil if it is available.
-// Tools should call this before attempting to use an optional binary capability.
-func CheckBinaryAvailable(binaryName string) error {
-	degradedMu.RLock()
-	defer degradedMu.RUnlock()
-	for _, dep := range degradedDeps {
-		if dep.Name == binaryName {
-			return fmt.Errorf("capability requires binary '%s' which is not available", binaryName)
-		}
-	}
-	return nil
-}
-
-// DegradedDependenciesCheck returns a health check function suitable for
-// registration with the HTTP health server's readiness endpoint.
-//
-// When optional binaries are missing, the check returns a degraded status
-// with the list of missing binary names. When all binaries are present,
-// it returns healthy. The HTTP status code remains 200 in both cases
-// since the tool is still ready to handle requests for available capabilities.
-//
-// Example:
-//
-//	healthServer.RegisterReadinessCheck("system-dependencies", serve.DegradedDependenciesCheck())
-func DegradedDependenciesCheck() func(ctx context.Context) types.HealthStatus {
-	return func(_ context.Context) types.HealthStatus {
-		deps := GetDegradedDependencies()
-		if len(deps) == 0 {
-			return types.NewHealthyStatus("all system dependencies available")
-		}
-
-		var names []string
-		for _, dep := range deps {
-			names = append(names, dep.Name)
-		}
-
-		return types.NewDegradedStatus(
-			"some optional capabilities are unavailable",
-			map[string]any{
-				"missing_optional": names,
-			},
-		)
-	}
 }
 
 // hasSchemaFlag checks if --schema was passed as a command-line argument.
