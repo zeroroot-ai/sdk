@@ -9,12 +9,12 @@ package agent
 // findings and reportable output.
 //
 // Unlike a Hypothesis (an unproven, forward-looking claim awaiting
-// settlement, ADR-0021), an Analysis is backward-looking: it synthesizes what
+// settlement, ADR-0121), an Analysis is backward-looking: it synthesizes what
 // is already known on the graph rather than proposing something new to test.
 // It feeds hypotheses and findings as a typed artifact, never as free text.
 //
 // Like every Observation, this is an emit: the daemon folds it onto the
-// Timeline (flight recorder, ADR-0007).
+// Timeline (flight recorder, ADR-0107).
 type AnalysisObservation struct {
 	// Agent identifies the agent producing the analysis.
 	Agent string

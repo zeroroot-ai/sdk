@@ -6,7 +6,7 @@ package agent
 import "testing"
 
 // TestReasoningStepObservation_IsObservation: a ReasoningStepObservation is a
-// valid member of the closed Observation sum type (ADR-0007), so a completed
+// valid member of the closed Observation sum type (ADR-0107), so a completed
 // multi-step reasoning trace lands on the Timeline the same way every other
 // sighting does (sdk#73).
 func TestReasoningStepObservation_IsObservation(t *testing.T) {

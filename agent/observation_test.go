@@ -6,7 +6,7 @@ package agent
 import "testing"
 
 // TestHypothesisObservation_IsObservation: a HypothesisObservation is a valid
-// member of the closed Observation sum type (ADR-0021), so it must satisfy the
+// member of the closed Observation sum type (ADR-0121), so it must satisfy the
 // interface like every sighting variant.
 func TestHypothesisObservation_IsObservation(t *testing.T) {
 	var obs Observation = HypothesisObservation{

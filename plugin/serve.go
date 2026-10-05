@@ -357,7 +357,7 @@ func Serve(ctx context.Context, opts ...Option) error {
 			// plugin:content_trust travels the manifest's trust classification to
 			// the daemon, which records it on the ComponentInstall and gates
 			// untrusted plugin invocation through the dispatch policy
-			// (ADR-0010). Normalised so an unset value is "trusted".
+			// (ADR-0110). Normalised so an unset value is "trusted".
 			"plugin:content_trust": normalizeContentTrust(m.Spec.Policy.ContentTrust),
 			// plugin:secrets is the comma-joined list of declared secret refs.
 			// A declaration, not a grant: the daemon decides what it authorizes

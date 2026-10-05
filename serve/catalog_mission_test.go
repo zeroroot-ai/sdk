@@ -25,7 +25,7 @@ func scanParams() map[string]string {
 }
 
 // TestBuildCreateMissionRequest_CatalogMissionSendsNoGraph is the property that
-// makes ADR-0018 true on the wire: naming a checked-in mission must send the
+// makes ADR-0118 true on the wire: naming a checked-in mission must send the
 // NAME, not a copy of the graph. json.Marshal(nil) yields "null" — four
 // non-empty bytes — so a builder that serialised unconditionally would populate
 // mission_definition_json alongside catalog_mission and the daemon would refuse

@@ -17,7 +17,7 @@ import (
 
 // observationToProto converts a typed agent.Observation into an ObserveRequest.
 // Scope is intentionally not carried — the daemon derives it from mission context
-// (ADR-0007). Returns an error for an unknown observation type.
+// (ADR-0107). Returns an error for an unknown observation type.
 func observationToProto(obs agent.Observation) (*harnesspb.ObserveRequest, error) {
 	switch o := obs.(type) {
 	case agent.HostObservation:
@@ -172,7 +172,7 @@ func observationToProto(obs agent.Observation) (*harnesspb.ObserveRequest, error
 }
 
 // Observe emits a typed observation into the World via the callback channel
-// (ADR-0007). The daemon resolves identity and topology and derives scope from
+// (ADR-0107). The daemon resolves identity and topology and derives scope from
 // mission context.
 func (h *CallbackHarness) Observe(ctx context.Context, obs agent.Observation) error {
 	ctx, span := h.tracer.Start(ctx, "gibson.brain.observe", trace.WithSpanKind(trace.SpanKindClient))
@@ -201,9 +201,9 @@ func (h *CallbackHarness) Observe(ctx context.Context, obs agent.Observation) er
 // Observe is not yet wired in platform pull-mode: that transport emits over the
 // component service, which has no typed observation endpoint yet. Platform-hosted
 // agents therefore have no graph-write path at all — the generic StoreNode RPC that
-// once filled the gap was retired with ADR-0012 (gibson#1265), and it was never
+// once filled the gap was retired with ADR-0112 (gibson#1265), and it was never
 // reachable from this package anyway. No existing agent calls Observe (it is new in
-// ADR-0007), so this is safe to leave unsupported here.
+// ADR-0107), so this is safe to leave unsupported here.
 func (h *PlatformHarness) Observe(_ context.Context, _ agent.Observation) error {
 	return errors.New("Observe is not supported in platform pull-mode yet (use the callback harness); tracked for the platform transport")
 }

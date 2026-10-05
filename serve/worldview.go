@@ -58,7 +58,7 @@ func worldViewFromProto(resp *harnesspb.WorldViewResponse) agent.WorldView {
 }
 
 // WorldView fetches the caller's slice of the tenant World over the callback
-// channel (ADR-0012). It sends no tenant and no scope — the request has no field
+// channel (ADR-0112). It sends no tenant and no scope — the request has no field
 // for either — so what the slice contains is decided entirely by the daemon from
 // the mission record it created.
 func (h *CallbackHarness) WorldView(ctx context.Context, focus ...agent.Handle) (agent.WorldView, error) {

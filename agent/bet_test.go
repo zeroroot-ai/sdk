@@ -8,7 +8,7 @@ import "testing"
 // TestBet_Fields: a Bet carries the hypothesis it is on, the staking agent,
 // the staked confidence, and the technique it exercises — the reputation key
 // is technique × environment, so the technique must ride on the bet
-// (ADR-0022, sdk#71 acceptance criteria).
+// (ADR-0122, sdk#71 acceptance criteria).
 func TestBet_Fields(t *testing.T) {
 	b := Bet{
 		HypothesisID: "hyp-123",

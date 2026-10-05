@@ -54,7 +54,7 @@ const DefaultLivenessInterval = 10 * time.Second
 // DefaultRuntime is the runtime mode assumed when spec.runtime is omitted.
 const DefaultRuntime = "process"
 
-// Content-trust classifications for spec.policy.content_trust (ADR-0010).
+// Content-trust classifications for spec.policy.content_trust (ADR-0110).
 const (
 	// ContentTrustTrusted is the default: the plugin's input is trusted and it
 	// may take the in-process dispatch path.
@@ -180,7 +180,7 @@ type ManifestPolicy struct {
 
 	// ContentTrust classifies the trust level of the data this plugin processes
 	// at call time: "trusted" (default) or "untrusted". An untrusted plugin is
-	// gated by the daemon's dispatch policy (ADR-0010 / gibson#997) — under the
+	// gated by the daemon's dispatch policy (ADR-0110 / gibson#997) — under the
 	// hosted setec-only shape it must execute in a setec sandbox or be denied,
 	// never in-process. Declared here so the trust classification travels with
 	// the plugin at registration. Default "trusted".

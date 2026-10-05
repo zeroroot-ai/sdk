@@ -41,7 +41,7 @@
 //
 // A shape the Taxonomy admits materializes as a typed node. A shape it does not
 // admit is neither rejected nor lost: it lands as an Observation with its
-// residue preserved and stays immediately queryable (ADR-0012). So an agent can
+// residue preserved and stays immediately queryable (ADR-0112). So an agent can
 // always write, and can never invent schema. Promoting a recurring Observation
 // shape into the Taxonomy is a reviewed code change, not something an agent or a
 // tenant can do at runtime.

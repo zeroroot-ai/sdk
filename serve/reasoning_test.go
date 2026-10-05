@@ -15,7 +15,7 @@ import (
 // TestObservationToProto_ReasoningStep: a reasoning step carries the agent,
 // the plan it belongs to, its position, its content, and the entities it
 // reasons about onto the wire (sdk#73). It rides the normal Observe emit-only
-// surface — one more observation kind, never a raw graph write (ADR-0007) —
+// surface — one more observation kind, never a raw graph write (ADR-0107) —
 // so it lands on the Timeline exactly like every other Observation.
 func TestObservationToProto_ReasoningStep(t *testing.T) {
 	req, err := observationToProto(agent.ReasoningStepObservation{

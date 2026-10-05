@@ -15,7 +15,7 @@ import (
 // TestObservationToProto_Analysis: an analysis artifact carries its
 // conclusion, confidence, and the evidence it used from the graph onto the
 // wire (sdk#74). It rides the normal Observe emit-only surface — one more
-// observation kind, never a raw graph write (ADR-0007).
+// observation kind, never a raw graph write (ADR-0107).
 func TestObservationToProto_Analysis(t *testing.T) {
 	req, err := observationToProto(agent.AnalysisObservation{
 		Agent:      "triage-agent",

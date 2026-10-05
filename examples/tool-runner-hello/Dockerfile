@@ -12,7 +12,7 @@
 # syntax=docker/dockerfile:1.7
 
 # Base images route through the org mirror and are digest-pinned for reproducible
-# builds (RESTRUCTURE-QUALITY-BARS §1). The builder names the Go that go.mod
+# builds. The builder names the Go that go.mod
 # names; the org toolchain guard (reusable-go-ci) fails the PR when they drift,
 # and GOTOOLCHAIN=local makes a mismatch fail the build instead of downloading
 # a toolchain. Re-resolve digests with `crane digest <ref>`.
