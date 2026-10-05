@@ -2,7 +2,10 @@ version: 2
 updates:
   - package-ecosystem: "gomod"
     directory: "/"
-    schedule: { interval: "weekly" }
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
     labels: ["dependencies", "go"]
     ignore:
       # GO-2026-6443 (CVE-2026-84445, a server panic via a missing authority
@@ -16,25 +19,95 @@ updates:
       # reopened range. Delete this entry when 1.85.0 ships.
       - dependency-name: "google.golang.org/grpc"
         versions: ["1.84.x"]
+    open-pull-requests-limit: 5
+    groups:
+      go-deps:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: chore(deps)
+      include: scope
   - package-ecosystem: "gomod"
     directory: "/examples/custom-tool"
-    schedule: { interval: "weekly" }
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
     labels: ["dependencies", "go"]
+    open-pull-requests-limit: 5
+    groups:
+      go-deps:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: chore(deps)
+      include: scope
   - package-ecosystem: "gomod"
     directory: "/examples/minimal-agent"
-    schedule: { interval: "weekly" }
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
     labels: ["dependencies", "go"]
+    open-pull-requests-limit: 5
+    groups:
+      go-deps:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: chore(deps)
+      include: scope
   - package-ecosystem: "npm"
     directory: "/"
-    schedule: { interval: "weekly" }
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
     labels: ["dependencies", "npm"]
+    open-pull-requests-limit: 5
+    groups:
+      npm-deps:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: chore(deps)
+      include: scope
   - package-ecosystem: "docker"
     directory: "/examples/tool-runner-hello"
-    schedule: { interval: "weekly" }
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
     labels: ["dependencies", "docker"]
+    open-pull-requests-limit: 3
+    groups:
+      docker-deps:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: chore(deps)
+      include: scope
   - package-ecosystem: "github-actions"
     directory: "/"
-    schedule: { interval: "weekly" }
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
     labels: ["dependencies", "github-actions"]
     # github/codeql-action is one action with several sub-actions (init,
     # autobuild, analyze, upload-sarif). Dependabot sees each sub-action as
@@ -45,4 +118,16 @@ updates:
     groups:
       codeql-action:
         patterns:
-          - "github/codeql-action*"
+          - github/codeql-action*
+      actions-deps:
+        patterns:
+          - '*'
+        exclude-patterns:
+          - github/codeql-action*
+        update-types:
+          - minor
+          - patch
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore(deps)
+      include: scope
