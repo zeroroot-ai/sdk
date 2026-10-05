@@ -232,7 +232,7 @@ deps:
 
 # bootstrap installs every dev/CI tool this repo needs from its pinned sources,
 # so a fresh checkout reaches a buildable state with one command. Part of the
-# uniform Makefile contract (RESTRUCTURE-QUALITY-BARS §1):
+# uniform Makefile contract:
 #   make bootstrap | build | test | check | image
 # "Just works" = `make bootstrap` is the same command in every repo.
 .PHONY: bootstrap

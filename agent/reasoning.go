@@ -5,7 +5,7 @@ package agent
 
 // ReasoningStepObservation reports one step of an agent's own structured,
 // multi-step reasoning over graph state (sdk#73): what it inferred, and the
-// entities its inference is about. Like a Hypothesis (ADR-0021), it is the
+// entities its inference is about. Like a Hypothesis (ADR-0121), it is the
 // agent's own deduction, not a sighting; unlike a Hypothesis it is not a
 // proposed claim awaiting settlement, but one step in the argument that leads
 // to one.

@@ -18,7 +18,7 @@ import (
 // compile-time assertions: dropping a group from Harness, or renaming one,
 // fails the build here rather than silently shrinking the interface.
 //
-// See docs/adr/0002-harness-capability-groups.md.
+// See ADR-0162.
 var (
 	_ LLMCaller       = Harness(nil)
 	_ ToolCaller      = Harness(nil)
@@ -36,7 +36,7 @@ var (
 //
 // The grouping refactor is meant to be purely structural: same methods, arranged
 // into named clusters. This list is the contract that says so. A method added
-// here without a matching group is the drift ADR-0002 exists to prevent — if you
+// here without a matching group is the drift ADR-0162 exists to prevent — if you
 // are updating this list, check the new method joined a group rather than being
 // bolted on flat.
 func TestHarnessMethodSetUnchanged(t *testing.T) {

@@ -6,7 +6,7 @@
 //
 // This package enables agents to emit structured knowledge — nodes and the
 // relationships between them — into the World. Under the ECS-brain model
-// (ADR-0001) agents are emit-only: they construct and submit nodes/relationships
+// (ADR-0101) agents are emit-only: they construct and submit nodes/relationships
 // and never query or traverse the graph back; the brain is the sole reader and
 // the relevant world state is ambiently projected to agents. The recall/query/
 // traversal surface (Query, Result, TraversalOptions, TraversalResult,

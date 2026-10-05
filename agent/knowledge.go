@@ -75,7 +75,7 @@ func (s RunScope) String() string {
 // history.
 //
 // READ-ONLY BY CONSTRUCTION. There is no write half and there will not be one:
-// the projector is the sole graph writer (ADR-0012), and an agent contributes to
+// the projector is the sole graph writer (ADR-0112), and an agent contributes to
 // the graph by emitting — see WorldEmitter — not by writing to it.
 //
 // Every method derives its tenant from the call context. No method takes a
@@ -87,7 +87,7 @@ func (s RunScope) String() string {
 // not. Only the graph nodes fall in the second case — their Go originals live in
 // gibson's internal packages, which the SDK cannot import.
 type KnowledgeReader interface {
-	// QueryNodes is the SDK search primitive (ADR-0022): how an agent queries
+	// QueryNodes is the SDK search primitive (ADR-0122): how an agent queries
 	// the shared knowledge graph and prior knowledge — entities, findings,
 	// hypotheses, reputation — instead of re-discovering what the fleet
 	// already knows. It searches with hybrid vector + graph scoring, by node

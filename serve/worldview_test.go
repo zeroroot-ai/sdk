@@ -75,7 +75,7 @@ func TestEntityKindUnknownIsNotSilentlyUnspecified(t *testing.T) {
 // generated descriptor: the read request must expose no field an agent could use
 // to name another tenant's World or a wider scope. Adding one would make the
 // cross-tenant check something a handler has to remember; there being no field is
-// what makes it unforgettable (ADR-0012).
+// what makes it unforgettable (ADR-0112).
 func TestWorldViewRequestCannotNameATenantOrScope(t *testing.T) {
 	fields := (&harnesspb.WorldViewRequest{}).ProtoReflect().Descriptor().Fields()
 

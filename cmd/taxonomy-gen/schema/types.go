@@ -133,7 +133,7 @@ type Property struct {
 	Description string   `yaml:"description,omitempty"`
 	// Volatile marks a property as mutable runtime state (e.g. port state, last-seen)
 	// rather than stable identity. Identity-vs-volatile drives the brain's entity
-	// resolution (ADR-0002): identity fields are compared, volatile fields are
+	// resolution (ADR-0102): identity fields are compared, volatile fields are
 	// updated-on-match and never compared. Not emitted into the proto; consumed by
 	// the ark-component codegen.
 	Volatile bool `yaml:"volatile,omitempty"`

@@ -1969,7 +1969,7 @@ func (h *CallbackHarness) handleAuthzUnavailable(ctx context.Context, action, re
 // — no method takes a tenant, so another tenant's graph is unrepresentable
 // rather than merely refused.
 //
-// Read-only by construction: the projector is the sole graph writer (ADR-0012),
+// Read-only by construction: the projector is the sole graph writer (ADR-0112),
 // and an agent contributes by emitting (SubmitFinding, Observe), never by
 // writing here.
 

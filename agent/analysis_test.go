@@ -6,7 +6,7 @@ package agent
 import "testing"
 
 // TestAnalysisObservation: an AnalysisObservation is a valid member of the
-// closed Observation sum type (ADR-0007), so a typed conclusion lands on the
+// closed Observation sum type (ADR-0107), so a typed conclusion lands on the
 // Timeline the same way every other sighting does, and it carries a typed
 // conclusion, evidence refs, and a confidence — the bridge between raw
 // findings and reportable output (sdk#74 acceptance criteria). It links to

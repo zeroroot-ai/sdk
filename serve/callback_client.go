@@ -659,7 +659,7 @@ func (c *CallbackClient) ValidateRelationship(ctx context.Context, req *harnessp
 // Proto-Canonical GraphRAG Operations
 // ============================================================================
 
-// Observe emits a typed observation into the World (ADR-0007).
+// Observe emits a typed observation into the World (ADR-0107).
 func (c *CallbackClient) Observe(ctx context.Context, req *harnesspb.ObserveRequest) (*harnesspb.ObserveResponse, error) {
 	if !c.IsConnected() {
 		return nil, errors.New("Observe: client not connected")
@@ -674,7 +674,7 @@ func (c *CallbackClient) Observe(ctx context.Context, req *harnesspb.ObserveRequ
 	return resp, nil
 }
 
-// PlaceBet stakes a calibrated confidence on a Hypothesis (ADR-0022).
+// PlaceBet stakes a calibrated confidence on a Hypothesis (ADR-0122).
 func (c *CallbackClient) PlaceBet(ctx context.Context, req *harnesspb.PlaceBetRequest) (*harnesspb.PlaceBetResponse, error) {
 	if !c.IsConnected() {
 		return nil, errors.New("PlaceBet: client not connected")
@@ -689,7 +689,7 @@ func (c *CallbackClient) PlaceBet(ctx context.Context, req *harnesspb.PlaceBetRe
 	return resp, nil
 }
 
-// WorldView fetches the caller's slice of the tenant World (ADR-0012). The
+// WorldView fetches the caller's slice of the tenant World (ADR-0112). The
 // context is stamped here, as on every other callback: it addresses the harness
 // the daemon should consult, and the daemon reads tenant and scope off that
 // harness's mission record rather than off anything sent here.

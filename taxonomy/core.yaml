@@ -10,7 +10,7 @@
 
 # v4.1.0 — ecs-brain (epic #37, sdk#340): add scope / credential / account asset
 # node types and a per-property `volatile` marker (identity-vs-volatile drives the
-# brain's entity resolution, ADR-0002). Additive — no wipe.
+# brain's entity resolution, ADR-0102). Additive — no wipe.
 version: "4.1.0"
 kind: core
 
@@ -632,7 +632,7 @@ node_types:
 
   - name: compliance_signal
     number: 17
-    # RETIRED. ADR-0013 moved compliance evidence to query time and ADR-0027
+    # RETIRED. ADR-0113 moved compliance evidence to query time and ADR-0027
     # forbids leaving the seam behind, so nothing emits or reads a
     # compliance_signal. The entry stays here to reserve enum value 17: deleting
     # it would free 17 for the next node type, which would change the meaning of

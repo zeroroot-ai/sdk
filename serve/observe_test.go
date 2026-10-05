@@ -161,7 +161,7 @@ func TestObservationToProto_LifecycleEntity_EmptyEdgesStayEmpty(t *testing.T) {
 }
 
 // TestObservationToProto_Hypothesis: a hypothesis carries the proposer,
-// confidence, claim and referenced entities onto the wire (ADR-0021, sdk#70).
+// confidence, claim and referenced entities onto the wire (ADR-0121, sdk#70).
 // It is the agent's own reasoning, not a sighting, but it still rides the
 // normal emit-only ObserveRequest oneof — no raw graph write.
 func TestObservationToProto_Hypothesis(t *testing.T) {

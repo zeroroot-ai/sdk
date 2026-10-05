@@ -14,7 +14,7 @@ import (
 
 // TestBetToProto: a Bet carries the hypothesis it is on, the staking agent,
 // the staked confidence and the technique it exercises onto the wire
-// (ADR-0022, sdk#71). Reputation is keyed on technique × environment, so the
+// (ADR-0122, sdk#71). Reputation is keyed on technique × environment, so the
 // technique must ride on the bet.
 func TestBetToProto(t *testing.T) {
 	req := betToProto(agent.Bet{
@@ -84,7 +84,7 @@ func TestBetToProto_WireRoundTrip(t *testing.T) {
 }
 
 // TestPlatformHarness_PlaceBet_Unsupported: PlaceBet is not yet wired in
-// platform pull-mode, mirroring Observe's status (ADR-0007/ADR-0022 land on
+// platform pull-mode, mirroring Observe's status (ADR-0107/ADR-0122 land on
 // the same emit surface, and platform pull-mode has no typed emit endpoint
 // yet). It must fail loudly, not silently no-op.
 func TestPlatformHarness_PlaceBet_Unsupported(t *testing.T) {

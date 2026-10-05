@@ -207,7 +207,7 @@ type MissionManager interface {
 // Groups also let a caller ask for exactly the capability it needs, so a
 // function that only reads cannot emit.
 //
-// See docs/adr/0002-harness-capability-groups.md.
+// See ADR-0162.
 
 // LLMCaller is the model-facing surface: one completion call per shape an agent needs.
 type LLMCaller interface {
@@ -369,7 +369,7 @@ type Delegator interface {
 
 // WorldEmitter is emitting into the tenant World.
 //
-// Deliberately separate from WorldReader. ADR-0012 makes the projector the sole
+// Deliberately separate from WorldReader. ADR-0112 makes the projector the sole
 // graph writer, and splitting emit from read gives that constraint a type: a
 // function taking a WorldReader cannot emit, and the compiler enforces it at
 // every call site rather than a reviewer catching it sometimes.
@@ -384,22 +384,22 @@ type WorldEmitter interface {
 
 	// SubmitFinding records a new security finding (an emit). The finding flows
 	// into the brain as an observation; agents do not query findings back — the
-	// relevant world state is ambiently projected to them (ADR-0001).
+	// relevant world state is ambiently projected to them (ADR-0101).
 	SubmitFinding(ctx context.Context, f *finding.Finding) error
 
 	// Observation Emit
 	//
-	// Observe emits a typed observation into the World (ADR-0007). This is the
+	// Observe emits a typed observation into the World (ADR-0107). This is the
 	// agent's write path: agents report what they saw (a host, its ports/services,
 	// …) and the brain resolves identity and topology — agents never author graph
 	// nodes or relationships, and never query the graph back (the relevant world
-	// state is ambiently projected to them, ADR-0001). Scope is derived server-side
+	// state is ambiently projected to them, ADR-0101). Scope is derived server-side
 	// from mission context, not carried on the observation.
 	Observe(ctx context.Context, obs Observation) error
 
 	// Betting
 	//
-	// PlaceBet stakes a calibrated confidence on a Hypothesis (ADR-0022). Betting
+	// PlaceBet stakes a calibrated confidence on a Hypothesis (ADR-0122). Betting
 	// is a first-class SDK primitive, parallel to Observe: the agent places a
 	// bet and storage, settlement and scoring are a gibson-side concern.
 	PlaceBet(ctx context.Context, bet Bet) error
@@ -410,7 +410,7 @@ type WorldReader interface {
 
 	// World Read
 	//
-	// WorldView returns the agent's slice of the tenant World (ADR-0012) — the
+	// WorldView returns the agent's slice of the tenant World (ADR-0112) — the
 	// read half of the emit-only worker contract, and the counterpart to Observe.
 	//
 	// The slice is projected by the daemon from the mission record it created:

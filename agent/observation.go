@@ -3,13 +3,13 @@
 
 package agent
 
-// Observation is a raw sighting an agent emits into the World (ECS brain, ADR-0007).
+// Observation is a raw sighting an agent emits into the World (ECS brain, ADR-0107).
 //
 // Agents are emit-only workers: they report what they saw and the brain resolves
 // identity and topology — agents never author graph nodes or relationships, and
 // never read the graph back (the relevant world state is ambiently projected to
-// them, ADR-0001). Scope is NOT carried on an observation; the daemon derives it
-// from the mission context (the agent's vantage, ADR-0002).
+// them, ADR-0101). Scope is NOT carried on an observation; the daemon derives it
+// from the mission context (the agent's vantage, ADR-0102).
 //
 // Observation is a closed sum type — the concrete types in this package
 // (HostObservation, …) are the only valid observations. The brain folds each into
@@ -33,7 +33,7 @@ type HostObservation struct {
 	CloudID string
 	// Ports are the ports observed open in this sighting, with optional service
 	// detail. Ports previously seen but absent here are treated as closed (their
-	// record is kept, not deleted — ADR-0002).
+	// record is kept, not deleted — ADR-0102).
 	Ports []PortObservation
 }
 
@@ -164,7 +164,7 @@ func (MemoryObservation) isObservation() {}
 // Admission is the Taxonomy's decision, not the agent's. The daemon puts Label
 // and every edge type to the global Taxonomy: an admitted shape becomes a typed
 // node, and one the Taxonomy does not admit is neither rejected nor lost — it
-// lands as an Observation with its residue preserved (ADR-0012). So an agent can
+// lands as an Observation with its residue preserved (ADR-0112). So an agent can
 // always write, and can never invent schema.
 //
 // This stays a sighting, not a graph write: the agent reports what it saw, the
@@ -192,12 +192,12 @@ type LifecycleEntityObservation struct {
 func (LifecycleEntityObservation) isObservation() {}
 
 // HypothesisObservation reports an agent's own reasoning: a proposed, unproven
-// claim it wants the fleet to test, not a sighting (ADR-0021). It is attributed
+// claim it wants the fleet to test, not a sighting (ADR-0121). It is attributed
 // to the proposing agent and carries a confidence, and it stays unverified
-// until it settles (see the betting / settlement slices, ADR-0022 / ADR-0023).
+// until it settles (see the betting / settlement slices, ADR-0122 / ADR-0123).
 //
 // This keeps the agent write surface emit-only: an agent still only emits
-// observations, never a raw graph node or edge (ADR-0007). A HypothesisObservation
+// observations, never a raw graph node or edge (ADR-0107). A HypothesisObservation
 // differs from every other Observation variant in kind, not in surface — it
 // carries the agent's inference rather than something it sensed.
 type HypothesisObservation struct {
@@ -206,7 +206,7 @@ type HypothesisObservation struct {
 	// claim, and that a settlement path (Engine.SettleBetByHITL, gibson#280)
 	// records against. This is the one join key across Hypothesis, Bet and
 	// BetSettlement (gibson#339). Optional: empty preserves a Hypothesis
-	// with no bettable identity — it still folds as a claim (ADR-0021), it
+	// with no bettable identity — it still folds as a claim (ADR-0121), it
 	// just cannot be staked on or settled by id.
 	HypothesisID string
 	// Proposer identifies the agent making the claim.
@@ -214,13 +214,13 @@ type HypothesisObservation struct {
 	// Confidence is the proposer's calibrated confidence in the claim, in [0,1].
 	Confidence float64
 	// Claim states the hypothesis in a form the brain can later settle (see the
-	// settlement slice, ADR-0023), e.g. "port 6443 on 10.0.0.5 is unauthenticated".
+	// settlement slice, ADR-0123), e.g. "port 6443 on 10.0.0.5 is unauthenticated".
 	Claim string
 	// References names the entities the claim is about, by label and identity —
 	// the agent does not know node ids, and must not be able to guess them.
 	References []ReferencedEntity
 	// Technique names the technique this hypothesis exercises. Reputation
-	// keys on technique x environment (ADR-0022, gibson#333/#284), so this
+	// keys on technique x environment (ADR-0122, gibson#333/#284), so this
 	// must ride on the Hypothesis the same way it already rides on Bet.
 	// Optional and additive: empty means no technique signal (resolves to
 	// the neutral prior), the same behavior as before this field existed.

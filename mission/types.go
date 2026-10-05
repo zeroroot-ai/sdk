@@ -29,7 +29,7 @@ type CreateMissionOpts struct {
 
 	// CatalogMission names a mission definition checked into the platform's
 	// mission catalog, to be originated instead of a caller-supplied graph.
-	// The checked-in definition is the authoritative one (ADR-0018), so an
+	// The checked-in definition is the authoritative one (ADR-0118), so an
 	// agent that wants a first-party mission names it here rather than
 	// rebuilding its graph — two definitions of one mission is what ADR-0027
 	// forbids.
