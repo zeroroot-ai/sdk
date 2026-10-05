@@ -29,7 +29,6 @@ updates:
           - patch
     commit-message:
       prefix: chore(deps)
-      include: scope
   - package-ecosystem: "gomod"
     directory: "/examples/custom-tool"
     schedule:
@@ -47,7 +46,6 @@ updates:
           - patch
     commit-message:
       prefix: chore(deps)
-      include: scope
   - package-ecosystem: "gomod"
     directory: "/examples/minimal-agent"
     schedule:
@@ -65,7 +63,6 @@ updates:
           - patch
     commit-message:
       prefix: chore(deps)
-      include: scope
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
@@ -83,7 +80,6 @@ updates:
           - patch
     commit-message:
       prefix: chore(deps)
-      include: scope
   - package-ecosystem: "docker"
     directory: "/examples/tool-runner-hello"
     schedule:
@@ -101,7 +97,6 @@ updates:
           - patch
     commit-message:
       prefix: chore(deps)
-      include: scope
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -130,4 +125,3 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: chore(deps)
-      include: scope
