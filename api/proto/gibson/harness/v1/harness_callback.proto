@@ -2484,8 +2484,11 @@ message MissionFilter {
     int64 created_after = 4;       // Unix timestamp filter
     int64 created_before = 5;      // Unix timestamp filter
     repeated string tags = 6;      // Filter by tags (all must match)
-    int32 limit = 7;               // Max results (0 = no limit)
-    int32 offset = 8;              // Pagination offset
+
+    // The limit and offset fields are reserved. A list request uses page_size
+    // and page_token (ADR-0028, rule 3).
+    reserved 7, 8;
+    reserved "limit", "offset";
 }
 
 // OriginationStart selects the state that an originated mission starts from.
@@ -2622,12 +2625,24 @@ message WaitForMissionResponse {
 message ListMissionsRequest {
     ContextInfo context = 1;
     MissionFilter filter = 2;
+
+    // page_size is the most items for one page. 0 means the default of the
+    // server. The server can return fewer items.
+    int32 page_size = 3 [(buf.validate.field).int32 = { gte: 0, lte: 1000 }];
+
+    // page_token is the next_page_token of the previous response. Empty means
+    // the first page.
+    string page_token = 4 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // ListMissionsResponse returns matching missions.
 message ListMissionsResponse {
     repeated MissionInfo missions = 1;
     HarnessError error = 2;
+
+    // next_page_token is the page_token of the next page. Empty means that
+    // this page is the last one.
+    string next_page_token = 3;
 }
 
 // CancelMissionRequest requests cancellation of a running mission.

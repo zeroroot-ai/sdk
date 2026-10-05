@@ -307,7 +307,6 @@ service DaemonService {
       };
     }
 
-
   // UpdateMissionDefinition replaces the content of an existing mission
   // definition. The name field of the embedded definition is the lookup key.
   // All other fields replace the stored definition; the server-assigned ID and
@@ -1198,17 +1197,24 @@ message ListMissionsRequest {
   // active_only filters to only running missions
   bool active_only = 1;
 
-  // limit restricts the number of results
-  int32 limit = 2;
-
-  // offset is the pagination offset
-  int32 offset = 3;
-
   // status_filter filters missions by status (`running`, `completed`, `failed`, `cancelled`)
   string status_filter = 4 [(buf.validate.field).string = { max_len: 4096 }];
 
   // name_pattern filters missions by name using glob pattern matching
   string name_pattern = 5 [(buf.validate.field).string = { max_len: 4096 }];
+
+  // The limit and offset fields are reserved. A list request uses page_size
+  // and page_token (ADR-0028, rule 3).
+  reserved 2, 3;
+  reserved "limit", "offset";
+
+  // page_size is the most items for one page. 0 means the default of the
+  // server. The server can return fewer items.
+  int32 page_size = 6 [(buf.validate.field).int32 = { gte: 0, lte: 1000 }];
+
+  // page_token is the next_page_token of the previous response. Empty means
+  // the first page.
+  string page_token = 7 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // ListMissionsResponse returns mission list.
@@ -1218,6 +1224,10 @@ message ListMissionsResponse {
 
   // total is the total count of missions (for pagination)
   int32 total = 2;
+
+  // next_page_token is the page_token of the next page. Empty means that
+  // this page is the last one.
+  string next_page_token = 3;
 }
 
 // MissionInfo describes a mission.
@@ -1318,11 +1328,18 @@ message GetMissionHistoryRequest {
   // name is the mission name to query history for
   string name = 1 [(buf.validate.field).string = { max_len: 1024 }];
 
-  // limit restricts the number of results (default: 100)
-  int32 limit = 2;
+  // The limit and offset fields are reserved. A list request uses page_size
+  // and page_token (ADR-0028, rule 3).
+  reserved 2, 3;
+  reserved "limit", "offset";
 
-  // offset is the pagination offset (default: 0)
-  int32 offset = 3;
+  // page_size is the most items for one page. 0 means the default of the
+  // server. The server can return fewer items.
+  int32 page_size = 4 [(buf.validate.field).int32 = { gte: 0, lte: 1000 }];
+
+  // page_token is the next_page_token of the previous response. Empty means
+  // the first page.
+  string page_token = 5 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // GetMissionHistoryResponse returns mission execution history.
@@ -1332,6 +1349,10 @@ message GetMissionHistoryResponse {
 
   // total is the total count of runs (for pagination)
   int32 total = 2;
+
+  // next_page_token is the page_token of the next page. Empty means that
+  // this page is the last one.
+  string next_page_token = 3;
 }
 
 // MissionRun represents a single execution instance of a mission.
@@ -1438,11 +1459,19 @@ message RewindMissionResponse {
 
 // ListMissionDefinitionsRequest queries installed mission definitions.
 message ListMissionDefinitionsRequest {
-  // limit restricts the number of results (0 = all)
-  int32 limit = 1;
 
-  // offset is the pagination offset
-  int32 offset = 2;
+  // The limit and offset fields are reserved. A list request uses page_size
+  // and page_token (ADR-0028, rule 3).
+  reserved 1, 2;
+  reserved "limit", "offset";
+
+  // page_size is the most items for one page. 0 means the default of the
+  // server. The server can return fewer items.
+  int32 page_size = 3 [(buf.validate.field).int32 = { gte: 0, lte: 1000 }];
+
+  // page_token is the next_page_token of the previous response. Empty means
+  // the first page.
+  string page_token = 4 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // ListMissionDefinitionsResponse returns installed mission definitions.
@@ -1452,6 +1481,10 @@ message ListMissionDefinitionsResponse {
 
   // total is the total count of mission definitions (for pagination)
   int32 total = 2;
+
+  // next_page_token is the page_token of the next page. Empty means that
+  // this page is the last one.
+  string next_page_token = 3;
 }
 
 // CreateMissionDefinitionRequest registers a new mission definition with the
@@ -1834,11 +1867,23 @@ message GetTargetResponse {
 message ListTargetsRequest {
   // filter narrows the result set. Omit for the tenant's full target list.
   gibson.target.v1.TargetFilter filter = 1;
+
+  // page_size is the most items for one page. 0 means the default of the
+  // server. The server can return fewer items.
+  int32 page_size = 2 [(buf.validate.field).int32 = { gte: 0, lte: 1000 }];
+
+  // page_token is the next_page_token of the previous response. Empty means
+  // the first page.
+  string page_token = 3 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // ListTargetsResponse returns the matching targets.
 message ListTargetsResponse {
   repeated gibson.target.v1.Target targets = 1;
+
+  // next_page_token is the page_token of the next page. Empty means that
+  // this page is the last one.
+  string next_page_token = 2;
 }
 
 // UpdateTargetRequest replaces a target's metadata.
@@ -2255,7 +2300,6 @@ message ListMyMembershipsResponse {
   // should route to onboarding rather than the picker in that case.
   repeated Membership memberships = 1;
 }
-
 
 // ────────────────────────────────────────────────────────────────────────────
 // GetMissionDefinition — mission-author-experience M5

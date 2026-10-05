@@ -722,17 +722,19 @@ import (
 	// active_only filters to only running missions
 	activeOnly?: bool @protobuf(1,bool,name=active_only)
 
-	// limit restricts the number of results
-	limit?: int32 @protobuf(2,int32)
-
-	// offset is the pagination offset
-	offset?: int32 @protobuf(3,int32)
-
 	// status_filter filters missions by status (`running`, `completed`, `failed`, `cancelled`)
 	statusFilter?: string @protobuf(4,string,name=status_filter,"(buf.validate.field).string=")
 
 	// name_pattern filters missions by name using glob pattern matching
 	namePattern?: string @protobuf(5,string,name=name_pattern,"(buf.validate.field).string=")
+
+	// page_size is the most items for one page. 0 means the default of the
+	// server. The server can return fewer items.
+	pageSize?: int32 @protobuf(6,int32,name=page_size,"(buf.validate.field).int32=")
+
+	// page_token is the next_page_token of the previous response. Empty means
+	// the first page.
+	pageToken?: string @protobuf(7,string,name=page_token,"(buf.validate.field).string=")
 }
 
 // ListMissionsResponse returns mission list.
@@ -742,6 +744,10 @@ import (
 
 	// total is the total count of missions (for pagination)
 	total?: int32 @protobuf(2,int32)
+
+	// next_page_token is the page_token of the next page. Empty means that
+	// this page is the last one.
+	nextPageToken?: string @protobuf(3,string,name=next_page_token)
 }
 
 // MissionInfo describes a mission.
@@ -836,11 +842,13 @@ import (
 	// name is the mission name to query history for
 	name?: string @protobuf(1,string,"(buf.validate.field).string=")
 
-	// limit restricts the number of results (default: 100)
-	limit?: int32 @protobuf(2,int32)
+	// page_size is the most items for one page. 0 means the default of the
+	// server. The server can return fewer items.
+	pageSize?: int32 @protobuf(4,int32,name=page_size,"(buf.validate.field).int32=")
 
-	// offset is the pagination offset (default: 0)
-	offset?: int32 @protobuf(3,int32)
+	// page_token is the next_page_token of the previous response. Empty means
+	// the first page.
+	pageToken?: string @protobuf(5,string,name=page_token,"(buf.validate.field).string=")
 }
 
 // GetMissionHistoryResponse returns mission execution history.
@@ -850,6 +858,10 @@ import (
 
 	// total is the total count of runs (for pagination)
 	total?: int32 @protobuf(2,int32)
+
+	// next_page_token is the page_token of the next page. Empty means that
+	// this page is the last one.
+	nextPageToken?: string @protobuf(3,string,name=next_page_token)
 }
 
 // MissionRun represents a single execution instance of a mission.
@@ -956,11 +968,13 @@ import (
 
 // ListMissionDefinitionsRequest queries installed mission definitions.
 #ListMissionDefinitionsRequest: {
-	// limit restricts the number of results (0 = all)
-	limit?: int32 @protobuf(1,int32)
+	// page_size is the most items for one page. 0 means the default of the
+	// server. The server can return fewer items.
+	pageSize?: int32 @protobuf(3,int32,name=page_size,"(buf.validate.field).int32=")
 
-	// offset is the pagination offset
-	offset?: int32 @protobuf(2,int32)
+	// page_token is the next_page_token of the previous response. Empty means
+	// the first page.
+	pageToken?: string @protobuf(4,string,name=page_token,"(buf.validate.field).string=")
 }
 
 // ListMissionDefinitionsResponse returns installed mission definitions.
@@ -970,6 +984,10 @@ import (
 
 	// total is the total count of mission definitions (for pagination)
 	total?: int32 @protobuf(2,int32)
+
+	// next_page_token is the page_token of the next page. Empty means that
+	// this page is the last one.
+	nextPageToken?: string @protobuf(3,string,name=next_page_token)
 }
 
 // CreateMissionDefinitionRequest registers a new mission definition with the
@@ -1321,11 +1339,23 @@ import (
 #ListTargetsRequest: {
 	// filter narrows the result set. Omit for the tenant's full target list.
 	filter?: targetpb.#TargetFilter @protobuf(1,gibson.target.v1.TargetFilter)
+
+	// page_size is the most items for one page. 0 means the default of the
+	// server. The server can return fewer items.
+	pageSize?: int32 @protobuf(2,int32,name=page_size,"(buf.validate.field).int32=")
+
+	// page_token is the next_page_token of the previous response. Empty means
+	// the first page.
+	pageToken?: string @protobuf(3,string,name=page_token,"(buf.validate.field).string=")
 }
 
 // ListTargetsResponse returns the matching targets.
 #ListTargetsResponse: {
 	targets?: [...targetpb.#Target] @protobuf(1,gibson.target.v1.Target)
+
+	// next_page_token is the page_token of the next page. Empty means that
+	// this page is the last one.
+	nextPageToken?: string @protobuf(2,string,name=next_page_token)
 }
 
 // UpdateTargetRequest replaces a target's metadata.

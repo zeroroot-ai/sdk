@@ -126,9 +126,8 @@ message TargetFilter {
   // tags filters to targets carrying all of the given tags.
   repeated string tags = 4;
 
-  // limit caps the number of results. Zero means the server default.
-  int32 limit = 5;
-
-  // offset skips the first N results for pagination.
-  int32 offset = 6;
+  // The limit and offset fields are reserved. A list request uses page_size
+  // and page_token (ADR-0028, rule 3).
+  reserved 5, 6;
+  reserved "limit", "offset";
 }

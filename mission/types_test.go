@@ -685,7 +685,6 @@ func TestMissionFilter(t *testing.T) {
 			CreatedBefore:   &createdBefore,
 			Tags:            []string{"security", "compliance"},
 			Limit:           100,
-			Offset:          10,
 		}
 
 		if filter.Status == nil || *filter.Status != MissionStatusCompleted {
@@ -702,9 +701,6 @@ func TestMissionFilter(t *testing.T) {
 		}
 		if filter.Limit != 100 {
 			t.Errorf("expected Limit 100, got %d", filter.Limit)
-		}
-		if filter.Offset != 10 {
-			t.Errorf("expected Offset 10, got %d", filter.Offset)
 		}
 	})
 
@@ -737,7 +733,6 @@ func TestMissionFilterJSON(t *testing.T) {
 			CreatedBefore:   &now,
 			Tags:            []string{"test"},
 			Limit:           50,
-			Offset:          5,
 		}
 
 		data, err := json.Marshal(original)

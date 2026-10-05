@@ -416,15 +416,29 @@ message GetFindingsRequest {
   // Substring match on name OR description (case-insensitive). Empty = no
   // filter.
   string search = 4 [(buf.validate.field).string = { max_len: 4096 }];
-  // Default 100, max 500 (server-clamped).
-  uint32 limit = 5;
-  uint32 offset = 6;
+
+  // The limit and offset fields are reserved. A list request uses page_size
+  // and page_token (ADR-0028, rule 3).
+  reserved 5, 6;
+  reserved "limit", "offset";
+
+  // page_size is the most items for one page. 0 means the default of the
+  // server. The server can return fewer items.
+  int32 page_size = 7 [(buf.validate.field).int32 = { gte: 0, lte: 1000 }];
+
+  // page_token is the next_page_token of the previous response. Empty means
+  // the first page.
+  string page_token = 8 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 message GetFindingsResponse {
   repeated Finding findings = 1;
   // Count of matching findings without limit/offset, for pagination UI.
   uint64 total = 2;
-  // True when total > offset + len(findings).
+  // True when the server holds more findings than this page.
   bool truncated = 3;
+
+  // next_page_token is the page_token of the next page. Empty means that
+  // this page is the last one.
+  string next_page_token = 4;
 }
