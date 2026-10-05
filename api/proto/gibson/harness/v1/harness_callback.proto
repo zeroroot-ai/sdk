@@ -1863,6 +1863,13 @@ message SubmitProofRequest {
     // RequestDestructiveAuthorization approval for this hypothesis_id
     // (ADR-0132); a non-destructive proof settles synchronously.
     bool destructive = 6;
+    // tool_call_ids names the tool calls whose recorded results are the
+    // evidence of this proof. Each id is the ContextInfo.tool_execution_id of
+    // a tool call that the daemon recorded in this mission. The daemon reads
+    // the recorded result of each call and evaluates the predicate on it.
+    // Evidence in the evidence field that no tool call id backs is typed by
+    // the agent, and the daemon sends such a proof to human review.
+    repeated string tool_call_ids = 7;
 }
 
 // SettlementOutcome reports what SubmitProof did with the submitted proof.
@@ -1879,6 +1886,10 @@ enum SettlementOutcome {
     // authorization decision for this hypothesis_id (ADR-0132). SubmitProof
     // never blocks on that decision.
     SETTLEMENT_OUTCOME_PENDING_AUTHORIZATION = 3;
+    // SETTLEMENT_OUTCOME_PENDING_REVIEW means the proof carried only evidence
+    // that the agent typed, with no recorded tool call behind it, so a human
+    // decides. SubmitProof never blocks on that decision.
+    SETTLEMENT_OUTCOME_PENDING_REVIEW = 4;
 }
 
 // SubmitProofResponse reports the settlement outcome. SubmitProof never
