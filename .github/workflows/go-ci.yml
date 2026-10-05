@@ -141,6 +141,14 @@ jobs:
       - name: Mutation-test the idempotency key lint
         run: bash scripts/__tests__/lint-idempotency-key.test.sh
 
+      # sdk#189: the services and the RPCs of the sdk are one checked-in list
+      # (ADR-0058). The first step is the check. The second step proves that
+      # each rule of the check can fail.
+      - name: Check the RPC surface against its list
+        run: node scripts/lint-rpc-surface.mjs
+      - name: Mutation-test the RPC surface lint
+        run: bash scripts/__tests__/lint-rpc-surface.test.sh
+
       # Spec: unified-identity-and-authorization Requirement 14.1.
       - name: Lint authz annotations
         run: |
