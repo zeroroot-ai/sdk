@@ -50,7 +50,7 @@ import "github.com/zeroroot-ai/sdk/api/proto/gibson/capability/v1:capabilityv1"
 	// tenant_admin on the target's tenant. Format matches the FGA
 	// user form: "agent_principal:<uuid>" / "tool_principal:<uuid>" /
 	// "plugin_principal:<uuid>".
-	targetPrincipalId?: string @protobuf(1,string,name=target_principal_id)
+	targetPrincipalId?: string @protobuf(1,string,name=target_principal_id,"(buf.validate.field).string=")
 }
 
 // WhoAmIResponse carries the principal's effective grants.

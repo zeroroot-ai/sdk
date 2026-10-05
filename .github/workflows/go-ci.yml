@@ -125,6 +125,14 @@ jobs:
       - name: Mutation-test the pagination lint
         run: bash scripts/__tests__/lint-pagination.test.sh
 
+      # sdk#185: each string and enum field of each RPC request has a
+      # buf.validate rule (ADR-0028). The second step proves that each rule of
+      # the check can fail.
+      - name: Check each request field has a rule
+        run: node scripts/lint-field-rules.mjs
+      - name: Mutation-test the field rule lint
+        run: bash scripts/__tests__/lint-field-rules.test.sh
+
       # sdk#207: each create, run, start and submit request has an
       # idempotency_key (ADR-0028). The first step is the check. The second
       # step proves that each rule of the check can fail.

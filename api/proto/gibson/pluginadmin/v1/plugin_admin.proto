@@ -15,6 +15,7 @@ package gibson.pluginadmin.v1;
 option go_package = "github.com/zeroroot-ai/sdk/api/gen/gibson/pluginadmin/v1;pluginadminv1";
 
 import "gibson/auth/v1/options.proto";
+import "buf/validate/validate.proto";
 
 // PluginAdminService manages plugin installs and their secret bindings.
 service PluginAdminService {
@@ -139,8 +140,8 @@ message PluginManifestValidationError {
 // ---------------------------------------------------------------------------
 
 message ListPluginInstallsRequest {
-  string name_filter = 1;
-  PluginInstallStatus status_filter = 2;
+  string name_filter = 1 [(buf.validate.field).string = { max_len: 4096 }];
+  PluginInstallStatus status_filter = 2 [(buf.validate.field).enum = { defined_only: true }];
   int32 limit = 3;
   int32 offset = 4;
 }
@@ -151,7 +152,7 @@ message ListPluginInstallsResponse {
 }
 
 message GetPluginInstallRequest {
-  string install_id = 1;
+  string install_id = 1 [(buf.validate.field).string = { min_len: 1, max_len: 1024 }];
 }
 
 message GetPluginInstallResponse {
@@ -180,16 +181,16 @@ message RegisterPluginResponse {
 }
 
 message EditPluginSecretBindingRequest {
-  string install_id = 1;
-  string declared_name = 2;
-  string new_existing_ref = 3;
+  string install_id = 1 [(buf.validate.field).string = { min_len: 1, max_len: 1024 }];
+  string declared_name = 2 [(buf.validate.field).string = { min_len: 1, max_len: 1024 }];
+  string new_existing_ref = 3 [(buf.validate.field).string = { min_len: 1, max_len: 1024 }];
 }
 
 message EditPluginSecretBindingResponse {}
 
 message RevokePluginSecretBindingRequest {
-  string install_id = 1;
-  string declared_name = 2;
+  string install_id = 1 [(buf.validate.field).string = { min_len: 1, max_len: 1024 }];
+  string declared_name = 2 [(buf.validate.field).string = { min_len: 1, max_len: 1024 }];
 }
 
 message RevokePluginSecretBindingResponse {}

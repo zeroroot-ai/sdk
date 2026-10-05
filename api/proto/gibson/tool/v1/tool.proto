@@ -7,6 +7,7 @@ option csharp_namespace = "Gibson.Tool";
 import "gibson/common/v1/gibson_common.proto";
 
 import "gibson/auth/v1/options.proto";
+import "buf/validate/validate.proto";
 service ToolService {
     rpc GetDescriptor(GetDescriptorRequest) returns (GetDescriptorResponse) {
       option (gibson.auth.v1.authz) = {
@@ -54,7 +55,7 @@ message GetDescriptorResponse {
 }
 
 message ExecuteRequest {
-    string input_json = 1;
+    string input_json = 1 [(buf.validate.field).string = { max_len: 16777216 }];
     int64 timeout_ms = 2;
 }
 
@@ -78,16 +79,16 @@ message StreamExecuteRequest {
 }
 
 message ToolStartRequest {
-    string input_json = 1;
+    string input_json = 1 [(buf.validate.field).string = { max_len: 16777216 }];
     int64 timeout_ms = 2;
     // Trace ID for distributed tracing (propagated from agent/orchestrator).
-    string trace_id = 3;
+    string trace_id = 3 [(buf.validate.field).string = { max_len: 1024 }];
     // Parent span ID for distributed tracing (propagated from agent/orchestrator).
-    string parent_span_id = 4;
+    string parent_span_id = 4 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 message ToolCancelRequest {
-    string reason = 1;
+    string reason = 1 [(buf.validate.field).string = { max_len: 16777216 }];
 }
 
 // Tool -> Client messages for streaming

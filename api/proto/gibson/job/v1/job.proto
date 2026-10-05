@@ -331,7 +331,7 @@ message OpenJobRequest {
     string bank_id = 1 [(buf.validate.field).string = { min_len: 1 }];
     // member_id pins the job to one member of that bank. Empty lets the
     // daemon pick a member with a free slot.
-    string member_id = 2;
+    string member_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
     // spec is the structured input. Required.
     JobSpec spec = 3 [(buf.validate.field).required = true];
 }
@@ -393,9 +393,9 @@ message GetJobResponse {
 // that is set narrows the list.
 message ListJobsRequest {
     // bank_id keeps only jobs of this bank.
-    string bank_id = 1;
+    string bank_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
     // member_id keeps only jobs this member holds.
-    string member_id = 2;
+    string member_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
     // state keeps only jobs in this state. Unspecified means every state.
     JobState state = 3 [(buf.validate.field).enum = { defined_only: true }];
     // page_size is the maximum number of jobs to return. Zero means the
@@ -403,7 +403,7 @@ message ListJobsRequest {
     int32 page_size = 4 [(buf.validate.field).int32 = { gte: 0 }];
     // page_token is the next_page_token of the previous page. Empty for the
     // first page.
-    string page_token = 5;
+    string page_token = 5 [(buf.validate.field).string = { max_len: 16777216 }];
 }
 
 // ListJobsResponse carries one page of jobs.

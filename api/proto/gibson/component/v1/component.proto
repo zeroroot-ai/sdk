@@ -642,9 +642,9 @@ message ComponentDescriptor {
 // itself and declare its capabilities.
 message RegisterComponentRequest {
     // kind identifies the component type: "agent", "tool", or "plugin".
-    string kind = 1;
-    string name = 2;
-    string version = 3;
+    string kind = 1 [(buf.validate.field).string = { max_len: 1024 }];
+    string name = 2 [(buf.validate.field).string = { max_len: 1024 }];
+    string version = 3 [(buf.validate.field).string = { max_len: 1024 }];
     map<string, string> metadata = 4;
     // capabilities lists agent capabilities (used when kind == "agent").
     repeated string capabilities = 5;
@@ -652,16 +652,16 @@ message RegisterComponentRequest {
     repeated string methods = 6;
     // input_message_type is the fully-qualified proto message type for tool input
     // (used when kind == "tool").
-    string input_message_type = 7;
+    string input_message_type = 7 [(buf.validate.field).string = { max_len: 1024 }];
     // output_message_type is the fully-qualified proto message type for tool output
     // (used when kind == "tool").
-    string output_message_type = 8;
+    string output_message_type = 8 [(buf.validate.field).string = { max_len: 1024 }];
     // file_descriptor_set is the serialized proto FileDescriptorSet describing
     // the tool's schema (used when kind == "tool").
     bytes file_descriptor_set = 9;
     // config_schema_json is the JSON Schema document describing the plugin's
     // configuration surface (used when kind == "plugin").
-    string config_schema_json = 10;
+    string config_schema_json = 10 [(buf.validate.field).string = { max_len: 16777216 }];
 
     // ontology_extension carries the component's contribution to the daemon's
     // ontology reasoner (hierarchies, equivalences, IFPs, prefixes). Optional;
@@ -715,11 +715,11 @@ message RegisterComponentResponse {
 
 // HeartbeatRequest is the periodic health pulse sent by a registered component.
 message HeartbeatRequest {
-    string instance_id = 1;
+    string instance_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
     // health_status is the component's self-reported health: "healthy", "degraded", or "unhealthy".
-    string health_status = 2;
+    string health_status = 2 [(buf.validate.field).string = { max_len: 1024 }];
     // health_message provides optional human-readable detail about the health status.
-    string health_message = 3;
+    string health_message = 3 [(buf.validate.field).string = { max_len: 16777216 }];
     // member is the bank member status when this instance is a member of a
     // bank: busy or not busy, how many jobs it holds, which
     // ones, and the coding-agent version it runs. The daemon routes a queued
@@ -741,7 +741,7 @@ message HeartbeatResponse {
 
 // PollWorkRequest is sent by a component to request the next available work item.
 message PollWorkRequest {
-    string instance_id = 1;
+    string instance_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
     // timeout_ms is the maximum duration the server should hold the request open
     // waiting for work before returning an empty response. Should match the value
     // received in RegisterComponentResponse.poll_timeout_ms.
@@ -765,7 +765,7 @@ message PollWorkResponse {
 
 // SubmitResultRequest delivers the outcome of a completed work item back to Gibson.
 message SubmitResultRequest {
-    string work_id = 1;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
     // result is the serialized result payload.
     bytes result = 2;
     // error is set when the work item failed; leave unset on success.
@@ -783,9 +783,9 @@ message SubmitResultResponse {}
 // CompleteRequest is a harness proxy request for a non-streaming LLM completion.
 message CompleteRequest {
     // work_id ties this request to the active work item for authorization and billing.
-    string work_id = 1;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
     // slot is the named LLM slot defined by the agent (e.g. "primary").
-    string slot = 2;
+    string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
     repeated LLMMessage messages = 3;
     // timeout_ms is the maximum time to wait for the completion.
     int64 timeout_ms = 4;
@@ -831,9 +831,9 @@ message CompleteResponse {
 // CompleteStreamRequest is a harness proxy request for a streaming LLM completion.
 message CompleteStreamRequest {
     // work_id ties this request to the active work item for authorization and billing.
-    string work_id = 1;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
     // slot is the named LLM slot defined by the agent (e.g. "primary").
-    string slot = 2;
+    string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
     repeated LLMMessage messages = 3;
     // timeout_ms is the maximum time to wait for the completion.
     int64 timeout_ms = 4;
@@ -855,10 +855,10 @@ message TokenUsage {
 
 // CallToolRequest is a harness proxy request to execute a tool.
 message CallToolRequest {
-    string work_id = 1;
-    string tool_name = 2;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
+    string tool_name = 2 [(buf.validate.field).string = { max_len: 1024 }];
     // input_json is the JSON-encoded tool input matching the tool's input schema.
-    string input_json = 3;
+    string input_json = 3 [(buf.validate.field).string = { max_len: 16777216 }];
     int64 timeout_ms = 4;
 }
 
@@ -871,11 +871,11 @@ message CallToolResponse {
 
 // QueryPluginRequest is a harness proxy request to invoke a plugin method.
 message QueryPluginRequest {
-    string work_id = 1;
-    string plugin_name = 2;
-    string method = 3;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
+    string plugin_name = 2 [(buf.validate.field).string = { max_len: 1024 }];
+    string method = 3 [(buf.validate.field).string = { max_len: 4096 }];
     // params_json is the JSON-encoded method parameters.
-    string params_json = 4;
+    string params_json = 4 [(buf.validate.field).string = { max_len: 16777216 }];
     int64 timeout_ms = 5;
 }
 
@@ -888,7 +888,7 @@ message QueryPluginResponse {
 
 // SubmitFindingRequest is a harness proxy request to record a security finding.
 message SubmitFindingRequest {
-    string work_id = 1;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
     // finding is the JSON encoding of the SDK `finding.Finding` struct
     // (see finding/finding.go). NOT a proto-encoded message — the daemon
     // reads it with `string(req.Finding)`. This is distinct from the typed
@@ -954,9 +954,9 @@ message PluginCatalogEntryProto {
 // EnablePluginRequest activates a plugin and optionally supplies initial configuration.
 message EnablePluginRequest {
     // plugin_name is the unique identifier of the plugin to enable.
-    string plugin_name = 1;
+    string plugin_name = 1 [(buf.validate.field).string = { max_len: 1024 }];
     // config_json is an optional JSON-encoded configuration blob for the plugin.
-    string config_json = 2;
+    string config_json = 2 [(buf.validate.field).string = { max_len: 16777216 }];
 }
 
 // EnablePluginResponse reports the outcome of an enable operation.
@@ -969,7 +969,7 @@ message EnablePluginResponse {
 // DisablePluginRequest deactivates the named plugin for the calling tenant.
 message DisablePluginRequest {
     // plugin_name is the unique identifier of the plugin to disable.
-    string plugin_name = 1;
+    string plugin_name = 1 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // DisablePluginResponse reports the outcome of a disable operation.
@@ -982,9 +982,9 @@ message DisablePluginResponse {
 // UpdatePluginConfigRequest replaces the stored configuration for an enabled plugin.
 message UpdatePluginConfigRequest {
     // plugin_name is the unique identifier of the plugin whose config will be updated.
-    string plugin_name = 1;
+    string plugin_name = 1 [(buf.validate.field).string = { max_len: 1024 }];
     // config_json is the JSON-encoded configuration blob to persist.
-    string config_json = 2;
+    string config_json = 2 [(buf.validate.field).string = { max_len: 16777216 }];
 }
 
 // UpdatePluginConfigResponse reports the outcome of a config update operation.
@@ -997,7 +997,7 @@ message UpdatePluginConfigResponse {
 // GetPluginConfigRequest requests the current configuration for a named plugin.
 message GetPluginConfigRequest {
     // plugin_name is the unique identifier of the plugin to inspect.
-    string plugin_name = 1;
+    string plugin_name = 1 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // GetPluginConfigResponse carries the stored configuration and its schema.
@@ -1013,10 +1013,10 @@ message GetPluginConfigResponse {
 // connectivity without persisting any changes.
 message TestPluginConnectionRequest {
     // plugin_name is the unique identifier of the plugin to test.
-    string plugin_name = 1;
+    string plugin_name = 1 [(buf.validate.field).string = { max_len: 1024 }];
     // config_json is the JSON-encoded configuration to test; if empty the stored
     // configuration is used.
-    string config_json = 2;
+    string config_json = 2 [(buf.validate.field).string = { max_len: 16777216 }];
 }
 
 // TestPluginConnectionResponse reports the result of a connectivity test.
@@ -1077,8 +1077,8 @@ message ToolCallResult {
 
 // CompleteWithToolsRequest is a harness proxy request for LLM completion with tool definitions.
 message CompleteWithToolsRequest {
-    string work_id = 1;
-    string slot = 2;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
+    string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
     repeated LLMMessage messages = 3;
     repeated ToolDefinition tools = 4;
     int64 timeout_ms = 5;
@@ -1094,11 +1094,11 @@ message CompleteWithToolsResponse {
 
 // CompleteStructuredRequest is a harness proxy request for structured JSON output.
 message CompleteStructuredRequest {
-    string work_id = 1;
-    string slot = 2;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
+    string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
     repeated LLMMessage messages = 3;
     // schema_json is a JSON Schema the LLM output must conform to.
-    string schema_json = 4;
+    string schema_json = 4 [(buf.validate.field).string = { max_len: 16777216 }];
     int64 timeout_ms = 5;
 }
 
@@ -1115,9 +1115,9 @@ message CompleteStructuredResponse {
 
 // CallToolStreamRequest is a harness proxy request for streaming tool execution.
 message CallToolStreamRequest {
-    string work_id = 1;
-    string tool_name = 2;
-    string input_json = 3;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
+    string tool_name = 2 [(buf.validate.field).string = { max_len: 1024 }];
+    string input_json = 3 [(buf.validate.field).string = { max_len: 16777216 }];
     int64 timeout_ms = 4;
 }
 
@@ -1134,8 +1134,8 @@ message CallToolStreamResponse {
 
 // QueueToolWorkRequest submits a batch of tool invocations for parallel execution.
 message QueueToolWorkRequest {
-    string work_id = 1;
-    string tool_name = 2;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
+    string tool_name = 2 [(buf.validate.field).string = { max_len: 1024 }];
     // inputs_json is a list of JSON-encoded tool inputs.
     repeated string inputs_json = 3;
 }
@@ -1147,8 +1147,8 @@ message QueueToolWorkResponse {
 
 // ToolResultsRequest requests streaming results for a previously queued tool batch.
 message ToolResultsRequest {
-    string work_id = 1;
-    string job_id = 2;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
+    string job_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // ToolResultsResponse is a single result from a queued tool batch.
@@ -1164,7 +1164,7 @@ message ToolResultsResponse {
 
 // ListToolsRequest requests descriptors for all available tools.
 message ListToolsRequest {
-    string work_id = 1;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // ToolDescriptorProto describes a registered tool.
@@ -1188,8 +1188,8 @@ message ListToolsResponse {
 
 // DelegateToAgentRequest dispatches a sub-task to another agent.
 message DelegateToAgentRequest {
-    string work_id = 1;
-    string agent_name = 2;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
+    string agent_name = 2 [(buf.validate.field).string = { max_len: 1024 }];
     // task_json is the JSON-encoded agent.Task to delegate.
     bytes task_json = 3;
 }
@@ -1202,7 +1202,7 @@ message DelegateToAgentResponse {
 
 // ListAgentsRequest requests descriptors for all available agents.
 message ListAgentsRequest {
-    string work_id = 1;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // AgentDescriptorProto describes a registered agent.
@@ -1225,7 +1225,7 @@ message ListAgentsResponse {
 
 // QueryNodesRequest is a harness proxy request for knowledge graph queries.
 message QueryNodesRequest {
-    string work_id = 1;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
     gibson.graphrag.v1.GraphQuery query = 2;
 }
 
@@ -1236,8 +1236,8 @@ message QueryNodesResponse {
 
 // FindSimilarAttacksRequest searches for attack patterns similar to the given content.
 message FindSimilarAttacksRequest {
-    string work_id = 1;
-    string content = 2;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
+    string content = 2 [(buf.validate.field).string = { max_len: 16777216 }];
     int32 top_k = 3;
 }
 
@@ -1249,8 +1249,8 @@ message FindSimilarAttacksResponse {
 
 // GetAttackChainsRequest requests multi-hop attack paths from a technique.
 message GetAttackChainsRequest {
-    string work_id = 1;
-    string technique_id = 2;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
+    string technique_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
     int32 max_depth = 3;
 }
 
@@ -1262,8 +1262,8 @@ message GetAttackChainsResponse {
 
 // FindSimilarFindingsRequest searches for findings similar to the given one.
 message FindSimilarFindingsRequest {
-    string work_id = 1;
-    string finding_id = 2;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
+    string finding_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
     int32 top_k = 3;
 }
 
@@ -1275,8 +1275,8 @@ message FindSimilarFindingsResponse {
 
 // GetRelatedFindingsRequest requests findings related via graph relationships.
 message GetRelatedFindingsRequest {
-    string work_id = 1;
-    string finding_id = 2;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
+    string finding_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // GetRelatedFindingsResponse carries related findings.
@@ -1291,7 +1291,7 @@ message GetRelatedFindingsResponse {
 
 // GetFindingsRequest queries previously submitted findings.
 message GetFindingsRequest {
-    string work_id = 1;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
     // filter_json is a JSON-encoded finding.Filter.
     bytes filter_json = 2;
 }
@@ -1304,9 +1304,9 @@ message GetFindingsResponse {
 
 // GetRunFindingsRequest queries findings scoped to mission runs.
 message GetRunFindingsRequest {
-    string work_id = 1;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
     // scope: "previous" for prior run, "all" for all runs.
-    string scope = 2;
+    string scope = 2 [(buf.validate.field).string = { max_len: 4096 }];
     // filter_json is a JSON-encoded finding.Filter.
     bytes filter_json = 3;
 }
@@ -1326,10 +1326,10 @@ message GetRunFindingsResponse {
 
 // CreateMissionRequest creates a new sub-mission.
 message CreateMissionRequest {
-    string work_id = 1;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
     // mission_definition_json is the JSON-encoded mission definition.
     bytes mission_definition_json = 2;
-    string target_id = 3;
+    string target_id = 3 [(buf.validate.field).string = { max_len: 1024 }];
     // opts_json is the JSON-encoded mission.CreateMissionOpts.
     bytes opts_json = 4;
 
@@ -1351,8 +1351,8 @@ message CreateMissionResponse {
 
 // RunMissionRequest queues a mission for execution.
 message RunMissionRequest {
-    string work_id = 1;
-    string mission_id = 2;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
+    string mission_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
     // opts_json is the JSON-encoded mission.RunMissionOpts.
     bytes opts_json = 3;
 
@@ -1367,8 +1367,8 @@ message RunMissionResponse {}
 
 // GetMissionStatusRequest requests the current status of a mission.
 message GetMissionStatusRequest {
-    string work_id = 1;
-    string mission_id = 2;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
+    string mission_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // GetMissionStatusResponse carries the mission status.
@@ -1379,8 +1379,8 @@ message GetMissionStatusResponse {
 
 // WaitMissionRequest blocks until a mission completes or the timeout expires.
 message WaitMissionRequest {
-    string work_id = 1;
-    string mission_id = 2;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
+    string mission_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
     // timeout_ms is the maximum time to wait. 0 means wait indefinitely.
     int64 timeout_ms = 3;
 }
@@ -1393,7 +1393,7 @@ message WaitMissionResponse {
 
 // ListMissionsRequest returns missions matching the given filter.
 message ListMissionsRequest {
-    string work_id = 1;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
     // filter_json is the JSON-encoded mission.MissionFilter.
     bytes filter_json = 2;
 }
@@ -1406,8 +1406,8 @@ message ListMissionsResponse {
 
 // CancelMissionRequest requests cancellation of a running mission.
 message CancelMissionRequest {
-    string work_id = 1;
-    string mission_id = 2;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
+    string mission_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // CancelMissionResponse is returned after cancellation is requested.
@@ -1415,8 +1415,8 @@ message CancelMissionResponse {}
 
 // GetMissionResultsRequest requests the final results of a mission.
 message GetMissionResultsRequest {
-    string work_id = 1;
-    string mission_id = 2;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
+    string mission_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // GetMissionResultsResponse carries the mission results.
@@ -1431,8 +1431,8 @@ message GetMissionResultsResponse {
 
 // GetCredentialRequest retrieves a tenant-scoped credential.
 message GetCredentialRequest {
-    string work_id = 1;
-    string name = 2;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
+    string name = 2 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // GetCredentialResponse carries the credential.
@@ -1456,7 +1456,7 @@ message ComponentEvent {
 
 // GetTaxonomySchemaRequest requests the current taxonomy definition.
 message GetTaxonomySchemaRequest {
-    string work_id = 1;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // GetTaxonomySchemaResponse carries the taxonomy schema.
@@ -1467,7 +1467,7 @@ message GetTaxonomySchemaResponse {
 
 // GetMissionRunHistoryRequest requests summaries of previous mission runs.
 message GetMissionRunHistoryRequest {
-    string work_id = 1;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // GetMissionRunHistoryResponse carries run summaries.
@@ -1478,7 +1478,7 @@ message GetMissionRunHistoryResponse {
 
 // ReportStepHintsRequest reports planning step hints from an agent.
 message ReportStepHintsRequest {
-    string work_id = 1;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
     // hints_json is the JSON-encoded planning.StepHints.
     bytes hints_json = 2;
 }

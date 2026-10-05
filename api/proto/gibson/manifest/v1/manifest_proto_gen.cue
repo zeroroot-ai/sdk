@@ -200,7 +200,7 @@ import (
 // requested. agent_principal_id is only honored for tenant admins and
 // enables scaffold-time impersonation previews.
 #GetCapabilityManifestRequest: {
-	agentPrincipalId?: string @protobuf(1,string,name=agent_principal_id)
+	agentPrincipalId?: string @protobuf(1,string,name=agent_principal_id,"(buf.validate.field).string=")
 }
 
 // GetCapabilityManifestResponse wraps the signed manifest. Wrapping keeps

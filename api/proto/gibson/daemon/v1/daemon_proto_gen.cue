@@ -151,15 +151,15 @@ import (
 #RenewCapabilityGrantRequest: {
 	// agent_id is the agent's Zitadel service-account ID. Must match
 	// the sub claim of the presented CG-JWT.
-	agentId?: string @protobuf(1,string,name=agent_id)
+	agentId?: string @protobuf(1,string,name=agent_id,"(buf.validate.field).string=")
 
 	// mission_id names the mission. Must match the mission_id claim
 	// of the presented CG-JWT.
-	missionId?: string @protobuf(2,string,name=mission_id)
+	missionId?: string @protobuf(2,string,name=mission_id,"(buf.validate.field).string=")
 
 	// task_id names the specific task. Must match the task_id claim
 	// of the presented CG-JWT.
-	taskId?: string @protobuf(3,string,name=task_id)
+	taskId?: string @protobuf(3,string,name=task_id,"(buf.validate.field).string=")
 }
 
 // RenewCapabilityGrantResponse returns the freshly-minted CG-JWT
@@ -178,10 +178,10 @@ import (
 // ConnectRequest initiates a client connection to the daemon.
 #ConnectRequest: {
 	// client_version is the version of the Gibson CLI client
-	clientVersion?: string @protobuf(1,string,name=client_version)
+	clientVersion?: string @protobuf(1,string,name=client_version,"(buf.validate.field).string=")
 
 	// client_id is an optional unique identifier for this client
-	clientId?: string @protobuf(2,string,name=client_id)
+	clientId?: string @protobuf(2,string,name=client_id,"(buf.validate.field).string=")
 }
 
 // ConnectResponse returns connection metadata.
@@ -556,7 +556,7 @@ import (
 	eventTypes?: [...string] @protobuf(1,string,name=event_types)
 
 	// mission_id filters to a specific mission (empty = all)
-	missionId?: string @protobuf(2,string,name=mission_id)
+	missionId?: string @protobuf(2,string,name=mission_id,"(buf.validate.field).string=")
 }
 
 // SubscribeResponse wraps an Event for the Subscribe streaming RPC.
@@ -592,10 +592,10 @@ import (
 // API-only: missions are invoked by reference — no YAML, no file paths.
 #RunMissionRequest: {
 	// mission_definition_id is the ID of a registered mission definition to execute.
-	missionDefinitionId?: string @protobuf(1,string,name=mission_definition_id)
+	missionDefinitionId?: string @protobuf(1,string,name=mission_definition_id,"(buf.validate.field).string=")
 
 	// target_id is the ID of a registered target the mission runs against.
-	targetId?: string @protobuf(2,string,name=target_id)
+	targetId?: string @protobuf(2,string,name=target_id,"(buf.validate.field).string=")
 
 	// variables contains mission variables to override
 	variables?: {
@@ -604,7 +604,7 @@ import (
 
 	// memory_continuity defines how agent memory is shared across mission runs
 	// Valid values: "isolated" (default), "inherit", "shared"
-	memoryContinuity?: string @protobuf(4,string,name=memory_continuity)
+	memoryContinuity?: string @protobuf(4,string,name=memory_continuity,"(buf.validate.field).string=")
 
 	// idempotency_key makes a retry safe (ADR-0028). A second request with the
 	// same key returns the result of the first request and does the work one
@@ -702,7 +702,7 @@ import (
 // StopMissionRequest requests mission termination.
 #StopMissionRequest: {
 	// mission_id is the identifier of the mission to stop
-	missionId?: string @protobuf(1,string,name=mission_id)
+	missionId?: string @protobuf(1,string,name=mission_id,"(buf.validate.field).string=")
 
 	// force indicates whether to force-kill the mission (default: graceful)
 	force?: bool @protobuf(2,bool)
@@ -729,10 +729,10 @@ import (
 	offset?: int32 @protobuf(3,int32)
 
 	// status_filter filters missions by status (`running`, `completed`, `failed`, `cancelled`)
-	statusFilter?: string @protobuf(4,string,name=status_filter)
+	statusFilter?: string @protobuf(4,string,name=status_filter,"(buf.validate.field).string=")
 
 	// name_pattern filters missions by name using glob pattern matching
-	namePattern?: string @protobuf(5,string,name=name_pattern)
+	namePattern?: string @protobuf(5,string,name=name_pattern,"(buf.validate.field).string=")
 }
 
 // ListMissionsResponse returns mission list.
@@ -795,7 +795,7 @@ import (
 // PauseMissionRequest requests pausing a running mission.
 #PauseMissionRequest: {
 	// mission_id is the unique identifier of the mission to pause
-	missionId?: string @protobuf(1,string,name=mission_id)
+	missionId?: string @protobuf(1,string,name=mission_id,"(buf.validate.field).string=")
 
 	// force indicates whether to pause immediately without waiting for a clean checkpoint boundary
 	// If false (default), waits for the current node to complete before pausing
@@ -817,24 +817,24 @@ import (
 // ResumeMissionRequest requests resuming a paused mission.
 #ResumeMissionRequest: {
 	// mission_id is the unique identifier of the mission to resume
-	missionId?: string @protobuf(1,string,name=mission_id)
+	missionId?: string @protobuf(1,string,name=mission_id,"(buf.validate.field).string=")
 
 	// checkpoint_id optionally specifies a specific checkpoint to resume from
 	// If empty, resumes from the latest checkpoint
-	checkpointId?: string @protobuf(2,string,name=checkpoint_id)
+	checkpointId?: string @protobuf(2,string,name=checkpoint_id,"(buf.validate.field).string=")
 
 	// Empty string = legacy resume-from-latest behavior (backward compatible).
 	// When non-empty, the daemon rewinds the mission to the named checkpoint
 	// and resumes execution from that point. The handler additionally enforces
 	// the mission#admin FGA relation when this field is non-empty per
 	// mission-checkpointing R16.3.
-	targetCheckpointId?: string @protobuf(3,string,name=target_checkpoint_id)
+	targetCheckpointId?: string @protobuf(3,string,name=target_checkpoint_id,"(buf.validate.field).string=")
 }
 
 // GetMissionHistoryRequest queries mission execution history by name.
 #GetMissionHistoryRequest: {
 	// name is the mission name to query history for
-	name?: string @protobuf(1,string)
+	name?: string @protobuf(1,string,"(buf.validate.field).string=")
 
 	// limit restricts the number of results (default: 100)
 	limit?: int32 @protobuf(2,int32)
@@ -984,7 +984,7 @@ import (
 	// GetMissionDefinition can return the author's exact source rather than a
 	// reconstruction. Optional for backward compatibility; when empty the
 	// definition is stored without a recoverable source.
-	cueSource?: string @protobuf(2,string,name=cue_source)
+	cueSource?: string @protobuf(2,string,name=cue_source,"(buf.validate.field).string=")
 
 	// idempotency_key makes a retry safe (ADR-0028). A second request with the
 	// same key returns the result of the first request and does the work one
@@ -1013,7 +1013,7 @@ import (
 	// cue_source is the raw CUE source text that compiled to `definition`
 	// (maximum 512 KB). Overwrites the stored source in place under the stable
 	// id. Optional for backward compatibility.
-	cueSource?: string @protobuf(2,string,name=cue_source)
+	cueSource?: string @protobuf(2,string,name=cue_source,"(buf.validate.field).string=")
 }
 
 // UpdateMissionDefinitionResponse returns the stable server-assigned ID for
@@ -1156,16 +1156,16 @@ import (
 // Inline target / inline mission / YAML paths are no longer accepted.
 #CreateMissionRequest: {
 	// name is the mission name
-	name?: string @protobuf(1,string)
+	name?: string @protobuf(1,string,"(buf.validate.field).string=")
 
 	// description is the mission description
-	description?: string @protobuf(2,string)
+	description?: string @protobuf(2,string,"(buf.validate.field).string=")
 
 	// target_id is the ID of a pre-registered target.
-	targetId?: string @protobuf(3,string,name=target_id)
+	targetId?: string @protobuf(3,string,name=target_id,"(buf.validate.field).string=")
 
 	// mission_definition_id is the ID of a pre-registered mission definition.
-	missionDefinitionId?: string @protobuf(4,string,name=mission_definition_id)
+	missionDefinitionId?: string @protobuf(4,string,name=mission_definition_id,"(buf.validate.field).string=")
 
 	// constraints defines dispatch-time execution constraints. Canonical type
 	// per ADR 0004: gibson.mission.v1.MissionConstraints is the single
@@ -1202,14 +1202,14 @@ import (
 
 	// memory_continuity defines how agent memory is shared across mission runs
 	// Valid values: "isolated" (default), "inherit", "shared"
-	memoryContinuity?: string @protobuf(8,string,name=memory_continuity)
+	memoryContinuity?: string @protobuf(8,string,name=memory_continuity,"(buf.validate.field).string=")
 
 	// source_yaml is the original YAML the dashboard used to construct this
 	// mission. Optional. When non-empty, the daemon stores it alongside the
 	// structured mission state. Empty for programmatic callers that never had
 	// a YAML source.
 	// Spec: dashboard-neo4j-crud-removal Req 3.5.
-	sourceYaml?: string @protobuf(9,string,name=source_yaml)
+	sourceYaml?: string @protobuf(9,string,name=source_yaml,"(buf.validate.field).string=")
 
 	// idempotency_key makes a retry safe (ADR-0028). A second request with the
 	// same key returns the result of the first request and does the work one
@@ -1250,7 +1250,7 @@ import (
 #RenderCatalogMissionRequest: {
 	// name is the catalog name. An unknown name is InvalidArgument and the error
 	// names what the catalog does ship.
-	name?: string @protobuf(1,string)
+	name?: string @protobuf(1,string,"(buf.validate.field).string=")
 
 	// params carries the parameters the named mission declares, keyed by its own
 	// parameter names. CLOSED: an unrecognised key is refused rather than
@@ -1309,7 +1309,7 @@ import (
 // GetTargetRequest looks up a target by UUID.
 #GetTargetRequest: {
 	// target_id is the target UUID.
-	targetId?: string @protobuf(1,string,name=target_id)
+	targetId?: string @protobuf(1,string,name=target_id,"(buf.validate.field).string=")
 }
 
 // GetTargetResponse returns the requested target.
@@ -1343,7 +1343,7 @@ import (
 // DeleteTargetRequest removes a target by UUID.
 #DeleteTargetRequest: {
 	// target_id is the UUID of the target to delete.
-	targetId?: string @protobuf(1,string,name=target_id)
+	targetId?: string @protobuf(1,string,name=target_id,"(buf.validate.field).string=")
 }
 
 // DeleteTargetResponse reports the outcome of a delete.
@@ -1354,7 +1354,7 @@ import (
 // ListAgentsRequest queries agent registry.
 #ListAgentsRequest: {
 	// kind filters by component kind (empty = all agents)
-	kind?: string @protobuf(1,string)
+	kind?: string @protobuf(1,string,"(buf.validate.field).string=")
 }
 
 // ListAgentsResponse returns registered agents.
@@ -1393,7 +1393,7 @@ import (
 // GetAgentStatusRequest queries a specific agent.
 #GetAgentStatusRequest: {
 	// agent_id is the unique agent identifier
-	agentId?: string @protobuf(1,string,name=agent_id)
+	agentId?: string @protobuf(1,string,name=agent_id,"(buf.validate.field).string=")
 }
 
 // GetAgentStatusResponse returns agent status.
@@ -1508,10 +1508,10 @@ import (
 // QueryPluginRequest executes a method on a plugin.
 #QueryPluginRequest: {
 	// name is the plugin name to query
-	name?: string @protobuf(1,string)
+	name?: string @protobuf(1,string,"(buf.validate.field).string=")
 
 	// method is the method name to execute
-	method?: string @protobuf(2,string)
+	method?: string @protobuf(2,string,"(buf.validate.field).string=")
 
 	// params is the typed parameters for the method
 	params?: commonpb.#TypedMap @protobuf(3,gibson.common.v1.TypedMap)
@@ -1535,10 +1535,10 @@ import (
 // StartComponentRequest requests starting a component.
 #StartComponentRequest: {
 	// kind is the component kind ("agent", "tool", "plugin")
-	kind?: string @protobuf(1,string)
+	kind?: string @protobuf(1,string,"(buf.validate.field).string=")
 
 	// name is the component name
-	name?: string @protobuf(2,string)
+	name?: string @protobuf(2,string,"(buf.validate.field).string=")
 
 	// idempotency_key makes a retry safe (ADR-0028). A second request with the
 	// same key returns the result of the first request and does the work one
@@ -1567,10 +1567,10 @@ import (
 // StopComponentRequest requests stopping a component.
 #StopComponentRequest: {
 	// kind is the component kind ("agent", "tool", "plugin")
-	kind?: string @protobuf(1,string)
+	kind?: string @protobuf(1,string,"(buf.validate.field).string=")
 
 	// name is the component name
-	name?: string @protobuf(2,string)
+	name?: string @protobuf(2,string,"(buf.validate.field).string=")
 
 	// force indicates whether to skip graceful shutdown (SIGKILL instead of SIGTERM)
 	force?: bool @protobuf(3,bool)
@@ -1594,10 +1594,10 @@ import (
 // BuildComponentRequest requests rebuilding a component from source.
 #BuildComponentRequest: {
 	// kind is the component kind ("agent", "tool", "plugin")
-	kind?: string @protobuf(1,string)
+	kind?: string @protobuf(1,string,"(buf.validate.field).string=")
 
 	// name is the component name to build
-	name?: string @protobuf(2,string)
+	name?: string @protobuf(2,string,"(buf.validate.field).string=")
 }
 
 // BuildComponentResponse returns the result of building a component.
@@ -1621,10 +1621,10 @@ import (
 // ShowComponentRequest requests detailed information about a component.
 #ShowComponentRequest: {
 	// kind is the component kind ("agent", "tool", "plugin")
-	kind?: string @protobuf(1,string)
+	kind?: string @protobuf(1,string,"(buf.validate.field).string=")
 
 	// name is the component name to show
-	name?: string @protobuf(2,string)
+	name?: string @protobuf(2,string,"(buf.validate.field).string=")
 }
 
 // ShowComponentResponse returns detailed component information.
@@ -1681,10 +1681,10 @@ import (
 // GetComponentLogsRequest requests log entries for a component.
 #GetComponentLogsRequest: {
 	// kind is the component kind ("agent", "tool", "plugin")
-	kind?: string @protobuf(1,string)
+	kind?: string @protobuf(1,string,"(buf.validate.field).string=")
 
 	// name is the component name to get logs for
-	name?: string @protobuf(2,string)
+	name?: string @protobuf(2,string,"(buf.validate.field).string=")
 
 	// follow indicates whether to stream logs continuously
 	follow?: bool @protobuf(3,bool)
@@ -1727,7 +1727,7 @@ import (
 #GetMyPermissionsRequest: {
 	// tenant_id is the tenant to scope the query to.
 	// If empty, the tenant is inferred from the caller's auth context.
-	tenantId?: string @protobuf(1,string,name=tenant_id)
+	tenantId?: string @protobuf(1,string,name=tenant_id,"(buf.validate.field).string=")
 }
 
 // PermissionComponentGrant is a compact component grant for use in permissions summaries.
@@ -1806,7 +1806,7 @@ import (
 #GetMissionDefinitionRequest: {
 	// name is the mission definition name to look up. Case-sensitive;
 	// must match the name field used in CreateMissionDefinition.
-	name?: string @protobuf(1,string)
+	name?: string @protobuf(1,string,"(buf.validate.field).string=")
 }
 
 // GetMissionDefinitionResponse returns the full structured proto for the
@@ -1896,7 +1896,7 @@ import (
 #GetMissionGraphRequest: {
 	// mission_definition_id is the stable id of the registered mission
 	// definition (as returned by CreateMissionDefinition / carried on a run).
-	missionDefinitionId?: string @protobuf(1,string,name=mission_definition_id)
+	missionDefinitionId?: string @protobuf(1,string,name=mission_definition_id,"(buf.validate.field).string=")
 }
 
 // GetMissionGraphResponse carries the projected, layout-merged graph.
@@ -1933,7 +1933,7 @@ import (
 
 // GetMissionLayoutRequest selects the layout to read.
 #GetMissionLayoutRequest: {
-	missionDefinitionId?: string @protobuf(1,string,name=mission_definition_id)
+	missionDefinitionId?: string @protobuf(1,string,name=mission_definition_id,"(buf.validate.field).string=")
 }
 
 // GetMissionLayoutResponse returns the saved layout, or an empty layout (no
@@ -1950,7 +1950,7 @@ import (
 	// expected_version, when set, must match the currently-stored layout's
 	// version or the save is rejected (codes.Aborted) as a stale write. Empty
 	// means "create if absent" / last-write-wins for the first save.
-	expectedVersion?: string @protobuf(2,string,name=expected_version)
+	expectedVersion?: string @protobuf(2,string,name=expected_version,"(buf.validate.field).string=")
 }
 
 // SaveMissionLayoutResponse returns the new revision token after a successful
@@ -1993,7 +1993,7 @@ import (
 // ValidateMissionCUERequest carries raw CUE source text to validate.
 #ValidateMissionCUERequest: {
 	// cue_source is the raw CUE source text.
-	cueSource?: string @protobuf(1,string,name=cue_source)
+	cueSource?: string @protobuf(1,string,name=cue_source,"(buf.validate.field).string=")
 }
 
 // ValidateMissionCUEResponse returns the diagnostics produced by compiling
@@ -2013,7 +2013,7 @@ import (
 // CompleteMissionCUERequest requests completion items at a cursor position.
 #CompleteMissionCUERequest: {
 	// cue_source is the raw CUE source text at the time of the request.
-	cueSource?: string @protobuf(1,string,name=cue_source)
+	cueSource?: string @protobuf(1,string,name=cue_source,"(buf.validate.field).string=")
 
 	// line is the 1-based cursor line number.
 	line?: int32 @protobuf(2,int32)
@@ -2032,7 +2032,7 @@ import (
 // HoverMissionCUERequest requests hover documentation for a cursor position.
 #HoverMissionCUERequest: {
 	// cue_source is the raw CUE source text at the time of the request.
-	cueSource?: string @protobuf(1,string,name=cue_source)
+	cueSource?: string @protobuf(1,string,name=cue_source,"(buf.validate.field).string=")
 
 	// line is the 1-based cursor line number.
 	line?: int32 @protobuf(2,int32)

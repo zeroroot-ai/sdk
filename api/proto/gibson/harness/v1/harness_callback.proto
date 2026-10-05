@@ -803,7 +803,7 @@ message ToolDef {
 
 message LLMCompleteRequest {
     ContextInfo context = 1;
-    string slot = 2;
+    string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
     repeated LLMMessage messages = 3;
 
     // Completion options
@@ -815,16 +815,16 @@ message LLMCompleteRequest {
 
 message LLMCompleteWithToolsRequest {
     ContextInfo context = 1;
-    string slot = 2;
+    string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
     repeated LLMMessage messages = 3;
     repeated ToolDef tools = 4;
 }
 
 message LLMCompleteStructuredRequest {
     ContextInfo context = 1;
-    string slot = 2;
+    string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
     repeated LLMMessage messages = 3;
-    string schema_json = 4;  // JSON-encoded schema (Go struct as JSON) - kept for backward compatibility
+    string schema_json = 4 [(buf.validate.field).string = { max_len: 16777216 }]; // JSON-encoded schema (Go struct as JSON) - kept for backward compatibility
 }
 
 message LLMCompleteStructuredResponse {
@@ -852,7 +852,7 @@ message LLMCompleteWithToolsResponse {
 
 message LLMStreamRequest {
     ContextInfo context = 1;
-    string slot = 2;
+    string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
     repeated LLMMessage messages = 3;
 
     // Completion options
@@ -877,13 +877,13 @@ message LLMStreamResponse {
 // CallToolProtoRequest invokes a tool using proto-serialized JSON input/output.
 message CallToolProtoRequest {
     ContextInfo context = 1;
-    string name = 2;
+    string name = 2 [(buf.validate.field).string = { max_len: 1024 }];
     // JSON-serialized proto request message
     bytes input_json = 3;
     // Fully qualified proto message type name for input (e.g., "gibson.tool.mytool.MyRequest")
-    string input_type = 4;
+    string input_type = 4 [(buf.validate.field).string = { max_len: 1024 }];
     // Fully qualified proto message type name for output (e.g., "gibson.tool.mytool.MyResponse")
-    string output_type = 5;
+    string output_type = 5 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // CallToolProtoResponse returns the tool output as proto-serialized JSON.
@@ -896,13 +896,13 @@ message CallToolProtoResponse {
 // CallToolProtoStreamRequest initiates a streaming tool execution.
 message CallToolProtoStreamRequest {
     ContextInfo context = 1;
-    string name = 2;
+    string name = 2 [(buf.validate.field).string = { max_len: 1024 }];
     // JSON-serialized proto request message
     bytes input_json = 3;
     // Fully qualified proto message type name for input (e.g., "gibson.tool.mytool.MyRequest")
-    string input_type = 4;
+    string input_type = 4 [(buf.validate.field).string = { max_len: 1024 }];
     // Fully qualified proto message type name for output (e.g., "gibson.tool.mytool.MyResponse")
-    string output_type = 5;
+    string output_type = 5 [(buf.validate.field).string = { max_len: 1024 }];
     // Optional timeout in milliseconds
     int64 timeout_ms = 6;
 }
@@ -977,11 +977,11 @@ message SearchToolsRequest {
     ContextInfo context = 1;
     // query is matched (case-insensitively) against tool names and descriptions.
     // Empty matches everything.
-    string query = 2;
+    string query = 2 [(buf.validate.field).string = { max_len: 16777216 }];
     // sources optionally restricts results by source ("mcp", "native"). Empty = all.
     repeated string sources = 3;
     // connector optionally restricts results to a single connector instance.
-    string connector = 4;
+    string connector = 4 [(buf.validate.field).string = { max_len: 4096 }];
     // limit caps the candidate count; zero uses the daemon default.
     int32 limit = 5;
 }
@@ -1009,10 +1009,10 @@ message SearchToolsCandidate {
 // QueueToolWorkRequest initiates parallel execution of multiple tool invocations.
 message QueueToolWorkRequest {
     ContextInfo context = 1;
-    string tool_name = 2;
+    string tool_name = 2 [(buf.validate.field).string = { max_len: 1024 }];
     repeated string input_jsons = 3;  // Each input as JSON string
-    string input_type = 4;            // Proto message type name
-    string output_type = 5;           // Expected output type name
+    string input_type = 4 [(buf.validate.field).string = { max_len: 1024 }]; // Proto message type name
+    string output_type = 5 [(buf.validate.field).string = { max_len: 1024 }]; // Expected output type name
 }
 
 // QueueToolWorkResponse returns a job ID for tracking the work queue.
@@ -1024,7 +1024,7 @@ message QueueToolWorkResponse {
 // ToolResultsRequest requests streaming results for a queued job.
 message ToolResultsRequest {
     ContextInfo context = 1;
-    string job_id = 2;
+    string job_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // ToolResultsResponse streams individual results as tool executions complete.
@@ -1097,8 +1097,8 @@ message RelationshipMapping {
 
 message QueryPluginRequest {
     ContextInfo context = 1;
-    string name = 2;
-    string method = 3;
+    string name = 2 [(buf.validate.field).string = { max_len: 1024 }];
+    string method = 3 [(buf.validate.field).string = { max_len: 4096 }];
     map<string, gibson.common.v1.TypedValue> params = 4;
 }
 
@@ -1132,7 +1132,7 @@ message HarnessPluginDescriptor {
 // is the behavior every caller had before banks existed.
 message DelegateToAgentRequest {
     ContextInfo context = 1;
-    string name = 2;
+    string name = 2 [(buf.validate.field).string = { max_len: 1024 }];
     gibson.types.v1.Task task = 3;
 
     // target says where the task runs. Leave it unset for an ephemeral
@@ -1144,10 +1144,10 @@ message DelegateToAgentRequest {
         bool ephemeral = 10;
         // bank_id opens a new job on that bank. A member with a free slot
         // takes it, or the bank queues it, per the bank spill policy.
-        string bank_id = 11;
+        string bank_id = 11 [(buf.validate.field).string = { max_len: 1024 }];
         // job_id sends the task as the next input to a job that is already
         // open, so the agent keeps its conversation and its worktrees.
-        string job_id = 12;
+        string job_id = 12 [(buf.validate.field).string = { max_len: 1024 }];
     }
 }
 
@@ -1238,7 +1238,7 @@ message QueryNodesResponse {
 // FindSimilarAttacksRequest searches for attack patterns similar to the given content.
 message FindSimilarAttacksRequest {
     ContextInfo context = 1;
-    string content = 2;
+    string content = 2 [(buf.validate.field).string = { max_len: 16777216 }];
     int32 top_k = 3;
 }
 
@@ -1251,7 +1251,7 @@ message FindSimilarAttacksResponse {
 // GetAttackChainsRequest requests multi-hop attack paths from a technique.
 message GetAttackChainsRequest {
     ContextInfo context = 1;
-    string technique_id = 2;
+    string technique_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
     int32 max_depth = 3;
 }
 
@@ -1264,7 +1264,7 @@ message GetAttackChainsResponse {
 // FindSimilarFindingsRequest searches for findings similar to the given one.
 message FindSimilarFindingsRequest {
     ContextInfo context = 1;
-    string finding_id = 2;
+    string finding_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
     int32 top_k = 3;
 }
 
@@ -1277,7 +1277,7 @@ message FindSimilarFindingsResponse {
 // GetRelatedFindingsRequest requests findings related via graph relationships.
 message GetRelatedFindingsRequest {
     ContextInfo context = 1;
-    string finding_id = 2;
+    string finding_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // GetRelatedFindingsResponse carries related findings.
@@ -1311,7 +1311,7 @@ message ApplicationFindingsRequest {
     // application is the Application's key. Required: this read is scoped to
     // one Application by construction, and an empty key would silently widen
     // the traversal to the whole tenant graph.
-    string application = 2;
+    string application = 2 [(buf.validate.field).string = { max_len: 4096 }];
     // statuses filters by lifecycle status (open, fixing, fixed, verified).
     // Empty means every status.
     repeated string statuses = 3;
@@ -1404,7 +1404,7 @@ enum RunScope {
 // data, and modelling it as data is what lets a caller pass it through.
 message GetRunFindingsRequest {
     ContextInfo context = 1;
-    RunScope scope = 2;
+    RunScope scope = 2 [(buf.validate.field).enum = { defined_only: true }];
     FindingFilter filter = 3;
 }
 
@@ -1855,7 +1855,7 @@ message SubmitProofRequest {
     // technique names the technique this proof exercises, the same value
     // carried on the Bet (reputation keys on technique x environment,
     // ADR-0122).
-    string technique = 3;
+    string technique = 3 [(buf.validate.field).string = { max_len: 4096 }];
     // predicate_name names the enabled pack's CEL predicate the daemon
     // evaluates against evidence to decide settlement. The agent names a
     // predicate; it never evaluates one.
@@ -1935,7 +1935,7 @@ message RequestDestructiveAuthorizationRequest {
     // prove, and the join key a later SubmitProof settles by.
     string hypothesis_id = 2 [(buf.validate.field).string = { min_len: 1 }];
     // technique names the technique the demonstration exercises.
-    string technique = 3;
+    string technique = 3 [(buf.validate.field).string = { max_len: 4096 }];
     // predicate_name names the CEL predicate the demonstration would
     // satisfy — the same value a subsequent SubmitProof names.
     string predicate_name = 4 [(buf.validate.field).string = { min_len: 1 }];
@@ -1945,7 +1945,7 @@ message RequestDestructiveAuthorizationRequest {
     // blast_radius states, in plain words, what the action would reach — one
     // host, one tenant's data, a shared production resource. Empty means the
     // caller has no signal to report; it is not a claim of zero blast radius.
-    string blast_radius = 6;
+    string blast_radius = 6 [(buf.validate.field).string = { max_len: 4096 }];
     // reversibility states whether the action can be undone after it runs.
     Reversibility reversibility = 7 [(buf.validate.field).enum = { defined_only: true }];
 }
@@ -2157,7 +2157,7 @@ enum CredentialType {
 
 message GetCredentialRequest {
     ContextInfo context = 1;
-    string name = 2;  // Credential name (e.g., "hackerone-api")
+    string name = 2 [(buf.validate.field).string = { max_len: 1024 }]; // Credential name (e.g., "hackerone-api")
 }
 
 message GetCredentialResponse {
@@ -2342,7 +2342,7 @@ message ProposeOntologyExtensionResponse {
 
 message GenerateNodeIDRequest {
     ContextInfo context = 1;
-    string node_type = 2;
+    string node_type = 2 [(buf.validate.field).string = { max_len: 1024 }];
     map<string, gibson.common.v1.TypedValue> properties = 3;
 }
 
@@ -2358,15 +2358,15 @@ message ValidateFindingRequest {
 
 message ValidateGraphNodeRequest {
     ContextInfo context = 1;
-    string node_type = 2;
+    string node_type = 2 [(buf.validate.field).string = { max_len: 1024 }];
     map<string, gibson.common.v1.TypedValue> properties = 3;
 }
 
 message ValidateRelationshipRequest {
     ContextInfo context = 1;
-    string relationship_type = 2;
-    string from_node_type = 3;
-    string to_node_type = 4;
+    string relationship_type = 2 [(buf.validate.field).string = { max_len: 1024 }];
+    string from_node_type = 3 [(buf.validate.field).string = { max_len: 1024 }];
+    string to_node_type = 4 [(buf.validate.field).string = { max_len: 1024 }];
     map<string, gibson.common.v1.TypedValue> properties = 5;
 }
 
@@ -2501,8 +2501,8 @@ enum OriginationStart {
 message CreateMissionRequest {
     ContextInfo context = 1;
     bytes mission_definition_json = 2;  // JSON-serialized mission definition
-    string target_id = 3;
-    string name = 4;               // Optional human-readable name
+    string target_id = 3 [(buf.validate.field).string = { max_len: 1024 }];
+    string name = 4 [(buf.validate.field).string = { max_len: 1024 }]; // Optional human-readable name
 
     // Deprecated: use canonical_constraints (field 8) instead.
     // constraints uses the harness-local MissionConstraints shape which only
@@ -2534,7 +2534,7 @@ message CreateMissionRequest {
     //
     // Exactly one of mission_definition_json (field 2) or catalog_mission must
     // be set. Both is InvalidArgument; neither is InvalidArgument.
-    string catalog_mission = 9;
+    string catalog_mission = 9 [(buf.validate.field).string = { max_len: 4096 }];
 
     // catalog_params carries the parameters the named catalog mission declares,
     // keyed by the definition's own parameter names.
@@ -2578,7 +2578,7 @@ message CreateMissionResponse {
 // RunMissionRequest queues a mission for execution.
 message RunMissionRequest {
     ContextInfo context = 1;
-    string mission_id = 2;
+    string mission_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
     bool wait = 3;                 // Block until completion
     int64 timeout_ms = 4;          // Timeout in milliseconds (when wait=true)
 
@@ -2596,7 +2596,7 @@ message RunMissionResponse {
 // GetMissionStatusRequest retrieves current mission status.
 message GetMissionStatusRequest {
     ContextInfo context = 1;
-    string mission_id = 2;
+    string mission_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // GetMissionStatusResponse returns detailed status info.
@@ -2608,7 +2608,7 @@ message GetMissionStatusResponse {
 // WaitForMissionRequest blocks until mission completion.
 message WaitForMissionRequest {
     ContextInfo context = 1;
-    string mission_id = 2;
+    string mission_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
     int64 timeout_ms = 3;          // 0 = no timeout
 }
 
@@ -2633,7 +2633,7 @@ message ListMissionsResponse {
 // CancelMissionRequest requests cancellation of a running mission.
 message CancelMissionRequest {
     ContextInfo context = 1;
-    string mission_id = 2;
+    string mission_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // CancelMissionResponse confirms cancellation request.
@@ -2644,7 +2644,7 @@ message CancelMissionResponse {
 // GetMissionResultsRequest retrieves completed mission results.
 message GetMissionResultsRequest {
     ContextInfo context = 1;
-    string mission_id = 2;
+    string mission_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // GetMissionResultsResponse returns mission results.
@@ -2663,14 +2663,14 @@ message GetMissionResultsResponse {
 message AuthorizeRequest {
     // run_id is the mission run ID embedded in the work envelope's AuthzContext.
     // The daemon uses it to look up the active mission's user and tenant.
-    string run_id = 1;
+    string run_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
 
     // action is one of: execute, configure, read, write.
     // Maps to FGA relation "can_{action}" in the authorization model.
-    string action = 2;
+    string action = 2 [(buf.validate.field).string = { max_len: 4096 }];
 
     // resource is the FGA object in "<type>:<name>" format, e.g. "tool:mytool".
-    string resource = 3;
+    string resource = 3 [(buf.validate.field).string = { max_len: 4096 }];
 }
 
 // AuthorizeResponse returns the authorization decision.
@@ -2740,7 +2740,7 @@ message WorkspaceGetInfoRequest {
     ContextInfo context = 1;
     // Empty name resolves to the mission's primary workspace
     // (single-repository missions).
-    string name = 2;
+    string name = 2 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // WorkspaceGetInfoResponse carries the requested workspace metadata.
@@ -2753,9 +2753,9 @@ message WorkspaceGetInfoResponse {
 message WorkspaceReadFileRequest {
     ContextInfo context = 1;
     // Empty workspace_name resolves to the primary workspace.
-    string workspace_name = 2;
+    string workspace_name = 2 [(buf.validate.field).string = { max_len: 1024 }];
     // Path is relative to the workspace root.
-    string path = 3;
+    string path = 3 [(buf.validate.field).string = { max_len: 4096 }];
 }
 
 // WorkspaceReadFileResponse carries the file's full content.
@@ -2767,9 +2767,9 @@ message WorkspaceReadFileResponse {
 message WorkspaceWriteFileRequest {
     ContextInfo context = 1;
     // Empty workspace_name resolves to the primary workspace.
-    string workspace_name = 2;
+    string workspace_name = 2 [(buf.validate.field).string = { max_len: 1024 }];
     // Path is relative to the workspace root.
-    string path = 3;
+    string path = 3 [(buf.validate.field).string = { max_len: 4096 }];
     // Content is the new file body. RESOURCE_EXHAUSTED if > 16 MB.
     bytes content = 4;
 }
@@ -2781,10 +2781,10 @@ message WorkspaceWriteFileResponse {}
 message WorkspaceListFilesRequest {
     ContextInfo context = 1;
     // Empty workspace_name resolves to the primary workspace.
-    string workspace_name = 2;
+    string workspace_name = 2 [(buf.validate.field).string = { max_len: 1024 }];
     // pattern is a glob matched relative to the workspace root.
     // Examples: "*.go", "**/*.py", "src/**/*.ts".
-    string pattern = 3;
+    string pattern = 3 [(buf.validate.field).string = { max_len: 4096 }];
 }
 
 // WorkspaceListFilesResponse carries the matched paths, with a truncation
@@ -2800,9 +2800,9 @@ message WorkspaceListFilesResponse {
 message WorkspaceCommitRequest {
     ContextInfo context = 1;
     // Empty workspace_name resolves to the primary workspace.
-    string workspace_name = 2;
+    string workspace_name = 2 [(buf.validate.field).string = { max_len: 1024 }];
     // message is the commit message. Required.
-    string message = 3;
+    string message = 3 [(buf.validate.field).string = { min_len: 1, max_len: 16777216 }];
 }
 
 // WorkspaceCommitResponse carries the new commit's SHA.
@@ -2814,7 +2814,7 @@ message WorkspaceCommitResponse {
 message WorkspacePushRequest {
     ContextInfo context = 1;
     // Empty workspace_name resolves to the primary workspace.
-    string workspace_name = 2;
+    string workspace_name = 2 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // WorkspacePushResponse is empty on success.
@@ -2832,7 +2832,7 @@ message DevboxExecRequest {
 
     // session_id is the agent-chosen opaque session identity shared with the
     // session-context store. Required, non-empty.
-    string session_id = 2;
+    string session_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
 
     // argv is the command to run, exec-style (argv[0] is the binary). The
     // server does not shell-interpret it; a caller that wants a shell asks
@@ -2869,7 +2869,7 @@ message PutSessionContextRequest {
     ContextInfo context = 1;
 
     // session_id — see DevboxExecRequest.session_id; the same identity.
-    string session_id = 2;
+    string session_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
 
     // data is the opaque blob. The server enforces a size cap (~8 MB);
     // larger working state belongs in the Devbox, not here.
@@ -2880,7 +2880,7 @@ message PutSessionContextRequest {
     // for this session yet. A non-empty etag succeeds only if it names the
     // current version. Either mismatch is rejected — a stale writer learns
     // it lost the race instead of clobbering the winner.
-    string if_match = 4;
+    string if_match = 4 [(buf.validate.field).string = { max_len: 4096 }];
 }
 
 message PutSessionContextResponse {
@@ -2893,7 +2893,7 @@ message PutSessionContextResponse {
 
 message GetSessionContextRequest {
     ContextInfo context = 1;
-    string session_id = 2;
+    string session_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 message GetSessionContextResponse {
@@ -2907,7 +2907,7 @@ message GetSessionContextResponse {
 
 message DeleteSessionContextRequest {
     ContextInfo context = 1;
-    string session_id = 2;
+    string session_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // DeleteSessionContextResponse is empty on success; deleting a session that
@@ -2955,7 +2955,7 @@ message ReportJobStateRequest {
     // state is the new state: WORKING or WAITING. Required.
     gibson.job.v1.JobState state = 3 [(buf.validate.field).enum = { defined_only: true, in: [2, 3] }];
     // claude_session_id is the Claude Code session that holds the job.
-    string claude_session_id = 4;
+    string claude_session_id = 4 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // ReportJobStateResponse acknowledges the state change.
@@ -2986,7 +2986,7 @@ message OpenJobRequest {
     string bank_id = 2 [(buf.validate.field).string = { min_len: 1 }];
     // member_id pins the job to one member of that bank. Empty lets the
     // daemon pick a member with a free slot.
-    string member_id = 3;
+    string member_id = 3 [(buf.validate.field).string = { max_len: 1024 }];
     // spec is the structured input. Required.
     gibson.job.v1.JobSpec spec = 4 [(buf.validate.field).required = true];
 }

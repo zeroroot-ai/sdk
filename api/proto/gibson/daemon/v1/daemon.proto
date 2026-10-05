@@ -628,15 +628,15 @@ service DaemonService {
 message RenewCapabilityGrantRequest {
   // agent_id is the agent's Zitadel service-account ID. Must match
   // the sub claim of the presented CG-JWT.
-  string agent_id = 1;
+  string agent_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
 
   // mission_id names the mission. Must match the mission_id claim
   // of the presented CG-JWT.
-  string mission_id = 2;
+  string mission_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
 
   // task_id names the specific task. Must match the task_id claim
   // of the presented CG-JWT.
-  string task_id = 3;
+  string task_id = 3 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // RenewCapabilityGrantResponse returns the freshly-minted CG-JWT
@@ -659,10 +659,10 @@ message RenewCapabilityGrantResponse {
 // ConnectRequest initiates a client connection to the daemon.
 message ConnectRequest {
   // client_version is the version of the Gibson CLI client
-  string client_version = 1;
+  string client_version = 1 [(buf.validate.field).string = { max_len: 1024 }];
 
   // client_id is an optional unique identifier for this client
-  string client_id = 2;
+  string client_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // ConnectResponse returns connection metadata.
@@ -1047,7 +1047,7 @@ message SubscribeRequest {
   repeated string event_types = 1;
 
   // mission_id filters to a specific mission (empty = all)
-  string mission_id = 2;
+  string mission_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // SubscribeResponse wraps an Event for the Subscribe streaming RPC.
@@ -1089,17 +1089,17 @@ message SubscribeResponse {
 // API-only: missions are invoked by reference — no YAML, no file paths.
 message RunMissionRequest {
   // mission_definition_id is the ID of a registered mission definition to execute.
-  string mission_definition_id = 1;
+  string mission_definition_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
 
   // target_id is the ID of a registered target the mission runs against.
-  string target_id = 2;
+  string target_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
 
   // variables contains mission variables to override
   map<string, string> variables = 3;
 
   // memory_continuity defines how agent memory is shared across mission runs
   // Valid values: "isolated" (default), "inherit", "shared"
-  string memory_continuity = 4;
+  string memory_continuity = 4 [(buf.validate.field).string = { max_len: 4096 }];
 
   // workflow_yaml (field 5) removed under spec mission-api-only-cleanup (Phase 2).
   // File-path / inline-YAML invocation no longer exists; missions run by reference only.
@@ -1200,7 +1200,7 @@ message CheckpointMetadata {
 // StopMissionRequest requests mission termination.
 message StopMissionRequest {
   // mission_id is the identifier of the mission to stop
-  string mission_id = 1;
+  string mission_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
 
   // force indicates whether to force-kill the mission (default: graceful)
   bool force = 2;
@@ -1227,10 +1227,10 @@ message ListMissionsRequest {
   int32 offset = 3;
 
   // status_filter filters missions by status (`running`, `completed`, `failed`, `cancelled`)
-  string status_filter = 4;
+  string status_filter = 4 [(buf.validate.field).string = { max_len: 4096 }];
 
   // name_pattern filters missions by name using glob pattern matching
-  string name_pattern = 5;
+  string name_pattern = 5 [(buf.validate.field).string = { max_len: 4096 }];
 }
 
 // ListMissionsResponse returns mission list.
@@ -1299,7 +1299,7 @@ message MissionInfo {
 // PauseMissionRequest requests pausing a running mission.
 message PauseMissionRequest {
   // mission_id is the unique identifier of the mission to pause
-  string mission_id = 1;
+  string mission_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
 
   // force indicates whether to pause immediately without waiting for a clean checkpoint boundary
   // If false (default), waits for the current node to complete before pausing
@@ -1321,24 +1321,24 @@ message PauseMissionResponse {
 // ResumeMissionRequest requests resuming a paused mission.
 message ResumeMissionRequest {
   // mission_id is the unique identifier of the mission to resume
-  string mission_id = 1;
+  string mission_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
 
   // checkpoint_id optionally specifies a specific checkpoint to resume from
   // If empty, resumes from the latest checkpoint
-  string checkpoint_id = 2;
+  string checkpoint_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
 
   // Empty string = legacy resume-from-latest behavior (backward compatible).
   // When non-empty, the daemon rewinds the mission to the named checkpoint
   // and resumes execution from that point. The handler additionally enforces
   // the mission#admin FGA relation when this field is non-empty per
   // mission-checkpointing R16.3.
-  string target_checkpoint_id = 3;
+  string target_checkpoint_id = 3 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // GetMissionHistoryRequest queries mission execution history by name.
 message GetMissionHistoryRequest {
   // name is the mission name to query history for
-  string name = 1;
+  string name = 1 [(buf.validate.field).string = { max_len: 1024 }];
 
   // limit restricts the number of results (default: 100)
   int32 limit = 2;
@@ -1488,7 +1488,7 @@ message CreateMissionDefinitionRequest {
   // GetMissionDefinition can return the author's exact source rather than a
   // reconstruction. Optional for backward compatibility; when empty the
   // definition is stored without a recoverable source.
-  string cue_source = 2;
+  string cue_source = 2 [(buf.validate.field).string = { max_len: 16777216 }];
 
   // idempotency_key makes a retry safe (ADR-0028). A second request with the
   // same key returns the result of the first request and does the work one
@@ -1517,7 +1517,7 @@ message UpdateMissionDefinitionRequest {
   // cue_source is the raw CUE source text that compiled to `definition`
   // (maximum 512 KB). Overwrites the stored source in place under the stable
   // id. Optional for backward compatibility.
-  string cue_source = 2;
+  string cue_source = 2 [(buf.validate.field).string = { max_len: 16777216 }];
 }
 
 // UpdateMissionDefinitionResponse returns the stable server-assigned ID for
@@ -1679,16 +1679,16 @@ message MissionCheckpoint {
 // Inline target / inline mission / YAML paths are no longer accepted.
 message CreateMissionRequest {
   // name is the mission name
-  string name = 1;
+  string name = 1 [(buf.validate.field).string = { max_len: 1024 }];
 
   // description is the mission description
-  string description = 2;
+  string description = 2 [(buf.validate.field).string = { max_len: 16777216 }];
 
   // target_id is the ID of a pre-registered target.
-  string target_id = 3;
+  string target_id = 3 [(buf.validate.field).string = { max_len: 1024 }];
 
   // mission_definition_id is the ID of a pre-registered mission definition.
-  string mission_definition_id = 4;
+  string mission_definition_id = 4 [(buf.validate.field).string = { max_len: 1024 }];
 
   // constraints defines dispatch-time execution constraints. Canonical type
   // per ADR 0004: gibson.mission.v1.MissionConstraints is the single
@@ -1721,14 +1721,14 @@ message CreateMissionRequest {
 
   // memory_continuity defines how agent memory is shared across mission runs
   // Valid values: "isolated" (default), "inherit", "shared"
-  string memory_continuity = 8;
+  string memory_continuity = 8 [(buf.validate.field).string = { max_len: 4096 }];
 
   // source_yaml is the original YAML the dashboard used to construct this
   // mission. Optional. When non-empty, the daemon stores it alongside the
   // structured mission state. Empty for programmatic callers that never had
   // a YAML source.
   // Spec: dashboard-neo4j-crud-removal Req 3.5.
-  string source_yaml = 9;
+  string source_yaml = 9 [(buf.validate.field).string = { max_len: 16777216 }];
 
   // Fields removed under spec mission-api-only-cleanup (Phase 2).
   // The oneof target_config (field 10: inline_target) and oneof workflow_config
@@ -1778,7 +1778,7 @@ message ListCatalogMissionsResponse {
 message RenderCatalogMissionRequest {
   // name is the catalog name. An unknown name is InvalidArgument and the error
   // names what the catalog does ship.
-  string name = 1;
+  string name = 1 [(buf.validate.field).string = { max_len: 1024 }];
 
   // params carries the parameters the named mission declares, keyed by its own
   // parameter names. CLOSED: an unrecognised key is refused rather than
@@ -1844,7 +1844,7 @@ message CreateTargetResponse {
 // GetTargetRequest looks up a target by UUID.
 message GetTargetRequest {
   // target_id is the target UUID.
-  string target_id = 1;
+  string target_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // GetTargetResponse returns the requested target.
@@ -1878,7 +1878,7 @@ message UpdateTargetResponse {
 // DeleteTargetRequest removes a target by UUID.
 message DeleteTargetRequest {
   // target_id is the UUID of the target to delete.
-  string target_id = 1;
+  string target_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // DeleteTargetResponse reports the outcome of a delete.
@@ -1893,7 +1893,7 @@ message DeleteTargetResponse {
 // ListAgentsRequest queries agent registry.
 message ListAgentsRequest {
   // kind filters by component kind (empty = all agents)
-  string kind = 1;
+  string kind = 1 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // ListAgentsResponse returns registered agents.
@@ -1932,7 +1932,7 @@ message AgentInfo {
 // GetAgentStatusRequest queries a specific agent.
 message GetAgentStatusRequest {
   // agent_id is the unique agent identifier
-  string agent_id = 1;
+  string agent_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // GetAgentStatusResponse returns agent status.
@@ -2051,10 +2051,10 @@ message PluginInfo {
 // QueryPluginRequest executes a method on a plugin.
 message QueryPluginRequest {
   // name is the plugin name to query
-  string name = 1;
+  string name = 1 [(buf.validate.field).string = { max_len: 1024 }];
 
   // method is the method name to execute
-  string method = 2;
+  string method = 2 [(buf.validate.field).string = { max_len: 4096 }];
 
   // params is the typed parameters for the method
   gibson.common.v1.TypedMap params = 3;
@@ -2090,10 +2090,10 @@ message QueryPluginResponse {
 // StartComponentRequest requests starting a component.
 message StartComponentRequest {
   // kind is the component kind ("agent", "tool", "plugin")
-  string kind = 1;
+  string kind = 1 [(buf.validate.field).string = { max_len: 1024 }];
 
   // name is the component name
-  string name = 2;
+  string name = 2 [(buf.validate.field).string = { max_len: 1024 }];
 
   // idempotency_key makes a retry safe (ADR-0028). A second request with the
   // same key returns the result of the first request and does the work one
@@ -2122,10 +2122,10 @@ message StartComponentResponse {
 // StopComponentRequest requests stopping a component.
 message StopComponentRequest {
   // kind is the component kind ("agent", "tool", "plugin")
-  string kind = 1;
+  string kind = 1 [(buf.validate.field).string = { max_len: 1024 }];
 
   // name is the component name
-  string name = 2;
+  string name = 2 [(buf.validate.field).string = { max_len: 1024 }];
 
   // force indicates whether to skip graceful shutdown (SIGKILL instead of SIGTERM)
   bool force = 3;
@@ -2149,10 +2149,10 @@ message StopComponentResponse {
 // BuildComponentRequest requests rebuilding a component from source.
 message BuildComponentRequest {
   // kind is the component kind ("agent", "tool", "plugin")
-  string kind = 1;
+  string kind = 1 [(buf.validate.field).string = { max_len: 1024 }];
 
   // name is the component name to build
-  string name = 2;
+  string name = 2 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // BuildComponentResponse returns the result of building a component.
@@ -2176,10 +2176,10 @@ message BuildComponentResponse {
 // ShowComponentRequest requests detailed information about a component.
 message ShowComponentRequest {
   // kind is the component kind ("agent", "tool", "plugin")
-  string kind = 1;
+  string kind = 1 [(buf.validate.field).string = { max_len: 1024 }];
 
   // name is the component name to show
-  string name = 2;
+  string name = 2 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // ShowComponentResponse returns detailed component information.
@@ -2236,10 +2236,10 @@ message ShowComponentResponse {
 // GetComponentLogsRequest requests log entries for a component.
 message GetComponentLogsRequest {
   // kind is the component kind ("agent", "tool", "plugin")
-  string kind = 1;
+  string kind = 1 [(buf.validate.field).string = { max_len: 1024 }];
 
   // name is the component name to get logs for
-  string name = 2;
+  string name = 2 [(buf.validate.field).string = { max_len: 1024 }];
 
   // follow indicates whether to stream logs continuously
   bool follow = 3;
@@ -2286,7 +2286,7 @@ message GetComponentLogsResponse {
 message GetMyPermissionsRequest {
   // tenant_id is the tenant to scope the query to.
   // If empty, the tenant is inferred from the caller's auth context.
-  string tenant_id = 1;
+  string tenant_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // PermissionComponentGrant is a compact component grant for use in permissions summaries.
@@ -2374,7 +2374,7 @@ message ListMyMembershipsResponse {
 message GetMissionDefinitionRequest {
   // name is the mission definition name to look up. Case-sensitive;
   // must match the name field used in CreateMissionDefinition.
-  string name = 1;
+  string name = 1 [(buf.validate.field).string = { min_len: 1, max_len: 1024 }];
 }
 
 // GetMissionDefinitionResponse returns the full structured proto for the
@@ -2464,7 +2464,7 @@ message MissionGraph {
 message GetMissionGraphRequest {
   // mission_definition_id is the stable id of the registered mission
   // definition (as returned by CreateMissionDefinition / carried on a run).
-  string mission_definition_id = 1;
+  string mission_definition_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // GetMissionGraphResponse carries the projected, layout-merged graph.
@@ -2498,7 +2498,7 @@ message MissionLayout {
 
 // GetMissionLayoutRequest selects the layout to read.
 message GetMissionLayoutRequest {
-  string mission_definition_id = 1;
+  string mission_definition_id = 1 [(buf.validate.field).string = { min_len: 1, max_len: 1024 }];
 }
 
 // GetMissionLayoutResponse returns the saved layout, or an empty layout (no
@@ -2514,7 +2514,7 @@ message SaveMissionLayoutRequest {
   // expected_version, when set, must match the currently-stored layout's
   // version or the save is rejected (codes.Aborted) as a stale write. Empty
   // means "create if absent" / last-write-wins for the first save.
-  string expected_version = 2;
+  string expected_version = 2 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // SaveMissionLayoutResponse returns the new revision token after a successful
@@ -2572,7 +2572,7 @@ message CUECompletionItem {
 // ValidateMissionCUERequest carries raw CUE source text to validate.
 message ValidateMissionCUERequest {
   // cue_source is the raw CUE source text.
-  string cue_source = 1;
+  string cue_source = 1 [(buf.validate.field).string = { max_len: 16777216 }];
 }
 
 // ValidateMissionCUEResponse returns the diagnostics produced by compiling
@@ -2592,7 +2592,7 @@ message ValidateMissionCUEResponse {
 // CompleteMissionCUERequest requests completion items at a cursor position.
 message CompleteMissionCUERequest {
   // cue_source is the raw CUE source text at the time of the request.
-  string cue_source = 1;
+  string cue_source = 1 [(buf.validate.field).string = { max_len: 16777216 }];
 
   // line is the 1-based cursor line number.
   int32 line = 2;
@@ -2611,7 +2611,7 @@ message CompleteMissionCUEResponse {
 // HoverMissionCUERequest requests hover documentation for a cursor position.
 message HoverMissionCUERequest {
   // cue_source is the raw CUE source text at the time of the request.
-  string cue_source = 1;
+  string cue_source = 1 [(buf.validate.field).string = { max_len: 16777216 }];
 
   // line is the 1-based cursor line number.
   int32 line = 2;

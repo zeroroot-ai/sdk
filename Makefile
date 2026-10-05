@@ -150,6 +150,7 @@ lint: $(GOLANGCI_LINT)
 	$(GOLANGCI_LINT) run --new-from-merge-base=$(LINT_BASE) ./...
 	@node scripts/lint-pagination.mjs
 	@node scripts/lint-allowed-identities.mjs
+	@node scripts/lint-field-rules.mjs
 	@node scripts/lint-idempotency-key.mjs
 
 # lint-all — full-tree, non-baselined. Surfaces the entire backlog for the
