@@ -105,7 +105,7 @@ type HarnessCallbackServiceClient interface {
 	ListTools(ctx context.Context, in *ListToolsRequest, opts ...grpc.CallOption) (*ListToolsResponse, error)
 	// SearchTools returns a small, ranked, authz-filtered set of tools matching
 	// a query — the meta-tool surface agents use instead of receiving every tool
-	// (ADR-0047 facet 5). Per-tool authorization is enforced inside the handler;
+	// (ADR-0065). Per-tool authorization is enforced inside the handler;
 	// this RPC-level gate only checks that the caller may use the harness.
 	SearchTools(ctx context.Context, in *SearchToolsRequest, opts ...grpc.CallOption) (*SearchToolsResponse, error)
 	// Tool Work Queue Operations
@@ -119,30 +119,30 @@ type HarnessCallbackServiceClient interface {
 	ListAgents(ctx context.Context, in *ListAgentsRequest, opts ...grpc.CallOption) (*ListAgentsResponse, error)
 	// Finding Operations
 	SubmitFinding(ctx context.Context, in *SubmitFindingRequest, opts ...grpc.CallOption) (*SubmitFindingResponse, error)
-	// Observe emits a typed observation into the World (ADR-0007). The brain
+	// Observe emits a typed observation into the World (ADR-0107). The brain
 	// resolves identity and topology; scope is derived server-side from context.
 	Observe(ctx context.Context, in *ObserveRequest, opts ...grpc.CallOption) (*ObserveResponse, error)
-	// PlaceBet stakes a calibrated confidence on a Hypothesis (ADR-0022). Betting
+	// PlaceBet stakes a calibrated confidence on a Hypothesis (ADR-0122). Betting
 	// is a first-class SDK primitive, parallel to Observe: storage, settlement
-	// and scoring of the bet are a gibson-side concern (ADR-0023).
+	// and scoring of the bet are a gibson-side concern (ADR-0123).
 	PlaceBet(ctx context.Context, in *PlaceBetRequest, opts ...grpc.CallOption) (*PlaceBetResponse, error)
 	// SubmitProof triggers settlement of a Bet by submitting the raw evidence
-	// an agent's own tools captured (ADR-0030). The agent never submits a
+	// an agent's own tools captured (ADR-0131). The agent never submits a
 	// verdict or an interpretation — only raw evidence — because a
 	// deterministic, typed predicate on the daemon decides settlement, never
 	// an LLM and never the bet's own beneficiary. A non-destructive proof
 	// settles synchronously; a destructive proof settles only after a prior
 	// RequestDestructiveAuthorization approval, and this call never blocks on
-	// that decision (ADR-0032).
+	// that decision (ADR-0132).
 	SubmitProof(ctx context.Context, in *SubmitProofRequest, opts ...grpc.CallOption) (*SubmitProofResponse, error)
 	// RequestDestructiveAuthorization asks a human to approve an irreversible
-	// demonstration BEFORE the agent performs it (ADR-0032). It returns
+	// demonstration BEFORE the agent performs it (ADR-0132). It returns
 	// immediately with a pending request id — the fleet keeps working while
 	// the decision is pending. The agent performs the destructive act only
 	// after it reads back an approval, then calls SubmitProof.
 	RequestDestructiveAuthorization(ctx context.Context, in *RequestDestructiveAuthorizationRequest, opts ...grpc.CallOption) (*RequestDestructiveAuthorizationResponse, error)
 	// WorldView returns the caller's server-projected slice of the tenant World
-	// (ADR-0012). It is the counterpart to Observe: Observe
+	// (ADR-0112). It is the counterpart to Observe: Observe
 	// is the agent's only write, WorldView its only read.
 	//
 	// The slice is projected by the daemon from the mission record it created —
@@ -158,10 +158,10 @@ type HarnessCallbackServiceClient interface {
 	// only its task-scoped callback grant cannot read the tenant graph, and the
 	// agent would have to keep a component-scoped grant alive purely to call
 	// recall — which defeats the point of scoping the dispatch at all.
-	// See zerocool-plugins ADR-0006 and docs/adr/0001-callback-knowledge-reads.md.
+	// See ADR-0156 and ADR-0161.
 	//
 	// Read-only by construction. The write half is NOT mirrored: the projector
-	// is the sole graph writer (ADR-0012), and ComponentService no longer
+	// is the sole graph writer (ADR-0112), and ComponentService no longer
 	// has a generic graph-write RPC.
 	QueryNodes(ctx context.Context, in *QueryNodesRequest, opts ...grpc.CallOption) (*QueryNodesResponse, error)
 	FindSimilarAttacks(ctx context.Context, in *FindSimilarAttacksRequest, opts ...grpc.CallOption) (*FindSimilarAttacksResponse, error)
@@ -195,8 +195,8 @@ type HarnessCallbackServiceClient interface {
 	// Taxonomy Operations
 	GetTaxonomySchema(ctx context.Context, in *GetTaxonomySchemaRequest, opts ...grpc.CallOption) (*GetTaxonomySchemaResponse, error)
 	// ProposeOntologyExtension proposes a new Taxonomy node label or
-	// relationship type discovered by an agent at runtime (ADR-0024 §2,
-	// ADR-0033 decision 2). The agent proposes; it never promotes — the
+	// relationship type discovered by an agent at runtime (ADR-0124,
+	// ADR-0133). The agent proposes; it never promotes — the
 	// daemon checks the identifier against its safety gate before recording
 	// it as a per-tenant proposal, and the resulting recurrence only ever
 	// feeds a later, explicit tenant-owner approval. This call never blocks
@@ -1027,7 +1027,7 @@ type HarnessCallbackServiceServer interface {
 	ListTools(context.Context, *ListToolsRequest) (*ListToolsResponse, error)
 	// SearchTools returns a small, ranked, authz-filtered set of tools matching
 	// a query — the meta-tool surface agents use instead of receiving every tool
-	// (ADR-0047 facet 5). Per-tool authorization is enforced inside the handler;
+	// (ADR-0065). Per-tool authorization is enforced inside the handler;
 	// this RPC-level gate only checks that the caller may use the harness.
 	SearchTools(context.Context, *SearchToolsRequest) (*SearchToolsResponse, error)
 	// Tool Work Queue Operations
@@ -1041,30 +1041,30 @@ type HarnessCallbackServiceServer interface {
 	ListAgents(context.Context, *ListAgentsRequest) (*ListAgentsResponse, error)
 	// Finding Operations
 	SubmitFinding(context.Context, *SubmitFindingRequest) (*SubmitFindingResponse, error)
-	// Observe emits a typed observation into the World (ADR-0007). The brain
+	// Observe emits a typed observation into the World (ADR-0107). The brain
 	// resolves identity and topology; scope is derived server-side from context.
 	Observe(context.Context, *ObserveRequest) (*ObserveResponse, error)
-	// PlaceBet stakes a calibrated confidence on a Hypothesis (ADR-0022). Betting
+	// PlaceBet stakes a calibrated confidence on a Hypothesis (ADR-0122). Betting
 	// is a first-class SDK primitive, parallel to Observe: storage, settlement
-	// and scoring of the bet are a gibson-side concern (ADR-0023).
+	// and scoring of the bet are a gibson-side concern (ADR-0123).
 	PlaceBet(context.Context, *PlaceBetRequest) (*PlaceBetResponse, error)
 	// SubmitProof triggers settlement of a Bet by submitting the raw evidence
-	// an agent's own tools captured (ADR-0030). The agent never submits a
+	// an agent's own tools captured (ADR-0131). The agent never submits a
 	// verdict or an interpretation — only raw evidence — because a
 	// deterministic, typed predicate on the daemon decides settlement, never
 	// an LLM and never the bet's own beneficiary. A non-destructive proof
 	// settles synchronously; a destructive proof settles only after a prior
 	// RequestDestructiveAuthorization approval, and this call never blocks on
-	// that decision (ADR-0032).
+	// that decision (ADR-0132).
 	SubmitProof(context.Context, *SubmitProofRequest) (*SubmitProofResponse, error)
 	// RequestDestructiveAuthorization asks a human to approve an irreversible
-	// demonstration BEFORE the agent performs it (ADR-0032). It returns
+	// demonstration BEFORE the agent performs it (ADR-0132). It returns
 	// immediately with a pending request id — the fleet keeps working while
 	// the decision is pending. The agent performs the destructive act only
 	// after it reads back an approval, then calls SubmitProof.
 	RequestDestructiveAuthorization(context.Context, *RequestDestructiveAuthorizationRequest) (*RequestDestructiveAuthorizationResponse, error)
 	// WorldView returns the caller's server-projected slice of the tenant World
-	// (ADR-0012). It is the counterpart to Observe: Observe
+	// (ADR-0112). It is the counterpart to Observe: Observe
 	// is the agent's only write, WorldView its only read.
 	//
 	// The slice is projected by the daemon from the mission record it created —
@@ -1080,10 +1080,10 @@ type HarnessCallbackServiceServer interface {
 	// only its task-scoped callback grant cannot read the tenant graph, and the
 	// agent would have to keep a component-scoped grant alive purely to call
 	// recall — which defeats the point of scoping the dispatch at all.
-	// See zerocool-plugins ADR-0006 and docs/adr/0001-callback-knowledge-reads.md.
+	// See ADR-0156 and ADR-0161.
 	//
 	// Read-only by construction. The write half is NOT mirrored: the projector
-	// is the sole graph writer (ADR-0012), and ComponentService no longer
+	// is the sole graph writer (ADR-0112), and ComponentService no longer
 	// has a generic graph-write RPC.
 	QueryNodes(context.Context, *QueryNodesRequest) (*QueryNodesResponse, error)
 	FindSimilarAttacks(context.Context, *FindSimilarAttacksRequest) (*FindSimilarAttacksResponse, error)
@@ -1117,8 +1117,8 @@ type HarnessCallbackServiceServer interface {
 	// Taxonomy Operations
 	GetTaxonomySchema(context.Context, *GetTaxonomySchemaRequest) (*GetTaxonomySchemaResponse, error)
 	// ProposeOntologyExtension proposes a new Taxonomy node label or
-	// relationship type discovered by an agent at runtime (ADR-0024 §2,
-	// ADR-0033 decision 2). The agent proposes; it never promotes — the
+	// relationship type discovered by an agent at runtime (ADR-0124,
+	// ADR-0133). The agent proposes; it never promotes — the
 	// daemon checks the identifier against its safety gate before recording
 	// it as a per-tenant proposal, and the resulting recurrence only ever
 	// feeds a later, explicit tenant-owner approval. This call never blocks

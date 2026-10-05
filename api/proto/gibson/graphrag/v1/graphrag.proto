@@ -143,11 +143,11 @@ message DiscoveryResult {
   repeated ExplicitRelationship explicit_relationships = 21;
 
   // Field 22 was `compliance_signals`. Its comment named
-  // `ComplianceMiddleware` as the exclusive producer, and gibson ADR-0013
+  // `ComplianceMiddleware` as the exclusive producer, and ADR-0113
   // deleted that middleware along with the whole compliance_signal emission
   // pipeline — "no parallel codepath, no flag, no seam left behind for someone
   // to re-wire". The field was the seam. Control mapping is derived at read
-  // time from the audit log, which is the one evidence base (ADR-0013,
+  // time from the audit log, which is the one evidence base (ADR-0113,
   // ADR-0097).
   reserved 22;
   reserved "compliance_signals";

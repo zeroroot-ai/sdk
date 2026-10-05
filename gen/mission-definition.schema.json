@@ -84,7 +84,7 @@
     },
     "DataPolicy": {
       "additionalProperties": false,
-      "description": "DataPolicy defines how data is handled for a node.  Deprecated: superseded by the ECS brain (ADR-0008). Data handling (reuse + scoping) is now implicit in the event-sourced World and scope-relative identity (ADR-0002) + ambient projection. Retained wire-compatibly; ignored by the engine.",
+      "description": "DataPolicy defines how data is handled for a node.  Deprecated: superseded by the ECS brain (ADR-0101). Data handling (reuse + scoping) is now implicit in the event-sourced World and scope-relative identity (ADR-0102) + ambient projection. Retained wire-compatibly; ignored by the engine.",
       "properties": {
         "accessControl": {
           "description": "AccessControl specifies who can access this data",
@@ -480,7 +480,7 @@
       "properties": {
         "dataPolicy": {
           "$ref": "#/$defs/DataPolicy",
-          "description": "DataPolicy defines data handling policy for this node.  Deprecated: data reuse + scoping are no longer node-declared. Under the ECS brain (ADR-0008) reuse is implicit in the event-sourced World and scoping flows from scope-relative identity (ADR-0002) + ambient projection. The field is retained wire-compatibly for old definitions but is ignored by the engine."
+          "description": "DataPolicy defines data handling policy for this node.  Deprecated: data reuse + scoping are no longer node-declared. Under the ECS brain (ADR-0101) reuse is implicit in the event-sourced World and scoping flows from scope-relative identity (ADR-0102) + ambient projection. The field is retained wire-compatibly for old definitions but is ignored by the engine."
         },
         "dependencies": {
           "description": "Dependencies lists node IDs that must complete before this node executes",
@@ -514,7 +514,7 @@
         },
         "reusePolicy": {
           "$ref": "#/$defs/ReusePolicy",
-          "description": "ReusePolicy declares how this node's I/O is scoped + reused across mission runs.  Deprecated: superseded by the ECS brain (ADR-0008). Reuse is implicit in the World; scoping is via scope-relative identity (ADR-0002) + ambient projection. Retained wire-compatibly but ignored by the engine."
+          "description": "ReusePolicy declares how this node's I/O is scoped + reused across mission runs.  Deprecated: superseded by the ECS brain (ADR-0101). Reuse is implicit in the World; scoping is via scope-relative identity (ADR-0102) + ambient projection. Retained wire-compatibly but ignored by the engine."
         },
         "timeout": {
           "description": "Timeout is the maximum execution time for this node",
@@ -742,7 +742,7 @@
     },
     "ReusePolicy": {
       "additionalProperties": false,
-      "description": "ReusePolicy declares how a node's I/O is scoped + reused across mission runs.  Deprecated: superseded by the ECS brain (ADR-0008). Reuse is implicit in the event-sourced World and scoping flows from scope-relative identity (ADR-0002) + ambient projection, so node-declared reuse/scoping no longer has meaning. Retained wire-compatibly; ignored by the engine.",
+      "description": "ReusePolicy declares how a node's I/O is scoped + reused across mission runs.  Deprecated: superseded by the ECS brain (ADR-0101). Reuse is implicit in the event-sourced World and scoping flows from scope-relative identity (ADR-0102) + ambient projection, so node-declared reuse/scoping no longer has meaning. Retained wire-compatibly; ignored by the engine.",
       "properties": {
         "inputScope": {
           "description": "InputScope: \"mission_run\" | \"mission\" | \"global\". Default: \"mission\".",

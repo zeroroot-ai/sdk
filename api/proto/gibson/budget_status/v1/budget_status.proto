@@ -24,7 +24,7 @@ syntax = "proto3";
 //
 // Spec: llm-user-attribution-governance (Requirement 3, READ-side
 //       wire contract); two-surface platform contract
-//       (ADR-0025 / ADR-0030).
+//       (ADR-0058).
 package gibson.budget_status.v1;
 
 option go_package = "github.com/zeroroot-ai/sdk/api/gen/gibson/budget_status/v1;budgetstatusv1";
