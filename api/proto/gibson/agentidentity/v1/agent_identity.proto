@@ -2,7 +2,7 @@ syntax = "proto3";
 
 // Package gibson.agentidentity.v1 — AgentIdentityService: customer-callable
 // machine-identity provisioning surface and the developer enrollment dev-loop
-// (`gibson component register` / `gibson agent`). Re-homed out of
+// (`gibson agent`). Re-homed out of
 // gibson.tenant.v1 into its own wire package so it can stay in the OSS SDK
 // while the nine tenant-administration services move to the gibson platform
 // protos under the unchanged gibson.tenant.v1 package — keeping both in one
@@ -100,26 +100,29 @@ message CreateAgentIdentityResponse {
   // Fields 4 (client_id) and 5 (client_secret) carried the OAuth2
   // client_credentials grant. They were removed when enrollment unified on the
   // one capability-grant handshake (ADR-0045): no OAuth client is provisioned
-  // for machine principals; bootstrap_token is the sole credential. The field
-  // numbers and names are reserved so they are never reused.
-  reserved 4, 5;
-  reserved "client_id", "client_secret";
+  // for machine principals; bootstrap_token is the sole credential.
+  //
+  // Field 7 (enroll_command) carried a shell command for a CLI verb that no
+  // longer exists. Enrollment needs no CLI verb (ADR-0097): a developer sets
+  // GIBSON_BOOTSTRAP_TOKEN and GIBSON_URL and starts the component.
+  //
+  // The field numbers and names are reserved so they are never reused.
+  reserved 4, 5, 7;
+  reserved "client_id", "client_secret", "enroll_command";
 
   // principal_id is the FGA principal identifier (e.g. "agent_principal:uuid").
   string principal_id = 1;
   PrincipalKind kind = 2;
   string name = 3;
-  // gibson_url is the daemon's public Envoy URL for use in enroll_command.
+  // gibson_url is the public URL of the daemon. The component reads it from
+  // GIBSON_URL when it starts.
   string gibson_url = 6;
-  // enroll_command is a complete copy-pasteable shell invocation for component
-  // enrollment: `gibson component register --kind <kind> --token -`.
-  string enroll_command = 7;
   // bootstrap_token is a one-time, daemon-signed Capability-Grant bootstrap
-  // credential the component presents to the CG register endpoint to complete
-  // its FIRST host registration (it carries no Capability Grant yet). Under the
-  // unified-identity model (ADR-0045) this is the SOLE credential `gibson
-  // component register` uses for every kind; the enroll_command pipes it via
-  // `--token -`. Store it immediately; it will not be shown again.
+  // credential. The component reads it from GIBSON_BOOTSTRAP_TOKEN when it
+  // starts and presents it to the CG register endpoint to complete its FIRST
+  // host registration (it carries no Capability Grant yet). Under the
+  // unified-identity model (ADR-0045) it is the sole enrollment credential for
+  // every kind. Store it immediately; it will not be shown again.
   string bootstrap_token = 8;
 }
 
