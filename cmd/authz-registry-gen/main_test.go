@@ -5,7 +5,10 @@ package main
 
 import (
 	"bytes"
+	"go/ast"
 	"go/format"
+	"go/parser"
+	"go/token"
 	"strings"
 	"testing"
 
@@ -681,5 +684,51 @@ func TestRun_WriterVerbsPass(t *testing.T) {
 	ao.Relation = "writer"
 	if _, err := runFixture(t, oneMethodRequest("CreateThing", ao)); err != nil {
 		t.Fatalf("CreateThing at relation writer must pass: %v", err)
+	}
+}
+
+// The generated Go Entry carries a field only when it has a named reader
+// (sdk#145, ADR-0094). Method had none: it repeated the map key, and neither
+// the daemon enforcer nor a registry contract test read it. A field added to
+// the generated struct fails here until this list, and the doc comment that
+// names its reader, change with it.
+func TestEmitGo_EntryCarriesOnlyFieldsWithAReader(t *testing.T) {
+	out := emitGo([]Entry{
+		{Method: "/gibson.example.v1.S/A", Service: "gibson.example.v1.S", Relation: "member",
+			ObjectType: "tenant", ObjectDeriver: "tenant_from_identity", AllowedIdentities: []string{"USER"}},
+		{Method: "/gibson.example.v1.S/B", Service: "gibson.example.v1.S", Unauthenticated: true},
+	})
+	src := out.GetContent()
+
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "registry.go", src, 0)
+	if err != nil {
+		t.Fatalf("generated registry.go does not parse: %v", err)
+	}
+	var got []string
+	ast.Inspect(file, func(n ast.Node) bool {
+		ts, ok := n.(*ast.TypeSpec)
+		if !ok || ts.Name.Name != "Entry" {
+			return true
+		}
+		for _, f := range ts.Type.(*ast.StructType).Fields.List {
+			for _, name := range f.Names {
+				got = append(got, name.Name)
+			}
+		}
+		return false
+	})
+	want := []string{"Service", "Relation", "ObjectType", "ObjectDeriver", "AllowedIdentities", "Unauthenticated", "Self"}
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Fatalf("Entry fields = %v, want %v", got, want)
+	}
+	// The method stays reachable, as the map key.
+	for _, key := range []string{`"/gibson.example.v1.S/A": {`, `"/gibson.example.v1.S/B": {`} {
+		if !strings.Contains(src, key) {
+			t.Errorf("generated map has no key %s", key)
+		}
+	}
+	if strings.Contains(src, "Method:") {
+		t.Errorf("an entry literal still sets Method")
 	}
 }
