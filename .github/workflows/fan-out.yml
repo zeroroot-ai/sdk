@@ -306,7 +306,6 @@ jobs:
           TAG="${{ needs.resolve-tag.outputs.tag }}"
           CONSUMER="${{ matrix.consumer }}"
           PR_BODY="Automated SDK bump from \`zeroroot-ai/sdk@${TAG}\`. Auto-merge enabled — will land if CI passes."
-          PR_BODY+=$'\n\nDocs-PR: not-applicable: automated dependency bump'
           gh pr create \
             --title "chore(deps): bump sdk to ${TAG}" \
             --body "$PR_BODY" \
