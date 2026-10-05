@@ -152,6 +152,7 @@ lint: $(GOLANGCI_LINT)
 	@node scripts/lint-allowed-identities.mjs
 	@node scripts/lint-field-rules.mjs
 	@node scripts/lint-idempotency-key.mjs
+	@node scripts/lint-rpc-surface.mjs
 
 # lint-all — full-tree, non-baselined. Surfaces the entire backlog for the
 # sdk#385 burndown. Not wired into `check` until the backlog is cleared.
