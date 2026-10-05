@@ -265,17 +265,17 @@ func TestClient_ListMissions_Success(t *testing.T) {
 	}
 	c := &Client{daemon: mock}
 
-	missions, total, err := c.ListMissions(context.Background(), false, "", "", 0, 0)
+	missions, page, err := c.ListMissions(context.Background(), false, "", "", PageRequest{})
 	require.NoError(t, err)
 	assert.Len(t, missions, 1)
-	assert.Equal(t, 1, total)
+	assert.Equal(t, 1, page.Total)
 	assert.Equal(t, "recon", missions[0].Name)
 }
 
 func TestClient_ListMissions_UnavailableError(t *testing.T) {
 	mock := &extendedMockClient{listMissionsErr: status.Error(codes.Unavailable, "down")}
 	c := &Client{daemon: mock}
-	_, _, err := c.ListMissions(context.Background(), false, "", "", 0, 0)
+	_, _, err := c.ListMissions(context.Background(), false, "", "", PageRequest{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "daemon not responding")
 }
@@ -283,7 +283,7 @@ func TestClient_ListMissions_UnavailableError(t *testing.T) {
 func TestClient_ListMissions_DeadlineError(t *testing.T) {
 	mock := &extendedMockClient{listMissionsErr: status.Error(codes.DeadlineExceeded, "timeout")}
 	c := &Client{daemon: mock}
-	_, _, err := c.ListMissions(context.Background(), false, "", "", 0, 0)
+	_, _, err := c.ListMissions(context.Background(), false, "", "", PageRequest{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "timeout")
 }
@@ -500,10 +500,10 @@ func TestClient_GetMissionHistory_Success(t *testing.T) {
 	}
 	c := &Client{daemon: mock}
 
-	runs, total, err := c.GetMissionHistory(context.Background(), "recon", 10, 0)
+	runs, page, err := c.GetMissionHistory(context.Background(), "recon", PageRequest{Size: 10})
 	require.NoError(t, err)
 	assert.Len(t, runs, 2)
-	assert.Equal(t, 2, total)
+	assert.Equal(t, 2, page.Total)
 	// Second run has CompletedAt set.
 	assert.NotNil(t, runs[1].CompletedAt)
 }
@@ -511,7 +511,7 @@ func TestClient_GetMissionHistory_Success(t *testing.T) {
 func TestClient_GetMissionHistory_UnavailableError(t *testing.T) {
 	mock := &extendedMockClient{getMissionHistoryErr: status.Error(codes.Unavailable, "down")}
 	c := &Client{daemon: mock}
-	_, _, err := c.GetMissionHistory(context.Background(), "recon", 10, 0)
+	_, _, err := c.GetMissionHistory(context.Background(), "recon", PageRequest{Size: 10})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "daemon not responding")
 }
@@ -519,7 +519,7 @@ func TestClient_GetMissionHistory_UnavailableError(t *testing.T) {
 func TestClient_GetMissionHistory_NotFoundError(t *testing.T) {
 	mock := &extendedMockClient{getMissionHistoryErr: status.Error(codes.NotFound, "no missions")}
 	c := &Client{daemon: mock}
-	_, _, err := c.GetMissionHistory(context.Background(), "unknown", 10, 0)
+	_, _, err := c.GetMissionHistory(context.Background(), "unknown", PageRequest{Size: 10})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown")
 }

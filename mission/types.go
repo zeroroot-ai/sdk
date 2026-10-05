@@ -244,9 +244,7 @@ type MissionFilter struct {
 	Tags []string `json:"tags,omitempty"`
 
 	// Limit is the maximum number of results to return.
-	// Zero value means no limit.
+	// Zero value means no limit. The harness reads the pages of the daemon
+	// until it has Limit results or no page is left (ADR-0028, rule 3).
 	Limit int `json:"limit,omitempty"`
-
-	// Offset is the number of results to skip (for pagination).
-	Offset int `json:"offset,omitempty"`
 }

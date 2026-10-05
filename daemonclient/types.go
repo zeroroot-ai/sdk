@@ -182,6 +182,31 @@ type StopResult struct {
 	TotalCount   int
 }
 
+// PageRequest selects one page of a list call (ADR-0028, rule 3).
+type PageRequest struct {
+	// Size is the most items for the page. 0 means the default of the daemon.
+	// The wire accepts at most 1000.
+	Size int
+	// Token is the NextToken of the previous page. Empty means the first page.
+	Token string
+}
+
+// wireSize returns Size as the page_size of the wire, clamped to its bounds.
+func (p PageRequest) wireSize() int32 {
+	return int32(max(0, min(p.Size, maxPageSize))) //nolint:gosec // clamped to maxPageSize
+}
+
+// maxPageSize is the page_size bound of the wire.
+const maxPageSize = 1000
+
+// PageResult describes the page that a list call returned.
+type PageResult struct {
+	// Total is the count of all items that match, on all pages.
+	Total int
+	// NextToken is the Token of the next page. Empty means the last page.
+	NextToken string
+}
+
 // LogsOptions contains options for retrieving component logs.
 type LogsOptions struct {
 	Follow bool // Stream logs continuously

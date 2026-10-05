@@ -124,6 +124,10 @@ field codegen.Diagnostic.Line	# codegen/types.go:127
 field codegen.Diagnostic.Message	# codegen/types.go:142
 field codegen.Diagnostic.Path	# codegen/types.go:124
 field codegen.Diagnostic.Source	# codegen/types.go:145
+# PageResult is the published page result of daemonclient (sdk#186). Its
+# readers are the CLI in adk and the operators in gibson, outside this module.
+field daemonclient.PageResult.NextToken	# daemonclient/types.go:233
+field daemonclient.PageResult.Total	# daemonclient/types.go:231
 field daemonclient.AgentInfo.Address	# daemonclient/types.go:61
 field daemonclient.AgentInfo.Description	# daemonclient/types.go:60
 field daemonclient.AgentInfo.Name	# daemonclient/types.go:58

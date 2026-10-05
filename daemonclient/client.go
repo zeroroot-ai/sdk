@@ -561,33 +561,35 @@ func (c *Client) RunMission(ctx context.Context, missionDefinitionID, targetID s
 //   - activeOnly: If true, only return running/paused missions
 //   - statusFilter: Filter by specific status (running, completed, failed, cancelled) - empty means all
 //   - namePattern: Filter by mission name using pattern matching - empty means all
-//   - limit: Maximum number of missions to return (0 = use default)
-//   - offset: Number of missions to skip for pagination
+//   - page: the page to read. Its zero value reads the first page with the
+//     page size of the daemon.
 //
 // Returns:
 //   - []MissionInfo: List of missions matching the filter
-//   - int: Total count of missions (for pagination)
+//   - PageResult: the total count and the token of the next page
 //   - error: Non-nil if RPC fails
-func (c *Client) ListMissions(ctx context.Context, activeOnly bool, statusFilter, namePattern string, limit, offset int) ([]MissionInfo, int, error) {
+func (c *Client) ListMissions(
+	ctx context.Context, activeOnly bool, statusFilter, namePattern string, page PageRequest,
+) ([]MissionInfo, PageResult, error) {
 	resp, err := c.daemon.ListMissions(ctx, &daemonpb.ListMissionsRequest{
 		ActiveOnly:   activeOnly,
 		StatusFilter: statusFilter,
 		NamePattern:  namePattern,
-		Limit:        int32(limit),
-		Offset:       int32(offset),
+		PageSize:     page.wireSize(),
+		PageToken:    page.Token,
 	})
 	if err != nil {
 		if st, ok := status.FromError(err); ok {
 			switch st.Code() {
 			case codes.Unavailable:
-				return nil, 0, errors.New("daemon not responding (is it running?)")
+				return nil, PageResult{}, errors.New("daemon not responding (is it running?)")
 			case codes.DeadlineExceeded:
-				return nil, 0, errors.New("daemon request timeout while listing missions")
+				return nil, PageResult{}, errors.New("daemon request timeout while listing missions")
 			default:
-				return nil, 0, fmt.Errorf("failed to list missions: %s", st.Message())
+				return nil, PageResult{}, fmt.Errorf("failed to list missions: %s", st.Message())
 			}
 		}
-		return nil, 0, fmt.Errorf("failed to list missions: %w", err)
+		return nil, PageResult{}, fmt.Errorf("failed to list missions: %w", err)
 	}
 
 	missions := make([]MissionInfo, len(resp.Missions))
@@ -604,7 +606,7 @@ func (c *Client) ListMissions(ctx context.Context, activeOnly bool, statusFilter
 		}
 	}
 
-	return missions, int(resp.Total), nil
+	return missions, PageResult{Total: int(resp.GetTotal()), NextToken: resp.GetNextPageToken()}, nil
 }
 
 // StopMission stops a running mission via the daemon.
@@ -1135,31 +1137,33 @@ func (c *Client) ResumeMission(ctx context.Context, missionID string, fromCheckp
 // Parameters:
 //   - ctx: Context for the RPC call
 //   - name: Name of the mission to get history for
-//   - limit: Maximum number of runs to return (0 for all)
-//   - offset: Number of runs to skip for pagination
+//   - page: the page to read. Its zero value reads the first page with the
+//     page size of the daemon.
 //
 // Returns:
 //   - []MissionRun: List of mission runs
-//   - int: Total number of runs available
+//   - PageResult: the total count and the token of the next page
 //   - error: Non-nil if the query fails
-func (c *Client) GetMissionHistory(ctx context.Context, name string, limit, offset int) ([]MissionRun, int, error) {
+func (c *Client) GetMissionHistory(
+	ctx context.Context, name string, page PageRequest,
+) ([]MissionRun, PageResult, error) {
 	resp, err := c.daemon.GetMissionHistory(ctx, &daemonpb.GetMissionHistoryRequest{
-		Name:   name,
-		Limit:  int32(limit),
-		Offset: int32(offset),
+		Name:      name,
+		PageSize:  page.wireSize(),
+		PageToken: page.Token,
 	})
 	if err != nil {
 		if st, ok := status.FromError(err); ok {
 			switch st.Code() {
 			case codes.Unavailable:
-				return nil, 0, errors.New("daemon not responding (is it running?)")
+				return nil, PageResult{}, errors.New("daemon not responding (is it running?)")
 			case codes.NotFound:
-				return nil, 0, fmt.Errorf("no missions found with name: %s", name)
+				return nil, PageResult{}, fmt.Errorf("no missions found with name: %s", name)
 			default:
-				return nil, 0, fmt.Errorf("failed to get mission history: %s", st.Message())
+				return nil, PageResult{}, fmt.Errorf("failed to get mission history: %s", st.Message())
 			}
 		}
-		return nil, 0, fmt.Errorf("failed to get mission history: %w", err)
+		return nil, PageResult{}, fmt.Errorf("failed to get mission history: %w", err)
 	}
 
 	runs := make([]MissionRun, len(resp.Runs))
@@ -1178,7 +1182,7 @@ func (c *Client) GetMissionHistory(ctx context.Context, name string, limit, offs
 		runs[i] = run
 	}
 
-	return runs, int(resp.Total), nil
+	return runs, PageResult{Total: int(resp.GetTotal()), NextToken: resp.GetNextPageToken()}, nil
 }
 
 // GetMissionDefinition retrieves the full structured proto for a single

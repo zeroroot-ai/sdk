@@ -1228,11 +1228,11 @@ func (h *CallbackHarness) ListMissions(ctx context.Context, filter *mission.Miss
 		Context: h.client.contextInfo(),
 	}
 
+	limit := 0
 	if filter != nil {
+		limit = filter.Limit
 		req.Filter = &harnesspb.MissionFilter{
-			Tags:   filter.Tags,
-			Limit:  int32(filter.Limit),
-			Offset: int32(filter.Offset),
+			Tags: filter.Tags,
 		}
 
 		if filter.Status != nil {
@@ -1252,25 +1252,43 @@ func (h *CallbackHarness) ListMissions(ctx context.Context, filter *mission.Miss
 		}
 	}
 
-	resp, err := h.client.ListMissions(ctx, req)
-	if err != nil {
-		span.RecordError(err)
-		return nil, fmt.Errorf("list missions callback failed: %w", err)
+	// Read the pages until the limit is reached or no page is left.
+	var missions []*mission.MissionInfo
+	for {
+		if limit > 0 {
+			req.PageSize = int32(min(limit-len(missions), maxMissionPageSize)) //nolint:gosec // bounded by maxMissionPageSize
+		}
+
+		resp, err := h.client.ListMissions(ctx, req)
+		if err != nil {
+			span.RecordError(err)
+			return nil, fmt.Errorf("list missions callback failed: %w", err)
+		}
+
+		if resp.Error != nil {
+			err := fmt.Errorf("list missions error: %s", resp.Error.Message)
+			span.RecordError(err)
+			return nil, err
+		}
+
+		for _, m := range resp.Missions {
+			missions = append(missions, protoToMissionInfo(m))
+		}
+
+		if resp.GetNextPageToken() == "" || (limit > 0 && len(missions) >= limit) {
+			break
+		}
+		req.PageToken = resp.GetNextPageToken()
 	}
 
-	if resp.Error != nil {
-		err := fmt.Errorf("list missions error: %s", resp.Error.Message)
-		span.RecordError(err)
-		return nil, err
+	if limit > 0 && len(missions) > limit {
+		missions = missions[:limit]
 	}
-
-	missions := make([]*mission.MissionInfo, len(resp.Missions))
-	for i, m := range resp.Missions {
-		missions[i] = protoToMissionInfo(m)
-	}
-
 	return missions, nil
 }
+
+// maxMissionPageSize is the page_size bound of the wire (ADR-0028, rule 3).
+const maxMissionPageSize = 1000
 
 // CancelMission requests cancellation of a running mission.
 func (h *CallbackHarness) CancelMission(ctx context.Context, missionID string) error {
