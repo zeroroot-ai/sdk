@@ -614,7 +614,7 @@ type RegisterPluginRequest struct {
 	DryRun bool `protobuf:"varint,3,opt,name=dry_run,json=dryRun,proto3" json:"dry_run,omitempty"`
 	// remote, when true, registers an MCP connector for execution in the
 	// customer's own network instead of a gibson-hosted setec sandbox
-	// (ADR-0048 remote-deployment path). The daemon skips the hosted launch
+	// (ADR-0065 remote-deployment path). The daemon skips the hosted launch
 	// and the response carries the one-time bootstrap_token; the customer runs
 	// the MCP-bridge themselves and the bridge redeems the token to enroll.
 	// Only valid for connector manifests (connector.gibson.zeroroot.ai/v1):

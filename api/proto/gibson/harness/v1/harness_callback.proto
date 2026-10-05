@@ -77,7 +77,7 @@ service HarnessCallbackService {
 
     // SearchTools returns a small, ranked, authz-filtered set of tools matching
     // a query — the meta-tool surface agents use instead of receiving every tool
-    // (ADR-0047 facet 5). Per-tool authorization is enforced inside the handler;
+    // (ADR-0065). Per-tool authorization is enforced inside the handler;
     // this RPC-level gate only checks that the caller may use the harness.
     rpc SearchTools(SearchToolsRequest) returns (SearchToolsResponse) {
       option (gibson.auth.v1.authz) = {
@@ -151,7 +151,7 @@ service HarnessCallbackService {
         allowed_identities: 4  // COMPONENT
       };
     }
-    // Observe emits a typed observation into the World (ADR-0007). The brain
+    // Observe emits a typed observation into the World (ADR-0107). The brain
     // resolves identity and topology; scope is derived server-side from context.
     rpc Observe(ObserveRequest) returns (ObserveResponse) {
       option (gibson.auth.v1.authz) = {
@@ -161,9 +161,9 @@ service HarnessCallbackService {
         allowed_identities: 4  // COMPONENT
       };
     }
-    // PlaceBet stakes a calibrated confidence on a Hypothesis (ADR-0022). Betting
+    // PlaceBet stakes a calibrated confidence on a Hypothesis (ADR-0122). Betting
     // is a first-class SDK primitive, parallel to Observe: storage, settlement
-    // and scoring of the bet are a gibson-side concern (ADR-0023).
+    // and scoring of the bet are a gibson-side concern (ADR-0123).
     rpc PlaceBet(PlaceBetRequest) returns (PlaceBetResponse) {
       option (gibson.auth.v1.authz) = {
         relation: "can_use"
@@ -173,13 +173,13 @@ service HarnessCallbackService {
       };
     }
     // SubmitProof triggers settlement of a Bet by submitting the raw evidence
-    // an agent's own tools captured (ADR-0030). The agent never submits a
+    // an agent's own tools captured (ADR-0131). The agent never submits a
     // verdict or an interpretation — only raw evidence — because a
     // deterministic, typed predicate on the daemon decides settlement, never
     // an LLM and never the bet's own beneficiary. A non-destructive proof
     // settles synchronously; a destructive proof settles only after a prior
     // RequestDestructiveAuthorization approval, and this call never blocks on
-    // that decision (ADR-0032).
+    // that decision (ADR-0132).
     rpc SubmitProof(SubmitProofRequest) returns (SubmitProofResponse) {
       option (gibson.auth.v1.authz) = {
         relation: "can_use"
@@ -189,7 +189,7 @@ service HarnessCallbackService {
       };
     }
     // RequestDestructiveAuthorization asks a human to approve an irreversible
-    // demonstration BEFORE the agent performs it (ADR-0032). It returns
+    // demonstration BEFORE the agent performs it (ADR-0132). It returns
     // immediately with a pending request id — the fleet keeps working while
     // the decision is pending. The agent performs the destructive act only
     // after it reads back an approval, then calls SubmitProof.
@@ -202,7 +202,7 @@ service HarnessCallbackService {
       };
     }
     // WorldView returns the caller's server-projected slice of the tenant World
-    // (ADR-0012). It is the counterpart to Observe: Observe
+    // (ADR-0112). It is the counterpart to Observe: Observe
     // is the agent's only write, WorldView its only read.
     //
     // The slice is projected by the daemon from the mission record it created —
@@ -225,10 +225,10 @@ service HarnessCallbackService {
     // only its task-scoped callback grant cannot read the tenant graph, and the
     // agent would have to keep a component-scoped grant alive purely to call
     // recall — which defeats the point of scoping the dispatch at all.
-    // See zerocool-plugins ADR-0006 and docs/adr/0001-callback-knowledge-reads.md.
+    // See ADR-0156 and ADR-0161.
     //
     // Read-only by construction. The write half is NOT mirrored: the projector
-    // is the sole graph writer (ADR-0012), and ComponentService no longer
+    // is the sole graph writer (ADR-0112), and ComponentService no longer
     // has a generic graph-write RPC.
     rpc QueryNodes(QueryNodesRequest) returns (QueryNodesResponse) {
       option (gibson.auth.v1.authz) = {
@@ -371,8 +371,8 @@ service HarnessCallbackService {
       };
     }
     // ProposeOntologyExtension proposes a new Taxonomy node label or
-    // relationship type discovered by an agent at runtime (ADR-0024 §2,
-    // ADR-0033 decision 2). The agent proposes; it never promotes — the
+    // relationship type discovered by an agent at runtime (ADR-0124,
+    // ADR-0133). The agent proposes; it never promotes — the
     // daemon checks the identifier against its safety gate before recording
     // it as a per-tenant proposal, and the resulting recurrence only ever
     // feeds a later, explicit tenant-owner approval. This call never blocks
@@ -642,7 +642,7 @@ service HarnessCallbackService {
     }
 
     // ========================================================================
-    // Bank member inbox and jobs (ADR-0017)
+    // Bank member inbox and jobs (ADR-0119)
     //
     // A bank member is a long-lived sandbox that serves many dispatches. It
     // pulls its input outbound through these RPCs and never accepts an
@@ -1559,7 +1559,7 @@ message TraversalResult {
 // Proto-Canonical GraphRAG Operations (uses graphragpb types)
 // ============================================================================
 
-// ObserveRequest carries a typed observation (ADR-0007). Scope is NOT carried —
+// ObserveRequest carries a typed observation (ADR-0107). Scope is NOT carried —
 // the daemon derives it from the mission context.
 message ObserveRequest {
     ContextInfo context = 1;
@@ -1584,7 +1584,7 @@ message ObserveRequest {
 // Admission is the Taxonomy's decision, not this message's. The daemon puts
 // label and every edge type to the global Taxonomy; an admitted shape becomes a
 // typed node, and one the Taxonomy does not admit is neither rejected nor lost —
-// it lands as an Observation with its residue preserved (ADR-0012). So an agent
+// it lands as an Observation with its residue preserved (ADR-0112). So an agent
 // can always write, and can never invent schema.
 //
 // This is a SIGHTING, not a graph write. The agent reports what it saw; the
@@ -1709,10 +1709,10 @@ message MemoryObservation {
 }
 
 // HypothesisObservation reports an agent's own reasoning: a proposed, unproven
-// claim, not a sighting (ADR-0021). It is attributed to the proposing agent and
+// claim, not a sighting (ADR-0121). It is attributed to the proposing agent and
 // carries a confidence; it stays unverified until it settles (the betting /
-// settlement slices, ADR-0022 / ADR-0023). This keeps the agent write surface
-// emit-only — one more observation kind, never a raw graph write (ADR-0007).
+// settlement slices, ADR-0122 / ADR-0123). This keeps the agent write surface
+// emit-only — one more observation kind, never a raw graph write (ADR-0107).
 message HypothesisObservation {
     // proposer identifies the agent making the claim.
     string proposer = 1;
@@ -1725,7 +1725,7 @@ message HypothesisObservation {
     // the emitter does not know node ids, and must not be able to guess them.
     repeated ReferencedEntity references = 4;
     // technique names the technique this hypothesis exercises. Reputation
-    // keys on technique x environment (ADR-0022, gibson#333/#284), so this
+    // keys on technique x environment (ADR-0122, gibson#333/#284), so this
     // must ride on the Hypothesis the same way it already rides on Bet.
     // Optional and additive: empty means the hypothesis carries no technique
     // signal (resolves to the neutral prior), same as before this field
@@ -1737,7 +1737,7 @@ message HypothesisObservation {
     // gibson#280) records against — the one join key across Hypothesis, Bet
     // and BetSettlement (gibson#339). Optional: empty preserves the
     // pre-existing behavior of a Hypothesis with no bettable identity (it
-    // still folds as a claim, ADR-0021, it just cannot be staked on or
+    // still folds as a claim, ADR-0121, it just cannot be staked on or
     // settled by id).
     string hypothesis_id = 6;
 }
@@ -1781,11 +1781,11 @@ message ReasoningStepObservation {
 // conclusion an agent draws FROM evidence already on the graph, with the
 // confidence it holds and the evidence it used — the bridge between raw
 // findings and reportable output. Unlike a Hypothesis (an unproven,
-// forward-looking claim awaiting settlement, ADR-0021), an Analysis is
+// forward-looking claim awaiting settlement, ADR-0121), an Analysis is
 // backward-looking: it synthesizes what is already known rather than
 // proposing something new to test. Like every Observation, this feeds
 // hypotheses and findings as a typed artifact, never as free text, and it is
-// an emit: the daemon folds it onto the Timeline (ADR-0007).
+// an emit: the daemon folds it onto the Timeline (ADR-0107).
 message AnalysisObservation {
     // agent identifies the agent producing the analysis.
     string agent = 1;
@@ -1805,14 +1805,14 @@ message ObserveResponse {
     HarnessError error = 1;
 }
 
-// PlaceBetRequest carries a calibrated stake on a Hypothesis (ADR-0022).
+// PlaceBetRequest carries a calibrated stake on a Hypothesis (ADR-0122).
 message PlaceBetRequest {
     ContextInfo context = 1;
     Bet bet = 2;
 }
 
 // Bet is an agent's calibrated stake on a Hypothesis: a stake that later
-// settles, not a bare confidence number (ADR-0022). Reputation attaches to
+// settles, not a bare confidence number (ADR-0122). Reputation attaches to
 // technique × environment, never to an agent, so the technique the bet
 // exercises rides on the bet itself.
 message Bet {
@@ -1833,13 +1833,13 @@ message PlaceBetResponse {
 }
 
 // ============================================================================
-// Proof settlement — ADR-0030 (agent-triggered, system-verified) and
-// ADR-0032 (the destructive-proof gate sits before the action)
+// Proof settlement — ADR-0131 (agent-triggered, system-verified) and
+// ADR-0132 (the destructive-proof gate sits before the action)
 // ============================================================================
 
 // SubmitProofRequest carries the raw evidence an agent captured for a
 // Hypothesis it staked a Bet on. The agent supplies raw, uninterpreted tool
-// output — never a verdict (ADR-0030 decision 1) — and a deterministic,
+// output — never a verdict (ADR-0131) — and a deterministic,
 // typed predicate on the daemon decides whether the Bet settles.
 message SubmitProofRequest {
     ContextInfo context = 1;
@@ -1849,7 +1849,7 @@ message SubmitProofRequest {
     string hypothesis_id = 2 [(buf.validate.field).string = { min_len: 1 }];
     // technique names the technique this proof exercises, the same value
     // carried on the Bet (reputation keys on technique x environment,
-    // ADR-0022).
+    // ADR-0122).
     string technique = 3;
     // predicate_name names the enabled pack's CEL predicate the daemon
     // evaluates against evidence to decide settlement. The agent names a
@@ -1861,7 +1861,7 @@ message SubmitProofRequest {
     // destructive is true when this proof follows an irreversible
     // demonstration. A destructive proof settles only after a prior
     // RequestDestructiveAuthorization approval for this hypothesis_id
-    // (ADR-0032); a non-destructive proof settles synchronously.
+    // (ADR-0132); a non-destructive proof settles synchronously.
     bool destructive = 6;
 }
 
@@ -1876,13 +1876,13 @@ enum SettlementOutcome {
     SETTLEMENT_OUTCOME_NOT_SETTLED = 2;
     // SETTLEMENT_OUTCOME_PENDING_AUTHORIZATION means the proof was destructive
     // and settlement is deferred until the daemon reads back an approved
-    // authorization decision for this hypothesis_id (ADR-0032). SubmitProof
+    // authorization decision for this hypothesis_id (ADR-0132). SubmitProof
     // never blocks on that decision.
     SETTLEMENT_OUTCOME_PENDING_AUTHORIZATION = 3;
 }
 
 // SubmitProofResponse reports the settlement outcome. SubmitProof never
-// blocks on a human decision (ADR-0032 decision 2): a destructive proof
+// blocks on a human decision (ADR-0132): a destructive proof
 // returns SETTLEMENT_OUTCOME_PENDING_AUTHORIZATION immediately rather than
 // waiting for the pending authorization to resolve.
 message SubmitProofResponse {
@@ -1900,8 +1900,8 @@ enum Reversibility {
 }
 
 // RequestDestructiveAuthorizationRequest asks a human to approve an
-// irreversible demonstration before the agent performs it (ADR-0032). It
-// carries what a human reviewer needs to decide (ADR-0028 decision 3): what
+// irreversible demonstration before the agent performs it (ADR-0132). It
+// carries what a human reviewer needs to decide (ADR-0132): what
 // the action would do, its blast radius, its reversibility, and the
 // predicate it would satisfy.
 message RequestDestructiveAuthorizationRequest {
@@ -1926,7 +1926,7 @@ message RequestDestructiveAuthorizationRequest {
 }
 
 // RequestDestructiveAuthorizationResponse returns immediately: the fleet
-// keeps working while the human decision is pending (ADR-0028, ADR-0032).
+// keeps working while the human decision is pending (ADR-0132).
 message RequestDestructiveAuthorizationResponse {
     // authorization_request_id names the pending request. The agent reads
     // the decision back before it performs the destructive act, then names
@@ -1936,7 +1936,7 @@ message RequestDestructiveAuthorizationResponse {
 }
 
 // ============================================================================
-// WorldView — the agent's read of the World (ADR-0012)
+// WorldView — the agent's read of the World (ADR-0112)
 // ============================================================================
 
 // WorldViewRequest asks for the caller's slice of the tenant World.
@@ -1983,7 +1983,7 @@ message WorldEntity {
     // handle is the ONLY name the agent has for this entity: an opaque,
     // server-minted, non-constructible reference, valid within the slice it was
     // issued to and nowhere else. It carries no brain id an agent could iterate,
-    // so enumerating past the slice boundary is unrepresentable (ADR-0012).
+    // so enumerating past the slice boundary is unrepresentable (ADR-0112).
     //
     // A handle stays stable across re-projections of the same slice: the entity
     // it names does not change, so refreshing the view never invalidates a
@@ -2256,9 +2256,9 @@ message TaxonomyProperty {
 }
 
 // ============================================================================
-// Ontology extension proposals — ADR-0024 §2, ADR-0033 decision 2
+// Ontology extension proposals — ADR-0124, ADR-0133
 //
-// ADR-0033's lifecycle is "Agent captures -> proposal (through the
+// ADR-0133's lifecycle is "Agent captures -> proposal (through the
 // ValidIdentifier safety gate; PromotionGate observes recurrence and
 // de-dupes) -> explicit tenant-owner approval -> tenant extension -> ...".
 // ProposeOntologyExtension is the FIRST arrow only: an agent proposing a new
@@ -2269,10 +2269,10 @@ message TaxonomyProperty {
 
 // OntologyExtensionKind distinguishes what an agent is proposing: a new
 // Taxonomy node label or a new relationship type. These are Taxonomy's own
-// two vocabularies (ADR-0024 §2) — the HEAVY safety gate, because a
+// two vocabularies (ADR-0124) — the HEAVY safety gate, because a
 // promoted label becomes Cypher query structure. This is deliberately not
 // the LIGHT gate for ontology triples (classes/equivalences/inverse-
-// functional properties, ADR-0024 §1): that is a separate proposal kind
+// functional properties, ADR-0124): that is a separate proposal kind
 // with no identifier-safety concern, and is not carried by this RPC.
 enum OntologyExtensionKind {
     ONTOLOGY_EXTENSION_KIND_UNSPECIFIED = 0;
@@ -2490,7 +2490,7 @@ message CreateMissionRequest {
 
     // catalog_mission names a mission definition checked into the platform's
     // mission catalog, to be originated instead of a caller-supplied graph
-    // (ADR-0018: the checked-in definition is authoritative).
+    // (ADR-0118: the checked-in definition is authoritative).
     //
     // This is a second *input* to the one mission-creation route, deliberately
     // not a second RPC. A dedicated RPC would carry its own authorization
@@ -2864,7 +2864,7 @@ message DeleteSessionContextResponse {
 }
 
 // ============================================================================
-// Bank member inbox and jobs (ADR-0017)
+// Bank member inbox and jobs (ADR-0119)
 // ============================================================================
 
 // SubscribeInputRequest opens the input stream for the calling member.

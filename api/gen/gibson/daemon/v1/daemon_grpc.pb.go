@@ -136,7 +136,7 @@ type DaemonServiceClient interface {
 	// ListMissionDefinitions returns all installed mission definitions.
 	ListMissionDefinitions(ctx context.Context, in *ListMissionDefinitionsRequest, opts ...grpc.CallOption) (*ListMissionDefinitionsResponse, error)
 	// ListCatalogMissions returns the mission definitions gibson ships compiled
-	// into its own binary (ADR-0018), with what each one declares.
+	// into its own binary (ADR-0118), with what each one declares.
 	//
 	// Until this RPC, the catalog had exactly one reader: the agent-facing
 	// harness callback, which takes catalog_mission + catalog_params. A person
@@ -838,7 +838,7 @@ type DaemonServiceServer interface {
 	// ListMissionDefinitions returns all installed mission definitions.
 	ListMissionDefinitions(context.Context, *ListMissionDefinitionsRequest) (*ListMissionDefinitionsResponse, error)
 	// ListCatalogMissions returns the mission definitions gibson ships compiled
-	// into its own binary (ADR-0018), with what each one declares.
+	// into its own binary (ADR-0118), with what each one declares.
 	//
 	// Until this RPC, the catalog had exactly one reader: the agent-facing
 	// harness callback, which takes catalog_mission + catalog_params. A person

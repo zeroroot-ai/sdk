@@ -214,8 +214,7 @@ service DaemonService {
 
   // The pre-ECS checkpoint browser RPCs (GetMissionCheckpoints,
   // ListCheckpoints, GetCheckpoint, DiffCheckpoints) were removed with
-  // the checkpoint store (ADR-0011: one snapshot
-  // mechanism = World snapshots).
+  // the checkpoint store (one snapshot mechanism = World snapshots).
 
   // ListMissionDefinitions returns all installed mission definitions.
   rpc ListMissionDefinitions(ListMissionDefinitionsRequest) returns (ListMissionDefinitionsResponse) {
@@ -228,7 +227,7 @@ service DaemonService {
     }
 
   // ListCatalogMissions returns the mission definitions gibson ships compiled
-  // into its own binary (ADR-0018), with what each one declares.
+  // into its own binary (ADR-0118), with what each one declares.
   //
   // Until this RPC, the catalog had exactly one reader: the agent-facing
   // harness callback, which takes catalog_mission + catalog_params. A person
@@ -1348,8 +1347,7 @@ message MissionRun {
 }
 
 // GetMissionCheckpointsRequest/Response and CheckpointInfo (previously
-// defined here) were removed with the retired GetMissionCheckpoints RPC
-// (ADR-0011).
+// defined here) were removed with the retired GetMissionCheckpoints RPC.
 
 // ListMissionDefinitionsRequest queries installed mission definitions.
 message ListMissionDefinitionsRequest {
@@ -2401,7 +2399,7 @@ message SaveMissionLayoutResponse {
 // Checkpoint, DagStep, FindingSnapshot, ParallelGroupState,
 // BlobReference, DiffCheckpointsRequest/Response, CheckpointDiff and
 // its delta messages), previously defined here, were removed with the
-// retired checkpoint RPCs (ADR-0011).
+// retired checkpoint RPCs.
 
 // ---------------------------------------------------------------------------
 // CUE mission editor messages (mission-cue-editor epic)

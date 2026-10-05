@@ -5,7 +5,7 @@
 // source: gibson/bank/v1/bank.proto
 
 // Package gibson.bank.v1 declares banks of always-on coding agents and their
-// members (ADR-0017).
+// members (ADR-0119).
 //
 // A bank is a declarative, daemon-reconciled pool of always-on Claude Code
 // instances. The daemon keeps desired_count members running in sandboxes,

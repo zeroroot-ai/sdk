@@ -145,7 +145,7 @@ const (
 	SettlementOutcome_SETTLEMENT_OUTCOME_NOT_SETTLED SettlementOutcome = 2
 	// SETTLEMENT_OUTCOME_PENDING_AUTHORIZATION means the proof was destructive
 	// and settlement is deferred until the daemon reads back an approved
-	// authorization decision for this hypothesis_id (ADR-0032). SubmitProof
+	// authorization decision for this hypothesis_id (ADR-0132). SubmitProof
 	// never blocks on that decision.
 	SettlementOutcome_SETTLEMENT_OUTCOME_PENDING_AUTHORIZATION SettlementOutcome = 3
 )
@@ -476,10 +476,10 @@ func (CredentialType) EnumDescriptor() ([]byte, []int) {
 
 // OntologyExtensionKind distinguishes what an agent is proposing: a new
 // Taxonomy node label or a new relationship type. These are Taxonomy's own
-// two vocabularies (ADR-0024 §2) — the HEAVY safety gate, because a
+// two vocabularies (ADR-0124) — the HEAVY safety gate, because a
 // promoted label becomes Cypher query structure. This is deliberately not
 // the LIGHT gate for ontology triples (classes/equivalences/inverse-
-// functional properties, ADR-0024 §1): that is a separate proposal kind
+// functional properties, ADR-0124): that is a separate proposal kind
 // with no identifier-safety concern, and is not carried by this RPC.
 type OntologyExtensionKind int32
 
@@ -6794,7 +6794,7 @@ func (x *TraversalResult) GetDistance() int32 {
 	return 0
 }
 
-// ObserveRequest carries a typed observation (ADR-0007). Scope is NOT carried —
+// ObserveRequest carries a typed observation (ADR-0107). Scope is NOT carried —
 // the daemon derives it from the mission context.
 type ObserveRequest struct {
 	state         protoimpl.MessageState
@@ -7003,7 +7003,7 @@ func (*ObserveRequest_Analysis) isObserveRequest_Observation() {}
 // Admission is the Taxonomy's decision, not this message's. The daemon puts
 // label and every edge type to the global Taxonomy; an admitted shape becomes a
 // typed node, and one the Taxonomy does not admit is neither rejected nor lost —
-// it lands as an Observation with its residue preserved (ADR-0012). So an agent
+// it lands as an Observation with its residue preserved (ADR-0112). So an agent
 // can always write, and can never invent schema.
 //
 // This is a SIGHTING, not a graph write. The agent reports what it saw; the
@@ -7840,10 +7840,10 @@ func (x *MemoryObservation) GetSourceRef() string {
 }
 
 // HypothesisObservation reports an agent's own reasoning: a proposed, unproven
-// claim, not a sighting (ADR-0021). It is attributed to the proposing agent and
+// claim, not a sighting (ADR-0121). It is attributed to the proposing agent and
 // carries a confidence; it stays unverified until it settles (the betting /
-// settlement slices, ADR-0022 / ADR-0023). This keeps the agent write surface
-// emit-only — one more observation kind, never a raw graph write (ADR-0007).
+// settlement slices, ADR-0122 / ADR-0123). This keeps the agent write surface
+// emit-only — one more observation kind, never a raw graph write (ADR-0107).
 type HypothesisObservation struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -7860,7 +7860,7 @@ type HypothesisObservation struct {
 	// the emitter does not know node ids, and must not be able to guess them.
 	References []*ReferencedEntity `protobuf:"bytes,4,rep,name=references,proto3" json:"references,omitempty"`
 	// technique names the technique this hypothesis exercises. Reputation
-	// keys on technique x environment (ADR-0022, gibson#333/#284), so this
+	// keys on technique x environment (ADR-0122, gibson#333/#284), so this
 	// must ride on the Hypothesis the same way it already rides on Bet.
 	// Optional and additive: empty means the hypothesis carries no technique
 	// signal (resolves to the neutral prior), same as before this field
@@ -7872,7 +7872,7 @@ type HypothesisObservation struct {
 	// gibson#280) records against — the one join key across Hypothesis, Bet
 	// and BetSettlement (gibson#339). Optional: empty preserves the
 	// pre-existing behavior of a Hypothesis with no bettable identity (it
-	// still folds as a claim, ADR-0021, it just cannot be staked on or
+	// still folds as a claim, ADR-0121, it just cannot be staked on or
 	// settled by id).
 	HypothesisId string `protobuf:"bytes,6,opt,name=hypothesis_id,json=hypothesisId,proto3" json:"hypothesis_id,omitempty"`
 }
@@ -8111,11 +8111,11 @@ func (x *ReasoningStepObservation) GetReferences() []*ReferencedEntity {
 // conclusion an agent draws FROM evidence already on the graph, with the
 // confidence it holds and the evidence it used — the bridge between raw
 // findings and reportable output. Unlike a Hypothesis (an unproven,
-// forward-looking claim awaiting settlement, ADR-0021), an Analysis is
+// forward-looking claim awaiting settlement, ADR-0121), an Analysis is
 // backward-looking: it synthesizes what is already known rather than
 // proposing something new to test. Like every Observation, this feeds
 // hypotheses and findings as a typed artifact, never as free text, and it is
-// an emit: the daemon folds it onto the Timeline (ADR-0007).
+// an emit: the daemon folds it onto the Timeline (ADR-0107).
 type AnalysisObservation struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -8242,7 +8242,7 @@ func (x *ObserveResponse) GetError() *HarnessError {
 	return nil
 }
 
-// PlaceBetRequest carries a calibrated stake on a Hypothesis (ADR-0022).
+// PlaceBetRequest carries a calibrated stake on a Hypothesis (ADR-0122).
 type PlaceBetRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -8299,7 +8299,7 @@ func (x *PlaceBetRequest) GetBet() *Bet {
 }
 
 // Bet is an agent's calibrated stake on a Hypothesis: a stake that later
-// settles, not a bare confidence number (ADR-0022). Reputation attaches to
+// settles, not a bare confidence number (ADR-0122). Reputation attaches to
 // technique × environment, never to an agent, so the technique the bet
 // exercises rides on the bet itself.
 type Bet struct {
@@ -8428,7 +8428,7 @@ func (x *PlaceBetResponse) GetError() *HarnessError {
 
 // SubmitProofRequest carries the raw evidence an agent captured for a
 // Hypothesis it staked a Bet on. The agent supplies raw, uninterpreted tool
-// output — never a verdict (ADR-0030 decision 1) — and a deterministic,
+// output — never a verdict (ADR-0131) — and a deterministic,
 // typed predicate on the daemon decides whether the Bet settles.
 type SubmitProofRequest struct {
 	state         protoimpl.MessageState
@@ -8442,7 +8442,7 @@ type SubmitProofRequest struct {
 	HypothesisId string `protobuf:"bytes,2,opt,name=hypothesis_id,json=hypothesisId,proto3" json:"hypothesis_id,omitempty"`
 	// technique names the technique this proof exercises, the same value
 	// carried on the Bet (reputation keys on technique x environment,
-	// ADR-0022).
+	// ADR-0122).
 	Technique string `protobuf:"bytes,3,opt,name=technique,proto3" json:"technique,omitempty"`
 	// predicate_name names the enabled pack's CEL predicate the daemon
 	// evaluates against evidence to decide settlement. The agent names a
@@ -8454,7 +8454,7 @@ type SubmitProofRequest struct {
 	// destructive is true when this proof follows an irreversible
 	// demonstration. A destructive proof settles only after a prior
 	// RequestDestructiveAuthorization approval for this hypothesis_id
-	// (ADR-0032); a non-destructive proof settles synchronously.
+	// (ADR-0132); a non-destructive proof settles synchronously.
 	Destructive bool `protobuf:"varint,6,opt,name=destructive,proto3" json:"destructive,omitempty"`
 }
 
@@ -8533,7 +8533,7 @@ func (x *SubmitProofRequest) GetDestructive() bool {
 }
 
 // SubmitProofResponse reports the settlement outcome. SubmitProof never
-// blocks on a human decision (ADR-0032 decision 2): a destructive proof
+// blocks on a human decision (ADR-0132): a destructive proof
 // returns SETTLEMENT_OUTCOME_PENDING_AUTHORIZATION immediately rather than
 // waiting for the pending authorization to resolve.
 type SubmitProofResponse struct {
@@ -8600,8 +8600,8 @@ func (x *SubmitProofResponse) GetError() *HarnessError {
 }
 
 // RequestDestructiveAuthorizationRequest asks a human to approve an
-// irreversible demonstration before the agent performs it (ADR-0032). It
-// carries what a human reviewer needs to decide (ADR-0028 decision 3): what
+// irreversible demonstration before the agent performs it (ADR-0132). It
+// carries what a human reviewer needs to decide (ADR-0132): what
 // the action would do, its blast radius, its reversibility, and the
 // predicate it would satisfy.
 type RequestDestructiveAuthorizationRequest struct {
@@ -8711,7 +8711,7 @@ func (x *RequestDestructiveAuthorizationRequest) GetReversibility() Reversibilit
 }
 
 // RequestDestructiveAuthorizationResponse returns immediately: the fleet
-// keeps working while the human decision is pending (ADR-0028, ADR-0032).
+// keeps working while the human decision is pending (ADR-0132).
 type RequestDestructiveAuthorizationResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -8912,7 +8912,7 @@ type WorldEntity struct {
 	// handle is the ONLY name the agent has for this entity: an opaque,
 	// server-minted, non-constructible reference, valid within the slice it was
 	// issued to and nowhere else. It carries no brain id an agent could iterate,
-	// so enumerating past the slice boundary is unrepresentable (ADR-0012).
+	// so enumerating past the slice boundary is unrepresentable (ADR-0112).
 	//
 	// A handle stays stable across re-projections of the same slice: the entity
 	// it names does not change, so refreshing the view never invalidates a
@@ -12512,7 +12512,7 @@ type CreateMissionRequest struct {
 	CanonicalConstraints *v13.MissionConstraints `protobuf:"bytes,8,opt,name=canonical_constraints,json=canonicalConstraints,proto3" json:"canonical_constraints,omitempty"`
 	// catalog_mission names a mission definition checked into the platform's
 	// mission catalog, to be originated instead of a caller-supplied graph
-	// (ADR-0018: the checked-in definition is authoritative).
+	// (ADR-0118: the checked-in definition is authoritative).
 	//
 	// This is a second *input* to the one mission-creation route, deliberately
 	// not a second RPC. A dedicated RPC would carry its own authorization
