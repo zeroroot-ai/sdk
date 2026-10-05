@@ -17,10 +17,6 @@
 # self-healing: adding a new private transitive dep to a consumer's go.mod
 # automatically widens the token scope on the next fan-out run.
 #
-# Override: the matrix field `extra_token_repos` (optional, comma-separated) lets a
-# consumer name repos that do NOT appear in go.mod but are needed at tidy-time
-# (e.g. a pure-test-only private tool). Those are appended to the derived set.
-#
 # The fanout App must still be installed on every repo that appears in a derived
 # token_repos list.
 #
@@ -116,11 +112,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # extra_token_repos (optional): comma-separated list of zeroroot-ai repos
-          # that are NOT in go.mod but must be reachable at `go mod tidy` time
-          # (e.g. a private test-only tool, a runtime-only dep). They are appended
-          # to the repos derived from go.mod. Omit the field entirely when not needed.
-          #
           # Consumer set follows the open-core consolidation (ADR-0056): the
           # former standalone ext-authz and tenant-operator repos were absorbed
           # into the gibson monorepo (cmd/ext-authz, operators/tenant) and share
@@ -158,9 +149,7 @@ jobs:
       # Uses the minimal App token so private consumer repos are readable.
       # Extracts every `github.com/zeroroot-ai/*` require line, strips the
       # module path prefix and version, and deduplicates. The consumer repo
-      # is always included (write access for the PR). extra_token_repos from
-      # the matrix are appended for repos absent from go.mod but needed at
-      # tidy-time (e.g. a pure-test-only private tool).
+      # is always included (write access for the PR).
       # ------------------------------------------------------------------
       - name: Derive token_repos from go.mod
         id: derive
@@ -168,7 +157,6 @@ jobs:
           GH_TOKEN: ${{ steps.minimal-token.outputs.token }}
           CONSUMER: ${{ matrix.consumer }}
           MOD_DIR: ${{ matrix.mod_dir }}
-          EXTRA: ${{ matrix.extra_token_repos }}
         run: |
           set -euo pipefail
 
@@ -209,14 +197,6 @@ jobs:
               DERIVED="${CONSUMER}"
             elif ! echo ",${DERIVED}," | grep -q ",${CONSUMER},"; then
               DERIVED="${CONSUMER},${DERIVED}"
-            fi
-          fi
-
-          # Append any extra repos declared in the matrix
-          if [ -n "${EXTRA:-}" ]; then
-            EXTRA_CLEAN=$(echo "${EXTRA}" | sed 's/^,*//;s/,*$//')
-            if [ -n "${EXTRA_CLEAN}" ]; then
-              DERIVED="${DERIVED},${EXTRA_CLEAN}"
             fi
           fi
 
