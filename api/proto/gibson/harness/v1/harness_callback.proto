@@ -1858,11 +1858,15 @@ message SubmitProofRequest {
     // evidence is the raw tool output the predicate evaluates. It is never a
     // verdict or an interpretation of what the evidence shows.
     repeated gibson.types.v1.Evidence evidence = 5;
-    // destructive is true when this proof follows an irreversible
-    // demonstration. A destructive proof settles only after a prior
-    // RequestDestructiveAuthorization approval for this hypothesis_id
-    // (ADR-0132); a non-destructive proof settles synchronously.
-    bool destructive = 6;
+    // Field 6 (destructive) let the agent state that its own proof was
+    // destructive. The daemon does not read a statement from the agent. The
+    // enabled Domain Pack states which predicates are non-destructive, and a
+    // predicate that the pack does not name is destructive (ADR-0132).
+    //
+    // The field number and name are reserved so they are never reused.
+    reserved 6;
+    reserved "destructive";
+
     // tool_call_ids names the tool calls whose recorded results are the
     // evidence of this proof. Each id is the ContextInfo.tool_execution_id of
     // a tool call that the daemon recorded in this mission. The daemon reads
