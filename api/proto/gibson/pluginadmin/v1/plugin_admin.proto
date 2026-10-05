@@ -164,14 +164,10 @@ message RegisterPluginRequest {
   repeated PluginSecretBinding bindings = 2;
   // dry_run, when true, validates manifest + bindings without creating any state.
   bool dry_run = 3;
-  // remote, when true, registers an MCP connector for execution in the
-  // customer's own network instead of a gibson-hosted setec sandbox
-  // (ADR-0065 remote-deployment path). The daemon skips the hosted launch
-  // and the response carries the one-time bootstrap_token; the customer runs
-  // the MCP-bridge themselves and the bridge redeems the token to enroll.
-  // Only valid for connector manifests (connector.gibson.zeroroot.ai/v1):
-  // plain plugins are always customer-run and already receive the token.
-  bool remote = 4;
+  // Field 4 (remote) is reserved. No daemon code read it, so a client that
+  // set it got the same result as a client that did not (sdk#181).
+  reserved 4;
+  reserved "remote";
 }
 
 message RegisterPluginResponse {
