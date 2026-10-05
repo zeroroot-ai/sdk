@@ -149,6 +149,60 @@ func TestClient_SingleFlight_ConcurrentMiss(t *testing.T) {
 		"singleflight must collapse %d concurrent misses to 1 RPC", n)
 }
 
+// A caller that missed the cache while a flight was running, and reaches the
+// flight group only after that flight ended, must not fetch again: the value
+// is in the cache by then. Before the flight filled the cache itself, this
+// order produced a second fetch. It is the order behind the one failure of
+// TestClient_SingleFlight_ConcurrentMiss in the merge queue, which that test
+// reaches only when the scheduler parks a goroutine at exactly this point.
+func TestClient_SingleFlight_LateCallerAfterTheFlightEnded(t *testing.T) {
+	m := minimalManifest("cred:api_key")
+
+	var callCount int64
+	gate := make(chan struct{})
+	fn := func(_ context.Context, _ string) ([]byte, error) {
+		<-gate
+		atomic.AddInt64(&callCount, 1)
+		return []byte("value"), nil
+	}
+	cl := New(m, fn, CacheConfig{})
+
+	// The first caller passes the hook. The second one is held in it.
+	var hookCalls int64
+	lateArrived := make(chan struct{})
+	releaseLate := make(chan struct{})
+	testHookAfterCacheMiss = func() {
+		if atomic.AddInt64(&hookCalls, 1) == 2 {
+			close(lateArrived)
+			<-releaseLate
+		}
+	}
+	t.Cleanup(func() { testHookAfterCacheMiss = nil })
+
+	firstDone := make(chan struct{})
+	go func() {
+		defer close(firstDone)
+		_, _ = cl.Resolve(context.Background(), "cred:api_key")
+	}()
+	// Wait until the first caller's flight is running, then start the late one.
+	require.Eventually(t, func() bool { return atomic.LoadInt64(&hookCalls) == 1 }, time.Second, time.Millisecond)
+
+	lateDone := make(chan []byte, 1)
+	go func() {
+		v, _ := cl.Resolve(context.Background(), "cred:api_key")
+		lateDone <- v
+	}()
+	<-lateArrived // the late caller has missed the cache
+
+	close(gate) // the first flight ends and its caller returns
+	<-firstDone
+
+	close(releaseLate) // only now does the late caller reach the flight group
+	assert.Equal(t, []byte("value"), <-lateDone)
+	assert.Equal(t, int64(1), atomic.LoadInt64(&callCount),
+		"a caller that arrives after the flight ended must read the cache, not fetch again")
+}
+
 func TestClient_Invalidate_DropsCache(t *testing.T) {
 	m := minimalManifest("cred:key")
 	var calls int
