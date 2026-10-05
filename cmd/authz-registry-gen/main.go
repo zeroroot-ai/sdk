@@ -423,9 +423,14 @@ const (
 // Has reports whether c contains every bit set in want.
 func (c IdentityClass) Has(want IdentityClass) bool { return c&want == want }
 
-// Entry is the per-method authorization rule.
+// Entry is the per-method authorization rule. The map key is the method, so
+// the entry does not repeat it.
+//
+// The daemon enforcer reads Service, ObjectDeriver, Unauthenticated and Self.
+// ext-authz enforces Relation, ObjectType and AllowedIdentities from
+// registry.yaml. In Go their readers are the registry contract tests of the
+// consuming repo, which check every rule against the FGA model.
 type Entry struct {
-	Method            string
 	Service           string
 	Relation          string
 	ObjectType        string
@@ -441,7 +446,6 @@ var Registry = map[string]Entry{
 `)
 	for _, e := range entries {
 		fmt.Fprintf(&b, "\t%q: {\n", e.Method)
-		fmt.Fprintf(&b, "\t\tMethod:            %q,\n", e.Method)
 		fmt.Fprintf(&b, "\t\tService:           %q,\n", e.Service)
 		fmt.Fprintf(&b, "\t\tRelation:          %q,\n", e.Relation)
 		fmt.Fprintf(&b, "\t\tObjectType:        %q,\n", e.ObjectType)
