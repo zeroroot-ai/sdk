@@ -520,6 +520,11 @@
           "$ref": "#/$defs/ReusePolicy",
           "description": "ReusePolicy declares how this node's I/O is scoped + reused across mission runs.  Deprecated: superseded by the ECS brain (ADR-0101). Reuse is implicit in the World; scoping is via scope-relative identity (ADR-0102) + ambient projection. Retained wire-compatibly but ignored by the engine."
         },
+        "startsFrom": {
+          "description": "StartsFrom is the id of an earlier node of the same mission. The node starts from the state that the named node had when it ended, not from a fresh sandbox (ADR-0169). Empty means a fresh sandbox.  The template node of a for_each node can carry it: each instance then starts from the same state, so one state becomes N branches.  The node gets the network scope of its own node, never the scope of the node that it names.  The daemon refuses at submit time an id that names no node, a later node, or the node itself. protovalidate cannot express a rule about a different node of the graph, so the rule here limits the length only.",
+          "maxLength": 256,
+          "type": "string"
+        },
         "timeout": {
           "description": "Timeout is the maximum execution time for this node",
           "type": "string"

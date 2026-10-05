@@ -2478,6 +2478,15 @@ message MissionFilter {
     int32 offset = 8;              // Pagination offset
 }
 
+// OriginationStart selects the state that an originated mission starts from.
+enum OriginationStart {
+    // ORIGINATION_START_UNSPECIFIED means a fresh sandbox.
+    ORIGINATION_START_UNSPECIFIED = 0;
+    // ORIGINATION_START_CALLER_STATE means the state that the caller has at
+    // the time of the call. The child mission is a fork of the caller.
+    ORIGINATION_START_CALLER_STATE = 1;
+}
+
 // CreateMissionRequest creates a new mission from a mission definition.
 message CreateMissionRequest {
     ContextInfo context = 1;
@@ -2530,6 +2539,15 @@ message CreateMissionRequest {
     // Every missing parameter is reported at once rather than one render at a
     // time. Only meaningful when catalog_mission is set.
     map<string, string> catalog_params = 10;
+
+    // starts_from selects the state that the new mission starts from
+    // (ADR-0169). An agent forks at run time when it originates a child
+    // mission with ORIGINATION_START_CALLER_STATE. The origination bounds
+    // still apply to a fork: the budget comes from the remainder of the
+    // parent, the targets are a subset, and the depth limit holds (ADR-0063).
+    // The child gets the network scope of its own nodes, never the scope of
+    // the caller.
+    OriginationStart starts_from = 11 [(buf.validate.field).enum = { defined_only: true }];
 
     // workflow_json (field 2) was renamed to mission_definition_json under spec
     // mission-api-only-cleanup (Phase 3); the old name is reserved.
