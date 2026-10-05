@@ -6,7 +6,7 @@
 
 // Package gibson.agentidentity.v1 — AgentIdentityService: customer-callable
 // machine-identity provisioning surface and the developer enrollment dev-loop
-// (`gibson component register` / `gibson agent`). Re-homed out of
+// (`gibson agent`). Re-homed out of
 // gibson.tenant.v1 into its own wire package so it can stay in the OSS SDK
 // while the nine tenant-administration services move to the gibson platform
 // protos under the unchanged gibson.tenant.v1 package — keeping both in one
