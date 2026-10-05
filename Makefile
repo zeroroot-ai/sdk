@@ -292,10 +292,10 @@ coverage-baseline: coverage-profile
 # The SDK is the lowest-level module (like k8s.io/api or go.etcd.io/etcd/api).
 # The daemon imports the SDK, never the reverse.
 check-no-gibson:
-	# go.mod check: mechanical grep, still cheapest at this layer.
-	@if grep -q 'zeroroot-ai/gibson' go.mod; then \
-		echo "ERROR: SDK go.mod must not depend on github.com/zeroroot-ai/gibson"; exit 1; \
-	fi
+	# go.mod check. CI runs this same target (sdk#178), so the rule has one
+	# implementation and scripts/__tests__/check-wire-and-boundary.test.sh is
+	# its failing fixture.
+	@bash scripts/check-no-gibson-gomod.sh go.mod
 	# .go import check: typed AST inspection via the ast-checks harness.
 	# Replaces the previous grep — catches aliased imports the grep misses.
 	# See check_no_gibson_test.go.
@@ -581,6 +581,11 @@ mission-authoring-bundle: mission-jsonschema mission-docs
 #
 # origin/<branch> is used when it exists and the bare name is the fallback, so a
 # detached CI checkout without remote refs still works.
+#
+# There is no override. The target used to pass when the pull request body held
+# the text "buf:breaking:ignore": a marker that proves itself by existing, which
+# anyone could type. CI never passed the body in, so the marker did nothing
+# there, and now CI runs this target (sdk#177).
 proto-breaking:
 	@BASE=$${GITHUB_BASE_REF:-$${CI_MERGE_REQUEST_TARGET_BRANCH:-main}}; \
 	if git rev-parse --verify --quiet "refs/remotes/origin/$$BASE" >/dev/null; then \
@@ -593,13 +598,8 @@ proto-breaking:
 	if $(BUF) breaking --against ".git#branch=$$TARGET"; then \
 		echo "✅ No breaking proto changes detected"; \
 	else \
-		if echo "$$PR_BODY" | grep -q "buf:breaking:ignore"; then \
-			echo "⚠️ Breaking proto changes detected but escape hatch enabled"; \
-			exit 0; \
-		else \
-			echo "❌ Breaking proto changes detected. Add 'buf:breaking:ignore' to PR body to override."; \
-			exit 1; \
-		fi; \
+		echo "❌ Breaking proto changes detected. The sdk wire contract is append-only (ADR-0028): add a field or a message, and reserve a number you retire."; \
+		exit 1; \
 	fi
 
 # Taxonomy generation from YAML

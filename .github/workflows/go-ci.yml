@@ -132,11 +132,21 @@ jobs:
       - name: Registry coverage
         run: go test -v ./auth/registry/...
 
+      # ADR-0058. The make target is the one implementation: the go.mod check
+      # and the typed import check. This step used to carry its own copy of the
+      # go.mod grep, which matched gibson-executor too (sdk#178).
       - name: Check no gibson dependency
-        run: |
-          if grep -q 'zeroroot-ai/gibson' go.mod; then
-            echo "ERROR: SDK must not depend on gibson"; exit 1
-          fi
+        run: make check-no-gibson
+
+      # ADR-0028: the sdk wire contract is append-only, and the buf breaking
+      # rule is WIRE. This ran only in a local `make check` (sdk#177), so a
+      # pull request could renumber a field and every required check stayed
+      # green. The base branch is fetched because the checkout is shallow.
+      - name: Fetch the base branch for the wire contract check
+        run: git fetch --no-tags --depth=1 origin "+refs/heads/${GITHUB_BASE_REF}:refs/remotes/origin/${GITHUB_BASE_REF}"
+
+      - name: The wire contract is append-only
+        run: make proto-breaking
 
       # Spec: mission-authoring-cue Requirements 1.3 + 8.2 + 9.x.
       # Regenerates the JSON Schema + MDX docs and asserts no drift.
@@ -264,6 +274,15 @@ jobs:
 
       - name: A failed fan-out shard can still redden the run
         run: bash scripts/check-fanout-failure-visible.sh .github/workflows/fan-out.yml
+
+      # The two checks sdk-checks runs through make: a go.mod that requires
+      # gibson is refused, and a renumbered proto field is refused.
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Mutation-test the boundary and wire contract checks
+        run: bash scripts/__tests__/check-wire-and-boundary.test.sh
 
   # ---- THE required status check (sdk#79) ----
   # One context, transitively covering every gate above. The ruleset in
