@@ -14,7 +14,7 @@ One Go module, `github.com/zeroroot-ai/sdk`, rooted at the repo root. A componen
 
 `api/gen/` holds the generated Go bindings. The protos are published to **BSR** at `buf.build/zeroroot-ai/sdk`, which is the contract every consumer reads: gibson, the ADK and `sdk-ts` all generate from the registry, never from a local path.
 
-**The hard boundary: this module must not import `gibson`.** `make check-no-gibson` enforces it at the `go.mod` layer, and `check_no_gibson_test.go` at the import layer. The SDK is what a third party compiles against; a dependency on the closed engine would make it unbuildable outside this org.
+**The hard boundary: this module must not import `gibson`.** The org `permissive-floor` workflow enforces it at the `go.mod` layer, and `import_boundary_test.go` at the import layer, together with the rule that the sdk imports no client of a platform back end (Vault, OpenBao, Zitadel, OpenFGA). The SDK is what a third party compiles against; a dependency on the closed engine would make it unbuildable outside this org.
 
 ## Commands
 
