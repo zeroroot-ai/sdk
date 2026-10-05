@@ -72,8 +72,6 @@ const (
 	DaemonService_QueryPlugin_FullMethodName                = "/gibson.daemon.v1.DaemonService/QueryPlugin"
 	DaemonService_StartComponent_FullMethodName             = "/gibson.daemon.v1.DaemonService/StartComponent"
 	DaemonService_StopComponent_FullMethodName              = "/gibson.daemon.v1.DaemonService/StopComponent"
-	DaemonService_BuildComponent_FullMethodName             = "/gibson.daemon.v1.DaemonService/BuildComponent"
-	DaemonService_ShowComponent_FullMethodName              = "/gibson.daemon.v1.DaemonService/ShowComponent"
 	DaemonService_GetComponentLogs_FullMethodName           = "/gibson.daemon.v1.DaemonService/GetComponentLogs"
 	DaemonService_GetMyPermissions_FullMethodName           = "/gibson.daemon.v1.DaemonService/GetMyPermissions"
 	DaemonService_ListMyMemberships_FullMethodName          = "/gibson.daemon.v1.DaemonService/ListMyMemberships"
@@ -242,12 +240,6 @@ type DaemonServiceClient interface {
 	// StopComponent stops a running component (agent, tool, or plugin) by kind and name.
 	// If force is true, sends SIGKILL immediately instead of graceful SIGTERM.
 	StopComponent(ctx context.Context, in *StopComponentRequest, opts ...grpc.CallOption) (*StopComponentResponse, error)
-	// BuildComponent rebuilds a component (agent, tool, or plugin) from source.
-	// Useful for rebuilding after manual code changes.
-	BuildComponent(ctx context.Context, in *BuildComponentRequest, opts ...grpc.CallOption) (*BuildComponentResponse, error)
-	// ShowComponent returns detailed information about a component.
-	// Includes manifest, status, paths, and lifecycle information.
-	ShowComponent(ctx context.Context, in *ShowComponentRequest, opts ...grpc.CallOption) (*ShowComponentResponse, error)
 	// GetComponentLogs streams log entries for a component.
 	// Supports follow mode for continuous streaming and line limits.
 	GetComponentLogs(ctx context.Context, in *GetComponentLogsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GetComponentLogsResponse], error)
@@ -714,26 +706,6 @@ func (c *daemonServiceClient) StopComponent(ctx context.Context, in *StopCompone
 	return out, nil
 }
 
-func (c *daemonServiceClient) BuildComponent(ctx context.Context, in *BuildComponentRequest, opts ...grpc.CallOption) (*BuildComponentResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(BuildComponentResponse)
-	err := c.cc.Invoke(ctx, DaemonService_BuildComponent_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *daemonServiceClient) ShowComponent(ctx context.Context, in *ShowComponentRequest, opts ...grpc.CallOption) (*ShowComponentResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ShowComponentResponse)
-	err := c.cc.Invoke(ctx, DaemonService_ShowComponent_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *daemonServiceClient) GetComponentLogs(ctx context.Context, in *GetComponentLogsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[GetComponentLogsResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &DaemonService_ServiceDesc.Streams[4], DaemonService_GetComponentLogs_FullMethodName, cOpts...)
@@ -972,12 +944,6 @@ type DaemonServiceServer interface {
 	// StopComponent stops a running component (agent, tool, or plugin) by kind and name.
 	// If force is true, sends SIGKILL immediately instead of graceful SIGTERM.
 	StopComponent(context.Context, *StopComponentRequest) (*StopComponentResponse, error)
-	// BuildComponent rebuilds a component (agent, tool, or plugin) from source.
-	// Useful for rebuilding after manual code changes.
-	BuildComponent(context.Context, *BuildComponentRequest) (*BuildComponentResponse, error)
-	// ShowComponent returns detailed information about a component.
-	// Includes manifest, status, paths, and lifecycle information.
-	ShowComponent(context.Context, *ShowComponentRequest) (*ShowComponentResponse, error)
 	// GetComponentLogs streams log entries for a component.
 	// Supports follow mode for continuous streaming and line limits.
 	GetComponentLogs(*GetComponentLogsRequest, grpc.ServerStreamingServer[GetComponentLogsResponse]) error
@@ -1155,12 +1121,6 @@ func (UnimplementedDaemonServiceServer) StartComponent(context.Context, *StartCo
 }
 func (UnimplementedDaemonServiceServer) StopComponent(context.Context, *StopComponentRequest) (*StopComponentResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StopComponent not implemented")
-}
-func (UnimplementedDaemonServiceServer) BuildComponent(context.Context, *BuildComponentRequest) (*BuildComponentResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method BuildComponent not implemented")
-}
-func (UnimplementedDaemonServiceServer) ShowComponent(context.Context, *ShowComponentRequest) (*ShowComponentResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ShowComponent not implemented")
 }
 func (UnimplementedDaemonServiceServer) GetComponentLogs(*GetComponentLogsRequest, grpc.ServerStreamingServer[GetComponentLogsResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method GetComponentLogs not implemented")
@@ -1824,42 +1784,6 @@ func _DaemonService_StopComponent_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DaemonService_BuildComponent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(BuildComponentRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DaemonServiceServer).BuildComponent(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DaemonService_BuildComponent_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DaemonServiceServer).BuildComponent(ctx, req.(*BuildComponentRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _DaemonService_ShowComponent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ShowComponentRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DaemonServiceServer).ShowComponent(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DaemonService_ShowComponent_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DaemonServiceServer).ShowComponent(ctx, req.(*ShowComponentRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _DaemonService_GetComponentLogs_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(GetComponentLogsRequest)
 	if err := stream.RecvMsg(m); err != nil {
@@ -2113,14 +2037,6 @@ var DaemonService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StopComponent",
 			Handler:    _DaemonService_StopComponent_Handler,
-		},
-		{
-			MethodName: "BuildComponent",
-			Handler:    _DaemonService_BuildComponent_Handler,
-		},
-		{
-			MethodName: "ShowComponent",
-			Handler:    _DaemonService_ShowComponent_Handler,
 		},
 		{
 			MethodName: "GetMyPermissions",

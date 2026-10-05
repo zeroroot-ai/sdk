@@ -65,7 +65,6 @@ gibson.component.v1.ComponentService/ToolResults
 gibson.component.v1.ComponentService/UpdatePluginConfig
 gibson.component.v1.ComponentService/WaitMission
 gibson.component.v1.ComponentService/WatchComponentEvents
-gibson.daemon.v1.DaemonService/BuildComponent
 gibson.daemon.v1.DaemonService/CompleteMissionCUE
 gibson.daemon.v1.DaemonService/Connect
 gibson.daemon.v1.DaemonService/CreateMission
@@ -100,7 +99,6 @@ gibson.daemon.v1.DaemonService/ResumeMission
 gibson.daemon.v1.DaemonService/RewindMission
 gibson.daemon.v1.DaemonService/RunMission
 gibson.daemon.v1.DaemonService/SaveMissionLayout
-gibson.daemon.v1.DaemonService/ShowComponent
 gibson.daemon.v1.DaemonService/StartComponent
 gibson.daemon.v1.DaemonService/Status
 gibson.daemon.v1.DaemonService/StopComponent

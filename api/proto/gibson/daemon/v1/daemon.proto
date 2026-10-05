@@ -484,28 +484,6 @@ service DaemonService {
       };
     }
 
-  // BuildComponent rebuilds a component (agent, tool, or plugin) from source.
-  // Useful for rebuilding after manual code changes.
-  rpc BuildComponent(BuildComponentRequest) returns (BuildComponentResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "admin"
-        object_type: "tenant"
-        object_deriver: "tenant_from_identity"
-        allowed_identities: 3  // USER | SERVICE
-      };
-    }
-
-  // ShowComponent returns detailed information about a component.
-  // Includes manifest, status, paths, and lifecycle information.
-  rpc ShowComponent(ShowComponentRequest) returns (ShowComponentResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "member"
-        object_type: "tenant"
-        object_deriver: "tenant_from_identity"
-        allowed_identities: 3  // USER | SERVICE
-      };
-    }
-
   // GetComponentLogs streams log entries for a component.
   // Supports follow mode for continuous streaming and line limits.
   rpc GetComponentLogs(GetComponentLogsRequest) returns (stream GetComponentLogsResponse) {
@@ -2144,93 +2122,6 @@ message StopComponentResponse {
 
   // message provides additional context or error information
   string message = 4;
-}
-
-// BuildComponentRequest requests rebuilding a component from source.
-message BuildComponentRequest {
-  // kind is the component kind ("agent", "tool", "plugin")
-  string kind = 1 [(buf.validate.field).string = { max_len: 1024 }];
-
-  // name is the component name to build
-  string name = 2 [(buf.validate.field).string = { max_len: 1024 }];
-}
-
-// BuildComponentResponse returns the result of building a component.
-message BuildComponentResponse {
-  // success indicates if the build was successful
-  bool success = 1;
-
-  // stdout contains the build standard output
-  string stdout = 2;
-
-  // stderr contains the build standard error
-  string stderr = 3;
-
-  // duration_ms is the build time in milliseconds
-  int64 duration_ms = 4;
-
-  // message provides additional context or error information
-  string message = 5;
-}
-
-// ShowComponentRequest requests detailed information about a component.
-message ShowComponentRequest {
-  // kind is the component kind ("agent", "tool", "plugin")
-  string kind = 1 [(buf.validate.field).string = { max_len: 1024 }];
-
-  // name is the component name to show
-  string name = 2 [(buf.validate.field).string = { max_len: 1024 }];
-}
-
-// ShowComponentResponse returns detailed component information.
-message ShowComponentResponse {
-  // success indicates if the component was found
-  bool success = 1;
-
-  // name is the component name
-  string name = 2;
-
-  // version is the component version
-  string version = 3;
-
-  // kind is the component kind
-  string kind = 4;
-
-  // status is the component status (installed, running, stopped)
-  string status = 5;
-
-  // source is the Git repository URL
-  string source = 6;
-
-  // repo_path is the local repository path
-  string repo_path = 7;
-
-  // bin_path is the path to the binary
-  string bin_path = 8;
-
-  // port is the listening port (if running)
-  int32 port = 9;
-
-  // pid is the process ID (if running)
-  int32 pid = 10;
-
-  // created_at is when the component was installed (Unix timestamp)
-  int64 created_at = 11;
-
-  // updated_at is when the component was last updated (Unix timestamp)
-  int64 updated_at = 12;
-
-  // started_at is when the component was started (Unix timestamp, 0 if not running)
-  int64 started_at = 13;
-
-  // stopped_at is when the component was stopped (Unix timestamp, 0 if never stopped)
-  int64 stopped_at = 14;
-
-  // manifest_info contains manifest details (JSON-encoded)
-  string manifest_info = 15;
-
-  // message provides additional context or error information
-  string message = 16;
 }
 
 // GetComponentLogsRequest requests log entries for a component.

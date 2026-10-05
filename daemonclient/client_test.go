@@ -575,12 +575,6 @@ func (m *mockDaemonServiceClient) GetMissionHistory(ctx context.Context, req *da
 func (m *mockDaemonServiceClient) QueryPlugin(ctx context.Context, req *daemonpb.QueryPluginRequest, opts ...grpc.CallOption) (*daemonpb.QueryPluginResponse, error) {
 	return nil, nil
 }
-func (m *mockDaemonServiceClient) BuildComponent(ctx context.Context, req *daemonpb.BuildComponentRequest, opts ...grpc.CallOption) (*daemonpb.BuildComponentResponse, error) {
-	return nil, nil
-}
-func (m *mockDaemonServiceClient) ShowComponent(ctx context.Context, req *daemonpb.ShowComponentRequest, opts ...grpc.CallOption) (*daemonpb.ShowComponentResponse, error) {
-	return nil, nil
-}
 func (m *mockDaemonServiceClient) GetComponentLogs(ctx context.Context, req *daemonpb.GetComponentLogsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[daemonpb.GetComponentLogsResponse], error) {
 	return nil, nil
 }
