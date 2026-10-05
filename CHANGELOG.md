@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.193.2](https://github.com/zeroroot-ai/sdk/compare/v0.193.1...v0.193.2) (2026-10-05)
+
+
+### Bug Fixes
+
+* **boundary:** the boundary check reads the require list of go.mod ([#218](https://github.com/zeroroot-ai/sdk/issues/218)) ([94c7946](https://github.com/zeroroot-ai/sdk/commit/94c79463dd4e6d53fde18a58350917b18bac196e))
+
 ## [0.193.1](https://github.com/zeroroot-ai/sdk/compare/v0.193.0...v0.193.1) (2026-10-05)
 
 
