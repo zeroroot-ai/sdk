@@ -79,11 +79,11 @@ message ComponentGrant {
 // CreateAgentIdentityRequest is the input to AgentIdentityService.CreateAgentIdentity.
 message CreateAgentIdentityRequest {
   // name must match ^[a-z][a-z0-9-]{2,40}$
-  string name = 1;
+  string name = 1 [(buf.validate.field).string = { max_len: 1024 }];
   // kind must not be UNSPECIFIED.
-  PrincipalKind kind = 2;
+  PrincipalKind kind = 2 [(buf.validate.field).enum = { defined_only: true }];
   // description is optional, max 256 chars.
-  string description = 3;
+  string description = 3 [(buf.validate.field).string = { max_len: 16777216 }];
   // component_grants is an optional list of FGA capability grants to apply at
   // creation.
   repeated ComponentGrant component_grants = 4;
@@ -136,9 +136,9 @@ message CreateAgentIdentityResponse {
 message ListAgentIdentitiesRequest {
   // page_size defaults to 50, max 200.
   int32 page_size = 1;
-  string page_token = 2;
+  string page_token = 2 [(buf.validate.field).string = { max_len: 16777216 }];
   // kind_filter: UNSPECIFIED means return all kinds.
-  PrincipalKind kind_filter = 3;
+  PrincipalKind kind_filter = 3 [(buf.validate.field).enum = { defined_only: true }];
 }
 
 // AgentIdentity is a single entry in the list response.
@@ -164,7 +164,7 @@ message ListAgentIdentitiesResponse {
 
 // RevokeAgentIdentityRequest is the input to AgentIdentityService.RevokeAgentIdentity.
 message RevokeAgentIdentityRequest {
-  string principal_id = 1;
+  string principal_id = 1 [(buf.validate.field).string = { min_len: 1, max_len: 1024 }];
 }
 
 // RevokeAgentIdentityResponse is the output of

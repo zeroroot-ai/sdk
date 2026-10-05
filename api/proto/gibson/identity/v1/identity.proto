@@ -14,6 +14,7 @@ package gibson.identity.v1;
 
 import "gibson/auth/v1/options.proto";
 import "gibson/capability/v1/capability.proto";
+import "buf/validate/validate.proto";
 
 option go_package = "github.com/zeroroot-ai/sdk/api/gen/gibson/identity/v1;identityv1";
 option java_multiple_files = true;
@@ -60,7 +61,7 @@ message WhoAmIRequest {
   // tenant_admin on the target's tenant. Format matches the FGA
   // user form: "agent_principal:<uuid>" / "tool_principal:<uuid>" /
   // "plugin_principal:<uuid>".
-  string target_principal_id = 1;
+  string target_principal_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // WhoAmIResponse carries the principal's effective grants.

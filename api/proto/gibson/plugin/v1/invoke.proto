@@ -8,6 +8,7 @@ option csharp_namespace = "Gibson.Plugin";
 
 import "google/protobuf/any.proto";
 import "gibson/auth/v1/options.proto";
+import "buf/validate/validate.proto";
 
 // PluginInvokeService is the tool-callable RPC for invoking plugin methods.
 // Tools call PluginInvoke; the daemon validates authz, looks up an active plugin
@@ -30,11 +31,11 @@ service PluginInvokeService {
 
 message PluginInvokeRequest {
   // plugin_name is the manifest.metadata.name of the target plugin.
-  string plugin_name = 1;
+  string plugin_name = 1 [(buf.validate.field).string = { max_len: 1024 }];
 
   // method is the name of the plugin method to invoke. Must match one of the
   // plugin's declared methods in its manifest.
-  string method = 2;
+  string method = 2 [(buf.validate.field).string = { max_len: 4096 }];
 
   // request carries the typed request payload as a google.protobuf.Any. The
   // plugin SDK unmarshals using the proto descriptor set the plugin uploaded

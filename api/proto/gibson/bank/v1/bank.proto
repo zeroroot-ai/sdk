@@ -273,12 +273,12 @@ message CreateBankRequest {
     LoginShape login_shape = 4 [(buf.validate.field).enum = { defined_only: true, not_in: [0] }];
     // provider_config_name names the tenant provider configuration for every
     // login shape except LOGIN_SHAPE_SUBSCRIPTION.
-    string provider_config_name = 5;
+    string provider_config_name = 5 [(buf.validate.field).string = { max_len: 1024 }];
     // agent_name is the catalog id of the agent component each member runs.
     // Empty means "claude".
-    string agent_name = 6;
+    string agent_name = 6 [(buf.validate.field).string = { max_len: 1024 }];
     // model is the model id members run. Empty means the agent default.
-    string model = 7;
+    string model = 7 [(buf.validate.field).string = { max_len: 4096 }];
     // max_jobs_in_flight is the per-member cap on open jobs. Zero means the
     // daemon default.
     int32 max_jobs_in_flight = 8 [(buf.validate.field).int32 = { gte: 0 }];
@@ -320,7 +320,7 @@ message ListBanksRequest {
     int32 page_size = 1 [(buf.validate.field).int32 = { gte: 0 }];
     // page_token is the next_page_token of the previous page. Empty for the
     // first page.
-    string page_token = 2;
+    string page_token = 2 [(buf.validate.field).string = { max_len: 16777216 }];
 }
 
 // ListBanksResponse carries one page of banks.
@@ -371,7 +371,7 @@ message ListMembersRequest {
     int32 page_size = 2 [(buf.validate.field).int32 = { gte: 0 }];
     // page_token is the next_page_token of the previous page. Empty for the
     // first page.
-    string page_token = 3;
+    string page_token = 3 [(buf.validate.field).string = { max_len: 16777216 }];
 }
 
 // ListMembersResponse carries one page of members.

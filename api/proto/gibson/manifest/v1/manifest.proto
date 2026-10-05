@@ -8,6 +8,7 @@ option csharp_namespace = "Gibson.Manifest";
 
 import "google/protobuf/timestamp.proto";
 import "gibson/identity/v1/identity.proto";
+import "buf/validate/validate.proto";
 
 // CapabilityManifest is the single, signed, versioned snapshot of every
 // component, permission, cross-component rule, and runtime context that
@@ -188,7 +189,7 @@ message ComponentLiveness {
 // requested. agent_principal_id is only honored for tenant admins and
 // enables scaffold-time impersonation previews.
 message GetCapabilityManifestRequest {
-  string agent_principal_id = 1;
+  string agent_principal_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // GetCapabilityManifestResponse wraps the signed manifest. Wrapping keeps

@@ -13,6 +13,7 @@ option csharp_namespace = "Gibson.Graph.V1";
 
 import "google/protobuf/timestamp.proto";
 import "gibson/auth/v1/options.proto";
+import "buf/validate/validate.proto";
 
 // GraphService serves per-tenant knowledge-graph reads and a server-streaming
 // update feed. Every RPC routes through Pool.For(tenant).Neo4j() server-side
@@ -202,7 +203,7 @@ message GetTenantGraphResponse {
 // ────────────────────────────────────────────────────────────────────────────
 
 message GetMissionGraphRequest {
-  string mission_id = 1;
+  string mission_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 message GetMissionGraphResponse {
@@ -215,12 +216,12 @@ message GetMissionGraphResponse {
 // ────────────────────────────────────────────────────────────────────────────
 
 message QueryPathsRequest {
-  string from_node_id = 1;
+  string from_node_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
 
   // Exactly one of to_node_id or to_node_kind must be set.
   oneof to {
-    string to_node_id = 2;
-    string to_node_kind = 3;
+    string to_node_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
+    string to_node_kind = 3 [(buf.validate.field).string = { max_len: 1024 }];
   }
 
   // Optional. Default 5, max 10 (server-clamped).
@@ -278,7 +279,7 @@ enum FindingCountGroupBy {
 }
 
 message GetFindingCountsRequest {
-  FindingCountGroupBy group_by = 1;
+  FindingCountGroupBy group_by = 1 [(buf.validate.field).enum = { defined_only: true }];
   // Optional. When > 0, only count findings whose created_at is within the
   // last N seconds. 0 (default) means all-time.
   uint64 time_window_seconds = 2;
@@ -356,7 +357,7 @@ message GetGraphSummaryResponse {
 // ────────────────────────────────────────────────────────────────────────────
 
 message GetGraphContextRequest {
-  string node_id = 1;
+  string node_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
   // Default 2, max 5 (server-clamped).
   uint32 hops = 2;
   // Default 30, max 100 (server-clamped).
@@ -406,15 +407,15 @@ message Finding {
 
 message GetFindingsRequest {
   // Exact match. Empty string = no filter.
-  string severity_filter = 1;
+  string severity_filter = 1 [(buf.validate.field).string = { max_len: 4096 }];
   // Exact match on the type / category. Empty string = no filter.
-  string category_filter = 2;
+  string category_filter = 2 [(buf.validate.field).string = { max_len: 4096 }];
   // When non-empty, only findings reachable from this mission node within
   // the same tenant (within 3 hops) are returned.
-  string mission_id = 3;
+  string mission_id = 3 [(buf.validate.field).string = { max_len: 1024 }];
   // Substring match on name OR description (case-insensitive). Empty = no
   // filter.
-  string search = 4;
+  string search = 4 [(buf.validate.field).string = { max_len: 4096 }];
   // Default 100, max 500 (server-clamped).
   uint32 limit = 5;
   uint32 offset = 6;

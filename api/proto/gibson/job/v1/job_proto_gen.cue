@@ -377,7 +377,7 @@ import (
 
 	// member_id pins the job to one member of that bank. Empty lets the
 	// daemon pick a member with a free slot.
-	memberId?: string @protobuf(2,string,name=member_id)
+	memberId?: string @protobuf(2,string,name=member_id,"(buf.validate.field).string=")
 
 	// spec is the structured input. Required.
 	spec?: #JobSpec @protobuf(3,JobSpec,"(buf.validate.field).required")
@@ -444,10 +444,10 @@ import (
 // that is set narrows the list.
 #ListJobsRequest: {
 	// bank_id keeps only jobs of this bank.
-	bankId?: string @protobuf(1,string,name=bank_id)
+	bankId?: string @protobuf(1,string,name=bank_id,"(buf.validate.field).string=")
 
 	// member_id keeps only jobs this member holds.
-	memberId?: string @protobuf(2,string,name=member_id)
+	memberId?: string @protobuf(2,string,name=member_id,"(buf.validate.field).string=")
 
 	// state keeps only jobs in this state. Unspecified means every state.
 	state?: #JobState @protobuf(3,JobState,"(buf.validate.field).enum=")
@@ -458,7 +458,7 @@ import (
 
 	// page_token is the next_page_token of the previous page. Empty for the
 	// first page.
-	pageToken?: string @protobuf(5,string,name=page_token)
+	pageToken?: string @protobuf(5,string,name=page_token,"(buf.validate.field).string=")
 }
 
 // ListJobsResponse carries one page of jobs.

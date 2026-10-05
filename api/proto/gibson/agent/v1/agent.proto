@@ -9,6 +9,7 @@ import "gibson/job/v1/job.proto";
 import "gibson/types/v1/types.proto";
 
 import "gibson/auth/v1/options.proto";
+import "buf/validate/validate.proto";
 service AgentService {
     rpc GetDescriptor(GetDescriptorRequest) returns (GetDescriptorResponse) {
       option (gibson.auth.v1.authz) = {
@@ -95,31 +96,31 @@ message ExecuteRequest {
     // Callback endpoint for the orchestrator's HarnessCallbackService.
     // When provided, the agent will connect to this endpoint to access
     // harness operations (LLM, tools, memory, etc.).
-    string callback_endpoint = 3;
+    string callback_endpoint = 3 [(buf.validate.field).string = { max_len: 4096 }];
     // Optional authentication token for the callback connection.
-    string callback_token = 4;
+    string callback_token = 4 [(buf.validate.field).string = { max_len: 16777216 }];
     // Mission context for this execution.
     gibson.common.v1.TypedMap mission = 5;
     // Target information for this execution.
     gibson.common.v1.TypedMap target = 6;
     // Trace ID for distributed tracing (propagated from orchestrator).
-    string trace_id = 7;
+    string trace_id = 7 [(buf.validate.field).string = { max_len: 1024 }];
     // Parent span ID for distributed tracing (propagated from orchestrator).
-    string parent_span_id = 8;
+    string parent_span_id = 8 [(buf.validate.field).string = { max_len: 1024 }];
     // Mission run ID - unique identifier for this specific mission execution.
     // Created by MissionGraphManager.CreateMissionRunNode() at mission start.
     // Used for mission-scoped GraphRAG storage.
-    string mission_run_id = 9;
+    string mission_run_id = 9 [(buf.validate.field).string = { max_len: 1024 }];
     // Agent run ID - unique identifier for this specific agent execution.
     // Used for DISCOVERED relationships and provenance tracking.
-    string agent_run_id = 10;
+    string agent_run_id = 10 [(buf.validate.field).string = { max_len: 1024 }];
     // Run number - sequential number for this mission (1, 2, 3...).
     // Used for mission memory queries and historical comparisons.
     int32 run_number = 11;
     // job_id names the job this execution serves. A one-shot
     // dispatch and a bank job then share one result path. Empty for a
     // dispatch that opens no job.
-    string job_id = 12;
+    string job_id = 12 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 message ExecuteResponse {
