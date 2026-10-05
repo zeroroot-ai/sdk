@@ -247,7 +247,7 @@ bootstrap: $(GOLANGCI_LINT)
 .PHONY: image
 image: tool-runner-image
 
-# Coverage gate — QUALITY-BARS §4: uniform 80% package floor + 85% diff-coverage,
+# Coverage gate: uniform 80% package floor + 85% diff-coverage,
 # blocking. Two halves, one shared coverage profile (coverage.out):
 #
 #   * coverage-floor  — every package ≥80%. The pre-existing sub-floor backlog
@@ -519,9 +519,11 @@ cue-defs: ensure-cue
 
 # mission-jsonschema: emit a JSON Schema Draft 2020-12 document for
 # the gibson.mission.v1.MissionDefinition root message and its
-# transitive types. Consumed by the dashboard's YAML editor for
-# inline completion / hover / validation. The daemon remains the
-# authoritative validator at runtime via protovalidate.
+# transitive types. It ships in the mission-authoring bundle that
+# publish-mission-authoring.yml releases, and go-ci.yml fails a pull
+# request that changes the proto and not this file. A mission is written
+# in CUE (ADR-0035), and no first-party path parses a YAML mission. The
+# daemon remains the authoritative validator at runtime via protovalidate.
 # Spec: mission-authoring-cue Requirement 9.
 mission-jsonschema:
 	@echo "Building mission-jsonschema-gen..."
@@ -703,8 +705,8 @@ help:
 	@echo "  make tidy          - Tidy go modules"
 	@echo "  make clean         - Remove build artifacts"
 	@echo "  make deps          - Download dependencies"
-	@echo "  make check         - Run all checks (fmt, vet, lint, test)"
-	@echo "  make check-coverage - Enforce per-package coverage thresholds (daemonclient ≥60%, agent ≥90%)"
+	@echo "  make check         - Run fmt, vet, test, check-coverage, check-no-gibson, check-buf-pinned, proto-breaking, check-taxonomy-numbers, lint-unwired (not lint)"
+	@echo "  make check-coverage - Enforce the 80% package floor and 85% coverage of changed lines"
 	@echo "  make proto         - Generate Go code from proto files"
 	@echo "  make proto-deps    - Install protoc plugins"
 	@echo "  make proto-clean   - Remove generated proto files"
