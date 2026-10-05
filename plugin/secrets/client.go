@@ -129,6 +129,11 @@ func New(m *manifest.Manifest, callRPC GetCredentialFn, cacheConf CacheConfig) C
 	}
 }
 
+// testHookAfterCacheMiss runs after a Resolve call missed the cache and before
+// it joins or starts a flight. It is nil outside tests. A test uses it to hold
+// one caller in that position while another caller's flight ends.
+var testHookAfterCacheMiss func()
+
 // Resolve implements Client.
 func (cl *client) Resolve(ctx context.Context, name string, opts ...Option) ([]byte, error) {
 	// Step 1: validate name against manifest.
@@ -159,11 +164,33 @@ func (cl *client) Resolve(ctx context.Context, name string, opts ...Option) ([]b
 		}
 	}
 
+	if testHookAfterCacheMiss != nil {
+		testHookAfterCacheMiss()
+	}
+
 	// Step 4: cache miss — call RPC via singleflight.
+	//
+	// The flight checks the cache again and fills it before it ends. Without
+	// that, a caller that missed the cache while a flight was running, and
+	// reached Do after that flight had ended, started a second fetch: the
+	// value was written to the cache only after Do returned, so for a moment
+	// neither the flight nor the cache held it. Under load that is one extra
+	// credential fetch per rotation, and it failed
+	// TestClient_SingleFlight_ConcurrentMiss in the merge queue (sdk run
+	// 37309932608). TestClient_SingleFlight_LateCallerAfterTheFlightEnded
+	// forces that order.
 	val, err, _ := cl.sfg.Do(name, func() (interface{}, error) {
+		if cacheEnabled {
+			if v, ok := cl.c.get(name); ok {
+				return v, nil
+			}
+		}
 		v, e := cl.callRPC(ctx, name)
 		if e != nil {
 			return nil, e
+		}
+		if cacheEnabled {
+			cl.c.set(name, v)
 		}
 		return v, nil
 	})
