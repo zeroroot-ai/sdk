@@ -296,11 +296,11 @@ check-no-gibson:
 	# go-ci.yml calls on every pull request (ADR-0089, sdk#193). It refuses
 	# every restrictive first-party module, gibson among them, so this repo
 	# keeps no go.mod check of its own.
-	# .go import check: typed AST inspection via the ast-checks harness.
-	# Replaces the previous grep — catches aliased imports the grep misses.
-	# See check_no_gibson_test.go.
-	@go test -run TestNoGibsonImport ./...
-	@echo "No gibson dependency found — SDK boundary is clean."
+	# The import half: import_boundary_test.go parses the import block of every
+	# Go file and refuses the daemon and each platform back-end client, from
+	# one deny list keyed by module path (ADR-0058, sdk#188).
+	@go test -run 'TestImportBoundary|TestForbiddenImport|TestScanImports' .
+	@echo "No daemon or back-end client import found — SDK boundary is clean."
 
 # Run all checks before commit.
 #
