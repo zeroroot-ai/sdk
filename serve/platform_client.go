@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
@@ -609,8 +610,9 @@ func (pc *PlatformClient) SubmitResult(ctx context.Context, workID string, resul
 	}
 
 	req := &componentpb.SubmitResultRequest{
-		WorkId: workID,
-		Result: result,
+		IdempotencyKey: uuid.NewString(),
+		WorkId:         workID,
+		Result:         result,
 	}
 	if workErr != nil {
 		req.Error = &componentpb.ComponentError{
@@ -788,8 +790,9 @@ func (pc *PlatformClient) SubmitFinding(ctx context.Context, workID string, find
 	}
 
 	req := &componentpb.SubmitFindingRequest{
-		WorkId:  workID,
-		Finding: finding,
+		IdempotencyKey: uuid.NewString(),
+		WorkId:         workID,
+		Finding:        finding,
 	}
 
 	resp, err := pc.service.SubmitFinding(ctx, req)
@@ -1092,6 +1095,7 @@ func (pc *PlatformClient) CreateMission(ctx context.Context, workID string, miss
 	}
 
 	resp, err := pc.service.CreateMission(ctx, &componentpb.CreateMissionRequest{
+		IdempotencyKey:        uuid.NewString(),
 		WorkId:                workID,
 		MissionDefinitionJson: missionDefinitionJSON,
 		TargetId:              targetID,
@@ -1111,9 +1115,10 @@ func (pc *PlatformClient) RunMission(ctx context.Context, workID, missionID stri
 	}
 
 	_, err := pc.service.RunMission(ctx, &componentpb.RunMissionRequest{
-		WorkId:    workID,
-		MissionId: missionID,
-		OptsJson:  optsJSON,
+		IdempotencyKey: uuid.NewString(),
+		WorkId:         workID,
+		MissionId:      missionID,
+		OptsJson:       optsJSON,
 	})
 	if err != nil {
 		return fmt.Errorf("PlatformClient.RunMission: %w", err)

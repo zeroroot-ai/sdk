@@ -605,6 +605,11 @@ import (
 	// memory_continuity defines how agent memory is shared across mission runs
 	// Valid values: "isolated" (default), "inherit", "shared"
 	memoryContinuity?: string @protobuf(4,string,name=memory_continuity)
+
+	// idempotency_key makes a retry safe (ADR-0028). A second request with the
+	// same key returns the result of the first request and does the work one
+	// time. An empty key turns the protection off for the call.
+	idempotencyKey?: string @protobuf(6,string,name=idempotency_key,"(buf.validate.field).string=")
 }
 
 // RunMissionResponse wraps a MissionEvent for the RunMission streaming RPC.
@@ -980,6 +985,11 @@ import (
 	// reconstruction. Optional for backward compatibility; when empty the
 	// definition is stored without a recoverable source.
 	cueSource?: string @protobuf(2,string,name=cue_source)
+
+	// idempotency_key makes a retry safe (ADR-0028). A second request with the
+	// same key returns the result of the first request and does the work one
+	// time. An empty key turns the protection off for the call.
+	idempotencyKey?: string @protobuf(3,string,name=idempotency_key,"(buf.validate.field).string=")
 }
 
 // CreateMissionDefinitionResponse returns the registered mission definition ID
@@ -1200,6 +1210,11 @@ import (
 	// a YAML source.
 	// Spec: dashboard-neo4j-crud-removal Req 3.5.
 	sourceYaml?: string @protobuf(9,string,name=source_yaml)
+
+	// idempotency_key makes a retry safe (ADR-0028). A second request with the
+	// same key returns the result of the first request and does the work one
+	// time. An empty key turns the protection off for the call.
+	idempotencyKey?: string @protobuf(13,string,name=idempotency_key,"(buf.validate.field).string=")
 }
 
 // ListCatalogMissionsRequest takes nothing. The catalog is the same for every
@@ -1274,6 +1289,11 @@ import (
 	// target carries the new target's metadata. Its id field is ignored; the
 	// daemon mints the canonical UUID.
 	target?: targetpb.#Target @protobuf(1,gibson.target.v1.Target)
+
+	// idempotency_key makes a retry safe (ADR-0028). A second request with the
+	// same key returns the result of the first request and does the work one
+	// time. An empty key turns the protection off for the call.
+	idempotencyKey?: string @protobuf(2,string,name=idempotency_key,"(buf.validate.field).string=")
 }
 
 // CreateTargetResponse returns the minted target.
@@ -1519,6 +1539,11 @@ import (
 
 	// name is the component name
 	name?: string @protobuf(2,string)
+
+	// idempotency_key makes a retry safe (ADR-0028). A second request with the
+	// same key returns the result of the first request and does the work one
+	// time. An empty key turns the protection off for the call.
+	idempotencyKey?: string @protobuf(3,string,name=idempotency_key,"(buf.validate.field).string=")
 }
 
 // StartComponentResponse returns the result of starting a component.

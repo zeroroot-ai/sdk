@@ -6,6 +6,7 @@ option go_package = "github.com/zeroroot-ai/sdk/api/gen/gibson/component/v1;comp
 option java_multiple_files = true;
 option csharp_namespace = "Gibson.Component";
 
+import "buf/validate/validate.proto";
 import "gibson/bank/v1/bank.proto";
 import "gibson/graphrag/v1/graphrag.proto";
 import "google/protobuf/timestamp.proto";
@@ -769,6 +770,11 @@ message SubmitResultRequest {
     bytes result = 2;
     // error is set when the work item failed; leave unset on success.
     ComponentError error = 3;
+
+    // idempotency_key makes a retry safe (ADR-0028). A second request with the
+    // same key returns the result of the first request and does the work one
+    // time. An empty key turns the protection off for the call.
+    string idempotency_key = 4 [(buf.validate.field).string = { max_len: 128 }];
 }
 
 // SubmitResultResponse is returned after a result is accepted.
@@ -889,6 +895,11 @@ message SubmitFindingRequest {
     // HarnessCallbackService.SubmitFinding RPC, which carries a
     // gibson.types.v1.Finding proto message.
     bytes finding = 2;
+
+    // idempotency_key makes a retry safe (ADR-0028). A second request with the
+    // same key returns the result of the first request and does the work one
+    // time. An empty key turns the protection off for the call.
+    string idempotency_key = 3 [(buf.validate.field).string = { max_len: 128 }];
 }
 
 // SubmitFindingResponse is returned after a finding is accepted.
@@ -1325,6 +1336,11 @@ message CreateMissionRequest {
     // workflow_json (field 2) was renamed to mission_definition_json under spec
     // mission-api-only-cleanup (Phase 3); the old name is reserved.
     reserved "workflow_json";
+
+    // idempotency_key makes a retry safe (ADR-0028). A second request with the
+    // same key returns the result of the first request and does the work one
+    // time. An empty key turns the protection off for the call.
+    string idempotency_key = 5 [(buf.validate.field).string = { max_len: 128 }];
 }
 
 // CreateMissionResponse carries the created mission info.
@@ -1339,6 +1355,11 @@ message RunMissionRequest {
     string mission_id = 2;
     // opts_json is the JSON-encoded mission.RunMissionOpts.
     bytes opts_json = 3;
+
+    // idempotency_key makes a retry safe (ADR-0028). A second request with the
+    // same key returns the result of the first request and does the work one
+    // time. An empty key turns the protection off for the call.
+    string idempotency_key = 4 [(buf.validate.field).string = { max_len: 128 }];
 }
 
 // RunMissionResponse is returned after a mission is queued.

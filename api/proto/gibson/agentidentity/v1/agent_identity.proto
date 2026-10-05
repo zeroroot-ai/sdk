@@ -12,6 +12,7 @@ package gibson.agentidentity.v1;
 
 option go_package = "github.com/zeroroot-ai/sdk/api/gen/gibson/agentidentity/v1;agentidentityv1";
 
+import "buf/validate/validate.proto";
 import "google/protobuf/timestamp.proto";
 import "gibson/auth/v1/options.proto";
 
@@ -92,6 +93,11 @@ message CreateAgentIdentityRequest {
   // (start a mission of its own, the interactive coding-agent case) and
   // "mission:delegate". Empty means neither.
   repeated string capability_ceiling = 5;
+
+  // idempotency_key makes a retry safe (ADR-0028). A second request with the
+  // same key returns the result of the first request and does the work one
+  // time. An empty key turns the protection off for the call.
+  string idempotency_key = 6 [(buf.validate.field).string = { max_len: 128 }];
 }
 
 // CreateAgentIdentityResponse carries the provisioned identity credentials.

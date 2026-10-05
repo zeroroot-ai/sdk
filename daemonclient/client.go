@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -493,6 +494,7 @@ func (c *Client) RunMission(ctx context.Context, missionDefinitionID, targetID s
 	}
 
 	req := &daemonpb.RunMissionRequest{
+		IdempotencyKey:      uuid.NewString(),
 		MissionDefinitionId: missionDefinitionID,
 		TargetId:            targetID,
 		Variables:           variables,
@@ -658,6 +660,7 @@ func (c *Client) CreateMission(ctx context.Context, opts CreateMissionOptions) (
 	}
 
 	req := &daemonpb.CreateMissionRequest{
+		IdempotencyKey:      uuid.NewString(),
 		Name:                opts.Name,
 		Description:         opts.Description,
 		TargetId:            opts.TargetID,
@@ -715,7 +718,8 @@ func (c *Client) CreateMissionDefinition(ctx context.Context, def *missionpb.Mis
 	}
 
 	resp, err := c.daemon.CreateMissionDefinition(ctx, &daemonpb.CreateMissionDefinitionRequest{
-		Definition: def,
+		IdempotencyKey: uuid.NewString(),
+		Definition:     def,
 	})
 	if err != nil {
 		if st, ok := status.FromError(err); ok {
@@ -877,8 +881,9 @@ func (c *Client) StopPlugin(ctx context.Context, name string) (*StopResult, erro
 // startComponent is the internal method that starts a component via the daemon.
 func (c *Client) startComponent(ctx context.Context, kind, name string) (*StartResult, error) {
 	resp, err := c.daemon.StartComponent(ctx, &daemonpb.StartComponentRequest{
-		Kind: kind,
-		Name: name,
+		IdempotencyKey: uuid.NewString(),
+		Kind:           kind,
+		Name:           name,
 	})
 	if err != nil {
 		if st, ok := status.FromError(err); ok {
