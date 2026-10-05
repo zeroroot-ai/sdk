@@ -182,32 +182,6 @@ type StopResult struct {
 	TotalCount   int
 }
 
-// BuildResult represents the result of building a component.
-type BuildResult struct {
-	Success  bool          // Build success
-	Stdout   string        // Build stdout
-	Stderr   string        // Build stderr
-	Duration time.Duration // Build time
-}
-
-// ComponentInfo represents detailed information about a component.
-type ComponentInfo struct {
-	Name      string
-	Version   string
-	Kind      string
-	Status    string
-	Source    string
-	RepoPath  string
-	BinPath   string
-	Port      int
-	PID       int
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	StartedAt *time.Time
-	StoppedAt *time.Time
-	Manifest  string // JSON-encoded manifest info
-}
-
 // LogsOptions contains options for retrieving component logs.
 type LogsOptions struct {
 	Follow bool // Stream logs continuously

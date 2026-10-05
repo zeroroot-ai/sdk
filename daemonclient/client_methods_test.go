@@ -44,10 +44,6 @@ type extendedMockClient struct {
 	startComponentErr     error
 	stopComponentResp     *daemonpb.StopComponentResponse
 	stopComponentErr      error
-	buildComponentResp    *daemonpb.BuildComponentResponse
-	buildComponentErr     error
-	showComponentResp     *daemonpb.ShowComponentResponse
-	showComponentErr      error
 	getMissionHistoryResp *daemonpb.GetMissionHistoryResponse
 	getMissionHistoryErr  error
 	listMissionDefsResp   *daemonpb.ListMissionDefinitionsResponse
@@ -93,12 +89,6 @@ func (m *extendedMockClient) StartComponent(ctx context.Context, req *daemonpb.S
 }
 func (m *extendedMockClient) StopComponent(ctx context.Context, req *daemonpb.StopComponentRequest, opts ...grpc.CallOption) (*daemonpb.StopComponentResponse, error) {
 	return m.stopComponentResp, m.stopComponentErr
-}
-func (m *extendedMockClient) BuildComponent(ctx context.Context, req *daemonpb.BuildComponentRequest, opts ...grpc.CallOption) (*daemonpb.BuildComponentResponse, error) {
-	return m.buildComponentResp, m.buildComponentErr
-}
-func (m *extendedMockClient) ShowComponent(ctx context.Context, req *daemonpb.ShowComponentRequest, opts ...grpc.CallOption) (*daemonpb.ShowComponentResponse, error) {
-	return m.showComponentResp, m.showComponentErr
 }
 func (m *extendedMockClient) GetMissionHistory(ctx context.Context, req *daemonpb.GetMissionHistoryRequest, opts ...grpc.CallOption) (*daemonpb.GetMissionHistoryResponse, error) {
 	return m.getMissionHistoryResp, m.getMissionHistoryErr
@@ -729,120 +719,6 @@ func TestClient_StopPlugin_Success(t *testing.T) {
 	}
 	c := &Client{daemon: mock}
 	_, err := c.StopPlugin(context.Background(), "my-plugin")
-	require.NoError(t, err)
-}
-
-// -----------------------------------------------------------------------
-// BuildAgent / BuildTool / BuildPlugin (delegate to buildComponent)
-// -----------------------------------------------------------------------
-
-func TestClient_BuildAgent_Success(t *testing.T) {
-	mock := &extendedMockClient{
-		buildComponentResp: &daemonpb.BuildComponentResponse{
-			Success: true,
-			Stdout:  "Build complete",
-		},
-	}
-	c := &Client{daemon: mock}
-	result, err := c.BuildAgent(context.Background(), "my-agent")
-	require.NoError(t, err)
-	assert.Contains(t, result.Stdout, "Build complete")
-}
-
-func TestClient_BuildAgent_Failure(t *testing.T) {
-	// buildComponent returns the result even when Success=false (caller checks result.Success).
-	mock := &extendedMockClient{
-		buildComponentResp: &daemonpb.BuildComponentResponse{Success: false, Stderr: "compile error"},
-	}
-	c := &Client{daemon: mock}
-	result, err := c.BuildAgent(context.Background(), "my-agent")
-	require.NoError(t, err)
-	assert.False(t, result.Success)
-	assert.Contains(t, result.Stderr, "compile error")
-}
-
-func TestClient_BuildAgent_NotFound(t *testing.T) {
-	mock := &extendedMockClient{buildComponentErr: status.Error(codes.NotFound, "not found")}
-	c := &Client{daemon: mock}
-	_, err := c.BuildAgent(context.Background(), "x")
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "not found")
-}
-
-func TestClient_BuildAgent_InvalidArgument(t *testing.T) {
-	mock := &extendedMockClient{buildComponentErr: status.Error(codes.InvalidArgument, "bad kind")}
-	c := &Client{daemon: mock}
-	_, err := c.BuildAgent(context.Background(), "x")
-	require.Error(t, err)
-}
-
-func TestClient_BuildTool_Success(t *testing.T) {
-	mock := &extendedMockClient{
-		buildComponentResp: &daemonpb.BuildComponentResponse{Success: true},
-	}
-	c := &Client{daemon: mock}
-	_, err := c.BuildTool(context.Background(), "my-tool")
-	require.NoError(t, err)
-}
-
-func TestClient_BuildPlugin_Success(t *testing.T) {
-	mock := &extendedMockClient{
-		buildComponentResp: &daemonpb.BuildComponentResponse{Success: true},
-	}
-	c := &Client{daemon: mock}
-	_, err := c.BuildPlugin(context.Background(), "my-plugin")
-	require.NoError(t, err)
-}
-
-// -----------------------------------------------------------------------
-// ShowAgent / ShowTool / ShowPlugin (delegate to showComponent)
-// -----------------------------------------------------------------------
-
-func TestClient_ShowAgent_Success(t *testing.T) {
-	mock := &extendedMockClient{
-		showComponentResp: &daemonpb.ShowComponentResponse{
-			Success: true,
-			Name:    "my-agent",
-			Version: "1.0",
-			Status:  "running",
-		},
-	}
-	c := &Client{daemon: mock}
-	info, err := c.ShowAgent(context.Background(), "my-agent")
-	require.NoError(t, err)
-	assert.Equal(t, "my-agent", info.Name)
-}
-
-func TestClient_ShowAgent_NotFound(t *testing.T) {
-	mock := &extendedMockClient{showComponentErr: status.Error(codes.NotFound, "not found")}
-	c := &Client{daemon: mock}
-	_, err := c.ShowAgent(context.Background(), "x")
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "not found")
-}
-
-func TestClient_ShowAgent_InvalidArgument(t *testing.T) {
-	mock := &extendedMockClient{showComponentErr: status.Error(codes.InvalidArgument, "bad")}
-	c := &Client{daemon: mock}
-	_, err := c.ShowAgent(context.Background(), "x")
-	require.Error(t, err)
-}
-
-func TestClient_ShowTool_Success(t *testing.T) {
-	mock := &extendedMockClient{
-		showComponentResp: &daemonpb.ShowComponentResponse{Success: true, Name: "my-tool"},
-	}
-	c := &Client{daemon: mock}
-	_, err := c.ShowTool(context.Background(), "my-tool")
-	require.NoError(t, err)
-}
-
-func TestClient_ShowPlugin_Success(t *testing.T) {
-	mock := &extendedMockClient{
-		showComponentResp: &daemonpb.ShowComponentResponse{Success: true, Name: "my-plugin"},
-	}
-	c := &Client{daemon: mock}
-	_, err := c.ShowPlugin(context.Background(), "my-plugin")
 	require.NoError(t, err)
 }
 
