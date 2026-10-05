@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.194.0](https://github.com/zeroroot-ai/sdk/compare/v0.193.2...v0.194.0) (2026-10-05)
+
+
+### Features
+
+* **proto:** a mission node and an origination name a start state ([#220](https://github.com/zeroroot-ai/sdk/issues/220)) ([aeff37d](https://github.com/zeroroot-ai/sdk/commit/aeff37da647443f700c95f271d855455a8229d0e))
+
 ## [0.193.2](https://github.com/zeroroot-ai/sdk/compare/v0.193.1...v0.193.2) (2026-10-05)
 
 
