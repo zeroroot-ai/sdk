@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.193.1](https://github.com/zeroroot-ai/sdk/compare/v0.193.0...v0.193.1) (2026-10-05)
+
+
+### Bug Fixes
+
+* **proto:** enroll_command is reserved, because the verb it named is gone ([#209](https://github.com/zeroroot-ai/sdk/issues/209)) ([992cd75](https://github.com/zeroroot-ai/sdk/commit/992cd754c4e3409293baa75f830ff769a1ec7eb0))
+* **proto:** the proof request carries no destructive flag ([#211](https://github.com/zeroroot-ai/sdk/issues/211)) ([3361448](https://github.com/zeroroot-ai/sdk/commit/3361448572561d0a00a8502c241e1f8e656b3a2d))
+
 ## [0.193.0](https://github.com/zeroroot-ai/sdk/compare/v0.192.3...v0.193.0) (2026-10-05)
 
 
