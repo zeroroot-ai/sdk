@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.192.3](https://github.com/zeroroot-ai/sdk/compare/v0.192.2...v0.192.3) (2026-10-05)
+
+
+### Bug Fixes
+
+* **boundary:** the sdk imports no platform back-end client ([#201](https://github.com/zeroroot-ai/sdk/issues/201)) ([9d2df26](https://github.com/zeroroot-ai/sdk/commit/9d2df260e6e7c8b8849cb9a61b7b07665b99a341))
+* **ci:** ci runs the wire contract check and the whole boundary check ([#194](https://github.com/zeroroot-ai/sdk/issues/194)) ([9a1db8f](https://github.com/zeroroot-ai/sdk/commit/9a1db8ff6656b053a3664ac9b7507d2ed6c4f5b5)), closes [#177](https://github.com/zeroroot-ai/sdk/issues/177) [#178](https://github.com/zeroroot-ai/sdk/issues/178)
+* **lint:** the pagination allowlist fails on an entry that exempts nothing ([#196](https://github.com/zeroroot-ai/sdk/issues/196)) ([f94e72d](https://github.com/zeroroot-ai/sdk/commit/f94e72de23af6b7a5afd391008d999de64a38c00)), closes [#183](https://github.com/zeroroot-ai/sdk/issues/183)
+* **secrets:** a late resolve caller reads the cache and does not fetch again ([#199](https://github.com/zeroroot-ai/sdk/issues/199)) ([85fa9cf](https://github.com/zeroroot-ai/sdk/commit/85fa9cf627467a757632798f2b752a1c7ac60524)), closes [#198](https://github.com/zeroroot-ai/sdk/issues/198)
+
 ## [0.192.2](https://github.com/zeroroot-ai/sdk/compare/v0.192.1...v0.192.2) (2026-10-05)
 
 
