@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.192.2](https://github.com/zeroroot-ai/sdk/compare/v0.192.1...v0.192.2) (2026-10-05)
+
+
+### Bug Fixes
+
+* **authz-registry-gen:** the go registry entry drops method, which nothing read ([#169](https://github.com/zeroroot-ai/sdk/issues/169)) ([9be2cb8](https://github.com/zeroroot-ai/sdk/commit/9be2cb8a067e38691f62ee197c5acf92f3e8adb5)), closes [#145](https://github.com/zeroroot-ai/sdk/issues/145)
+* **ci:** the fan-out reads no unset matrix key, and the workflows are linted ([#172](https://github.com/zeroroot-ai/sdk/issues/172)) ([99848bb](https://github.com/zeroroot-ai/sdk/commit/99848bb0a13e12d8ae2f56b0c245bcf92a86dbc8)), closes [#171](https://github.com/zeroroot-ai/sdk/issues/171)
+
 ## [0.192.1](https://github.com/zeroroot-ai/sdk/compare/v0.192.0...v0.192.1) (2026-10-04)
 
 
