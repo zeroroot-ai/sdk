@@ -7,20 +7,23 @@
  *
  * Spec: cross-repo-cohesion-fixes Requirement 4.3, 4.4, D3.
  *
- * Walks every *.proto under core/sdk/api/proto/, finds every service method
- * whose name starts with "List", inspects the request message for fields named
- * "limit" or "offset", and fails (exit 1) when any such method is NOT in the
+ * Walks every *.proto under api/proto/, finds every service method whose name
+ * starts with "List", inspects the request message for fields named "limit"
+ * or "offset", and fails (exit 1) when any such method is NOT in the
  * grandfathered allow-list below.
  *
  * The grandfather list is a literal const — adding to it requires editing this
  * file, i.e. it requires PR review of the addition.
  *
- * NOTE: This script is intentionally duplicated in core/gibson/scripts/ with
- * a different proto root (D3 — do not abstract into a shared package).
+ * An entry that matches no such RPC also fails (ADR-0094). A stale entry is a
+ * ready exemption for a new RPC that gets the same path and method name: three
+ * entries for gibson/tenant/v1 outlived their protos that way (sdk#183).
  *
  * Usage:
- *   node core/sdk/scripts/lint-pagination.mjs
- *   node scripts/lint-pagination.mjs   (from core/sdk/ directory)
+ *   node scripts/lint-pagination.mjs
+ *
+ * LINT_PAGINATION_PROTO_ROOT points the walk at another proto tree. Only the
+ * fixture in scripts/__tests__/lint-pagination.test.sh sets it.
  */
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';
@@ -29,7 +32,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..');
-const PROTO_ROOT = join(REPO_ROOT, 'api/proto');
+const PROTO_ROOT = process.env.LINT_PAGINATION_PROTO_ROOT || join(REPO_ROOT, 'api/proto');
 
 // ---------------------------------------------------------------------------
 // Grandfathered (proto-root-relative-path, method-name) pairs.
@@ -50,21 +53,6 @@ const GRANDFATHER_LIST = [
   { file: 'gibson/pluginadmin/v1/plugin_admin.proto', method: 'ListPluginInstalls' },
   { file: 'gibson/daemon/v1/daemon.proto',       method: 'ListMissions' },
   { file: 'gibson/daemon/v1/daemon.proto',       method: 'ListMissionDefinitions' },
-  // ListAuditEvents is already cursor-paginated (limit + cursor → next_cursor),
-  // not the offset anti-pattern this guard targets. Its page-size field is
-  // named `limit` rather than the AIP-158 `page_size`; renaming it now is a
-  // WIRE_JSON-breaking change (FIELD_SAME_NAME) that `make proto-breaking`
-  // rejects, so it is wire-compat-locked to `limit` — the operative reason this
-  // allow-list exists. Justification: sdk#250.
-  { file: 'gibson/tenant/v1/tenant.proto',  method: 'ListAuditEvents' },
-  // ListAlerts / ListConversations shipped in v0.137.0 as part of the
-  // UserService decomposition (#267) and are wire-locked (dashboard chat/alerts
-  // + gibson daemon handlers). Their page-size field is `int32 limit`; renaming
-  // it to AIP-158 `page_size` is a WIRE_JSON-breaking FIELD rename that
-  // `make proto-breaking` rejects, so they are wire-compat-locked to `limit`
-  // — same rationale as ListAuditEvents above. Justification: sdk#250.
-  { file: 'gibson/tenant/v1/user.proto',    method: 'ListAlerts' },
-  { file: 'gibson/tenant/v1/user.proto',    method: 'ListConversations' },
   // ListSecrets RETURNS. The note above records that this entry was dropped
   // when secrets.proto left the SDK in E6; ADR-0096 brought the proto back as
   // its own wire package gibson.secrets.v1, so the entry comes back with it and
@@ -85,10 +73,16 @@ const GRANDFATHER_LIST = [
   { file: 'gibson/secrets/v1/secrets.proto', method: 'ListSecrets' },
 ];
 
+// used[i] is set when entry i exempted an RPC in this run.
+const used = GRANDFATHER_LIST.map(() => false);
+
 function isGrandfathered(relPath, methodName) {
-  return GRANDFATHER_LIST.some(
+  const i = GRANDFATHER_LIST.findIndex(
     (e) => relPath === e.file && methodName === e.method,
   );
+  if (i < 0) return false;
+  used[i] = true;
+  return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -179,6 +173,12 @@ function messageHasLimitOrOffset(text, messageName) {
 const protoFiles = findProtos(PROTO_ROOT);
 let violations = 0;
 
+// A floor. A walk that finds no proto file checked nothing and must not pass.
+if (protoFiles.length === 0) {
+  console.error(`[lint-pagination] FAIL: no *.proto file under ${PROTO_ROOT}, so this run checked nothing.`);
+  process.exit(1);
+}
+
 for (const absPath of protoFiles) {
   const relPath = relative(PROTO_ROOT, absPath);
   const text = readFileSync(absPath, 'utf8');
@@ -193,13 +193,24 @@ for (const absPath of protoFiles) {
       console.error(
         `[lint-pagination] ${relPath}: ${svc.serviceName}/${method.name} ` +
         `uses limit/offset pagination. New List* RPCs must use page_size + page_token (AIP-158). ` +
-        `If this is intentional, add it to GRANDFATHER_LIST in core/sdk/scripts/lint-pagination.mjs ` +
+        `If this is intentional, add it to GRANDFATHER_LIST in scripts/lint-pagination.mjs ` +
         `with a PR justification.`
       );
       violations++;
     }
   }
 }
+
+// An entry that exempted nothing: the RPC is gone, or it no longer uses
+// limit/offset. Either way the entry records a decision about nothing.
+GRANDFATHER_LIST.forEach((e, i) => {
+  if (used[i]) return;
+  console.error(
+    `[lint-pagination] ${e.file}: GRANDFATHER_LIST entry ${e.method} matches no List* RPC ` +
+    `with limit/offset pagination. Delete the entry from scripts/lint-pagination.mjs.`
+  );
+  violations++;
+});
 
 if (violations > 0) {
   console.error(`[lint-pagination] FAIL: ${violations} violation(s). See above.`);

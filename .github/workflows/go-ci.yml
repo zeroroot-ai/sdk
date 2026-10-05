@@ -119,6 +119,12 @@ jobs:
       - name: Check buf generate call sites use the pinned toolchain
         run: make check-buf-pinned
 
+      # sdk#183: the pagination lint fails on a new List RPC with offset
+      # paging, and on an allowlist entry that exempts nothing. The lint
+      # itself runs in `make lint`; this proves each rule can fail.
+      - name: Mutation-test the pagination lint
+        run: bash scripts/__tests__/lint-pagination.test.sh
+
       # Spec: unified-identity-and-authorization Requirement 14.1.
       - name: Lint authz annotations
         run: |
