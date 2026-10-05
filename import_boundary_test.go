@@ -192,3 +192,153 @@ func TestScanImports_AFileThatImportsABackEndClientIsReported(t *testing.T) {
 		}
 	}
 }
+
+// moduleViolation is one forbidden module in the require list of a go.mod.
+type moduleViolation struct {
+	required, module, reason string
+}
+
+// scanGoMod reads the require directives of a go.mod and returns each required
+// module that belongs to a forbidden module, direct or indirect. It also
+// returns the count of required modules, so a caller can refuse a file that
+// it did not really read.
+//
+// The import walk sees only what a Go file imports today. The require list
+// also holds a module that no file imports yet, and a module that arrives
+// through a dependency (ADR-0058, sdk#212).
+func scanGoMod(path string) (violations []moduleViolation, required int, err error) {
+	data, err := os.ReadFile(path) //nolint:gosec // the path is the go.mod of this module or a test fixture
+	if err != nil {
+		return nil, 0, fmt.Errorf("read %s: %w", path, err)
+	}
+	inBlock := false
+	for raw := range strings.SplitSeq(string(data), "\n") {
+		line, _, _ := strings.Cut(raw, "//")
+		fields := strings.Fields(line)
+		switch {
+		case len(fields) == 0:
+			continue
+		case inBlock && fields[0] == ")":
+			inBlock = false
+			continue
+		case !inBlock && len(fields) == 2 && fields[0] == "require" && fields[1] == "(":
+			inBlock = true
+			continue
+		case !inBlock && fields[0] == "require":
+			fields = fields[1:]
+		case !inBlock:
+			continue
+		}
+		if len(fields) != 2 {
+			return nil, required, fmt.Errorf("%s: require line %q is not a module path and a version",
+				path, strings.TrimSpace(raw))
+		}
+		required++
+		if mod, why, bad := forbiddenImport(fields[0]); bad {
+			violations = append(violations, moduleViolation{fields[0], mod, why})
+		}
+	}
+	if inBlock {
+		return nil, required, fmt.Errorf("%s: a require block has no closing parenthesis", path)
+	}
+	return violations, required, nil
+}
+
+// TestGoModBoundary fails when the go.mod of the sdk requires the daemon or a
+// platform back-end client.
+func TestGoModBoundary(t *testing.T) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	goMod := filepath.Join(filepath.Dir(thisFile), "go.mod")
+
+	violations, required, err := scanGoMod(goMod)
+	if err != nil {
+		t.Fatalf("scan go.mod: %v", err)
+	}
+	// A floor. A parse that found almost no module reads as a clean go.mod.
+	if required < 20 {
+		t.Fatalf("read %d required modules from %s, want at least 20: the parse did not reach the require blocks",
+			required, goMod)
+	}
+	for _, v := range violations {
+		t.Errorf("go.mod requires %q, which belongs to %s: %s (ADR-0058)", v.required, v.module, v.reason)
+	}
+}
+
+// TestScanGoMod_ARequiredBackEndClientIsReported is the failing fixture of the
+// go.mod rule. It writes a go.mod that requires three denied modules, in each
+// form a require directive takes, next to modules that are allowed.
+func TestScanGoMod_ARequiredBackEndClientIsReported(t *testing.T) {
+	goMod := filepath.Join(t.TempDir(), "go.mod")
+	body := `module example.com/component
+
+go 1.27.1
+
+require github.com/zeroroot-ai/gibson v0.153.2
+
+require (
+	github.com/hashicorp/vault/api v1.16.0
+	github.com/spiffe/go-spiffe/v2 v2.5.0
+	github.com/zeroroot-ai/gibson-executor v0.30.0 // a name that only starts with a denied one
+)
+
+require (
+	github.com/openfga/go-sdk v0.7.1 // indirect
+	golang.org/x/mod v0.41.0 // indirect
+)
+
+replace example.com/other => example.com/fork v1.0.0
+
+tool github.com/zeroroot-ai/ast-checks/cmd/unwired
+`
+	if err := os.WriteFile(goMod, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	violations, required, err := scanGoMod(goMod)
+	if err != nil {
+		t.Fatalf("scan go.mod: %v", err)
+	}
+	if required != 6 {
+		t.Fatalf("read %d required modules, want 6 (replace and tool lines are not requirements)", required)
+	}
+	got := map[string]string{}
+	for _, v := range violations {
+		got[v.required] = v.module
+	}
+	want := map[string]string{
+		"github.com/zeroroot-ai/gibson":  "github.com/zeroroot-ai/gibson",
+		"github.com/hashicorp/vault/api": "github.com/hashicorp/vault",
+		"github.com/openfga/go-sdk":      "github.com/openfga/go-sdk",
+	}
+	if len(got) != len(want) {
+		t.Fatalf("violations = %v, want %v", got, want)
+	}
+	for modulePath, module := range want {
+		if got[modulePath] != module {
+			t.Errorf("violation for %s = %q, want %q", modulePath, got[modulePath], module)
+		}
+	}
+}
+
+// TestScanGoMod_AMalformedFileIsAnError proves the parse does not read a
+// broken go.mod as a clean one.
+func TestScanGoMod_AMalformedFileIsAnError(t *testing.T) {
+	cases := map[string]string{
+		"a require block that never closes": "module m\n\nrequire (\n\tgolang.org/x/mod v0.41.0\n",
+		"a require line with no version":    "module m\n\nrequire (\n\tgolang.org/x/mod\n)\n",
+	}
+	for name, body := range cases {
+		t.Run(name, func(t *testing.T) {
+			goMod := filepath.Join(t.TempDir(), "go.mod")
+			if err := os.WriteFile(goMod, []byte(body), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			if _, _, err := scanGoMod(goMod); err == nil {
+				t.Fatal("scanGoMod returned no error")
+			}
+		})
+	}
+	if _, _, err := scanGoMod(filepath.Join(t.TempDir(), "absent.mod")); err == nil {
+		t.Fatal("scanGoMod of a missing file returned no error")
+	}
+}

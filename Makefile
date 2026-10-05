@@ -288,19 +288,19 @@ check-coverage: coverage-profile
 coverage-baseline: coverage-profile
 	@node scripts/coverage-floor.mjs $(COVERAGE_PROFILE) --baseline
 
-# Verify SDK has no dependency on the private gibson daemon repo.
+# Verify the SDK depends on neither the daemon nor a platform back-end client.
 # The SDK is the lowest-level module (like k8s.io/api or go.etcd.io/etcd/api).
 # The daemon imports the SDK, never the reverse.
 check-no-gibson:
-	# The go.mod half of this rule is the org permissive-floor workflow, which
-	# go-ci.yml calls on every pull request (ADR-0089, sdk#193). It refuses
-	# every restrictive first-party module, gibson among them, so this repo
-	# keeps no go.mod check of its own.
-	# The import half: import_boundary_test.go parses the import block of every
-	# Go file and refuses the daemon and each platform back-end client, from
-	# one deny list keyed by module path (ADR-0058, sdk#188).
-	@go test -run 'TestImportBoundary|TestForbiddenImport|TestScanImports' .
-	@echo "No daemon or back-end client import found — SDK boundary is clean."
+	# import_boundary_test.go holds one deny list, keyed by module path, and
+	# two checks that read it (ADR-0058, sdk#188, sdk#212):
+	#   - the import check parses the import block of every Go file;
+	#   - the go.mod check reads every require directive, direct and indirect.
+	# The org permissive-floor workflow, which go-ci.yml calls on every pull
+	# request, is a different rule: it refuses a restrictive first-party
+	# module in go.mod (ADR-0089, sdk#193).
+	@go test -run 'TestImportBoundary|TestForbiddenImport|TestScanImports|TestGoModBoundary|TestScanGoMod' .
+	@echo "No daemon or back-end client import or requirement found — SDK boundary is clean."
 
 # Run all checks before commit.
 #
