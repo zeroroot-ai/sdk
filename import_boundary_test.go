@@ -4,6 +4,7 @@
 package sdk
 
 import (
+	"fmt"
 	"go/parser"
 	"go/token"
 	"io/fs"
@@ -72,13 +73,13 @@ func scanImports(root string) (violations []importViolation, files int, err erro
 		}
 		file, parseErr := parser.ParseFile(token.NewFileSet(), path, nil, parser.ImportsOnly)
 		if parseErr != nil {
-			return parseErr
+			return fmt.Errorf("parse the imports of %s: %w", path, parseErr)
 		}
 		files++
 		for _, imp := range file.Imports {
 			importPath, unquoteErr := strconv.Unquote(imp.Path.Value)
 			if unquoteErr != nil {
-				return unquoteErr
+				return fmt.Errorf("%s: import path %s: %w", path, imp.Path.Value, unquoteErr)
 			}
 			if mod, why, bad := forbiddenImport(importPath); bad {
 				rel, _ := filepath.Rel(root, path)
@@ -87,7 +88,10 @@ func scanImports(root string) (violations []importViolation, files int, err erro
 		}
 		return nil
 	})
-	return violations, files, err
+	if err != nil {
+		return nil, files, fmt.Errorf("walk %s: %w", root, err)
+	}
+	return violations, files, nil
 }
 
 // TestImportBoundary walks the whole module and fails on an import of the
@@ -157,8 +161,8 @@ func TestScanImports_AFileThatImportsABackEndClientIsReported(t *testing.T) {
 		}
 	}
 	write("clean/clean.go", "package clean\n\nimport \"context\"\n\nvar _ = context.Background\n")
-	write("secrets/vault.go",
-		"package secrets\n\nimport vault \"github.com/hashicorp/vault/api\"\n\nvar _ = vault.DefaultConfig\n")
+	write("store/vault.go",
+		"package store\n\nimport vault \"github.com/hashicorp/vault/api\"\n\nvar _ = vault.DefaultConfig\n")
 	// A test file is inside the boundary too.
 	write("authz/fga_test.go", "package authz\n\nimport _ \"github.com/openfga/go-sdk/client\"\n")
 	// A fixture under testdata is not part of the module.
@@ -176,7 +180,7 @@ func TestScanImports_AFileThatImportsABackEndClientIsReported(t *testing.T) {
 		got[filepath.ToSlash(v.file)] = v.module
 	}
 	want := map[string]string{
-		"secrets/vault.go":  "github.com/hashicorp/vault",
+		"store/vault.go":    "github.com/hashicorp/vault",
 		"authz/fga_test.go": "github.com/openfga/go-sdk",
 	}
 	if len(got) != len(want) {
