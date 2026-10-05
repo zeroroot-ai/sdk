@@ -5,7 +5,7 @@
 /**
  * coverage-floor.mjs — uniform per-package coverage floor gate.
  *
- * Quality bar: docs/architecture/open-core/RESTRUCTURE-QUALITY-BARS.md §4 —
+ * Quality bar:
  * "uniform 80% absolute floor every repo". This is the package-level half of
  * that gate (the diff-coverage half is scripts/diff-coverage.mjs).
  *

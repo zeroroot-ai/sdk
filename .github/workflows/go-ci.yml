@@ -1,8 +1,7 @@
 name: go-ci
 
 # Thin caller for the canonical three-tier Go CI (Epic: cicd-efficiency, board
-# #44, slice S11b, .github#203). See docs/architecture/CICD-CONTEXT.md
-# decisions 8 & 9.
+# #44, slice S11b, .github#203).
 #
 # Replaces the old ci.yaml, whose three jobs (lint/coverage/test) all ran
 # their full suite on both `pull_request` and `push:main` -- pure double-fire
@@ -202,7 +201,7 @@ jobs:
         run: python3 scripts/check-taxonomy-numbers.py --selftest
 
   # ---- sdk-specific coverage gates (heavy tier / merge_group) ----
-  # Design intent (CICD-CONTEXT.md decision 8): coverage is part of the
+  # Design intent: coverage is part of the
   # merge_group-only authoritative suite, not a per-PR gate. Mirrors gibson's
   # own `coverage` job placement in go-ci.yml exactly.
   # Both lanes on purpose (gibson#1233): a merge_group-only gate that fails
