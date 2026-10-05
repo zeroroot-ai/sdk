@@ -125,6 +125,14 @@ jobs:
       - name: Mutation-test the pagination lint
         run: bash scripts/__tests__/lint-pagination.test.sh
 
+      # sdk#207: each create, run, start and submit request has an
+      # idempotency_key (ADR-0028). The first step is the check. The second
+      # step proves that each rule of the check can fail.
+      - name: Check each create request has an idempotency_key
+        run: node scripts/lint-idempotency-key.mjs
+      - name: Mutation-test the idempotency key lint
+        run: bash scripts/__tests__/lint-idempotency-key.test.sh
+
       # Spec: unified-identity-and-authorization Requirement 14.1.
       - name: Lint authz annotations
         run: |

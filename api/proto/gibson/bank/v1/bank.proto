@@ -288,6 +288,11 @@ message CreateBankRequest {
     // spill_policy is what the bank does with a job when no member has a
     // free slot. Unspecified means SPILL_POLICY_QUEUE.
     SpillPolicy spill_policy = 10 [(buf.validate.field).enum = { defined_only: true }];
+
+    // idempotency_key makes a retry safe (ADR-0028). A second request with the
+    // same key returns the result of the first request and does the work one
+    // time. An empty key turns the protection off for the call.
+    string idempotency_key = 11 [(buf.validate.field).string = { max_len: 128 }];
 }
 
 // CreateBankResponse carries the created bank.
@@ -383,6 +388,11 @@ message StartSignInRequest {
     string bank_id = 1 [(buf.validate.field).string = { min_len: 1 }];
     // member_id is the member. Required.
     string member_id = 2 [(buf.validate.field).string = { min_len: 1 }];
+
+    // idempotency_key makes a retry safe (ADR-0028). A second request with the
+    // same key returns the result of the first request and does the work one
+    // time. An empty key turns the protection off for the call.
+    string idempotency_key = 3 [(buf.validate.field).string = { max_len: 128 }];
 }
 
 // StartSignInResponse carries the member after the sign in started.
@@ -421,6 +431,11 @@ message SubmitSignInCodeRequest {
     string member_id = 2 [(buf.validate.field).string = { min_len: 1 }];
     // code is the code Anthropic gave the person. Required.
     string code = 3 [(buf.validate.field).string = { min_len: 1 }];
+
+    // idempotency_key makes a retry safe (ADR-0028). A second request with the
+    // same key returns the result of the first request and does the work one
+    // time. An empty key turns the protection off for the call.
+    string idempotency_key = 4 [(buf.validate.field).string = { max_len: 128 }];
 }
 
 // SubmitSignInCodeResponse carries the member after the code was passed on.

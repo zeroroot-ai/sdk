@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -877,7 +878,8 @@ func (h *CallbackHarness) SubmitFinding(ctx context.Context, f *finding.Finding)
 
 	// Convert finding to proto
 	protoReq := &harnesspb.SubmitFindingRequest{
-		Finding: FindingToProto(f),
+		IdempotencyKey: uuid.NewString(),
+		Finding:        FindingToProto(f),
 	}
 
 	resp, err := h.client.SubmitFinding(ctx, protoReq)
@@ -1088,8 +1090,9 @@ func buildCreateMissionRequest(
 	}
 
 	req := &harnesspb.CreateMissionRequest{
-		Context:  contextInfo,
-		TargetId: targetID,
+		IdempotencyKey: uuid.NewString(),
+		Context:        contextInfo,
+		TargetId:       targetID,
 	}
 
 	switch {
@@ -1140,8 +1143,9 @@ func (h *CallbackHarness) RunMission(ctx context.Context, missionID string, opts
 	defer span.End()
 
 	req := &harnesspb.RunMissionRequest{
-		Context:   h.client.contextInfo(),
-		MissionId: missionID,
+		IdempotencyKey: uuid.NewString(),
+		Context:        h.client.contextInfo(),
+		MissionId:      missionID,
 	}
 
 	if opts != nil {

@@ -1188,6 +1188,11 @@ message HarnessAgentDescriptor {
 message SubmitFindingRequest {
     ContextInfo context = 1;
     gibson.types.v1.Finding finding = 2;
+
+    // idempotency_key makes a retry safe (ADR-0028). A second request with the
+    // same key returns the result of the first request and does the work one
+    // time. An empty key turns the protection off for the call.
+    string idempotency_key = 3 [(buf.validate.field).string = { max_len: 128 }];
 }
 
 message SubmitFindingResponse {
@@ -1874,6 +1879,11 @@ message SubmitProofRequest {
     // Evidence in the evidence field that no tool call id backs is typed by
     // the agent, and the daemon sends such a proof to human review.
     repeated string tool_call_ids = 7;
+
+    // idempotency_key makes a retry safe (ADR-0028). A second request with the
+    // same key returns the result of the first request and does the work one
+    // time. An empty key turns the protection off for the call.
+    string idempotency_key = 8 [(buf.validate.field).string = { max_len: 128 }];
 }
 
 // SettlementOutcome reports what SubmitProof did with the submitted proof.
@@ -2552,6 +2562,11 @@ message CreateMissionRequest {
     // workflow_json (field 2) was renamed to mission_definition_json under spec
     // mission-api-only-cleanup (Phase 3); the old name is reserved.
     reserved "workflow_json";
+
+    // idempotency_key makes a retry safe (ADR-0028). A second request with the
+    // same key returns the result of the first request and does the work one
+    // time. An empty key turns the protection off for the call.
+    string idempotency_key = 12 [(buf.validate.field).string = { max_len: 128 }];
 }
 
 // CreateMissionResponse returns the created mission info.
@@ -2566,6 +2581,11 @@ message RunMissionRequest {
     string mission_id = 2;
     bool wait = 3;                 // Block until completion
     int64 timeout_ms = 4;          // Timeout in milliseconds (when wait=true)
+
+    // idempotency_key makes a retry safe (ADR-0028). A second request with the
+    // same key returns the result of the first request and does the work one
+    // time. An empty key turns the protection off for the call.
+    string idempotency_key = 5 [(buf.validate.field).string = { max_len: 128 }];
 }
 
 // RunMissionResponse confirms mission execution started.

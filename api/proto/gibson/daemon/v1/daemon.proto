@@ -1107,6 +1107,11 @@ message RunMissionRequest {
   // was renamed to target_id — old names are reserved to prevent silent reuse.
   reserved 5;
   reserved "workflow_path", "workflow_yaml", "mission_id";
+
+  // idempotency_key makes a retry safe (ADR-0028). A second request with the
+  // same key returns the result of the first request and does the work one
+  // time. An empty key turns the protection off for the call.
+  string idempotency_key = 6 [(buf.validate.field).string = { max_len: 128 }];
 }
 
 // RunMissionResponse wraps a MissionEvent for the RunMission streaming RPC.
@@ -1484,6 +1489,11 @@ message CreateMissionDefinitionRequest {
   // reconstruction. Optional for backward compatibility; when empty the
   // definition is stored without a recoverable source.
   string cue_source = 2;
+
+  // idempotency_key makes a retry safe (ADR-0028). A second request with the
+  // same key returns the result of the first request and does the work one
+  // time. An empty key turns the protection off for the call.
+  string idempotency_key = 3 [(buf.validate.field).string = { max_len: 128 }];
 }
 
 // CreateMissionDefinitionResponse returns the registered mission definition ID
@@ -1728,6 +1738,11 @@ message CreateMissionRequest {
   reserved 10, 11, 12;
   reserved "inline_target", "inline_workflow", "workflow_yaml", "workflow_id",
            "target_config", "workflow_config";
+
+  // idempotency_key makes a retry safe (ADR-0028). A second request with the
+  // same key returns the result of the first request and does the work one
+  // time. An empty key turns the protection off for the call.
+  string idempotency_key = 13 [(buf.validate.field).string = { max_len: 128 }];
 }
 
 // ListCatalogMissionsRequest takes nothing. The catalog is the same for every
@@ -1809,6 +1824,11 @@ message CreateTargetRequest {
   // target carries the new target's metadata. Its id field is ignored; the
   // daemon mints the canonical UUID.
   gibson.target.v1.Target target = 1;
+
+  // idempotency_key makes a retry safe (ADR-0028). A second request with the
+  // same key returns the result of the first request and does the work one
+  // time. An empty key turns the protection off for the call.
+  string idempotency_key = 2 [(buf.validate.field).string = { max_len: 128 }];
 }
 
 // CreateTargetResponse returns the minted target.
@@ -2074,6 +2094,11 @@ message StartComponentRequest {
 
   // name is the component name
   string name = 2;
+
+  // idempotency_key makes a retry safe (ADR-0028). A second request with the
+  // same key returns the result of the first request and does the work one
+  // time. An empty key turns the protection off for the call.
+  string idempotency_key = 3 [(buf.validate.field).string = { max_len: 128 }];
 }
 
 // StartComponentResponse returns the result of starting a component.

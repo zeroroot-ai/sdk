@@ -36,6 +36,7 @@ type extendedMockClient struct {
 	stopMissionResp       *daemonpb.StopMissionResponse
 	stopMissionErr        error
 	createMissionResp     *daemonpb.CreateMissionResponse
+	createMissionReqs     []*daemonpb.CreateMissionRequest
 	createMissionErr      error
 	pauseMissionResp      *daemonpb.PauseMissionResponse
 	pauseMissionErr       error
@@ -81,6 +82,7 @@ func (m *extendedMockClient) StopMission(ctx context.Context, req *daemonpb.Stop
 	return m.stopMissionResp, m.stopMissionErr
 }
 func (m *extendedMockClient) CreateMission(ctx context.Context, req *daemonpb.CreateMissionRequest, opts ...grpc.CallOption) (*daemonpb.CreateMissionResponse, error) {
+	m.createMissionReqs = append(m.createMissionReqs, req)
 	return m.createMissionResp, m.createMissionErr
 }
 func (m *extendedMockClient) PauseMission(ctx context.Context, req *daemonpb.PauseMissionRequest, opts ...grpc.CallOption) (*daemonpb.PauseMissionResponse, error) {
@@ -381,6 +383,31 @@ func TestClient_CreateMission_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "m-new", result.MissionID)
 	assert.Equal(t, "recon-run", result.Name)
+}
+
+// TestClient_CreateMission_SendsAnIdempotencyKey proves that each call sends a
+// key, and that two calls do not share one (ADR-0028, sdk#207).
+func TestClient_CreateMission_SendsAnIdempotencyKey(t *testing.T) {
+	mock := &extendedMockClient{
+		createMissionResp: &daemonpb.CreateMissionResponse{
+			Success: true,
+			Mission: &daemonpb.Mission{Id: "m-new"},
+		},
+	}
+	c := &Client{daemon: mock}
+	opts := CreateMissionOptions{Name: "recon-run", TargetID: "t1", MissionDefinitionID: "d1"}
+
+	for range 2 {
+		_, err := c.CreateMission(context.Background(), opts)
+		require.NoError(t, err)
+	}
+
+	require.Len(t, mock.createMissionReqs, 2)
+	first := mock.createMissionReqs[0].GetIdempotencyKey()
+	second := mock.createMissionReqs[1].GetIdempotencyKey()
+	assert.NotEmpty(t, first)
+	assert.LessOrEqual(t, len(first), 128)
+	assert.NotEqual(t, first, second)
 }
 
 func TestClient_CreateMission_ResponseNotSuccess(t *testing.T) {

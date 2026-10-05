@@ -23,6 +23,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -851,8 +852,9 @@ func (a *componentClientAdapter) PollWork(ctx context.Context, timeout time.Dura
 // protocol.
 func (a *componentClientAdapter) SubmitResult(ctx context.Context, workID string, result []byte, errInfo *pluginpb.PluginError) error {
 	req := &componentpb.SubmitResultRequest{
-		WorkId: workID,
-		Result: result,
+		IdempotencyKey: uuid.NewString(),
+		WorkId:         workID,
+		Result:         result,
 	}
 	if errInfo != nil {
 		req.Error = &componentpb.ComponentError{
