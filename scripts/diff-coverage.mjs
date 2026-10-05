@@ -5,7 +5,7 @@
 /**
  * diff-coverage.mjs — 85% diff-coverage gate on changed lines.
  *
- * Quality bar: docs/architecture/open-core/RESTRUCTURE-QUALITY-BARS.md §4 —
+ * Quality bar:
  * "85% diff-coverage on changed lines, blocking". This is the teeth of the
  * coverage gate: regardless of the absolute per-package floor (the baselined
  * backlog), any Go code a PR ADDS OR CHANGES must be ≥85% covered. New debt

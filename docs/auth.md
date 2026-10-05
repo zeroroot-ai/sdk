@@ -145,7 +145,7 @@ For external deployments (no SPIRE), set `GIBSON_PLATFORM_URL` and
 For in-cluster deployments (SPIRE co-located), set all five env vars; the SPIFFE
 transport upgrade is applied automatically.
 
-See ADR-0036, "Capability-grant-first agent identity", for the normative
+See ADR-0045, "One runtime identity for every component: the Capability Grant JWT", for the normative
 decision record.
 
 ## Capability-grant verify

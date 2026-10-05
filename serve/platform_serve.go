@@ -83,7 +83,7 @@ func dialSPIFFE(ctx context.Context, socketPath, daemonAddress string, extraOpts
 // The agent registers itself outbound, polls for work, executes tasks locally,
 // and submits results. No local gRPC server is started.
 //
-// Capability Grant bootstrap always runs first (ADR-0036). When
+// Capability Grant bootstrap always runs first (ADR-0045). When
 // useSPIFFETransport(cfg) is true the gRPC dial uses SPIFFE mTLS transport
 // with the CG JWT still attached as the per-RPC credential. Otherwise standard
 // CG-authenticated TLS is used.
@@ -97,7 +97,7 @@ func servePlatformAgent(a agent.Agent, cfg *Config) error {
 	_, healthState, stopHealth := startComponentHealthServer(cfg, "agent", a.Name())
 	defer stopHealth()
 
-	// Capability Grant bootstrap — always required (ADR-0036).
+	// Capability Grant bootstrap — always required (ADR-0045).
 	client, err := NewPlatformClientWithOptions(cfg.PlatformURL, "",
 		WithPlatformPollInterval(cfg.PollInterval),
 		WithPlatformHeartbeatInterval(cfg.HeartbeatInterval),
@@ -378,7 +378,7 @@ func executePlatformAgentWork(ctx context.Context, client *PlatformClient, a age
 // The tool registers itself outbound, polls for work, executes locally, and
 // submits results. No local gRPC server is started.
 //
-// Capability Grant bootstrap always runs first (ADR-0036). When
+// Capability Grant bootstrap always runs first (ADR-0045). When
 // useSPIFFETransport(cfg) is true the gRPC dial uses SPIFFE mTLS transport
 // with the CG JWT still attached as the per-RPC credential. Otherwise standard
 // CG-authenticated TLS is used.
@@ -392,7 +392,7 @@ func servePlatformTool(t tool.Tool, cfg *Config) error {
 	_, healthState, stopHealth := startComponentHealthServer(cfg, "tool", t.Name())
 	defer stopHealth()
 
-	// Capability Grant bootstrap — always required (ADR-0036).
+	// Capability Grant bootstrap — always required (ADR-0045).
 	client, err := NewPlatformClientWithOptions(cfg.PlatformURL, "",
 		WithPlatformPollInterval(cfg.PollInterval),
 		WithPlatformHeartbeatInterval(cfg.HeartbeatInterval),

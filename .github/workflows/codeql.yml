@@ -1,7 +1,7 @@
 name: CodeQL
 
-# Epic: cicd-efficiency (board #44), slice S11b. Per
-# docs/architecture/CICD-CONTEXT.md decision 9, security scanners belong on
+# Epic: cicd-efficiency (board #44), slice S11b.
+# Security scanners belong on
 # the merge_group authoritative gate, not on every push AND every PR (this
 # workflow used to fire its full analysis on both). Collapsed to merge_group
 # + the existing weekly cron only.

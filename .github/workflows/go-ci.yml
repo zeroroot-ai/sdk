@@ -1,8 +1,7 @@
 name: go-ci
 
 # Thin caller for the canonical three-tier Go CI (Epic: cicd-efficiency, board
-# #44, slice S11b, .github#203). See docs/architecture/CICD-CONTEXT.md
-# decisions 8 & 9.
+# #44, slice S11b, .github#203).
 #
 # Replaces the old ci.yaml, whose three jobs (lint/coverage/test) all ran
 # their full suite on both `pull_request` and `push:main` -- pure double-fire
@@ -155,7 +154,7 @@ jobs:
             exit 1
           }
 
-      # api/gen/ is TRACKED SOURCE (ADR-0039). This gate fails if the committed
+      # api/gen/ is TRACKED SOURCE. This gate fails if the committed
       # Go bindings drift from the protos OR if newly-generated files were not
       # committed -- the failure mode that shipped an incomplete v0.129.0.
       # Codegen is deterministic (plugin versions pinned in the Makefile).
@@ -202,7 +201,7 @@ jobs:
         run: python3 scripts/check-taxonomy-numbers.py --selftest
 
   # ---- sdk-specific coverage gates (heavy tier / merge_group) ----
-  # Design intent (CICD-CONTEXT.md decision 8): coverage is part of the
+  # Design intent: coverage is part of the
   # merge_group-only authoritative suite, not a per-PR gate. Mirrors gibson's
   # own `coverage` job placement in go-ci.yml exactly.
   # Both lanes on purpose (gibson#1233): a merge_group-only gate that fails
@@ -227,7 +226,7 @@ jobs:
 
       # No protoc plugin install: the coverage profile is built by
       # `go test ./...` against the COMMITTED api/gen/ bindings (tracked
-      # source, ADR-0039) — nothing in the test run invokes protoc-gen-go /
+      # source) — nothing in the test run invokes protoc-gen-go /
       # protoc-gen-go-grpc, and buf is a go.mod tool dependency. The
       # previous hardcoded `go install ...@vX` step was a stale duplicate
       # of the Makefile pin (sdk#427).

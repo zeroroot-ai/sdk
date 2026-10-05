@@ -41,7 +41,7 @@ const PROTO_ROOT = join(REPO_ROOT, 'api/proto');
 // ---------------------------------------------------------------------------
 const GRANDFATHER_LIST = [
   // PluginAdminService was decomposed out of the former gibson.admin.v1 surface
-  // by ADR-0039/0040 (#267). Under ADR-0058 (E6, narrow-the-SDK) it was re-homed
+  // (#267). Under ADR-0058 (E6, narrow-the-SDK) it was re-homed
   // into its own wire package gibson.pluginadmin.v1 so it can stay in the OSS
   // SDK while the nine tenant-admin services move to gibson. The wire-compat
   // rationale for the limit/offset shape is unchanged — path corrected.
@@ -57,7 +57,7 @@ const GRANDFATHER_LIST = [
   // rejects, so it is wire-compat-locked to `limit` — the operative reason this
   // allow-list exists. Justification: sdk#250.
   { file: 'gibson/tenant/v1/tenant.proto',  method: 'ListAuditEvents' },
-  // ListAlerts / ListConversations shipped in v0.137.0 as part of the ADR-0039
+  // ListAlerts / ListConversations shipped in v0.137.0 as part of the
   // UserService decomposition (#267) and are wire-locked (dashboard chat/alerts
   // + gibson daemon handlers). Their page-size field is `int32 limit`; renaming
   // it to AIP-158 `page_size` is a WIRE_JSON-breaking FIELD rename that
