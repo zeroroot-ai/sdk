@@ -4,6 +4,8 @@ option go_package = "github.com/zeroroot-ai/sdk/api/gen/gibson/common/v1;commonp
 option java_multiple_files = true;
 option csharp_namespace = "Gibson.Common";
 
+import "buf/validate/validate.proto";
+
 message HealthStatus {
     string status = 1;     // healthy, degraded, unhealthy
     string message = 2;
@@ -19,6 +21,38 @@ message Error {
     string message = 2;
     string details = 3;
     bool retryable = 4;
+}
+
+// ErrorDetail is the one error-detail message of the API (ADR-0028, rule 4).
+// The daemon attaches it to the details of each error status. A client reads
+// it from the status details and needs no parser for each service.
+message ErrorDetail {
+    // code is the standard error code.
+    ErrorCode code = 1 [(buf.validate.field).enum = { defined_only: true }];
+
+    // reason is a stable name for the cause, in upper snake case, for example
+    // MISSION_NOT_FOUND. A client can branch on it. The text of the status
+    // message can change, and the reason does not.
+    string reason = 2 [(buf.validate.field).string = { max_len: 128, pattern: "^([A-Z][A-Z0-9_]*)?$" }];
+
+    // field_errors holds one entry for each field of the request that broke a
+    // rule. A protovalidate failure fills it. It is empty for an error that
+    // is not about the request.
+    repeated FieldError field_errors = 3;
+}
+
+// FieldError describes one field of a request that broke one rule.
+message FieldError {
+    // field is the path of the field in the request, for example
+    // definition.nodes["scan"].starts_from.
+    string field = 1 [(buf.validate.field).string = { max_len: 1024 }];
+
+    // rule is the id of the rule that the field broke, for example
+    // string.max_len. It is empty when the rule has no id.
+    string rule = 2 [(buf.validate.field).string = { max_len: 256 }];
+
+    // message tells a person what is wrong with the field.
+    string message = 3 [(buf.validate.field).string = { max_len: 4096 }];
 }
 
 // NullValue represents a null value in TypedValue
