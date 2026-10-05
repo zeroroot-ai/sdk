@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.195.0](https://github.com/zeroroot-ai/sdk/compare/v0.194.0...v0.195.0) (2026-10-05)
+
+
+### Features
+
+* **proto:** the wire has a checkpoints setting and a rewind request ([#222](https://github.com/zeroroot-ai/sdk/issues/222)) ([43c9c08](https://github.com/zeroroot-ai/sdk/commit/43c9c081d952f134f2aaf004041b0d4a4b940150)), closes [#216](https://github.com/zeroroot-ai/sdk/issues/216)
+
+
+### Bug Fixes
+
+* **proto:** field 4 (remote) of the plugin registration request is reserved ([#224](https://github.com/zeroroot-ai/sdk/issues/224)) ([9ff2496](https://github.com/zeroroot-ai/sdk/commit/9ff2496edec4595bd58c472080c4651599b088ce)), closes [#181](https://github.com/zeroroot-ai/sdk/issues/181)
+
 ## [0.194.0](https://github.com/zeroroot-ai/sdk/compare/v0.193.2...v0.194.0) (2026-10-05)
 
 
