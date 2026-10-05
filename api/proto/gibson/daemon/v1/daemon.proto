@@ -212,9 +212,33 @@ service DaemonService {
       };
     }
 
-  // The pre-ECS checkpoint browser RPCs (GetMissionCheckpoints,
-  // ListCheckpoints, GetCheckpoint, DiffCheckpoints) were removed with
-  // the checkpoint store (one snapshot mechanism = World snapshots).
+  // The pre-ECS checkpoint browser RPCs (ListCheckpoints, GetCheckpoint,
+  // DiffCheckpoints) were removed with the checkpoint store (one snapshot
+  // mechanism = World snapshots).
+
+  // GetMissionCheckpoints returns the checkpoints of one mission run. A
+  // checkpoint is the end of a node in that run (ADR-0170).
+  rpc GetMissionCheckpoints(GetMissionCheckpointsRequest) returns (GetMissionCheckpointsResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "member"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
+  // RewindMission starts a new mission run at a checkpoint of an earlier
+  // run (ADR-0170). The new run records the earlier run and the checkpoint
+  // as its parent. The call deletes nothing. It requires the same relation
+  // as RunMission: whoever may run the mission may rewind it.
+  rpc RewindMission(RewindMissionRequest) returns (RewindMissionResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "writer"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
 
   // ListMissionDefinitions returns all installed mission definitions.
   rpc ListMissionDefinitions(ListMissionDefinitionsRequest) returns (ListMissionDefinitionsResponse) {
@@ -1257,6 +1281,14 @@ message MissionInfo {
   // to nobody, and the dashboard shows "removed user". Empty on a mission
   // created before the field existed.
   gibson.common.v1.Principal created_by = 13;
+
+  // parent_mission_id is the id of the run that this run was rewound from
+  // (ADR-0170). Empty on a run that is not the result of a rewind.
+  string parent_mission_id = 14 [(buf.validate.field).string = { max_len: 256 }];
+
+  // parent_checkpoint_id is the id of the checkpoint of the parent run at
+  // which this run started. Empty when parent_mission_id is empty.
+  string parent_checkpoint_id = 15 [(buf.validate.field).string = { max_len: 256 }];
 }
 
 // PauseMissionRequest requests pausing a running mission.
@@ -1344,10 +1376,82 @@ message MissionRun {
 
   // trace_id is the OTel trace ID for Langfuse lookup
   string trace_id = 8;
+
+  // parent_mission_id is the id of the run that this run was rewound from
+  // (ADR-0170). Empty on a run that is not the result of a rewind. A client
+  // follows this field to show the runs as a chain.
+  string parent_mission_id = 9 [(buf.validate.field).string = { max_len: 256 }];
+
+  // parent_checkpoint_id is the id of the checkpoint of the parent run at
+  // which this run started. Empty when parent_mission_id is empty.
+  string parent_checkpoint_id = 10 [(buf.validate.field).string = { max_len: 256 }];
 }
 
-// GetMissionCheckpointsRequest/Response and CheckpointInfo (previously
-// defined here) were removed with the retired GetMissionCheckpoints RPC.
+// GetMissionCheckpointsRequest asks for the checkpoints of one mission run.
+message GetMissionCheckpointsRequest {
+  // mission_id is the id of the mission run.
+  string mission_id = 1 [(buf.validate.field).string = { min_len: 1, max_len: 256 }];
+}
+
+// GetMissionCheckpointsResponse returns the checkpoints of one mission run,
+// in the order in which the nodes ended.
+message GetMissionCheckpointsResponse {
+  // checkpoints holds one entry for each node that ended in the run.
+  repeated NodeCheckpoint checkpoints = 1;
+}
+
+// NodeCheckpoint is the end of one node in a mission run (ADR-0170). It is
+// the point at which a rewind can start a new run. It is not the older
+// MissionCheckpoint, which describes a saved state blob.
+message NodeCheckpoint {
+  // checkpoint_id identifies the checkpoint inside its mission run. Pass it
+  // to RewindMission.
+  string checkpoint_id = 1 [(buf.validate.field).string = { min_len: 1, max_len: 256 }];
+
+  // node_id is the id of the node that ended.
+  string node_id = 2 [(buf.validate.field).string = { min_len: 1, max_len: 256 }];
+
+  // timeline_position is the position in the Timeline of the event that
+  // ended the node.
+  uint64 timeline_position = 3;
+
+  // snapshot_id is the id of the sandbox snapshot taken at the end of the
+  // node. It is set only when the mission ran with CHECKPOINT_MODE_SANDBOX
+  // and the snapshot still exists.
+  optional string snapshot_id = 4 [(buf.validate.field).string = { min_len: 1, max_len: 256 }];
+
+  // ended_at is the time at which the node ended.
+  google.protobuf.Timestamp ended_at = 5;
+}
+
+// RewindMissionRequest asks for a new mission run that starts at a
+// checkpoint of an earlier run.
+message RewindMissionRequest {
+  // mission_id is the id of the mission run to rewind.
+  string mission_id = 1 [(buf.validate.field).string = { min_len: 1, max_len: 256 }];
+
+  // checkpoint_id is the id of a checkpoint of that run, as
+  // GetMissionCheckpoints returns it. The new run starts at the node of
+  // this checkpoint.
+  string checkpoint_id = 2 [(buf.validate.field).string = { min_len: 1, max_len: 256 }];
+
+  // instruction replaces the instruction of the node that the run rewinds
+  // to. The caller can change this node and no other node. When the field
+  // is not set, the node keeps the instruction of the definition.
+  optional string instruction = 3 [(buf.validate.field).string = { min_len: 1, max_len: 65536 }];
+
+  // idempotency_key makes a retry safe. A second request with the same key
+  // returns the result of the first request and starts no second run. An
+  // empty key turns the protection off for the call.
+  string idempotency_key = 4 [(buf.validate.field).string = { max_len: 128 }];
+}
+
+// RewindMissionResponse returns the new mission run.
+message RewindMissionResponse {
+  // mission_id is the id of the new run. Its parent is the run that the
+  // request named.
+  string mission_id = 1;
+}
 
 // ListMissionDefinitionsRequest queries installed mission definitions.
 message ListMissionDefinitionsRequest {

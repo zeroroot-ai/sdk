@@ -637,6 +637,12 @@ func (m *mockDaemonServiceClient) SaveMissionLayout(ctx context.Context, req *da
 func (m *mockDaemonServiceClient) GetMyPermissions(ctx context.Context, req *daemonpb.GetMyPermissionsRequest, opts ...grpc.CallOption) (*daemonpb.GetMyPermissionsResponse, error) {
 	return nil, nil
 }
+func (m *mockDaemonServiceClient) GetMissionCheckpoints(_ context.Context, _ *daemonpb.GetMissionCheckpointsRequest, _ ...grpc.CallOption) (*daemonpb.GetMissionCheckpointsResponse, error) {
+	return &daemonpb.GetMissionCheckpointsResponse{}, nil
+}
+func (m *mockDaemonServiceClient) RewindMission(_ context.Context, _ *daemonpb.RewindMissionRequest, _ ...grpc.CallOption) (*daemonpb.RewindMissionResponse, error) {
+	return &daemonpb.RewindMissionResponse{}, nil
+}
 func (m *mockDaemonServiceClient) GetCapabilityManifest(ctx context.Context, req *manifestpb.GetCapabilityManifestRequest, opts ...grpc.CallOption) (*manifestpb.GetCapabilityManifestResponse, error) {
 	return nil, nil
 }

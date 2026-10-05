@@ -124,6 +124,7 @@ MissionDefinition represents a mission template/definition. This is the shareabl
 | `constraints` | `gibson.mission.v1.MissionConstraints` | 16 | Constraints declares mission-level operational limits. When present, these are the authoritative constraints for the mission DAG — they make the mission self-describing so authors do not have to supply limits out-of-band at dispatch time. The daemon merges these with any dispatch-time overrides (dispatch wins on conflict). Optional: absent means no constraints are baked into the definition.  Spec: MissionConstraints proto promotion. |
 | `decider_slot` | `gibson.mission.v1.LLMSlotConfig` | 17 | DeciderSlot names the mission-level LLM the brain's Decider runs on — the orchestration decision-maker, distinct from per-node agent slots. Only the provider+model are used (the slot name is implicitly "decider"). Absent means the brain uses the tenant's dashboard-default provider/model, so missions need not set it. |
 | `secrets` | `gibson.mission.v1.MissionSecrets` | 18 | Secrets declares which named tenant secrets this mission's components may be handed at dispatch. Names only; a value never appears here. |
+| `checkpoints` | `gibson.mission.v1.CheckpointMode` | 19 | Checkpoints selects what the end of a node keeps (ADR-0170). A checkpoint is the end of a node in a mission run, and a rewind starts a new run at a checkpoint.  CHECKPOINT_MODE_UNSPECIFIED means CHECKPOINT_MODE_STATE, so a mission that does not set the field keeps no sandbox snapshot. |
 
 ## `gibson.mission.v1.MissionDependencies`
 

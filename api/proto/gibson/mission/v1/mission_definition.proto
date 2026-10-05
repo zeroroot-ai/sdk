@@ -106,6 +106,31 @@ message MissionDefinition {
     // Secrets declares which named tenant secrets this mission's components may
     // be handed at dispatch. Names only; a value never appears here.
     optional MissionSecrets secrets = 18;
+
+    // Checkpoints selects what the end of a node keeps (ADR-0170). A
+    // checkpoint is the end of a node in a mission run, and a rewind starts
+    // a new run at a checkpoint.
+    //
+    // CHECKPOINT_MODE_UNSPECIFIED means CHECKPOINT_MODE_STATE, so a mission
+    // that does not set the field keeps no sandbox snapshot.
+    CheckpointMode checkpoints = 19 [(buf.validate.field).enum = { defined_only: true }];
+}
+
+// CheckpointMode states what the end of a node keeps for a later rewind
+// (ADR-0170).
+enum CheckpointMode {
+    // Sentinel value. The daemon treats it as CHECKPOINT_MODE_STATE.
+    CHECKPOINT_MODE_UNSPECIFIED = 0;
+
+    // State keeps the mission state at the end of each node and no sandbox
+    // snapshot. A rewind starts the node in a fresh sandbox with the files
+    // of the workspace. The default.
+    CHECKPOINT_MODE_STATE = 1;
+
+    // Sandbox also keeps a diff snapshot of the sandbox at the end of each
+    // agent node. A rewind starts the node from that snapshot. A sandbox
+    // snapshot lives 7 days after the run ends.
+    CHECKPOINT_MODE_SANDBOX = 2;
 }
 
 // MissionSecrets declares which named tenant secrets the components of a

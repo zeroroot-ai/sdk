@@ -1036,6 +1036,14 @@
   "additionalProperties": false,
   "description": "MissionDefinition represents a mission template/definition. This is the shareable mission specification that can be created via the CreateMissionDefinition API and referenced by mission runs.",
   "properties": {
+    "checkpoints": {
+      "description": "Checkpoints selects what the end of a node keeps (ADR-0170). A checkpoint is the end of a node in a mission run, and a rewind starts a new run at a checkpoint.  CHECKPOINT_MODE_UNSPECIFIED means CHECKPOINT_MODE_STATE, so a mission that does not set the field keeps no sandbox snapshot.",
+      "enum": [
+        "CHECKPOINT_MODE_STATE",
+        "CHECKPOINT_MODE_SANDBOX"
+      ],
+      "type": "string"
+    },
     "constraints": {
       "$ref": "#/$defs/MissionConstraints",
       "description": "Constraints declares mission-level operational limits. When present, these are the authoritative constraints for the mission DAG — they make the mission self-describing so authors do not have to supply limits out-of-band at dispatch time. The daemon merges these with any dispatch-time overrides (dispatch wins on conflict). Optional: absent means no constraints are baked into the definition.  Spec: MissionConstraints proto promotion."
