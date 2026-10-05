@@ -30,9 +30,6 @@
 // Mission RPCs — request/response messages
 // ---------------------------------------------------------------------------
 
-// GetMissionCheckpointsRequest/Response and CheckpointInfo (previously
-// defined here) were removed with the retired GetMissionCheckpoints RPC.
-
 // MissionConstraints message removed under ADR 0004,
 // "Canonical MissionConstraints".
 // The canonical type is gibson.mission.v1.MissionConstraints; daemon-only
@@ -112,6 +109,7 @@ package daemonpb
 
 import (
 	"github.com/zeroroot-ai/sdk/api/proto/gibson/common/v1:commonpb"
+	"time"
 	"github.com/zeroroot-ai/sdk/api/proto/gibson/mission/v1:missionpb"
 	"github.com/zeroroot-ai/sdk/api/proto/gibson/target/v1:targetpb"
 )
@@ -779,6 +777,14 @@ import (
 	// to nobody, and the dashboard shows "removed user". Empty on a mission
 	// created before the field existed.
 	createdBy?: commonpb.#Principal @protobuf(13,gibson.common.v1.Principal,name=created_by)
+
+	// parent_mission_id is the id of the run that this run was rewound from
+	// (ADR-0170). Empty on a run that is not the result of a rewind.
+	parentMissionId?: string @protobuf(14,string,name=parent_mission_id,"(buf.validate.field).string=")
+
+	// parent_checkpoint_id is the id of the checkpoint of the parent run at
+	// which this run started. Empty when parent_mission_id is empty.
+	parentCheckpointId?: string @protobuf(15,string,name=parent_checkpoint_id,"(buf.validate.field).string=")
 }
 
 // PauseMissionRequest requests pausing a running mission.
@@ -866,6 +872,81 @@ import (
 
 	// trace_id is the OTel trace ID for Langfuse lookup
 	traceId?: string @protobuf(8,string,name=trace_id)
+
+	// parent_mission_id is the id of the run that this run was rewound from
+	// (ADR-0170). Empty on a run that is not the result of a rewind. A client
+	// follows this field to show the runs as a chain.
+	parentMissionId?: string @protobuf(9,string,name=parent_mission_id,"(buf.validate.field).string=")
+
+	// parent_checkpoint_id is the id of the checkpoint of the parent run at
+	// which this run started. Empty when parent_mission_id is empty.
+	parentCheckpointId?: string @protobuf(10,string,name=parent_checkpoint_id,"(buf.validate.field).string=")
+}
+
+// GetMissionCheckpointsRequest asks for the checkpoints of one mission run.
+#GetMissionCheckpointsRequest: {
+	// mission_id is the id of the mission run.
+	missionId?: string @protobuf(1,string,name=mission_id,"(buf.validate.field).string=")
+}
+
+// GetMissionCheckpointsResponse returns the checkpoints of one mission run,
+// in the order in which the nodes ended.
+#GetMissionCheckpointsResponse: {
+	// checkpoints holds one entry for each node that ended in the run.
+	checkpoints?: [...#NodeCheckpoint] @protobuf(1,NodeCheckpoint)
+}
+
+// NodeCheckpoint is the end of one node in a mission run (ADR-0170). It is
+// the point at which a rewind can start a new run. It is not the older
+// MissionCheckpoint, which describes a saved state blob.
+#NodeCheckpoint: {
+	// checkpoint_id identifies the checkpoint inside its mission run. Pass it
+	// to RewindMission.
+	checkpointId?: string @protobuf(1,string,name=checkpoint_id,"(buf.validate.field).string=")
+
+	// node_id is the id of the node that ended.
+	nodeId?: string @protobuf(2,string,name=node_id,"(buf.validate.field).string=")
+
+	// timeline_position is the position in the Timeline of the event that
+	// ended the node.
+	timelinePosition?: uint64 @protobuf(3,uint64,name=timeline_position)
+
+	// snapshot_id is the id of the sandbox snapshot taken at the end of the
+	// node. It is set only when the mission ran with CHECKPOINT_MODE_SANDBOX
+	// and the snapshot still exists.
+	snapshotId?: string @protobuf(4,string,name=snapshot_id,"(buf.validate.field).string=")
+
+	// ended_at is the time at which the node ended.
+	endedAt?: time.Time @protobuf(5,google.protobuf.Timestamp,name=ended_at)
+}
+
+// RewindMissionRequest asks for a new mission run that starts at a
+// checkpoint of an earlier run.
+#RewindMissionRequest: {
+	// mission_id is the id of the mission run to rewind.
+	missionId?: string @protobuf(1,string,name=mission_id,"(buf.validate.field).string=")
+
+	// checkpoint_id is the id of a checkpoint of that run, as
+	// GetMissionCheckpoints returns it. The new run starts at the node of
+	// this checkpoint.
+	checkpointId?: string @protobuf(2,string,name=checkpoint_id,"(buf.validate.field).string=")
+
+	// instruction replaces the instruction of the node that the run rewinds
+	// to. The caller can change this node and no other node. When the field
+	// is not set, the node keeps the instruction of the definition.
+	instruction?: string @protobuf(3,string,"(buf.validate.field).string=")
+
+	// idempotency_key makes a retry safe. A second request with the same key
+	// returns the result of the first request and starts no second run. An
+	// empty key turns the protection off for the call.
+	idempotencyKey?: string @protobuf(4,string,name=idempotency_key,"(buf.validate.field).string=")
+}
+
+// RewindMissionResponse returns the new mission run.
+#RewindMissionResponse: {
+	// mission_id is the id of the new run. Its parent is the run that the
+	// request named.
+	missionId?: string @protobuf(1,string,name=mission_id)
 }
 
 // ListMissionDefinitionsRequest queries installed mission definitions.

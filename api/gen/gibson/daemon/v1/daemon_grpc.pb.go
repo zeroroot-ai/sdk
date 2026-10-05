@@ -52,6 +52,8 @@ const (
 	DaemonService_PauseMission_FullMethodName               = "/gibson.daemon.v1.DaemonService/PauseMission"
 	DaemonService_ResumeMission_FullMethodName              = "/gibson.daemon.v1.DaemonService/ResumeMission"
 	DaemonService_GetMissionHistory_FullMethodName          = "/gibson.daemon.v1.DaemonService/GetMissionHistory"
+	DaemonService_GetMissionCheckpoints_FullMethodName      = "/gibson.daemon.v1.DaemonService/GetMissionCheckpoints"
+	DaemonService_RewindMission_FullMethodName              = "/gibson.daemon.v1.DaemonService/RewindMission"
 	DaemonService_ListMissionDefinitions_FullMethodName     = "/gibson.daemon.v1.DaemonService/ListMissionDefinitions"
 	DaemonService_ListCatalogMissions_FullMethodName        = "/gibson.daemon.v1.DaemonService/ListCatalogMissions"
 	DaemonService_RenderCatalogMission_FullMethodName       = "/gibson.daemon.v1.DaemonService/RenderCatalogMission"
@@ -133,6 +135,14 @@ type DaemonServiceClient interface {
 	// GetMissionHistory returns all runs for a mission name, showing the
 	// complete history of mission executions with the same mission name.
 	GetMissionHistory(ctx context.Context, in *GetMissionHistoryRequest, opts ...grpc.CallOption) (*GetMissionHistoryResponse, error)
+	// GetMissionCheckpoints returns the checkpoints of one mission run. A
+	// checkpoint is the end of a node in that run (ADR-0170).
+	GetMissionCheckpoints(ctx context.Context, in *GetMissionCheckpointsRequest, opts ...grpc.CallOption) (*GetMissionCheckpointsResponse, error)
+	// RewindMission starts a new mission run at a checkpoint of an earlier
+	// run (ADR-0170). The new run records the earlier run and the checkpoint
+	// as its parent. The call deletes nothing. It requires the same relation
+	// as RunMission: whoever may run the mission may rewind it.
+	RewindMission(ctx context.Context, in *RewindMissionRequest, opts ...grpc.CallOption) (*RewindMissionResponse, error)
 	// ListMissionDefinitions returns all installed mission definitions.
 	ListMissionDefinitions(ctx context.Context, in *ListMissionDefinitionsRequest, opts ...grpc.CallOption) (*ListMissionDefinitionsResponse, error)
 	// ListCatalogMissions returns the mission definitions gibson ships compiled
@@ -495,6 +505,26 @@ func (c *daemonServiceClient) GetMissionHistory(ctx context.Context, in *GetMiss
 	return out, nil
 }
 
+func (c *daemonServiceClient) GetMissionCheckpoints(ctx context.Context, in *GetMissionCheckpointsRequest, opts ...grpc.CallOption) (*GetMissionCheckpointsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetMissionCheckpointsResponse)
+	err := c.cc.Invoke(ctx, DaemonService_GetMissionCheckpoints_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *daemonServiceClient) RewindMission(ctx context.Context, in *RewindMissionRequest, opts ...grpc.CallOption) (*RewindMissionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RewindMissionResponse)
+	err := c.cc.Invoke(ctx, DaemonService_RewindMission_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *daemonServiceClient) ListMissionDefinitions(ctx context.Context, in *ListMissionDefinitionsRequest, opts ...grpc.CallOption) (*ListMissionDefinitionsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListMissionDefinitionsResponse)
@@ -835,6 +865,14 @@ type DaemonServiceServer interface {
 	// GetMissionHistory returns all runs for a mission name, showing the
 	// complete history of mission executions with the same mission name.
 	GetMissionHistory(context.Context, *GetMissionHistoryRequest) (*GetMissionHistoryResponse, error)
+	// GetMissionCheckpoints returns the checkpoints of one mission run. A
+	// checkpoint is the end of a node in that run (ADR-0170).
+	GetMissionCheckpoints(context.Context, *GetMissionCheckpointsRequest) (*GetMissionCheckpointsResponse, error)
+	// RewindMission starts a new mission run at a checkpoint of an earlier
+	// run (ADR-0170). The new run records the earlier run and the checkpoint
+	// as its parent. The call deletes nothing. It requires the same relation
+	// as RunMission: whoever may run the mission may rewind it.
+	RewindMission(context.Context, *RewindMissionRequest) (*RewindMissionResponse, error)
 	// ListMissionDefinitions returns all installed mission definitions.
 	ListMissionDefinitions(context.Context, *ListMissionDefinitionsRequest) (*ListMissionDefinitionsResponse, error)
 	// ListCatalogMissions returns the mission definitions gibson ships compiled
@@ -1057,6 +1095,12 @@ func (UnimplementedDaemonServiceServer) ResumeMission(*ResumeMissionRequest, grp
 }
 func (UnimplementedDaemonServiceServer) GetMissionHistory(context.Context, *GetMissionHistoryRequest) (*GetMissionHistoryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetMissionHistory not implemented")
+}
+func (UnimplementedDaemonServiceServer) GetMissionCheckpoints(context.Context, *GetMissionCheckpointsRequest) (*GetMissionCheckpointsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetMissionCheckpoints not implemented")
+}
+func (UnimplementedDaemonServiceServer) RewindMission(context.Context, *RewindMissionRequest) (*RewindMissionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RewindMission not implemented")
 }
 func (UnimplementedDaemonServiceServer) ListMissionDefinitions(context.Context, *ListMissionDefinitionsRequest) (*ListMissionDefinitionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListMissionDefinitions not implemented")
@@ -1423,6 +1467,42 @@ func _DaemonService_GetMissionHistory_Handler(srv interface{}, ctx context.Conte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DaemonServiceServer).GetMissionHistory(ctx, req.(*GetMissionHistoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DaemonService_GetMissionCheckpoints_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetMissionCheckpointsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DaemonServiceServer).GetMissionCheckpoints(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DaemonService_GetMissionCheckpoints_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DaemonServiceServer).GetMissionCheckpoints(ctx, req.(*GetMissionCheckpointsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DaemonService_RewindMission_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RewindMissionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DaemonServiceServer).RewindMission(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DaemonService_RewindMission_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DaemonServiceServer).RewindMission(ctx, req.(*RewindMissionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1957,6 +2037,14 @@ var DaemonService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetMissionHistory",
 			Handler:    _DaemonService_GetMissionHistory_Handler,
+		},
+		{
+			MethodName: "GetMissionCheckpoints",
+			Handler:    _DaemonService_GetMissionCheckpoints_Handler,
+		},
+		{
+			MethodName: "RewindMission",
+			Handler:    _DaemonService_RewindMission_Handler,
 		},
 		{
 			MethodName: "ListMissionDefinitions",
