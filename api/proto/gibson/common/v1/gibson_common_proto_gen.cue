@@ -17,6 +17,38 @@ package commonpb
 	retryable?: bool   @protobuf(4,bool)
 }
 
+// ErrorDetail is the one error-detail message of the API (ADR-0028, rule 4).
+// The daemon attaches it to the details of each error status. A client reads
+// it from the status details and needs no parser for each service.
+#ErrorDetail: {
+	// code is the standard error code.
+	code?: #ErrorCode @protobuf(1,ErrorCode,"(buf.validate.field).enum=")
+
+	// reason is a stable name for the cause, in upper snake case, for example
+	// MISSION_NOT_FOUND. A client can branch on it. The text of the status
+	// message can change, and the reason does not.
+	reason?: string @protobuf(2,string,"(buf.validate.field).string=")
+
+	// field_errors holds one entry for each field of the request that broke a
+	// rule. A protovalidate failure fills it. It is empty for an error that
+	// is not about the request.
+	fieldErrors?: [...#FieldError] @protobuf(3,FieldError,name=field_errors)
+}
+
+// FieldError describes one field of a request that broke one rule.
+#FieldError: {
+	// field is the path of the field in the request, for example
+	// definition.nodes["scan"].starts_from.
+	field?: string @protobuf(1,string,"(buf.validate.field).string=")
+
+	// rule is the id of the rule that the field broke, for example
+	// string.max_len. It is empty when the rule has no id.
+	rule?: string @protobuf(2,string,"(buf.validate.field).string=")
+
+	// message tells a person what is wrong with the field.
+	message?: string @protobuf(3,string,"(buf.validate.field).string=")
+}
+
 // NullValue represents a null value in TypedValue
 #NullValue:
 	#NULL_VALUE_UNSPECIFIED
