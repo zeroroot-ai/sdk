@@ -138,9 +138,9 @@ jobs:
       - name: Registry coverage
         run: go test -v ./auth/registry/...
 
-      # ADR-0058. The make target is the one implementation: the go.mod check
-      # and the typed import check. This step used to carry its own copy of the
-      # go.mod grep, which matched gibson-executor too (sdk#178).
+      # ADR-0058. The make target is the typed import check. The go.mod half
+      # of the rule is the permissive-floor job below, which refuses every
+      # restrictive first-party module.
       - name: Check no gibson dependency
         run: make check-no-gibson
 
@@ -281,14 +281,14 @@ jobs:
       - name: A failed fan-out shard can still redden the run
         run: bash scripts/check-fanout-failure-visible.sh .github/workflows/fan-out.yml
 
-      # The two checks sdk-checks runs through make: a go.mod that requires
-      # gibson is refused, and a renumbered proto field is refused.
+      # The wire contract check that sdk-checks runs through make: a
+      # renumbered proto field is refused.
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
 
-      - name: Mutation-test the boundary and wire contract checks
-        run: bash scripts/__tests__/check-wire-and-boundary.test.sh
+      - name: Mutation-test the wire contract check
+        run: bash scripts/__tests__/check-wire-contract.test.sh
 
   # ---- THE required status check (sdk#79) ----
   # One context, transitively covering every gate above. The ruleset in
@@ -309,6 +309,7 @@ jobs:
     name: ci-required
     if: always()
     needs:
+      - permissive-floor
       - fast
       - heavy
       - lint
@@ -323,3 +324,9 @@ jobs:
         env:
           GATE_RESULTS: ${{ toJSON(needs) }}
         run: bash scripts/ci-required-gate.sh
+
+  # ADR-0089: a permissive repo must not depend on a restrictive repo. Every
+  # go.mod here may require a first-party module only when it is sdk, adk,
+  # setec or ast-checks (zeroroot-ai/.github#202).
+  permissive-floor:
+    uses: zeroroot-ai/.github/.github/workflows/permissive-floor.yml@6815b30d4c26537972433711f0d86ddf73bb6c41 # v0.13.0

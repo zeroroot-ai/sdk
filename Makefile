@@ -292,10 +292,10 @@ coverage-baseline: coverage-profile
 # The SDK is the lowest-level module (like k8s.io/api or go.etcd.io/etcd/api).
 # The daemon imports the SDK, never the reverse.
 check-no-gibson:
-	# go.mod check. CI runs this same target (sdk#178), so the rule has one
-	# implementation and scripts/__tests__/check-wire-and-boundary.test.sh is
-	# its failing fixture.
-	@bash scripts/check-no-gibson-gomod.sh go.mod
+	# The go.mod half of this rule is the org permissive-floor workflow, which
+	# go-ci.yml calls on every pull request (ADR-0089, sdk#193). It refuses
+	# every restrictive first-party module, gibson among them, so this repo
+	# keeps no go.mod check of its own.
 	# .go import check: typed AST inspection via the ast-checks harness.
 	# Replaces the previous grep — catches aliased imports the grep misses.
 	# See check_no_gibson_test.go.

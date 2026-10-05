@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Fixture for the two checks CI did not run: the go.mod half of
-# `make check-no-gibson` (sdk#178) and `make proto-breaking` (sdk#177).
+# Fixture for `make proto-breaking` (sdk#177). The go.mod boundary is the org
+# permissive-floor workflow, and its fixture is in zeroroot-ai/.github.
 #
 # Each red case asserts its reason, so a check that starts failing for a
 # different reason is a test failure and not a pass.
@@ -13,33 +13,6 @@ trap 'git worktree remove --force "$wt" >/dev/null 2>&1; rm -rf "$tmp"' EXIT
 
 ok()  { PASS=$((PASS+1)); echo "ok    $1"; }
 bad() { FAIL=$((FAIL+1)); echo "FAIL  $1"; }
-
-# ---- go.mod boundary -------------------------------------------------------
-gomod() { printf 'module github.com/zeroroot-ai/sdk\n\ngo 1.27.1\n\nrequire (\n%s\n)\n' "$1" > "$tmp/go.mod"; }
-
-red_gomod() { # red_gomod <name> <require lines>
-  gomod "$2"
-  out="$(bash scripts/check-no-gibson-gomod.sh "$tmp/go.mod" 2>&1)"; rc=$?
-  if [ "$rc" -eq 1 ] && [[ "$out" == *"must not depend on github.com/zeroroot-ai/gibson"* ]]; then ok "$1"
-  else bad "$1 (rc=$rc): $out"; fi
-}
-green_gomod() {
-  gomod "$2"
-  out="$(bash scripts/check-no-gibson-gomod.sh "$tmp/go.mod" 2>&1)"; rc=$?
-  if [ "$rc" -eq 0 ]; then ok "$1"; else bad "$1 was blocked: $out"; fi
-}
-
-red_gomod   "a direct requirement on gibson is refused"       $'\tgithub.com/zeroroot-ai/gibson v0.150.1'
-red_gomod   "an indirect requirement on gibson is refused"    $'\tgithub.com/zeroroot-ai/gibson v0.150.1 // indirect'
-red_gomod   "a gibson sub-module is refused"                  $'\tgithub.com/zeroroot-ai/gibson/pkg/billing v0.1.0'
-# The exact module path, never a substring.
-green_gomod "gibson-executor is a different module"           $'\tgithub.com/zeroroot-ai/gibson-executor v0.90.0'
-green_gomod "a go.mod with no gibson requirement passes"      $'\tgithub.com/zeroroot-ai/ast-checks v0.6.0'
-
-: > "$tmp/go.mod"
-out="$(bash scripts/check-no-gibson-gomod.sh "$tmp/go.mod" 2>&1)"; rc=$?
-if [ "$rc" -eq 2 ] && [[ "$out" == *"read nothing"* ]]; then ok "an empty go.mod is an error, not a pass"
-else bad "an empty go.mod (rc=$rc): $out"; fi
 
 # ---- wire contract ---------------------------------------------------------
 # The real target against the real protos, in a throwaway worktree of HEAD. The
@@ -73,5 +46,5 @@ git branch -D wire-fixture-base >/dev/null 2>&1 || true
 
 echo
 echo "passed=$PASS failed=$FAIL"
-if [ "$FAIL" -eq 0 ] && [ "$PASS" -lt 9 ]; then echo "FAIL: only $PASS case(s) ran, want 9"; exit 1; fi
+if [ "$FAIL" -eq 0 ] && [ "$PASS" -lt 3 ]; then echo "FAIL: only $PASS case(s) ran, want 3"; exit 1; fi
 [ "$FAIL" -eq 0 ]
