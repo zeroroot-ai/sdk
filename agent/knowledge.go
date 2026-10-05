@@ -87,7 +87,7 @@ func (s RunScope) String() string {
 // not. Only the graph nodes fall in the second case — their Go originals live in
 // gibson's internal packages, which the SDK cannot import.
 type KnowledgeReader interface {
-	// QueryNodes is the SDK search primitive (ADR-0122): how an agent queries
+	// QueryNodes is the SDK search primitive (ADR-0161): how an agent queries
 	// the shared knowledge graph and prior knowledge — entities, findings,
 	// hypotheses, reputation — instead of re-discovering what the fleet
 	// already knows. It searches with hybrid vector + graph scoring, by node
