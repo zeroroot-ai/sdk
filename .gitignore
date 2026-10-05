@@ -36,7 +36,7 @@ go.work.sum
 # .pb.go / _grpc.pb.go ARE the published artifact and must be present at every
 # commit and tag. They were previously gitignored + force-added, which let a
 # plain `git add` silently drop new files and ship an incomplete module
-# (ADR-0039 / sdk#63). They are now committed normally; the CI drift gate
+# (sdk#63). They are now committed normally; the CI drift gate
 # (`make generate && git diff --exit-code api/gen/`) keeps them in sync with the
 # protos. Codegen is deterministic — plugin versions are pinned in the Makefile.
 

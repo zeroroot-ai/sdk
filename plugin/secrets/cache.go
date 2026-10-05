@@ -7,8 +7,8 @@
 //
 // This package (github.com/zeroroot-ai/sdk/plugin/secrets) is the plugin
 // author's only path to credentials. The daemon-side broker interface
-// (previously at github.com/zeroroot-ai/sdk/secrets) has moved to the
-// private platform-clients module per ADR-0025 / ADR-0030; this package
+// (previously at github.com/zeroroot-ai/sdk/secrets) has moved to
+// gibson per ADR-0058; this package
 // remains in the OSS SDK because customer plugin authors import it.
 //
 // Spec: plugin-runtime Requirement 3.

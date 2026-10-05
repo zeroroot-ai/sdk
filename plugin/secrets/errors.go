@@ -7,8 +7,8 @@
 // (or wrapping any callback error). Callers test with errors.Is.
 //
 // Historically these sentinels lived in github.com/zeroroot-ai/sdk/secrets
-// alongside the daemon-side broker interface. The broker has moved to the
-// private platform-clients module (see ADR-0025 / ADR-0030); this plugin
+// alongside the daemon-side broker interface. The broker has moved to
+// gibson (see ADR-0058); this plugin
 // client retains a minimal local copy of the sentinel names so customer
 // plugins can compile without importing daemon-internal types.
 //

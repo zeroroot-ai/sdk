@@ -676,7 +676,7 @@ verify-idempotent:
 #           git rm --cached -r api/gen/ -> commit -> push main
 release-prep: generate
 	@echo ""
-	@echo "Generated bindings refreshed under api/gen/ — now TRACKED SOURCE (ADR-0039)."
+	@echo "Generated bindings refreshed under api/gen/ — now TRACKED SOURCE."
 	@echo "No force-add and no post-tag 'git rm --cached' ritual. Commit normally:"
 	@echo "  git add api/gen/ && git commit"
 	@echo "Releases go through release-please; the CI 'proto bindings drift gate'"

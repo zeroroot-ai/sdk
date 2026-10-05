@@ -155,7 +155,7 @@ jobs:
             exit 1
           }
 
-      # api/gen/ is TRACKED SOURCE (ADR-0039). This gate fails if the committed
+      # api/gen/ is TRACKED SOURCE. This gate fails if the committed
       # Go bindings drift from the protos OR if newly-generated files were not
       # committed -- the failure mode that shipped an incomplete v0.129.0.
       # Codegen is deterministic (plugin versions pinned in the Makefile).
@@ -227,7 +227,7 @@ jobs:
 
       # No protoc plugin install: the coverage profile is built by
       # `go test ./...` against the COMMITTED api/gen/ bindings (tracked
-      # source, ADR-0039) — nothing in the test run invokes protoc-gen-go /
+      # source) — nothing in the test run invokes protoc-gen-go /
       # protoc-gen-go-grpc, and buf is a go.mod tool dependency. The
       # previous hardcoded `go install ...@vX` step was a stale duplicate
       # of the Makefile pin (sdk#427).
