@@ -170,6 +170,7 @@ MissionNode represents a single node in a mission DAG
 | `data_policy` | `gibson.mission.v1.DataPolicy` | 13 | DataPolicy defines data handling policy for this node.  Deprecated: data reuse + scoping are no longer node-declared. Under the ECS brain (ADR-0101) reuse is implicit in the event-sourced World and scoping flows from scope-relative identity (ADR-0102) + ambient projection. The field is retained wire-compatibly for old definitions but is ignored by the engine. |
 | `metadata` | `map<string, string>` | 14 | Metadata contains additional custom metadata for this node |
 | `reuse_policy` | `gibson.mission.v1.ReusePolicy` | 16 | ReusePolicy declares how this node's I/O is scoped + reused across mission runs.  Deprecated: superseded by the ECS brain (ADR-0101). Reuse is implicit in the World; scoping is via scope-relative identity (ADR-0102) + ambient projection. Retained wire-compatibly but ignored by the engine. |
+| `research` | `bool` | 19 | Research marks a node that gathers information from outside the targets of the mission. A research node has unrestricted egress. Every other node reaches only the targets bound to it. |
 
 ## `gibson.mission.v1.MissionSecrets`
 

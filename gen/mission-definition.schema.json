@@ -508,6 +508,10 @@
           "description": "Name is a human-readable name for the node",
           "type": "string"
         },
+        "research": {
+          "description": "Research marks a node that gathers information from outside the targets of the mission. A research node has unrestricted egress. Every other node reaches only the targets bound to it.",
+          "type": "boolean"
+        },
         "retryPolicy": {
           "$ref": "#/$defs/RetryPolicy",
           "description": "RetryPolicy defines retry behavior for this node"

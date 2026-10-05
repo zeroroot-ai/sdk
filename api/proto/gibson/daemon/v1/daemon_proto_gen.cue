@@ -31,8 +31,7 @@
 // ---------------------------------------------------------------------------
 
 // GetMissionCheckpointsRequest/Response and CheckpointInfo (previously
-// defined here) were removed with the retired GetMissionCheckpoints RPC
-// (ADR-0011).
+// defined here) were removed with the retired GetMissionCheckpoints RPC.
 
 // MissionConstraints message removed under ADR 0004,
 // "Canonical MissionConstraints".
@@ -100,7 +99,7 @@
 // Checkpoint, DagStep, FindingSnapshot, ParallelGroupState,
 // BlobReference, DiffCheckpointsRequest/Response, CheckpointDiff and
 // its delta messages), previously defined here, were removed with the
-// retired checkpoint RPCs (ADR-0011).
+// retired checkpoint RPCs.
 
 // ---------------------------------------------------------------------------
 // CUE mission editor messages (mission-cue-editor epic)
