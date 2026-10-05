@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.196.0](https://github.com/zeroroot-ai/sdk/compare/v0.195.0...v0.196.0) (2026-10-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* **proto:** each list request uses page_size and page_token ([#232](https://github.com/zeroroot-ai/sdk/issues/232))
+
+### Features
+
+* **proto:** each list request uses page_size and page_token ([#232](https://github.com/zeroroot-ai/sdk/issues/232)) ([6e65e63](https://github.com/zeroroot-ai/sdk/commit/6e65e63e92fade4679a2fe0279a47b71d75a5639)), closes [#186](https://github.com/zeroroot-ai/sdk/issues/186)
+* **proto:** each request of an sdk service states its field rules ([#231](https://github.com/zeroroot-ai/sdk/issues/231)) ([2aed98d](https://github.com/zeroroot-ai/sdk/commit/2aed98d32fce3eb8453396e0ccab4be142fbcca8)), closes [#185](https://github.com/zeroroot-ai/sdk/issues/185)
+
+
+### Bug Fixes
+
+* **proto:** the BuildComponent and ShowComponent RPCs leave the wire ([#229](https://github.com/zeroroot-ai/sdk/issues/229)) ([7ceff51](https://github.com/zeroroot-ai/sdk/commit/7ceff51c1ef197236a1958192de1fa94c30d462c))
+* **proto:** the secrets config messages match the copy that the daemon serves ([#230](https://github.com/zeroroot-ai/sdk/issues/230)) ([289a02c](https://github.com/zeroroot-ai/sdk/commit/289a02ceca0dbbac47f280b893b992d50aaeceda))
+
 ## [0.195.0](https://github.com/zeroroot-ai/sdk/compare/v0.194.0...v0.195.0) (2026-10-05)
 
 
