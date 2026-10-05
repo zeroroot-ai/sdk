@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.193.0](https://github.com/zeroroot-ai/sdk/compare/v0.192.3...v0.193.0) (2026-10-05)
+
+
+### Features
+
+* **proto:** a proof names its recorded tool calls, and a node can be a research node ([#204](https://github.com/zeroroot-ai/sdk/issues/204)) ([d0f8aad](https://github.com/zeroroot-ai/sdk/commit/d0f8aad72cc96bb95f433e6b25e6070c4174cfdf)), closes [#203](https://github.com/zeroroot-ai/sdk/issues/203)
+
 ## [0.192.3](https://github.com/zeroroot-ai/sdk/compare/v0.192.2...v0.192.3) (2026-10-05)
 
 
