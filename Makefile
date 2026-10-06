@@ -587,8 +587,9 @@ mission-authoring-bundle: mission-jsonschema mission-docs
 # origin/<branch> is used when it exists and the bare name is the fallback, so a
 # detached CI checkout without remote refs still works.
 #
-# The rule is FILE (buf.yaml, ADR-0028 rule 5). The selftest runs first: a
-# renamed field must fail, which WIRE would permit (sdk#208).
+# The rule is WIRE_JSON (buf.yaml, ADR-0028 rule 5). The selftest runs first:
+# a renamed field must fail, because its JSON name changes, and a deleted field
+# with a reserved number and name must pass.
 #
 # There is no override. The target used to pass when the pull request body held
 # the text "buf:breaking:ignore": a marker that proves itself by existing, which
