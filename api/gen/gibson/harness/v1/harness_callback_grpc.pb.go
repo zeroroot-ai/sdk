@@ -85,6 +85,7 @@ const (
 	HarnessCallbackService_OpenJob_FullMethodName                         = "/gibson.harness.v1.HarnessCallbackService/OpenJob"
 	HarnessCallbackService_SendInput_FullMethodName                       = "/gibson.harness.v1.HarnessCallbackService/SendInput"
 	HarnessCallbackService_CloseJob_FullMethodName                        = "/gibson.harness.v1.HarnessCallbackService/CloseJob"
+	HarnessCallbackService_ClaimFork_FullMethodName                       = "/gibson.harness.v1.HarnessCallbackService/ClaimFork"
 )
 
 // HarnessCallbackServiceClient is the client API for HarnessCallbackService service.
@@ -294,6 +295,15 @@ type HarnessCallbackServiceClient interface {
 	// agent, under its grant. A verification agent is the usual caller. It
 	// mirrors gibson.job.v1.JobService.CloseJob.
 	CloseJob(ctx context.Context, in *CloseJobRequest, opts ...grpc.CallOption) (*CloseJobResponse, error)
+	// ClaimFork returns the dispatch of a fork (D74, sdk#248). A fork from a
+	// snapshot starts with the grant of its parent in memory. It calls
+	// ClaimFork first, with that grant, and from then on uses only the grant
+	// of the response. The daemon accepts the call only when sandbox_id is a
+	// fork of the sandbox of the grant, and only one time for each fork.
+	//
+	// Errors: PermissionDenied (the id is not a fork of the grant),
+	// AlreadyExists (the fork was claimed before), InvalidArgument.
+	ClaimFork(ctx context.Context, in *ClaimForkRequest, opts ...grpc.CallOption) (*ClaimForkResponse, error)
 }
 
 type harnessCallbackServiceClient struct {
@@ -1009,6 +1019,16 @@ func (c *harnessCallbackServiceClient) CloseJob(ctx context.Context, in *CloseJo
 	return out, nil
 }
 
+func (c *harnessCallbackServiceClient) ClaimFork(ctx context.Context, in *ClaimForkRequest, opts ...grpc.CallOption) (*ClaimForkResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ClaimForkResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_ClaimFork_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // HarnessCallbackServiceServer is the server API for HarnessCallbackService service.
 // All implementations must embed UnimplementedHarnessCallbackServiceServer
 // for forward compatibility.
@@ -1216,6 +1236,15 @@ type HarnessCallbackServiceServer interface {
 	// agent, under its grant. A verification agent is the usual caller. It
 	// mirrors gibson.job.v1.JobService.CloseJob.
 	CloseJob(context.Context, *CloseJobRequest) (*CloseJobResponse, error)
+	// ClaimFork returns the dispatch of a fork (D74, sdk#248). A fork from a
+	// snapshot starts with the grant of its parent in memory. It calls
+	// ClaimFork first, with that grant, and from then on uses only the grant
+	// of the response. The daemon accepts the call only when sandbox_id is a
+	// fork of the sandbox of the grant, and only one time for each fork.
+	//
+	// Errors: PermissionDenied (the id is not a fork of the grant),
+	// AlreadyExists (the fork was claimed before), InvalidArgument.
+	ClaimFork(context.Context, *ClaimForkRequest) (*ClaimForkResponse, error)
 	mustEmbedUnimplementedHarnessCallbackServiceServer()
 }
 
@@ -1423,6 +1452,9 @@ func (UnimplementedHarnessCallbackServiceServer) SendInput(context.Context, *Sen
 }
 func (UnimplementedHarnessCallbackServiceServer) CloseJob(context.Context, *CloseJobRequest) (*CloseJobResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CloseJob not implemented")
+}
+func (UnimplementedHarnessCallbackServiceServer) ClaimFork(context.Context, *ClaimForkRequest) (*ClaimForkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ClaimFork not implemented")
 }
 func (UnimplementedHarnessCallbackServiceServer) mustEmbedUnimplementedHarnessCallbackServiceServer() {
 }
@@ -2599,6 +2631,24 @@ func _HarnessCallbackService_CloseJob_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HarnessCallbackService_ClaimFork_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClaimForkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HarnessCallbackServiceServer).ClaimFork(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HarnessCallbackService_ClaimFork_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HarnessCallbackServiceServer).ClaimFork(ctx, req.(*ClaimForkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // HarnessCallbackService_ServiceDesc is the grpc.ServiceDesc for HarnessCallbackService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -2849,6 +2899,10 @@ var HarnessCallbackService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CloseJob",
 			Handler:    _HarnessCallbackService_CloseJob_Handler,
+		},
+		{
+			MethodName: "ClaimFork",
+			Handler:    _HarnessCallbackService_ClaimFork_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

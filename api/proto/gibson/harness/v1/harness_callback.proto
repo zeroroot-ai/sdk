@@ -724,6 +724,23 @@ service HarnessCallbackService {
         allowed_identities: 4  // COMPONENT
       };
     }
+
+    // ClaimFork returns the dispatch of a fork (D74, sdk#248). A fork from a
+    // snapshot starts with the grant of its parent in memory. It calls
+    // ClaimFork first, with that grant, and from then on uses only the grant
+    // of the response. The daemon accepts the call only when sandbox_id is a
+    // fork of the sandbox of the grant, and only one time for each fork.
+    //
+    // Errors: PermissionDenied (the id is not a fork of the grant),
+    // AlreadyExists (the fork was claimed before), InvalidArgument.
+    rpc ClaimFork(ClaimForkRequest) returns (ClaimForkResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
 }
 
 // ============================================================================
@@ -3051,4 +3068,35 @@ message CloseJobResponse {
     // job is the job as stored.
     gibson.job.v1.Job job = 1;
     HarnessError error = 2;
+}
+
+// ============================================================================
+// Fork claim (D74, sdk#248)
+// ============================================================================
+
+// ClaimForkRequest names the fork that asks for its dispatch.
+message ClaimForkRequest {
+    // sandbox_id is the hostname of the fork. setec sets the hostname of a
+    // sandbox from its name, so the daemon compares it with the hostname form
+    // of each fork id that the fork call returned.
+    string sandbox_id = 1 [(buf.validate.field).string = { min_len: 1, max_len: 253 }];
+}
+
+// ClaimForkResponse is the dispatch of the fork. It holds the values that a
+// launch gives to a new sandbox through its environment.
+message ClaimForkResponse {
+    // grant is the capability grant of the fork. The fork uses it for each
+    // later call. The grant of the parent does not work in the fork.
+    string grant = 1;
+    // mission_id, mission_run_id and agent_run_id scope the callbacks of the
+    // fork.
+    string mission_id = 2;
+    string mission_run_id = 3;
+    string agent_run_id = 4;
+    // node_id is the mission node that the fork runs.
+    string node_id = 5;
+    // model is the model resolved for the tenant for this dispatch.
+    string model = 6;
+    // task is the task that the fork runs.
+    gibson.types.v1.Task task = 7;
 }

@@ -53,6 +53,13 @@ type CreateMissionOpts struct {
 	//
 	// Only meaningful alongside CatalogMission.
 	CatalogParams map[string]string `json:"catalog_params,omitempty"`
+
+	// StartsFromCallerState makes the first node of the new mission start
+	// from the current state of the calling agent (ADR-0169). The daemon forks
+	// the caller. In the caller, CreateMission returns as before. In the fork,
+	// CreateMission returns *fork.ErrForked, which holds the dispatch of the
+	// fork: run its task (D74).
+	StartsFromCallerState bool `json:"starts_from_caller_state,omitempty"`
 }
 
 // RunMissionOpts configures mission execution behavior.

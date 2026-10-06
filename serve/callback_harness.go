@@ -31,6 +31,7 @@ import (
 	typespb "github.com/zeroroot-ai/sdk/api/gen/gibson/types/v1"
 	"github.com/zeroroot-ai/sdk/codegen/workspace"
 	"github.com/zeroroot-ai/sdk/finding"
+	"github.com/zeroroot-ai/sdk/fork"
 	"github.com/zeroroot-ai/sdk/graphrag"
 	harnessconst "github.com/zeroroot-ai/sdk/harness"
 	"github.com/zeroroot-ai/sdk/llm"
@@ -49,6 +50,11 @@ type CallbackHarness struct {
 	// Core dependencies
 	client       *CallbackClient
 	tokenTracker llm.TokenTracker
+
+	// forkWatcher holds the sandbox id at harness start, before a fork can
+	// happen. A fork copies it, so it tells a fork from its parent (D74). It is
+	// nil when the hostname cannot be read.
+	forkWatcher *fork.Watcher
 
 	// Context
 	logger         *slog.Logger
@@ -97,6 +103,14 @@ func NewCallbackHarness(client *CallbackClient, opts ...CallbackHarnessOption) *
 
 	for _, opt := range opts {
 		opt(h)
+	}
+
+	if h.forkWatcher == nil {
+		w, err := fork.NewWatcher()
+		if err != nil {
+			h.logger.Warn("cannot read the sandbox id; a mission that forks this process is refused", "error", err)
+		}
+		h.forkWatcher = w
 	}
 
 	// Fetch taxonomy at startup (non-blocking, with graceful degradation)
@@ -1056,7 +1070,34 @@ func (h *CallbackHarness) CreateMission(ctx context.Context, missionDef any, tar
 		return nil, err
 	}
 
+	forks := opts != nil && opts.StartsFromCallerState
+	if forks && h.forkWatcher == nil {
+		err := errors.New("CreateMission: StartsFromCallerState needs the sandbox id of this process, and the hostname cannot be read")
+		span.RecordError(err)
+		return nil, err
+	}
+
 	resp, err := h.client.CreateMission(ctx, req)
+
+	// The daemon forks this process while the call is open. In the parent the
+	// call returns as before. In a fork the open call fails, because the fork
+	// has a new network identity, and the process claims its own dispatch
+	// (D74, sdk#248).
+	if forks {
+		claim, perr := fork.Point(ctx, h.forkWatcher, h.client)
+		if perr != nil {
+			span.RecordError(perr)
+			return nil, perr
+		}
+		if claim != nil {
+			if aerr := h.client.ApplyClaim(claim); aerr != nil {
+				span.RecordError(aerr)
+				return nil, aerr
+			}
+			return nil, &fork.ErrForked{Claim: claim}
+		}
+	}
+
 	if err != nil {
 		span.RecordError(err)
 		return nil, fmt.Errorf("create mission callback failed: %w", err)
@@ -1126,6 +1167,10 @@ func buildCreateMissionRequest(
 
 		if opts.Metadata != nil {
 			req.Metadata = ToTypedMap(opts.Metadata)
+		}
+
+		if opts.StartsFromCallerState {
+			req.StartsFrom = harnesspb.OriginationStart_ORIGINATION_START_CALLER_STATE
 		}
 	}
 

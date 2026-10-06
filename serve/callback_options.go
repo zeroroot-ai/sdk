@@ -6,6 +6,7 @@ package serve
 import (
 	"log/slog"
 
+	"github.com/zeroroot-ai/sdk/fork"
 	"github.com/zeroroot-ai/sdk/types"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
@@ -39,6 +40,14 @@ func WithCallbackMission(m types.MissionContext) CallbackHarnessOption {
 }
 
 // WithCallbackTarget sets the target information for the harness.
+// WithCallbackForkWatcher sets the watcher that tells a fork from its parent
+// (D74). The default reads the hostname at harness start.
+func WithCallbackForkWatcher(w *fork.Watcher) CallbackHarnessOption {
+	return func(h *CallbackHarness) {
+		h.forkWatcher = w
+	}
+}
+
 func WithCallbackTarget(t types.TargetInfo) CallbackHarnessOption {
 	return func(h *CallbackHarness) {
 		h.target = t
