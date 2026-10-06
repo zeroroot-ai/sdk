@@ -151,8 +151,9 @@ message AgentIdentity {
   bool revoked = 7;
   reserved 6;
   reserved "last_authenticated_at";
-  reserved 8;
-  reserved "created_by_subject";
+  // created_by_subject is the bare subject of the person who created the
+  // identity. hosted test/demo/exit-test-enrollment.sh reads it.
+  string created_by_subject = 8;
 }
 
 // ListAgentIdentitiesResponse is the output of
