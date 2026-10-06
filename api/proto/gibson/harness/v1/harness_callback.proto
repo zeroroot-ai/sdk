@@ -2440,21 +2440,6 @@ enum MissionStatus {
     MISSION_STATUS_CANCELLED = 6;
 }
 
-// MissionConstraints limits mission execution to prevent resource exhaustion.
-//
-// Deprecated: use gibson.mission.v1.MissionConstraints via the
-// canonical_constraints field on CreateMissionRequest instead.
-// This type will be removed in a follow-up release after all microVM
-// consumers have migrated.
-message MissionConstraints {
-    option deprecated = true;
-
-    int64 max_duration_ms = 1;   // Maximum duration in milliseconds (0 = no limit)
-    int64 max_tokens = 2;         // Maximum LLM tokens (0 = no limit)
-    double max_cost = 3;          // Maximum dollar cost (0 = no limit)
-    int32 max_findings = 4;       // Maximum findings count (0 = no limit)
-}
-
 // MissionMetrics aggregates execution statistics.
 message MissionMetrics {
     int64 duration_ms = 1;        // Total execution time in milliseconds
@@ -2528,19 +2513,18 @@ message CreateMissionRequest {
     string target_id = 3 [(buf.validate.field).string = { max_len: 1024 }];
     string name = 4 [(buf.validate.field).string = { max_len: 1024 }]; // Optional human-readable name
 
-    // Deprecated: use canonical_constraints (field 8) instead.
-    // constraints uses the harness-local MissionConstraints shape which only
-    // carries max_duration_ms (int64 ms), max_tokens, max_cost, and max_findings.
-    // It will be removed in a follow-up release once all microVM consumers
-    // have migrated to canonical_constraints.
-    MissionConstraints constraints = 5 [deprecated = true];
+    // Field 5 held the older harness constraint message. ADR 0004 makes
+    // gibson.mission.v1.MissionConstraints the one constraint type, so
+    // canonical_constraints (field 8) carries the constraints. The number and
+    // name stay reserved so that they are never used again.
+    reserved 5;
+    reserved "constraints";
 
     map<string, gibson.common.v1.TypedValue> metadata = 6;
     repeated string tags = 7;
 
     // canonical_constraints carries the platform-canonical
     // gibson.mission.v1.MissionConstraints type (ADR 0004).
-    // Prefer this field over the deprecated constraints (field 5).
     // The daemon merges canonical_constraints with any constraints baked
     // into the mission definition (dispatch wins on conflict).
     // Absent means no dispatch-time constraint overrides.
