@@ -238,6 +238,7 @@ func TestErrForkedNamesTheFork(t *testing.T) {
 // hostname at the time of the call, so the first call of a fork carries the id
 // of the fork.
 func TestTheInterceptorsSendTheCurrentSandboxID(t *testing.T) {
+	t.Setenv(EnvIdentitySocket, "")
 	h := &host{name: "sbx-parent"}
 	useHost(t, h)
 

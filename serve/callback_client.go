@@ -149,9 +149,10 @@ func (c *CallbackClient) Connect(ctx context.Context) error {
 		dialOpts = append(dialOpts, grpc.WithPerRPCCredentials(c.perRPCCreds))
 	}
 
-	// Each call carries the sandbox id of the process, read at the time of the
-	// call, so the daemon can tell a fork from its parent (D74, sdk#248). The
-	// keepalive keeps an idle callback connection open.
+	// Each call carries a new setec identity token and the hostname of the
+	// process, read at the time of the call, so the daemon can tell a fork
+	// from its parent (D74, sdk#251). The keepalive keeps an idle callback
+	// connection open.
 	dialOpts = append(dialOpts,
 		grpc.WithChainUnaryInterceptor(fork.UnaryClientInterceptor()),
 		grpc.WithChainStreamInterceptor(fork.StreamClientInterceptor()),
@@ -1131,9 +1132,16 @@ func (c *CallbackClient) GetMissionRunHistory(ctx context.Context, req *harnessp
 // ClaimFork asks the daemon for the dispatch of this process as a fork (D74,
 // sdk#248). Call it with the grant of the parent, before any other call of the
 // fork. It implements fork.Claimer.
+//
+// The daemon knows the fork only from its setec identity token, which the
+// interceptors of the client send. A process with no identity socket cannot
+// claim, so ClaimFork refuses it before the call.
 func (c *CallbackClient) ClaimFork(ctx context.Context, sandboxID string) (*fork.Claim, error) {
 	if !c.IsConnected() {
 		return nil, errors.New("ClaimFork: client not connected")
+	}
+	if fork.IdentitySocket() == "" {
+		return nil, fmt.Errorf("ClaimFork: %w", fork.ErrNoSandboxIdentity)
 	}
 	ctx = c.contextWithMetadata(ctx)
 	resp, err := c.client.ClaimFork(ctx, &harnesspb.ClaimForkRequest{SandboxId: sandboxID})
