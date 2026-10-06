@@ -343,7 +343,7 @@ func withSandboxIdentity(ctx context.Context) (context.Context, error) {
 	switch {
 	case errors.Is(err, ErrNoSandboxIdentity):
 	case err != nil:
-		return ctx, status.Error(codes.Unauthenticated, err.Error())
+		return ctx, status.Errorf(codes.Unauthenticated, "%v", err)
 	default:
 		ctx = metadata.AppendToOutgoingContext(ctx, MetadataSandboxIdentity, token)
 	}

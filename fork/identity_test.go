@@ -88,7 +88,7 @@ func serveIdentitySocket(t *testing.T, s http.Handler) string {
 
 // identityConn returns a client connection with the interceptors of the
 // contract to a server that records the identity metadata of each call.
-func identityConn(t *testing.T) (*grpc.ClientConn, <-chan metadata.MD) {
+func identityConn(t *testing.T) (conn *grpc.ClientConn, calls <-chan metadata.MD) {
 	t.Helper()
 	got := make(chan metadata.MD, 8)
 	lis := bufconn.Listen(1 << 20)
