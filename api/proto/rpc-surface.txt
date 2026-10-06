@@ -123,6 +123,7 @@ gibson.harness.v1.HarnessCallbackService/Authorize
 gibson.harness.v1.HarnessCallbackService/CallToolProto
 gibson.harness.v1.HarnessCallbackService/CallToolProtoStream
 gibson.harness.v1.HarnessCallbackService/CancelMission
+gibson.harness.v1.HarnessCallbackService/ClaimFork
 gibson.harness.v1.HarnessCallbackService/CloseJob
 gibson.harness.v1.HarnessCallbackService/CreateMission
 gibson.harness.v1.HarnessCallbackService/DelegateToAgent

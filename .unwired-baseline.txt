@@ -1353,3 +1353,11 @@ var secrets.ErrNotFound	# plugin/secrets/errors.go:28
 var toolerr.ErrBinaryNotFound	# toolerr/error.go:211
 var toolerr.ErrInvalidInput	# toolerr/error.go:217
 var toolerr.ErrTimeout	# toolerr/error.go:214
+
+# The runtime fork contract (D74, sdk#248) for a oneshot driver. No Go oneshot driver is in this module: the zerocool-plugins drivers and the daemon tests of gibson#802 and gibson#803 use it.
+field fork.Claim.Model	# fork/fork.go
+func fork.Forkable	# fork/fork.go
+func fork.IsForkUnclaimed	# fork/fork.go
+func fork.Park	# fork/fork.go
+func fork.ParkTimeout	# fork/fork.go
+method fork.ErrForked.Error	# fork/fork.go

@@ -19,6 +19,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	harnesspb "github.com/zeroroot-ai/sdk/api/gen/gibson/harness/v1"
+	"github.com/zeroroot-ai/sdk/fork"
 )
 
 // CallbackClient manages the gRPC connection to the orchestrator's HarnessCallbackService.
@@ -148,12 +149,18 @@ func (c *CallbackClient) Connect(ctx context.Context) error {
 		dialOpts = append(dialOpts, grpc.WithPerRPCCredentials(c.perRPCCreds))
 	}
 
-	// Add keepalive configuration
-	dialOpts = append(dialOpts, grpc.WithKeepaliveParams(keepalive.ClientParameters{
-		Time:                10 * time.Second,
-		Timeout:             5 * time.Second,
-		PermitWithoutStream: true,
-	}))
+	// Each call carries the sandbox id of the process, read at the time of the
+	// call, so the daemon can tell a fork from its parent (D74, sdk#248). The
+	// keepalive keeps an idle callback connection open.
+	dialOpts = append(dialOpts,
+		grpc.WithChainUnaryInterceptor(fork.UnaryClientInterceptor()),
+		grpc.WithChainStreamInterceptor(fork.StreamClientInterceptor()),
+		grpc.WithKeepaliveParams(keepalive.ClientParameters{
+			Time:                10 * time.Second,
+			Timeout:             5 * time.Second,
+			PermitWithoutStream: true,
+		}),
+	)
 
 	// Create context with timeout for connection establishment
 	connCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
@@ -232,12 +239,15 @@ func (c *CallbackClient) contextInfo() *harnesspb.ContextInfo {
 
 // contextWithMetadata creates a context with authentication metadata if a token is set.
 func (c *CallbackClient) contextWithMetadata(ctx context.Context) context.Context {
-	if c.token == "" {
+	c.mu.RLock()
+	token := c.token
+	c.mu.RUnlock()
+	if token == "" {
 		return ctx
 	}
 
 	md := metadata.New(map[string]string{
-		"authorization": "Bearer " + c.token,
+		"authorization": "Bearer " + token,
 	})
 	return metadata.NewOutgoingContext(ctx, md)
 }
@@ -1116,4 +1126,53 @@ func (c *CallbackClient) GetMissionRunHistory(ctx context.Context, req *harnessp
 		return nil, fmt.Errorf("GetMissionRunHistory: %w", err)
 	}
 	return resp, nil
+}
+
+// ClaimFork asks the daemon for the dispatch of this process as a fork (D74,
+// sdk#248). Call it with the grant of the parent, before any other call of the
+// fork. It implements fork.Claimer.
+func (c *CallbackClient) ClaimFork(ctx context.Context, sandboxID string) (*fork.Claim, error) {
+	if !c.IsConnected() {
+		return nil, errors.New("ClaimFork: client not connected")
+	}
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.ClaimFork(ctx, &harnesspb.ClaimForkRequest{SandboxId: sandboxID})
+	if err != nil {
+		return nil, fmt.Errorf("ClaimFork: %w", err)
+	}
+	return &fork.Claim{
+		SandboxID:    sandboxID,
+		Grant:        resp.GetGrant(),
+		MissionID:    resp.GetMissionId(),
+		MissionRunID: resp.GetMissionRunId(),
+		AgentRunID:   resp.GetAgentRunId(),
+		NodeID:       resp.GetNodeId(),
+		Model:        resp.GetModel(),
+		Task:         resp.GetTask(),
+	}, nil
+}
+
+// ApplyClaim makes the client act for the fork of the claim: each later call
+// carries the grant and the ids of the claim. The grant of the parent is not
+// sent again.
+//
+// A client with per-RPC credentials cannot change its grant, because the
+// credentials are fixed at dial time. ApplyClaim refuses it.
+func (c *CallbackClient) ApplyClaim(claim *fork.Claim) error {
+	if claim == nil || claim.Grant == "" {
+		return errors.New("ApplyClaim: the claim has no grant")
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.perRPCCreds != nil {
+		return errors.New("ApplyClaim: the client sends per-RPC credentials, which cannot carry the grant of the fork")
+	}
+	c.token = claim.Grant
+	c.missionID = claim.MissionID
+	c.missionRunID = claim.MissionRunID
+	c.agentRunID = claim.AgentRunID
+	if claim.Task != nil {
+		c.taskID = claim.Task.GetId()
+	}
+	return nil
 }
