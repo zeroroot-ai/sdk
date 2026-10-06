@@ -76,8 +76,7 @@ import (
 	// daemon at manifest-resolution time; set by the SDK loader when
 	// converting YAML manifests. Must agree with the populated
 	// `contract` oneof (PRINCIPAL_KIND_AGENT ↔ agent_contract, etc.) —
-	// mismatches are rejected by the daemon's RegisterPlugin /
-	// CreateAgentIdentity validators.
+	// mismatches are rejected by the daemon's CreateAgentIdentity validator.
 	//
 	// Spec: component-bootstrap-e2e Requirement 12.
 	principalKind?: identityv1.#PrincipalKind @protobuf(40,gibson.identity.v1.PrincipalKind,name=principal_kind)

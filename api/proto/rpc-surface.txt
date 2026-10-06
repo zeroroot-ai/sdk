@@ -196,7 +196,6 @@ gibson.job.v1.JobService/StreamJobEvents
 gibson.pluginadmin.v1.PluginAdminService/EditPluginSecretBinding
 gibson.pluginadmin.v1.PluginAdminService/GetPluginInstall
 gibson.pluginadmin.v1.PluginAdminService/ListPluginInstalls
-gibson.pluginadmin.v1.PluginAdminService/RegisterPlugin
 gibson.pluginadmin.v1.PluginAdminService/RevokePluginSecretBinding
 gibson.plugin.v1.PluginInvokeService/PluginInvoke
 gibson.secrets.v1.SecretsService/CountSecrets
