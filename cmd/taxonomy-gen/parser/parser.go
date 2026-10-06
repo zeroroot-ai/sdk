@@ -58,33 +58,3 @@ func (e *ParseError) Error() string {
 	}
 	return fmt.Sprintf("%s: %s", e.Path, e.Message)
 }
-
-// ValidatePropertyType checks if a property type is valid.
-func ValidatePropertyType(propType string) bool {
-	switch propType {
-	case "string", "int32", "int64", "float64", "bool", "timestamp", "bytes":
-		return true
-	default:
-		return false
-	}
-}
-
-// ValidateCardinality checks if a cardinality value is valid.
-func ValidateCardinality(cardinality string) bool {
-	switch cardinality {
-	case "one_to_one", "one_to_many", "many_to_many":
-		return true
-	default:
-		return false
-	}
-}
-
-// ValidateNodeCategory checks if a node category is valid.
-func ValidateNodeCategory(category string) bool {
-	switch category {
-	case "execution", "asset", "finding", "attack":
-		return true
-	default:
-		return false
-	}
-}

@@ -201,9 +201,9 @@ jobs:
       - name: proto bindings drift gate
         run: |
           make generate
-          git diff --exit-code api/gen/ graphrag/ api/proto/taxonomy/ || {
+          git diff --exit-code api/gen/ graphrag/ || {
             echo "ERROR: generated bindings drifted from sources, or new generated files were not committed." >&2
-            echo "Run 'make generate' locally and commit api/gen/, graphrag/ and api/proto/taxonomy/." >&2
+            echo "Run 'make generate' locally and commit api/gen/ and graphrag/." >&2
             exit 1
           }
 

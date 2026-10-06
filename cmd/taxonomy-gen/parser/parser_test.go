@@ -188,18 +188,6 @@ node_types:
 	assert.True(t, taxonomy.NodeTypes[0].Parent.Required)
 }
 
-func TestValidatePropertyType(t *testing.T) {
-	validTypes := []string{"string", "int32", "int64", "float64", "bool", "timestamp", "bytes"}
-	for _, pt := range validTypes {
-		assert.True(t, ValidatePropertyType(pt), "type %s should be valid", pt)
-	}
-
-	invalidTypes := []string{"invalid", "Integer", "String", "", "float", "[]string"}
-	for _, pt := range invalidTypes {
-		assert.False(t, ValidatePropertyType(pt), "type %s should be invalid", pt)
-	}
-}
-
 func TestParseError_Error(t *testing.T) {
 	tests := []struct {
 		name     string

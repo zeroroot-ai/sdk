@@ -4,8 +4,6 @@
 syntax = "proto3";
 package gibson.graphrag.v1;
 
-import "taxonomy/v1/taxonomy.proto";
-
 option go_package = "github.com/zeroroot-ai/sdk/api/gen/gibson/graphrag/v1;graphragpb";
 option java_multiple_files = true;
 option csharp_namespace = "Gibson.Graphrag";
