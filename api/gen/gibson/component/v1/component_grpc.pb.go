@@ -35,6 +35,7 @@ const (
 	ComponentService_GetPluginConfig_FullMethodName      = "/gibson.component.v1.ComponentService/GetPluginConfig"
 	ComponentService_TestPluginConnection_FullMethodName = "/gibson.component.v1.ComponentService/TestPluginConnection"
 	ComponentService_ListTenantPlugins_FullMethodName    = "/gibson.component.v1.ComponentService/ListTenantPlugins"
+	ComponentService_EnrollComponent_FullMethodName      = "/gibson.component.v1.ComponentService/EnrollComponent"
 	ComponentService_CompleteWithTools_FullMethodName    = "/gibson.component.v1.ComponentService/CompleteWithTools"
 	ComponentService_CompleteStructured_FullMethodName   = "/gibson.component.v1.ComponentService/CompleteStructured"
 	ComponentService_CallToolStream_FullMethodName       = "/gibson.component.v1.ComponentService/CallToolStream"
@@ -122,6 +123,14 @@ type ComponentServiceClient interface {
 	TestPluginConnection(ctx context.Context, in *TestPluginConnectionRequest, opts ...grpc.CallOption) (*TestPluginConnectionResponse, error)
 	// ListTenantPlugins returns the plugin access records for the calling tenant.
 	ListTenantPlugins(ctx context.Context, in *ListTenantPluginsRequest, opts ...grpc.CallOption) (*ListTenantPluginsResponse, error)
+	// EnrollComponent enrolls a component that the calling agent produced
+	// (gibson#33). The new component gets its own identity in the tenant of
+	// the caller and a short-lived bootstrap token for that identity only.
+	// The person who owns the calling agent owns the new component. The
+	// platform assigns its trust: a produced component is never trusted, so
+	// a catalog name is refused. A quota for each tenant bounds how many
+	// components agents enroll. Each enrollment writes an audit record.
+	EnrollComponent(ctx context.Context, in *EnrollComponentRequest, opts ...grpc.CallOption) (*EnrollComponentResponse, error)
 	// CompleteWithTools proxies an LLM completion with tool definitions for
 	// function-calling support. Returns the response including any tool calls.
 	CompleteWithTools(ctx context.Context, in *CompleteWithToolsRequest, opts ...grpc.CallOption) (*CompleteWithToolsResponse, error)
@@ -357,6 +366,16 @@ func (c *componentServiceClient) ListTenantPlugins(ctx context.Context, in *List
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListTenantPluginsResponse)
 	err := c.cc.Invoke(ctx, ComponentService_ListTenantPlugins_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *componentServiceClient) EnrollComponent(ctx context.Context, in *EnrollComponentRequest, opts ...grpc.CallOption) (*EnrollComponentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EnrollComponentResponse)
+	err := c.cc.Invoke(ctx, ComponentService_EnrollComponent_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -718,6 +737,14 @@ type ComponentServiceServer interface {
 	TestPluginConnection(context.Context, *TestPluginConnectionRequest) (*TestPluginConnectionResponse, error)
 	// ListTenantPlugins returns the plugin access records for the calling tenant.
 	ListTenantPlugins(context.Context, *ListTenantPluginsRequest) (*ListTenantPluginsResponse, error)
+	// EnrollComponent enrolls a component that the calling agent produced
+	// (gibson#33). The new component gets its own identity in the tenant of
+	// the caller and a short-lived bootstrap token for that identity only.
+	// The person who owns the calling agent owns the new component. The
+	// platform assigns its trust: a produced component is never trusted, so
+	// a catalog name is refused. A quota for each tenant bounds how many
+	// components agents enroll. Each enrollment writes an audit record.
+	EnrollComponent(context.Context, *EnrollComponentRequest) (*EnrollComponentResponse, error)
 	// CompleteWithTools proxies an LLM completion with tool definitions for
 	// function-calling support. Returns the response including any tool calls.
 	CompleteWithTools(context.Context, *CompleteWithToolsRequest) (*CompleteWithToolsResponse, error)
@@ -837,6 +864,9 @@ func (UnimplementedComponentServiceServer) TestPluginConnection(context.Context,
 }
 func (UnimplementedComponentServiceServer) ListTenantPlugins(context.Context, *ListTenantPluginsRequest) (*ListTenantPluginsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListTenantPlugins not implemented")
+}
+func (UnimplementedComponentServiceServer) EnrollComponent(context.Context, *EnrollComponentRequest) (*EnrollComponentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EnrollComponent not implemented")
 }
 func (UnimplementedComponentServiceServer) CompleteWithTools(context.Context, *CompleteWithToolsRequest) (*CompleteWithToolsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CompleteWithTools not implemented")
@@ -1217,6 +1247,24 @@ func _ComponentService_ListTenantPlugins_Handler(srv interface{}, ctx context.Co
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ComponentServiceServer).ListTenantPlugins(ctx, req.(*ListTenantPluginsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ComponentService_EnrollComponent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EnrollComponentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ComponentServiceServer).EnrollComponent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ComponentService_EnrollComponent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ComponentServiceServer).EnrollComponent(ctx, req.(*EnrollComponentRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1752,6 +1800,10 @@ var ComponentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListTenantPlugins",
 			Handler:    _ComponentService_ListTenantPlugins_Handler,
+		},
+		{
+			MethodName: "EnrollComponent",
+			Handler:    _ComponentService_EnrollComponent_Handler,
 		},
 		{
 			MethodName: "CompleteWithTools",
