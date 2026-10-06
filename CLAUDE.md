@@ -44,4 +44,4 @@ make bootstrap        # fetch the pinned tooling
 - The published protos: `buf.build/zeroroot-ai/sdk`
 - The CLI built on this: [`zeroroot-ai/adk`](https://github.com/zeroroot-ai/adk)
 - The TypeScript bindings: [`zeroroot-ai/sdk-ts`](https://github.com/zeroroot-ai/sdk-ts)
-- Worked integrations: [`zeroroot-ai/integrations`](https://github.com/zeroroot-ai/integrations)
+- Worked plugins: [`gibson/plugins`](https://github.com/zeroroot-ai/gibson/tree/main/plugins)
