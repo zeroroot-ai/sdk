@@ -78,53 +78,9 @@ func (c *Config) SetDescription(desc string) *Config {
 	return c
 }
 
-// SetCapabilities sets the agent's security testing capabilities.
-func (c *Config) SetCapabilities(caps []string) *Config {
-	c.capabilities = caps
-	return c
-}
-
-// AddCapability adds a single capability to the agent.
-func (c *Config) AddCapability(cap string) *Config {
-	c.capabilities = append(c.capabilities, cap)
-	return c
-}
-
-// SetTargetSchemas sets the target schemas the agent supports.
-// Use this to define connection parameter requirements for each target type.
-func (c *Config) SetTargetSchemas(schemas []types.TargetSchema) *Config {
-	c.targetSchemas = schemas
-	return c
-}
-
-// AddTargetSchema adds a single target schema to the agent.
-// Use this to declare support for a specific target type with connection parameters.
-func (c *Config) AddTargetSchema(schema types.TargetSchema) *Config {
-	c.targetSchemas = append(c.targetSchemas, schema)
-	return c
-}
-
 // SetTargetTypes sets the types of targets the agent can test.
 func (c *Config) SetTargetTypes(types []string) *Config {
 	c.targetTypes = types
-	return c
-}
-
-// AddTargetType adds a single target type to the agent.
-func (c *Config) AddTargetType(t string) *Config {
-	c.targetTypes = append(c.targetTypes, t)
-	return c
-}
-
-// SetTechniqueTypes sets the attack techniques the agent employs.
-func (c *Config) SetTechniqueTypes(types []string) *Config {
-	c.techniqueTypes = types
-	return c
-}
-
-// AddTechniqueType adds a single technique type to the agent.
-func (c *Config) AddTechniqueType(t string) *Config {
-	c.techniqueTypes = append(c.techniqueTypes, t)
 	return c
 }
 
@@ -143,37 +99,10 @@ func (c *Config) AddLLMSlot(name string, requirements llm.SlotRequirements) *Con
 	return c
 }
 
-// AddLLMSlotDefinition adds a fully configured LLM slot definition.
-func (c *Config) AddLLMSlotDefinition(slot llm.SlotDefinition) *Config {
-	c.llmSlots = append(c.llmSlots, slot)
-	return c
-}
-
 // SetExecuteFunc sets the function that executes tasks.
 // This is the core agent logic.
 func (c *Config) SetExecuteFunc(fn ExecuteFunc) *Config {
 	c.executeFunc = fn
-	return c
-}
-
-// SetInitFunc sets the function that initializes the agent.
-// If not set, a default no-op implementation is used.
-func (c *Config) SetInitFunc(fn InitFunc) *Config {
-	c.initFunc = fn
-	return c
-}
-
-// SetShutdownFunc sets the function that shuts down the agent.
-// If not set, a default no-op implementation is used.
-func (c *Config) SetShutdownFunc(fn ShutdownFunc) *Config {
-	c.shutdownFunc = fn
-	return c
-}
-
-// SetHealthFunc sets the function that checks agent health.
-// If not set, a default implementation that returns healthy is used.
-func (c *Config) SetHealthFunc(fn HealthFunc) *Config {
-	c.healthFunc = fn
 	return c
 }
 

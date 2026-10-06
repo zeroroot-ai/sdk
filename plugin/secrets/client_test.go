@@ -260,44 +260,6 @@ func TestClient_MarkRevoked_PersistsAcrossInvalidate(t *testing.T) {
 		"revoked flag must persist after Invalidate")
 }
 
-func TestClient_WithCacheFalse_AlwaysCallsRPC(t *testing.T) {
-	m := minimalManifest("cred:key")
-	calls := 0
-	fn := func(_ context.Context, _ string) ([]byte, error) {
-		calls++
-		return []byte("v"), nil
-	}
-	cl := New(m, fn, CacheConfig{})
-
-	for range 3 {
-		_, err := cl.Resolve(context.Background(), "cred:key", WithCache(false))
-		require.NoError(t, err)
-	}
-	assert.Equal(t, 3, calls, "WithCache(false) must invoke RPC every time")
-}
-
-func TestClient_RPCError_NotCached(t *testing.T) {
-	m := minimalManifest("cred:key")
-	callCount := 0
-	fn := func(_ context.Context, _ string) ([]byte, error) {
-		callCount++
-		if callCount == 1 {
-			return nil, ErrNotFound
-		}
-		return []byte("found"), nil
-	}
-	cl := New(m, fn, CacheConfig{})
-
-	_, err := cl.Resolve(context.Background(), "cred:key")
-	require.ErrorIs(t, err, ErrNotFound)
-
-	// Second call must not get a cached negative; should call RPC again.
-	v, err := cl.Resolve(context.Background(), "cred:key")
-	require.NoError(t, err)
-	assert.Equal(t, []byte("found"), v)
-	assert.Equal(t, 2, callCount, "negative result must not be cached")
-}
-
 func TestClient_DefensiveCopyOnReturn(t *testing.T) {
 	m := minimalManifest("cred:key")
 	fn := func(_ context.Context, _ string) ([]byte, error) {

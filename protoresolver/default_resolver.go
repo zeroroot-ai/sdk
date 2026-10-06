@@ -55,7 +55,6 @@ func DefaultConfig() ProtoResolverConfig {
 	return ProtoResolverConfig{
 		CacheMaxEntries: 100,
 		CacheTTL:        time.Hour,
-		StrictMode:      true,
 		LogFallbacks:    true,
 	}
 }
@@ -252,16 +251,4 @@ func (d *DefaultProtoResolver) InvalidateCache(toolName string) {
 
 	d.cache.Invalidate(toolName)
 	d.logger.Debug("cache invalidated", "tool", toolName)
-}
-
-// Metrics returns the current metrics statistics for the resolver.
-// This provides visibility into resolution performance and cache efficiency.
-//
-// Example:
-//
-//	stats := resolver.Metrics()
-//	hitRate := float64(stats.CacheHits) / float64(stats.CacheHits + stats.CacheMisses)
-//	fmt.Printf("Cache hit rate: %.2f%%\n", hitRate * 100)
-func (d *DefaultProtoResolver) Metrics() ProtoMetricsStats {
-	return d.metrics.Stats()
 }

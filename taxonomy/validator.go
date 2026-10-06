@@ -19,11 +19,6 @@ import (
 type ValidationMode string
 
 const (
-	// ValidationModeStrict returns errors for any validation failures.
-	ValidationModeStrict ValidationMode = "strict"
-
-	// ValidationModeWarn logs warnings but allows invalid values.
-	ValidationModeWarn ValidationMode = "warn"
 
 	// ValidationModeDisabled skips all validation.
 	ValidationModeDisabled ValidationMode = "disabled"
@@ -31,8 +26,6 @@ const (
 
 // ValidationResult contains the outcome of a validation operation.
 type ValidationResult struct {
-	// Valid is true if all validations passed.
-	Valid bool
 
 	// Errors contains validation errors that should block the operation.
 	Errors []ValidationError
@@ -41,15 +34,9 @@ type ValidationResult struct {
 	Warnings []ValidationWarning
 }
 
-// IsValid returns true if the validation passed without errors.
-func (r *ValidationResult) IsValid() bool {
-	return len(r.Errors) == 0
-}
-
 // AddError adds a validation error to the result.
 func (r *ValidationResult) AddError(err ValidationError) {
 	r.Errors = append(r.Errors, err)
-	r.Valid = false
 }
 
 // AddWarning adds a validation warning to the result.
@@ -65,29 +52,13 @@ func (r *ValidationResult) Merge(other *ValidationResult) {
 	r.Errors = append(r.Errors, other.Errors...)
 	r.Warnings = append(r.Warnings, other.Warnings...)
 	if len(r.Errors) > 0 {
-		r.Valid = false
 	}
-}
-
-// Error returns a combined error message if there are any errors.
-func (r *ValidationResult) Error() error {
-	if len(r.Errors) == 0 {
-		return nil
-	}
-	var msgs []string
-	for _, e := range r.Errors {
-		msgs = append(msgs, e.Error())
-	}
-	return fmt.Errorf("validation failed: %s", strings.Join(msgs, "; "))
 }
 
 // ValidationError represents a single validation error.
 type ValidationError struct {
 	// Field is the name of the field that failed validation.
 	Field string
-
-	// Value is the invalid value.
-	Value string
 
 	// Message describes the validation failure.
 	Message string
@@ -109,9 +80,6 @@ func (e ValidationError) Error() string {
 type ValidationWarning struct {
 	// Field is the name of the field with the warning.
 	Field string
-
-	// Value is the value that triggered the warning.
-	Value string
 
 	// Message describes the warning.
 	Message string
@@ -162,7 +130,6 @@ type FindingFields struct {
 	CVSSScore  float64
 	CWEIDs     []string
 	CVEIDs     []string
-	Tags       []string
 }
 
 // TaxonomySchema provides access to taxonomy definitions for validation.
@@ -200,29 +167,16 @@ type TaxonomySchema interface {
 
 // PropertyDef defines a property's schema.
 type PropertyDef struct {
-	Name        string
-	Type        string // "string", "int", "float", "bool", "[]string"
-	Required    bool
-	Description string
-	Format      string   // Optional format hint (e.g., "ip", "url", "cwe")
-	Enum        []string // Valid values if enum type
+	Name     string
+	Type     string // "string", "int", "float", "bool", "[]string"
+	Required bool
+	Enum     []string // Valid values if enum type
 }
 
 // DefaultTaxonomyValidator is the standard implementation of TaxonomyValidator.
 type DefaultTaxonomyValidator struct {
 	schema TaxonomySchema
 	mode   ValidationMode
-}
-
-// NewTaxonomyValidator creates a new validator with the given schema and mode.
-func NewTaxonomyValidator(schema TaxonomySchema, mode ValidationMode) *DefaultTaxonomyValidator {
-	if mode == "" {
-		mode = ValidationModeWarn
-	}
-	return &DefaultTaxonomyValidator{
-		schema: schema,
-		mode:   mode,
-	}
 }
 
 // Mode returns the current validation mode.
@@ -237,7 +191,7 @@ func (v *DefaultTaxonomyValidator) SetMode(mode ValidationMode) {
 
 // ValidateFinding validates a security finding's taxonomy fields.
 func (v *DefaultTaxonomyValidator) ValidateFinding(ctx context.Context, finding FindingFields) *ValidationResult {
-	result := &ValidationResult{Valid: true}
+	result := &ValidationResult{}
 
 	if v.mode == ValidationModeDisabled {
 		return result
@@ -255,7 +209,6 @@ func (v *DefaultTaxonomyValidator) ValidateFinding(ctx context.Context, finding 
 			suggestions := v.findSimilar(finding.Severity, v.schema.Severities(), 3)
 			result.AddError(ValidationError{
 				Field:       "severity",
-				Value:       finding.Severity,
 				Message:     fmt.Sprintf("invalid severity '%s'", finding.Severity),
 				Suggestions: suggestions,
 			})
@@ -266,7 +219,6 @@ func (v *DefaultTaxonomyValidator) ValidateFinding(ctx context.Context, finding 
 	if finding.Confidence < 0.0 || finding.Confidence > 1.0 {
 		result.AddError(ValidationError{
 			Field:   "confidence",
-			Value:   fmt.Sprintf("%f", finding.Confidence),
 			Message: "confidence must be between 0.0 and 1.0",
 		})
 	}
@@ -275,7 +227,6 @@ func (v *DefaultTaxonomyValidator) ValidateFinding(ctx context.Context, finding 
 	if finding.CVSSScore < 0.0 || finding.CVSSScore > 10.0 {
 		result.AddError(ValidationError{
 			Field:   "cvss_score",
-			Value:   fmt.Sprintf("%f", finding.CVSSScore),
 			Message: "CVSS score must be between 0.0 and 10.0",
 		})
 	}
@@ -285,7 +236,6 @@ func (v *DefaultTaxonomyValidator) ValidateFinding(ctx context.Context, finding 
 		if !isValidCWEFormat(cwe) {
 			result.AddWarning(ValidationWarning{
 				Field:   "cwe_ids",
-				Value:   cwe,
 				Message: fmt.Sprintf("CWE ID '%s' does not match expected format (CWE-NNN)", cwe),
 			})
 		}
@@ -296,7 +246,6 @@ func (v *DefaultTaxonomyValidator) ValidateFinding(ctx context.Context, finding 
 		if !isValidCVEFormat(cve) {
 			result.AddWarning(ValidationWarning{
 				Field:   "cve_ids",
-				Value:   cve,
 				Message: fmt.Sprintf("CVE ID '%s' does not match expected format (CVE-YYYY-NNNNN)", cve),
 			})
 		}
@@ -307,7 +256,7 @@ func (v *DefaultTaxonomyValidator) ValidateFinding(ctx context.Context, finding 
 
 // ValidateCategory checks if a category is valid in the taxonomy.
 func (v *DefaultTaxonomyValidator) ValidateCategory(ctx context.Context, category string) *ValidationResult {
-	result := &ValidationResult{Valid: true}
+	result := &ValidationResult{}
 
 	if v.mode == ValidationModeDisabled {
 		return result
@@ -317,7 +266,6 @@ func (v *DefaultTaxonomyValidator) ValidateCategory(ctx context.Context, categor
 		suggestions := v.findSimilar(category, v.schema.Categories(), 3)
 		result.AddError(ValidationError{
 			Field:       "category",
-			Value:       category,
 			Message:     fmt.Sprintf("invalid category '%s'", category),
 			Suggestions: suggestions,
 		})
@@ -328,7 +276,7 @@ func (v *DefaultTaxonomyValidator) ValidateCategory(ctx context.Context, categor
 
 // ValidateEntityType checks if an entity type is valid in the taxonomy.
 func (v *DefaultTaxonomyValidator) ValidateEntityType(ctx context.Context, entityType string) *ValidationResult {
-	result := &ValidationResult{Valid: true}
+	result := &ValidationResult{}
 
 	if v.mode == ValidationModeDisabled {
 		return result
@@ -338,7 +286,6 @@ func (v *DefaultTaxonomyValidator) ValidateEntityType(ctx context.Context, entit
 		suggestions := v.findSimilar(entityType, v.schema.NodeTypes(), 3)
 		result.AddError(ValidationError{
 			Field:       "entity_type",
-			Value:       entityType,
 			Message:     fmt.Sprintf("invalid entity type '%s'", entityType),
 			Suggestions: suggestions,
 		})
@@ -349,7 +296,7 @@ func (v *DefaultTaxonomyValidator) ValidateEntityType(ctx context.Context, entit
 
 // ValidateRelationshipType checks if a relationship type is valid in the taxonomy.
 func (v *DefaultTaxonomyValidator) ValidateRelationshipType(ctx context.Context, relType string) *ValidationResult {
-	result := &ValidationResult{Valid: true}
+	result := &ValidationResult{}
 
 	if v.mode == ValidationModeDisabled {
 		return result
@@ -359,7 +306,6 @@ func (v *DefaultTaxonomyValidator) ValidateRelationshipType(ctx context.Context,
 		suggestions := v.findSimilar(relType, v.schema.RelationshipTypes(), 3)
 		result.AddError(ValidationError{
 			Field:       "relationship_type",
-			Value:       relType,
 			Message:     fmt.Sprintf("invalid relationship type '%s'", relType),
 			Suggestions: suggestions,
 		})
@@ -370,7 +316,7 @@ func (v *DefaultTaxonomyValidator) ValidateRelationshipType(ctx context.Context,
 
 // ValidateProperties validates properties against the schema for an entity type.
 func (v *DefaultTaxonomyValidator) ValidateProperties(ctx context.Context, entityType string, properties map[string]any) *ValidationResult {
-	result := &ValidationResult{Valid: true}
+	result := &ValidationResult{}
 
 	if v.mode == ValidationModeDisabled {
 		return result
@@ -380,7 +326,6 @@ func (v *DefaultTaxonomyValidator) ValidateProperties(ctx context.Context, entit
 	if !v.schema.HasNodeType(entityType) {
 		result.AddError(ValidationError{
 			Field:   "entity_type",
-			Value:   entityType,
 			Message: fmt.Sprintf("unknown entity type '%s'", entityType),
 		})
 		return result
@@ -471,7 +416,6 @@ func validatePropertyType(name string, value any, def PropertyDef) *ValidationEr
 		if _, ok := value.(string); !ok {
 			return &ValidationError{
 				Field:   name,
-				Value:   fmt.Sprintf("%v", value),
 				Message: fmt.Sprintf("property '%s' must be a string, got %T", name, value),
 			}
 		}
@@ -482,7 +426,6 @@ func validatePropertyType(name string, value any, def PropertyDef) *ValidationEr
 		default:
 			return &ValidationError{
 				Field:   name,
-				Value:   fmt.Sprintf("%v", value),
 				Message: fmt.Sprintf("property '%s' must be an integer, got %T", name, value),
 			}
 		}
@@ -493,7 +436,6 @@ func validatePropertyType(name string, value any, def PropertyDef) *ValidationEr
 		default:
 			return &ValidationError{
 				Field:   name,
-				Value:   fmt.Sprintf("%v", value),
 				Message: fmt.Sprintf("property '%s' must be a float, got %T", name, value),
 			}
 		}
@@ -501,7 +443,6 @@ func validatePropertyType(name string, value any, def PropertyDef) *ValidationEr
 		if _, ok := value.(bool); !ok {
 			return &ValidationError{
 				Field:   name,
-				Value:   fmt.Sprintf("%v", value),
 				Message: fmt.Sprintf("property '%s' must be a boolean, got %T", name, value),
 			}
 		}
@@ -514,7 +455,6 @@ func validatePropertyType(name string, value any, def PropertyDef) *ValidationEr
 				if _, ok := item.(string); !ok {
 					return &ValidationError{
 						Field:   name,
-						Value:   fmt.Sprintf("%v", value),
 						Message: fmt.Sprintf("property '%s[%d]' must be a string, got %T", name, i, item),
 					}
 				}
@@ -522,7 +462,6 @@ func validatePropertyType(name string, value any, def PropertyDef) *ValidationEr
 		default:
 			return &ValidationError{
 				Field:   name,
-				Value:   fmt.Sprintf("%v", value),
 				Message: fmt.Sprintf("property '%s' must be a string array, got %T", name, value),
 			}
 		}
@@ -542,7 +481,6 @@ func validatePropertyType(name string, value any, def PropertyDef) *ValidationEr
 			if !found {
 				return &ValidationError{
 					Field:       name,
-					Value:       strVal,
 					Message:     fmt.Sprintf("property '%s' must be one of: %s", name, strings.Join(def.Enum, ", ")),
 					Suggestions: def.Enum,
 				}
@@ -604,34 +542,29 @@ func isValidCVEFormat(cve string) bool {
 // Use this for testing or when validation is disabled.
 type NoOpTaxonomyValidator struct{}
 
-// NewNoOpTaxonomyValidator creates a no-op validator.
-func NewNoOpTaxonomyValidator() *NoOpTaxonomyValidator {
-	return &NoOpTaxonomyValidator{}
-}
-
 // ValidateFinding always returns valid.
 func (v *NoOpTaxonomyValidator) ValidateFinding(ctx context.Context, finding FindingFields) *ValidationResult {
-	return &ValidationResult{Valid: true}
+	return &ValidationResult{}
 }
 
 // ValidateCategory always returns valid.
 func (v *NoOpTaxonomyValidator) ValidateCategory(ctx context.Context, category string) *ValidationResult {
-	return &ValidationResult{Valid: true}
+	return &ValidationResult{}
 }
 
 // ValidateEntityType always returns valid.
 func (v *NoOpTaxonomyValidator) ValidateEntityType(ctx context.Context, entityType string) *ValidationResult {
-	return &ValidationResult{Valid: true}
+	return &ValidationResult{}
 }
 
 // ValidateRelationshipType always returns valid.
 func (v *NoOpTaxonomyValidator) ValidateRelationshipType(ctx context.Context, relType string) *ValidationResult {
-	return &ValidationResult{Valid: true}
+	return &ValidationResult{}
 }
 
 // ValidateProperties always returns valid.
 func (v *NoOpTaxonomyValidator) ValidateProperties(ctx context.Context, entityType string, properties map[string]any) *ValidationResult {
-	return &ValidationResult{Valid: true}
+	return &ValidationResult{}
 }
 
 // Mode returns disabled mode.

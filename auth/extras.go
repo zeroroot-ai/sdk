@@ -85,14 +85,6 @@ func ActingUserFromContext(ctx context.Context) (string, bool) {
 	return "", false
 }
 
-// ContextWithActingUser stores the acting-user ID on ctx.
-func ContextWithActingUser(ctx context.Context, userID string) context.Context {
-	if userID == "" {
-		return ctx
-	}
-	return context.WithValue(ctx, actingUserKey{}, userID)
-}
-
 // InitiatorUserFromContext returns the user who triggered the mission,
 // plus ok=true when set. Stable across the entire mission span tree
 // — sub-agent delegation, scheduled runs, checkpoint/resume.
@@ -111,16 +103,6 @@ func ContextWithInitiatorUser(ctx context.Context, userID string) context.Contex
 		return ctx
 	}
 	return context.WithValue(ctx, initiatorUserKey{}, userID)
-}
-
-// ExecutorUserFromContext returns the owner of the currently-
-// executing agent, plus ok=true when set. May differ from
-// InitiatorUser under cross-user delegation.
-func ExecutorUserFromContext(ctx context.Context) (string, bool) {
-	if v, ok := ctx.Value(executorUserKey{}).(string); ok && v != "" {
-		return v, true
-	}
-	return "", false
 }
 
 // ContextWithExecutorUser stores the executing-agent owner user ID
@@ -143,14 +125,6 @@ func ComponentScopeFromContext(ctx context.Context) string {
 		return v
 	}
 	return ""
-}
-
-// ContextWithComponentScope stores the component scope on ctx.
-func ContextWithComponentScope(ctx context.Context, scope string) context.Context {
-	if scope == "" {
-		return ctx
-	}
-	return context.WithValue(ctx, componentScopeKey{}, scope)
 }
 
 // ---------------------------------------------------------------------

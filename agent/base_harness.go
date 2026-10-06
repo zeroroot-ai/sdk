@@ -60,15 +60,6 @@ type BaseHarness struct {
 	logger *slog.Logger
 }
 
-// NewBaseHarness constructs a BaseHarness with the given logger.
-// Pass a nil logger to fall back to the default slog logger.
-func NewBaseHarness(logger *slog.Logger) BaseHarness {
-	if logger == nil {
-		logger = slog.Default()
-	}
-	return BaseHarness{logger: logger}
-}
-
 // ---------------------------------------------------------------------------
 // LLM Access Methods
 // ---------------------------------------------------------------------------

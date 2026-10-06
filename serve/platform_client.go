@@ -63,16 +63,10 @@ type ComponentInfo struct {
 // RegistrationResponse carries the server-assigned instance ID and connection
 // parameters returned by RegisterComponent.
 type RegistrationResponse struct {
-	// InstanceID is the unique identifier assigned to this component instance.
-	InstanceID string
 	// HeartbeatIntervalMs is the recommended heartbeat cadence in milliseconds.
 	HeartbeatIntervalMs int32
 	// PollIntervalMs is the recommended idle poll cadence in milliseconds.
 	PollIntervalMs int32
-	// PollTimeoutMs is the server-side long-poll timeout to pass in PollWork.
-	PollTimeoutMs int32
-	// Config carries initial configuration values for the component.
-	Config map[string]string
 }
 
 // WorkItem represents a single unit of work returned by PollWork.
@@ -152,8 +146,6 @@ type ToolStreamEvent struct {
 	EventType string
 	// PayloadJSON carries event-specific data.
 	PayloadJSON string
-	// Done is true on the final event.
-	Done bool
 	// Err is non-nil if the stream terminated with an error.
 	Err error
 }
@@ -164,8 +156,6 @@ type QueuedToolResultEvent struct {
 	Index int32
 	// OutputJSON is the JSON-encoded tool output.
 	OutputJSON string
-	// Done is true on the final result.
-	Done bool
 	// Err is non-nil if this invocation failed or the stream terminated with an error.
 	Err error
 }
@@ -214,44 +204,9 @@ type PlatformClient struct {
 	bootstrapToken string
 	// hostKeyPath is the path to the on-disk Ed25519 host keypair.
 	hostKeyPath string
-	// pollInterval overrides the server-recommended poll cadence (zero = use server value).
-	pollInterval time.Duration
-	// heartbeatInterval overrides the server-recommended heartbeat cadence (zero = use server value).
-	heartbeatInterval time.Duration
 
 	mu     sync.RWMutex
 	closed bool
-}
-
-// NewPlatformClient constructs a PlatformClient from the provided Config.
-// The client is not connected until Authenticate and Connect are called.
-//
-// Config fields consumed:
-//   - PlatformURL    — Gibson platform HTTPS base URL (required)
-//   - BootstrapToken — one-time registration credential (optional after first run)
-//   - HostKeyPath    — path to Ed25519 host key file (defaults to ~/.gibson/host_key.json)
-func NewPlatformClient(cfg *Config) *PlatformClient {
-	if cfg == nil {
-		return &PlatformClient{}
-	}
-	return &PlatformClient{
-		platformURL:       cfg.PlatformURL,
-		bootstrapToken:    cfg.BootstrapToken,
-		hostKeyPath:       cfg.HostKeyPath,
-		pollInterval:      cfg.PollInterval,
-		heartbeatInterval: cfg.HeartbeatInterval,
-	}
-}
-
-// NewPlatformClientFromConn constructs a PlatformClient from an already-established
-// gRPC connection. This is used by SPIFFE mode, which dials with mTLS credentials
-// before creating the client. The returned client is ready to use immediately
-// (no Connect or Authenticate call needed).
-func NewPlatformClientFromConn(conn *grpc.ClientConn) *PlatformClient {
-	return &PlatformClient{
-		conn:    conn,
-		service: componentpb.NewComponentServiceClient(conn),
-	}
 }
 
 // NewPlatformClientWithOptions constructs a fully configured PlatformClient.
@@ -280,25 +235,12 @@ type PlatformClientOption func(*PlatformClient)
 // Use this to force a faster or slower polling cadence during development.
 func WithPlatformPollInterval(d time.Duration) PlatformClientOption {
 	return func(pc *PlatformClient) {
-		pc.pollInterval = d
 	}
 }
 
 // WithPlatformHeartbeatInterval overrides the server-recommended heartbeat interval.
 func WithPlatformHeartbeatInterval(d time.Duration) PlatformClientOption {
 	return func(pc *PlatformClient) {
-		pc.heartbeatInterval = d
-	}
-}
-
-// WithPlatformCapabilityGrant wires an already-bootstrapped capabilitygrant.Client into the
-// PlatformClient. All outbound gRPC calls will be signed using the client's
-// per-RPC credentials. This option is an alternative to calling Authenticate
-// when the caller wants to share an capabilitygrant.Client instance across multiple
-// PlatformClient instances.
-func WithPlatformCapabilityGrant(c *capabilitygrant.Client) PlatformClientOption {
-	return func(pc *PlatformClient) {
-		pc.capabilityGrantClient = c
 	}
 }
 
@@ -550,11 +492,8 @@ func (pc *PlatformClient) Register(ctx context.Context, info ComponentInfo) (*Re
 	pc.mu.Unlock()
 
 	return &RegistrationResponse{
-		InstanceID:          resp.InstanceId,
 		HeartbeatIntervalMs: resp.HeartbeatIntervalMs,
 		PollIntervalMs:      resp.PollIntervalMs,
-		PollTimeoutMs:       resp.PollTimeoutMs,
-		Config:              resp.Config,
 	}, nil
 }
 
@@ -966,7 +905,6 @@ func (pc *PlatformClient) CallToolStream(ctx context.Context, workID, toolName, 
 			evt := ToolStreamEvent{
 				EventType:   msg.EventType,
 				PayloadJSON: msg.PayloadJson,
-				Done:        msg.Done,
 			}
 			if msg.Error != nil && msg.Error.Code != "" {
 				evt.Err = fmt.Errorf("CallToolStream %s: [%s] %s", toolName, msg.Error.Code, msg.Error.Message)
@@ -1010,7 +948,6 @@ func (pc *PlatformClient) ToolResults(ctx context.Context, workID, jobID string)
 			evt := QueuedToolResultEvent{
 				Index:      msg.Index,
 				OutputJSON: msg.OutputJson,
-				Done:       msg.Done,
 			}
 			if msg.Error != nil && msg.Error.Code != "" {
 				evt.Err = fmt.Errorf("ToolResults index %d: [%s] %s", msg.Index, msg.Error.Code, msg.Error.Message)
@@ -1066,24 +1003,6 @@ func (pc *PlatformClient) ListAgents(ctx context.Context, workID string) ([]*com
 		return nil, fmt.Errorf("PlatformClient.ListAgents: %w", err)
 	}
 	return resp.Agents, nil
-}
-
-// GetRunFindings queries findings scoped to a specific mission run or across
-// all runs. scope is "previous" or "all". Returns JSON-encoded findings.
-func (pc *PlatformClient) GetRunFindings(ctx context.Context, workID, scope string, filterJSON []byte) ([]byte, error) {
-	if err := pc.ensureConnected("GetRunFindings"); err != nil {
-		return nil, err
-	}
-
-	resp, err := pc.service.GetRunFindings(ctx, &componentpb.GetRunFindingsRequest{
-		WorkId:     workID,
-		Scope:      scope,
-		FilterJson: filterJSON,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("PlatformClient.GetRunFindings: %w", err)
-	}
-	return resp.FindingsJson, nil
 }
 
 // CreateMission creates a new sub-mission and returns its JSON-encoded info.
@@ -1226,19 +1145,6 @@ func (pc *PlatformClient) GetCredential(ctx context.Context, workID, name string
 	return resp.CredentialJson, nil
 }
 
-// GetTaxonomySchema returns the JSON-encoded current taxonomy definition.
-func (pc *PlatformClient) GetTaxonomySchema(ctx context.Context, workID string) ([]byte, error) {
-	if err := pc.ensureConnected("GetTaxonomySchema"); err != nil {
-		return nil, err
-	}
-
-	resp, err := pc.service.GetTaxonomySchema(ctx, &componentpb.GetTaxonomySchemaRequest{WorkId: workID})
-	if err != nil {
-		return nil, fmt.Errorf("PlatformClient.GetTaxonomySchema: %w", err)
-	}
-	return resp.SchemaJson, nil
-}
-
 // ReportStepHints reports planning step hints from an agent back to the
 // orchestrator. hintsJSON is the JSON-encoded planning.StepHints value.
 func (pc *PlatformClient) ReportStepHints(ctx context.Context, workID string, hintsJSON []byte) error {
@@ -1276,17 +1182,4 @@ func (pc *PlatformClient) Close() error {
 	}
 
 	return nil
-}
-
-// IsConnected reports whether the client currently has a healthy gRPC connection.
-func (pc *PlatformClient) IsConnected() bool {
-	pc.mu.RLock()
-	defer pc.mu.RUnlock()
-
-	if pc.closed || pc.conn == nil {
-		return false
-	}
-
-	state := pc.conn.GetState()
-	return state == connectivity.Ready || state == connectivity.Idle || state == connectivity.Connecting
 }

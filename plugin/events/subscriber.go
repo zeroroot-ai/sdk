@@ -133,8 +133,7 @@ type Subscriber struct {
 	stream     EventStream
 	secrets    SecretsHook
 	lifecycle  LifecycleHook
-	drainer    Drainer // may be nil in pre-Phase-8 wiring
-	manifest   *manifest.Manifest
+	drainer    Drainer          // may be nil in pre-Phase-8 wiring
 	onRotation RotationCallback // may be nil
 
 	// secretAttrs is built once from the manifest for O(1) lookup of
@@ -156,20 +155,6 @@ func (s *Subscriber) SetOnRotation(cb RotationCallback) {
 	s.onRotation = cb
 }
 
-// New constructs a Subscriber without a Drainer. The Drainer is nil, meaning
-// a restart-rotation event will be logged but will not exit the process.
-//
-// This constructor is appropriate for Phases 3-7 before the dispatcher
-// (Task 10) is available. Phase 8 uses NewWithDrainer.
-func New(
-	stream EventStream,
-	secretsHook SecretsHook,
-	lifecycleHook LifecycleHook,
-	m *manifest.Manifest,
-) *Subscriber {
-	return NewWithDrainer(stream, secretsHook, lifecycleHook, nil, m)
-}
-
 // NewWithDrainer constructs a Subscriber wired to a Drainer for the
 // rotation=restart exit path. drainer may be nil (see New).
 func NewWithDrainer(
@@ -188,7 +173,6 @@ func NewWithDrainer(
 		secrets:     secretsHook,
 		lifecycle:   lifecycleHook,
 		drainer:     drainer,
-		manifest:    m,
 		secretAttrs: attrs,
 	}
 }

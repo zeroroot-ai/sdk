@@ -50,12 +50,3 @@ func ResolveSecret(ctx context.Context, name string, opts ...secrets.Option) ([]
 	}
 	return c.Resolve(ctx, name, opts...)
 }
-
-// SecretsFromContext returns the broker-backed secrets [secrets.Client] that
-// [Serve] injected into ctx. Most plugins should call [ResolveSecret] instead;
-// SecretsFromContext is for callers that need the client handle directly (for
-// example to invalidate a cache entry). The second return value is false when
-// ctx carries no client.
-func SecretsFromContext(ctx context.Context) (secrets.Client, bool) {
-	return secrets.FromContext(ctx)
-}

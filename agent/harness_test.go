@@ -26,7 +26,7 @@ import (
 )
 
 // TODO: consolidate mock harness implementations into a shared testutil package.
-// Currently duplicated in: agent/harness_test.go, eval/recording_harness_test.go,
+// Currently duplicated in: agent/harness_test.go,
 // integration/agent_test.go. Each new Harness interface method requires updating all copies.
 
 // compile-time interface check
@@ -139,13 +139,6 @@ func (m *mockHarness) ListPlugins(ctx context.Context) ([]plugin.Descriptor, err
 	}, nil
 }
 
-func (m *mockHarness) DelegateToAgent(ctx context.Context, name string, task Task) (Result, error) {
-	if m.delegateToAgentFunc != nil {
-		return m.delegateToAgentFunc(ctx, name, task)
-	}
-	return NewSuccessResult("delegated result"), nil
-}
-
 func (m *mockHarness) ListAgents(ctx context.Context) ([]Descriptor, error) {
 	if m.listAgentsFunc != nil {
 		return m.listAgentsFunc(ctx)
@@ -191,13 +184,6 @@ func (m *mockHarness) Logger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(os.Stdout, nil))
 }
 
-func (m *mockHarness) TokenUsage() llm.TokenTracker {
-	if m.tokenUsage != nil {
-		return m.tokenUsage
-	}
-	return llm.NewTokenTracker()
-}
-
 // GraphRAG proto methods - stubs for testing
 func (m *mockHarness) QueryNodes(ctx context.Context, query *graphragpb.GraphQuery) ([]*graphragpb.QueryResult, error) {
 	return nil, nil
@@ -219,14 +205,6 @@ func (m *mockHarness) StoreSemantic(ctx context.Context, node graphrag.GraphNode
 
 func (m *mockHarness) StoreStructured(ctx context.Context, node graphrag.GraphNode) (string, error) {
 	return "", nil
-}
-
-func (m *mockHarness) CreateGraphRelationship(ctx context.Context, rel graphrag.Relationship) error {
-	return nil
-}
-
-func (m *mockHarness) StoreGraphBatch(ctx context.Context, batch graphrag.Batch) ([]string, error) {
-	return nil, nil
 }
 
 func (m *mockHarness) GraphRAGHealth(ctx context.Context) types.HealthStatus {
@@ -449,20 +427,6 @@ func TestMockHarness_ListPlugins(t *testing.T) {
 	}
 }
 
-func TestMockHarness_DelegateToAgent(t *testing.T) {
-	harness := &mockHarness{}
-	ctx := context.Background()
-
-	task := NewTask("task-1")
-	result, err := harness.DelegateToAgent(ctx, "agent1", *task)
-	if err != nil {
-		t.Errorf("DelegateToAgent() error = %v", err)
-	}
-	if result.Status != StatusSuccess {
-		t.Errorf("DelegateToAgent() status = %v, want %v", result.Status, StatusSuccess)
-	}
-}
-
 func TestMockHarness_ListAgents(t *testing.T) {
 	harness := &mockHarness{}
 	ctx := context.Background()
@@ -473,22 +437,6 @@ func TestMockHarness_ListAgents(t *testing.T) {
 	}
 	if len(agents) != 1 {
 		t.Errorf("ListAgents() returned %d agents, want 1", len(agents))
-	}
-}
-
-func TestMockHarness_SubmitFinding(t *testing.T) {
-	harness := &mockHarness{}
-	ctx := context.Background()
-
-	f := &finding.Finding{
-		ID:       "finding-1",
-		Severity: finding.SeverityHigh,
-		Category: finding.CategoryJailbreak,
-	}
-
-	err := harness.SubmitFinding(ctx, f)
-	if err != nil {
-		t.Errorf("SubmitFinding() error = %v", err)
 	}
 }
 
@@ -544,10 +492,5 @@ func TestMockHarness_Observability(t *testing.T) {
 	logger := harness.Logger()
 	if logger == nil {
 		t.Error("Logger() returned nil")
-	}
-
-	tracker := harness.TokenUsage()
-	if tracker == nil {
-		t.Error("TokenUsage() returned nil")
 	}
 }

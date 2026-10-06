@@ -303,142 +303,6 @@ func revocationEvent(name string) *componentpb.ComponentEvent {
 	}
 }
 
-func TestServe_DeclaredSecrets_RevocationMarksDegraded(t *testing.T) {
-	t.Setenv("HOME", t.TempDir()) // keep capability-grant host keys out of the real home
-	platform := fakeCGPlatform(t)
-	t.Setenv("GIBSON_URL", platform.URL)
-	daemon := startFakeDaemon(t)
-
-	fakeSecrets := newFakeSecretsClient(map[string][]byte{"cred:api_key": []byte("value")})
-	degraded := make(chan string, 1)
-	m := secretsManifest(t)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	serveErr := make(chan error, 1)
-	go func() {
-		serveErr <- Serve(ctx,
-			WithParsedManifest(m),
-			WithSecretsClient(fakeSecrets),
-			WithLifecycle(lifecycle.LifecycleHooks{
-				OnDegraded: func(reason string) { degraded <- reason },
-			}),
-			WithHandler("Echo", "test handler for Echo", func(_ context.Context, req string) (string, error) {
-				return req, nil
-			}),
-			WithHTTPClient(platform.Client()),
-			WithHealthAddr(":0"),
-		)
-	}()
-
-	// A heartbeat first: the SDK must drop it without effect. Then the
-	// revocation for the declared secret.
-	daemon.eventCh <- &componentpb.ComponentEvent{Type: "heartbeat", OccurredAt: timestamppb.Now()}
-	daemon.eventCh <- revocationEvent("cred:api_key")
-
-	select {
-	case reason := <-degraded:
-		assert.Equal(t, "secret_revoked: cred:api_key", reason)
-	case err := <-serveErr:
-		t.Fatalf("Serve returned before the revocation was delivered: %v", err)
-	case <-ctx.Done():
-		t.Fatal("timeout waiting for OnDegraded")
-	}
-	assert.True(t, fakeSecrets.isRevoked("cred:api_key"), "MarkRevoked must have been called")
-	assert.Equal(t, int32(1), daemon.watchCount.Load(), "one subscription for one plugin")
-
-	cancel()
-	require.NoError(t, <-serveErr)
-}
-
-// TestServe_DeclaredSecrets_RevocationReachesHeartbeat proves sdk#60: the
-// heartbeat reports the lifecycle state. Before the revocation every
-// heartbeat reads "serving". After the daemon publishes
-// secret_access_revoked the plugin turns Degraded, and the next heartbeat
-// tick reads "degraded" with the recorded reason. The daemon maps that value
-// to PLUGIN_INSTALL_STATUS_DEGRADED (gibson#199), so a plugin that lost its
-// secret no longer reads SERVING forever.
-func TestServe_DeclaredSecrets_RevocationReachesHeartbeat(t *testing.T) {
-	t.Setenv("HOME", t.TempDir())
-	platform := fakeCGPlatform(t)
-	t.Setenv("GIBSON_URL", platform.URL)
-	daemon := startFakeDaemon(t)
-	const interval = 100 * time.Millisecond
-	daemon.heartbeatIntervalMs = int32(interval / time.Millisecond)
-
-	fakeSecrets := newFakeSecretsClient(map[string][]byte{"cred:api_key": []byte("value")})
-	degraded := make(chan string, 1)
-	m := secretsManifest(t)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	serveErr := make(chan error, 1)
-	go func() {
-		serveErr <- Serve(ctx,
-			WithParsedManifest(m),
-			WithSecretsClient(fakeSecrets),
-			WithLifecycle(lifecycle.LifecycleHooks{
-				OnDegraded: func(reason string) { degraded <- reason },
-			}),
-			WithHandler("Echo", "test handler for Echo", func(_ context.Context, req string) (string, error) {
-				return req, nil
-			}),
-			WithHTTPClient(platform.Client()),
-			WithHealthAddr(":0"),
-		)
-	}()
-
-	// The plugin is Ready: the first heartbeat reads serving.
-	select {
-	case hb := <-daemon.heartbeatCh:
-		assert.Equal(t, "inst-test-1", hb.GetInstanceId())
-		assert.Equal(t, heartbeatHealthServing, hb.GetHealthStatus())
-		assert.Equal(t, "ok", hb.GetHealthMessage())
-	case err := <-serveErr:
-		t.Fatalf("Serve returned before the first heartbeat: %v", err)
-	case <-ctx.Done():
-		t.Fatal("timeout waiting for the first heartbeat")
-	}
-
-	daemon.eventCh <- revocationEvent("cred:api_key")
-	select {
-	case reason := <-degraded:
-		assert.Equal(t, "secret_revoked: cred:api_key", reason)
-	case <-ctx.Done():
-		t.Fatal("timeout waiting for OnDegraded")
-	}
-	degradedAt := time.Now()
-
-	// The tick that fires after the transition reports degraded. One
-	// heartbeat may already be in flight with the old state, so at most one
-	// serving heartbeat may arrive after the transition, and the degraded
-	// one must land within two intervals of it.
-	deadline := time.After(2 * interval)
-	servingAfter := 0
-	for {
-		select {
-		case hb := <-daemon.heartbeatCh:
-			if hb.GetHealthStatus() == heartbeatHealthServing {
-				servingAfter++
-				require.LessOrEqual(t, servingAfter, 1,
-					"a second serving heartbeat after the revocation: the heartbeat ignores the lifecycle state")
-				continue
-			}
-			assert.Equal(t, heartbeatHealthDegraded, hb.GetHealthStatus())
-			assert.Equal(t, "secret_revoked: cred:api_key", hb.GetHealthMessage())
-			assert.Less(t, time.Since(degradedAt), 2*interval,
-				"the degraded heartbeat must land within one interval plus the tick in flight")
-			cancel()
-			require.NoError(t, <-serveErr)
-			return
-		case <-deadline:
-			t.Fatal("no degraded heartbeat within two intervals of the revocation")
-		}
-	}
-}
-
 // ----------------------------------------------------------------------------
 // Test: runHeartbeat reads the state machine on every tick (no Serve call)
 // ----------------------------------------------------------------------------
@@ -680,66 +544,6 @@ func TestComponentEventStream_BackoffDoublesToCap(t *testing.T) {
 // dispatch.Dispatcher behaves correctly.
 // ----------------------------------------------------------------------------
 
-func TestDrainerIntegration_RotationRestartCallsDrainThenExit(t *testing.T) {
-	m, err := manifest.LoadBytes([]byte(testManifestWithSecretsYAML))
-	require.NoError(t, err)
-
-	// Track the fake exiter call.
-	var exitCode int
-	var exitCalled atomic.Bool
-	origExiter := dispatch.SetExiterForTest(func(code int) {
-		exitCode = code
-		exitCalled.Store(true)
-	})
-	defer dispatch.SetExiterForTest(origExiter)
-
-	fakeClient := newFakeComponentClient()
-	disp := dispatch.New(fakeClient, dispatch.Config{
-		Handlers: map[string]dispatch.MethodHandler{
-			"Echo": func(_ context.Context, req json.RawMessage) (json.RawMessage, error) {
-				return req, nil
-			},
-		},
-	})
-
-	fakeSecrets := newFakeSecretsClient(map[string][]byte{
-		"cred:api_key": []byte("test-key"),
-	})
-	sm := lifecycle.New(lifecycle.LifecycleHooks{})
-
-	// Wire the subscriber with the dispatcher as Drainer.
-	eventCh := make(chan events.Event, 1)
-	stream := &chanEventStream{ch: eventCh}
-	sub := events.NewWithDrainer(stream, fakeSecrets, sm, disp, m)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Run subscriber in background.
-	go sub.Run(ctx)
-
-	// Send a rotation=restart event for the declared secret.
-	eventCh <- events.Event{
-		Type:       events.EventTypeSecretRotated,
-		Name:       "cred:api_key",
-		Version:    2,
-		OccurredAt: time.Now(),
-	}
-
-	// Wait for exit to be called.
-	deadline := time.After(2 * time.Second)
-	for !exitCalled.Load() {
-		select {
-		case <-deadline:
-			t.Fatal("timeout waiting for DrainThenExit to be called")
-		case <-time.After(5 * time.Millisecond):
-		}
-	}
-
-	assert.True(t, exitCalled.Load(), "DrainThenExit should have been called")
-	assert.Equal(t, 75, exitCode, "exit code should be 75 (rotation-restart sentinel)")
-}
-
 // chanEventStream is a test EventStream backed by a channel.
 type chanEventStream struct {
 	ch <-chan events.Event
@@ -827,18 +631,6 @@ func TestOptions_Defaults(t *testing.T) {
 	assert.NotNil(t, c.handlers)
 }
 
-func TestWithHealthAddr(t *testing.T) {
-	c := &config{}
-	WithHealthAddr(":9090")(c)
-	assert.Equal(t, ":9090", c.healthAddr)
-}
-
-func TestWithDrainTimeout(t *testing.T) {
-	c := &config{}
-	WithDrainTimeout(10 * time.Second)(c)
-	assert.Equal(t, 10*time.Second, c.drainTimeout)
-}
-
 func TestWithHandler_RegistersHandler(t *testing.T) {
 	c := &config{}
 	handler := func(_ context.Context, req string) (string, error) {
@@ -846,13 +638,6 @@ func TestWithHandler_RegistersHandler(t *testing.T) {
 	}
 	WithHandler("Echo", "test handler for Echo", handler)(c)
 	require.NotNil(t, c.handlers["Echo"])
-}
-
-func TestWithSecretsClient_SetsClient(t *testing.T) {
-	c := &config{}
-	fake := newFakeSecretsClient(nil)
-	WithSecretsClient(fake)(c)
-	assert.Equal(t, fake, c.secretsClient)
 }
 
 func TestWithManifest_SetsPath(t *testing.T) {

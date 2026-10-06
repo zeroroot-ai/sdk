@@ -51,16 +51,6 @@ type Config struct {
 	// Default: 8080
 	HealthPort int
 
-	// HealthEndpoint is the path for HTTP health checks.
-	// This is not currently used but reserved for future HTTP health endpoint.
-	// Default: /health
-	HealthEndpoint string
-
-	// GracefulTimeout is the maximum duration to wait for active requests
-	// to complete during graceful shutdown.
-	// Default: 30 seconds
-	GracefulTimeout time.Duration
-
 	// PlatformURL is the Gibson platform HTTPS base URL.
 	// Required for platform mode. Set via WithCapabilityGrant(), WithCapabilityGrantFromEnv(),
 	// or the GIBSON_URL environment variable read by WithCapabilityGrantFromEnv().
@@ -136,8 +126,6 @@ func DefaultConfig() *Config {
 
 	return &Config{
 		HealthPort:        healthPort,
-		HealthEndpoint:    "/health",
-		GracefulTimeout:   30 * time.Second,
 		PollInterval:      1 * time.Second,
 		HeartbeatInterval: 10 * time.Second,
 		PlatformURL:       os.Getenv("GIBSON_URL"),

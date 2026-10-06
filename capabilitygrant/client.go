@@ -50,20 +50,6 @@ type ClientConfig struct {
 	AgentMode string
 }
 
-// Capability is a single granted capability returned by the platform after
-// successful registration.
-type Capability struct {
-	// Name is the capability identifier (e.g., "tool:mytool", "mission:create").
-	Name string `json:"capability_name"`
-
-	// ComponentRef is an optional reference to the platform component that
-	// backs this capability.
-	ComponentRef string `json:"component_ref"`
-
-	// Description is a human-readable explanation of the capability.
-	Description string `json:"description"`
-}
-
 // Client manages the lifecycle of a Gibson platform connection for an external
 // agent. It is safe for concurrent use after construction.
 //
@@ -86,15 +72,8 @@ type Client struct {
 	// calls whose JWTs lack it (spec R2). Populated by
 	// applyRegistrationResponse; accessible via ComponentScope().
 	componentScope string
-	capabilities   []Capability
 	discovery      *DiscoveryDocument
 	httpClient     *http.Client
-	logger         *slog.Logger
-
-	// Revocation detector — populated lazily on first use by
-	// RevocationUnaryInterceptor / RevocationStreamInterceptor.
-	revocationInit sync.Once
-	revocationDet  *revocationDetector
 
 	// svidSource, when non-nil, fetches SPIFFE JWT-SVIDs from a local SPIRE
 	// Workload API and takes precedence over host+jwt/bootstrap as the
@@ -354,8 +333,7 @@ type registrationRequest struct {
 
 // registrationResponse is the JSON body returned by the register endpoint.
 type registrationResponse struct {
-	AgentID      string       `json:"agent_id"`
-	Capabilities []Capability `json:"capabilities"`
+	AgentID string `json:"agent_id"`
 	// ComponentScope is the FGA component identifier the platform bound to
 	// this installation. Required; an empty value means the platform is
 	// running a pre-component_scope build and the agent will fail every
@@ -393,20 +371,10 @@ func (c *Client) applyRegistrationResponse(body []byte) error {
 
 	c.mu.Lock()
 	c.agentID = resp.AgentID
-	c.capabilities = resp.Capabilities
 	c.componentScope = resp.ComponentScope
 	c.mu.Unlock()
 
 	return nil
-}
-
-// ComponentScope returns the FGA component identifier bound to this agent
-// installation by the platform at registration time. Returns an empty string
-// if Register has not been called successfully yet.
-func (c *Client) ComponentScope() string {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.componentScope
 }
 
 // AgentID returns the agent ID assigned by the platform after registration.
@@ -423,29 +391,6 @@ func (c *Client) HostID() string {
 	return c.hostID
 }
 
-// HasCapability returns true if the named capability was granted to this agent
-// by the platform during registration.
-func (c *Client) HasCapability(name string) bool {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	for _, cap := range c.capabilities {
-		if cap.Name == name {
-			return true
-		}
-	}
-	return false
-}
-
-// Capabilities returns a snapshot of all capabilities granted to this agent.
-// The returned slice is a copy; mutations do not affect the client.
-func (c *Client) Capabilities() []Capability {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	out := make([]Capability, len(c.capabilities))
-	copy(out, c.capabilities)
-	return out
-}
-
 // GRPCPerRPCCredentials returns a credentials.PerRPCCredentials implementation
 // that signs a fresh agent+jwt for every outbound gRPC call. Pass this to the
 // gRPC dial call used for harness callbacks to the daemon.
@@ -460,12 +405,6 @@ func (c *Client) GRPCPerRPCCredentials() credentials.PerRPCCredentials {
 	return &capabilityGrantCredentials{client: c}
 }
 
-// PlatformURL returns the platform base URL supplied at construction time.
-// Used by the serve loop to determine the gRPC dial target.
-func (c *Client) PlatformURL() string {
-	return c.config.PlatformURL
-}
-
 // SetHTTPClient replaces the underlying *http.Client used for discovery and
 // registration requests. This is useful when the caller needs a custom
 // transport — for example, to trust a test server's self-signed TLS certificate
@@ -477,32 +416,6 @@ func (c *Client) SetHTTPClient(hc *http.Client) {
 		return
 	}
 	c.httpClient = hc
-}
-
-// PatchDiscoveryRegisterURL overwrites the register endpoint URL in the cached
-// discovery document. This is intended for tests that need to redirect
-// registration traffic to a mock server whose address is only known at runtime
-// (e.g., httptest.Server.URL).
-//
-// The new URL must be on the platform origin, like every endpoint a discovery
-// document names. PatchDiscoveryRegisterURL returns ErrEndpointOrigin
-// otherwise, and an error when Discover has not been called yet.
-func (c *Client) PatchDiscoveryRegisterURL(registerURL string) error {
-	base, err := ParsePlatformURL(c.config.PlatformURL)
-	if err != nil {
-		return err
-	}
-	if err := checkEndpointOrigin(base, "register", registerURL); err != nil {
-		return err
-	}
-
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if c.discovery == nil {
-		return errors.New("capabilitygrant: PatchDiscoveryRegisterURL called before Discover")
-	}
-	c.discovery.Endpoints.Register = registerURL
-	return nil
 }
 
 // capabilityGrantCredentials implements credentials.PerRPCCredentials.

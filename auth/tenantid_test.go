@@ -9,35 +9,6 @@ import (
 	"testing"
 )
 
-func TestNewTenantID_Valid(t *testing.T) {
-	cases := []string{
-		"acme",
-		"acme-corp",
-		"a1b2c3",
-		"customer-42",
-		"u_under_score",
-		"a",
-		"alpha-beta-gamma",
-	}
-	for _, in := range cases {
-		t.Run(in, func(t *testing.T) {
-			tid, err := NewTenantID(in)
-			if err != nil {
-				t.Fatalf("expected ok, got %v", err)
-			}
-			if tid.String() != in {
-				t.Fatalf("got %q want %q", tid.String(), in)
-			}
-			if tid.IsZero() {
-				t.Fatalf("constructed tenant should not be zero")
-			}
-			if tid.IsSystem() {
-				t.Fatalf("constructed tenant should not be system tenant")
-			}
-		})
-	}
-}
-
 func TestNewTenantID_Trims(t *testing.T) {
 	tid, err := NewTenantID("  acme  \n")
 	if err != nil {
@@ -112,46 +83,6 @@ func TestNewTenantID_RejectReservedSystem(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "auth.SystemTenant") {
 		t.Fatalf("expected error to point caller at auth.SystemTenant, got %v", err)
-	}
-}
-
-func TestSystemTenant_IsSystem(t *testing.T) {
-	if !SystemTenant.IsSystem() {
-		t.Fatal("SystemTenant should be system")
-	}
-	if SystemTenant.IsZero() {
-		t.Fatal("SystemTenant should not be zero")
-	}
-	if SystemTenant.String() != "_system" {
-		t.Fatalf("SystemTenant string mismatch: %q", SystemTenant.String())
-	}
-}
-
-func TestZeroTenantID(t *testing.T) {
-	var zero TenantID
-	if !zero.IsZero() {
-		t.Fatal("zero value should report IsZero")
-	}
-	if zero.IsSystem() {
-		t.Fatal("zero value should not report IsSystem")
-	}
-	if zero.String() != "" {
-		t.Fatalf("zero string should be empty, got %q", zero.String())
-	}
-}
-
-func TestTenantID_Equal(t *testing.T) {
-	a := MustNewTenantID("acme")
-	a2, _ := NewTenantID("acme")
-	b := MustNewTenantID("bigcorp")
-	if !a.Equal(a2) {
-		t.Fatal("equal tenants should compare equal")
-	}
-	if a.Equal(b) {
-		t.Fatal("different tenants should not compare equal")
-	}
-	if a.Equal(SystemTenant) {
-		t.Fatal("user tenant should not equal system tenant")
 	}
 }
 

@@ -5,7 +5,6 @@ package workspace
 
 import (
 	"context"
-	"time"
 
 	"github.com/zeroroot-ai/sdk/codegen/editor"
 	"github.com/zeroroot-ai/sdk/codegen/git"
@@ -108,69 +107,6 @@ type WorkspaceManager interface {
 // WorkspaceConfig defines the workspace configuration for a mission.
 // This is deserialized from the mission YAML configuration and passed to the manager.
 type WorkspaceConfig struct {
-	// Repositories contains the list of Git repositories to clone.
-	// Each repository becomes a workspace accessible to agents.
-	Repositories []RepositoryConfig
-
-	// Settings contains workspace-wide settings for cleanup, LSP, and isolation.
-	Settings WorkspaceSettings
-}
-
-// RepositoryConfig defines a single Git repository to clone for the mission.
-type RepositoryConfig struct {
-	// Name is the unique identifier for this repository within the mission.
-	// Agents use this name to access the workspace via harness.Workspace(name).
-	Name string
-
-	// URL is the Git repository URL (HTTPS or SSH).
-	// Examples:
-	//   HTTPS: https://github.com/org/repo.git
-	//   SSH:   git@github.com:org/repo.git
-	URL string
-
-	// Branch is the Git branch to checkout after cloning.
-	// Defaults to the repository's default branch if empty.
-	Branch string
-
-	// CredentialName references a stored credential for authentication.
-	// The credential is retrieved from the workspace manager's CredStore (see manager.go).
-	// Agents pass a credential name; the manager resolves it through the plugin credential
-	// path — agents never receive the secret value directly.
-	// Supports API tokens for HTTPS and SSH keys for SSH URLs.
-	CredentialName string
-
-	// Shallow enables shallow cloning with --depth 1 for faster clones.
-	// Use this for large repositories where full history is not needed.
-	Shallow bool
-
-	// DependsOn lists repository names that must be cloned before this one.
-	// This enables dependency ordering for multi-repository projects.
-	// The manager will clone repositories in topologically sorted order.
-	DependsOn []string
-}
-
-// WorkspaceSettings contains workspace-wide configuration options.
-type WorkspaceSettings struct {
-	// CleanupOnComplete determines whether to delete workspace directories
-	// after mission completion. Set to false to preserve workspaces for debugging.
-	CleanupOnComplete bool
-
-	// UseWorktrees enables Git worktrees for agent isolation.
-	// When true, each agent gets a separate worktree from the same repository,
-	// allowing concurrent modifications without conflicts.
-	UseWorktrees bool
-
-	// LSPEnabled determines whether to start language servers for code validation.
-	// When true, editors will validate changes using LSP before applying them.
-	LSPEnabled bool
-
-	// LSPTimeout is the maximum time to wait for LSP validation responses.
-	// If validation exceeds this timeout, changes are applied with a warning.
-	LSPTimeout time.Duration
-
-	// BaseDirectory is the directory where workspace clones are created.
-	// Defaults to a temporary directory if not specified.
-	BaseDirectory string
 }
 
 // Editor provides code editing operations with SEARCH/REPLACE blocks and LSP validation.

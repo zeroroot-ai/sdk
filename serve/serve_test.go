@@ -6,19 +6,10 @@ package serve
 import (
 	"os"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestDefaultConfig(t *testing.T) {
-	cfg := DefaultConfig()
-
-	assert.Equal(t, 8080, cfg.HealthPort)
-	assert.Equal(t, "/health", cfg.HealthEndpoint)
-	assert.Equal(t, 30*time.Second, cfg.GracefulTimeout)
-}
 
 func TestValidateConfig_RequiresPlatformURL(t *testing.T) {
 	cfg := DefaultConfig()

@@ -14,16 +14,12 @@
     "github.com/zeroroot-ai/sdk/codegen/git": 58.6,
     "github.com/zeroroot-ai/sdk/codegen/lsp": 5,
     "github.com/zeroroot-ai/sdk/codegen/workspace": 29.3,
-    "github.com/zeroroot-ai/sdk/daemonclient": 62,
-    "github.com/zeroroot-ai/sdk/eval/example_logger": 0,
     "github.com/zeroroot-ai/sdk/examples/tool-runner-hello": 0,
     "github.com/zeroroot-ai/sdk/finding/classifier": 0,
     "github.com/zeroroot-ai/sdk/graphrag/id": 75.4,
     "github.com/zeroroot-ai/sdk/health": 0,
     "github.com/zeroroot-ai/sdk/health/http": 24.9,
     "github.com/zeroroot-ai/sdk/schema": 55.4,
-    "github.com/zeroroot-ai/sdk/serve": 26.3,
-    "github.com/zeroroot-ai/sdk/spiffe": 43.2,
-    "github.com/zeroroot-ai/sdk/tool": 59.6
+    "github.com/zeroroot-ai/sdk/serve": 26.3
   }
 }

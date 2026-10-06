@@ -66,16 +66,6 @@ const exitCode75 = 75
 // the call rather than actually exiting.
 var exiter = os.Exit
 
-// SetExiterForTest replaces the package-level exiter function used by
-// [Dispatcher.DrainThenExit] and returns the previous value so callers can
-// restore it with defer. This function is intended for use in tests only;
-// it is not safe for concurrent use.
-func SetExiterForTest(fn func(int)) func(int) {
-	prev := exiter
-	exiter = fn
-	return prev
-}
-
 // MethodHandler is the low-level, JSON-in/JSON-out dispatch function for one
 // method. The dispatcher passes the raw JSON request payload from
 // PluginInvokeRequest.request.value and submits the returned raw JSON bytes as

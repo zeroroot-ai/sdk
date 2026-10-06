@@ -13,22 +13,6 @@ import (
 	"github.com/zeroroot-ai/sdk/plugin/metrics"
 )
 
-// TestDefaultIsNop verifies that the package-level Default is a no-op and
-// never panics — including after a nil check is removed.
-func TestDefaultIsNop(t *testing.T) {
-	t.Parallel()
-	r := metrics.Default
-	if r == nil {
-		t.Fatal("Default must not be nil")
-	}
-	// All calls must be silent no-ops.
-	r.ObserveStartup("p", time.Now())
-	r.ObserveInvocation("p", "M", metrics.ResultOK, time.Millisecond)
-	r.ObserveRotationPropagation("p", 100*time.Millisecond)
-	r.RecordTransition("p", "i-1", lifecycle.Bootstrapping, lifecycle.Registering)
-	r.SetState("p", "i-1", lifecycle.Ready)
-}
-
 // TestNoGlobalRegistryPollution is the core invariant of sdk#130.
 // Importing plugin/metrics must NOT register any collectors on the default
 // Prometheus registry. If this test fails, an init() is silently mutating the
@@ -48,24 +32,6 @@ func TestNoGlobalRegistryPollution(t *testing.T) {
 			t.Errorf("found capability grant metric %q in default Prometheus registry; must not auto-register on import", name)
 		}
 	}
-}
-
-// TestSetDefault verifies that SetDefault replaces Default and that passing
-// nil reverts to a no-op recorder.
-func TestSetDefault(t *testing.T) {
-	original := metrics.Default
-	t.Cleanup(func() { metrics.SetDefault(original) })
-
-	called := false
-	metrics.SetDefault(spyRecorder{onObserve: func() { called = true }})
-	metrics.Default.ObserveStartup("p", time.Now())
-	if !called {
-		t.Error("SetDefault: custom recorder not called")
-	}
-
-	// Passing nil must not panic and must revert to a no-op.
-	metrics.SetDefault(nil)
-	metrics.Default.ObserveStartup("p", time.Now()) // must not panic
 }
 
 // spyRecorder is a test-only Recorder that calls onObserve on every method.

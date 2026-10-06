@@ -35,7 +35,6 @@ import (
 	pluginpb "github.com/zeroroot-ai/sdk/api/gen/gibson/plugin/v1"
 	"github.com/zeroroot-ai/sdk/capabilitygrant"
 	"github.com/zeroroot-ai/sdk/plugin/dispatch"
-	"github.com/zeroroot-ai/sdk/plugin/egress"
 	"github.com/zeroroot-ai/sdk/plugin/events"
 	"github.com/zeroroot-ai/sdk/plugin/health"
 	"github.com/zeroroot-ai/sdk/plugin/lifecycle"
@@ -53,6 +52,10 @@ import (
 // Handlers MUST NOT include resolved secret values in any returned error string.
 type MethodHandler = dispatch.MethodHandler
 
+// envRuntimeKey names the environment variable that holds the plugin runtime
+// mode: "process" (the default), "pod" or "setec".
+const envRuntimeKey = "GIBSON_PLUGIN_RUNTIME"
+
 // Serve is the single entry point a plugin author calls from main(). It
 // orchestrates all plugin SDK components:
 //
@@ -60,14 +63,13 @@ type MethodHandler = dispatch.MethodHandler
 //  2. Cross-checks registered method handlers against manifest declarations.
 //  3. Acquires a daemon connection via capabilitygrant (Bootstrap → Discover → Register).
 //  4. Constructs the secrets client wrapping GetCredential.
-//  5. Starts the egress enforcer (per GIBSON_PLUGIN_RUNTIME).
-//  6. Pre-resolves all manifest secrets with scope=startup, required=true.
-//  7. Starts the lifecycle state machine, invokes OnStart, transitions to Ready.
-//  8. Starts the health server on the configured port.
-//  9. Starts the events subscriber on the WatchComponentEvents stream.
-//  10. Starts the dispatch loop (PollWork → handler → SubmitResult).
-//  11. Blocks until ctx is cancelled or a fatal error occurs.
-//  12. On SIGTERM/SIGINT: stops new work, drains in-flight handlers up to
+//  5. Pre-resolves all manifest secrets with scope=startup, required=true.
+//  6. Starts the lifecycle state machine, invokes OnStart, transitions to Ready.
+//  7. Starts the health server on the configured port.
+//  8. Starts the events subscriber on the WatchComponentEvents stream.
+//  9. Starts the dispatch loop (PollWork → handler → SubmitResult).
+//  10. Blocks until ctx is cancelled or a fatal error occurs.
+//  11. On SIGTERM/SIGINT: stops new work, drains in-flight handlers up to
 //     drainTimeout, runs OnStop, exits cleanly.
 //  13. On rotation=restart event: drains then exits with code 75.
 //
@@ -135,11 +137,11 @@ func Serve(ctx context.Context, opts ...Option) error {
 	// Step 3: Check setec_required policy.
 	// -------------------------------------------------------------------------
 	if m.Spec.Policy.SetecRequired {
-		runtime := os.Getenv(egress.EnvRuntimeKey)
+		runtime := os.Getenv(envRuntimeKey)
 		if runtime == "" {
-			runtime = egress.RuntimeProcess
+			runtime = "process"
 		}
-		if runtime != egress.RuntimeSetec {
+		if runtime != "setec" {
 			return fmt.Errorf("plugin.Serve: manifest requires setec runtime "+
 				"(spec.policy.setec_required=true) but GIBSON_PLUGIN_RUNTIME=%q", runtime)
 		}
@@ -388,14 +390,6 @@ func Serve(ctx context.Context, opts ...Option) error {
 	// -------------------------------------------------------------------------
 	if err := sm.Transition(lifecycle.ResolvingSecrets); err != nil {
 		return fmt.Errorf("plugin.Serve: lifecycle transition to ResolvingSecrets: %w", err)
-	}
-
-	// -------------------------------------------------------------------------
-	// Step 9: Apply egress enforcer.
-	// -------------------------------------------------------------------------
-	egressEnforcer := egress.New(nil) // nil SetecClient; concrete impl is Setec SDK scope.
-	if err := egressEnforcer.Apply(signalCtx, m.Spec.Egress); err != nil {
-		return fmt.Errorf("plugin.Serve: egress enforcer: %w", err)
 	}
 
 	// -------------------------------------------------------------------------

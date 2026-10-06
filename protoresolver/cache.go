@@ -55,10 +55,6 @@ type FileDescriptorCache interface {
 
 // CacheStats provides metrics about cache performance.
 type CacheStats struct {
-	Hits      int64 // Number of successful cache retrievals
-	Misses    int64 // Number of cache misses
-	Entries   int   // Current number of entries in cache
-	Evictions int64 // Number of entries evicted due to capacity limits
 }
 
 // cacheEntry represents a single entry in the LRU cache.
@@ -181,12 +177,7 @@ func (c *lruCache) Stats() CacheStats {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	return CacheStats{
-		Hits:      c.hits.Load(),
-		Misses:    c.misses.Load(),
-		Entries:   c.lruList.Len(),
-		Evictions: c.evictions.Load(),
-	}
+	return CacheStats{}
 }
 
 // evictOldest removes the least recently used entry from the cache.

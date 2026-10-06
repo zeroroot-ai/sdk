@@ -28,15 +28,11 @@ import (
 	"github.com/zeroroot-ai/sdk/plugin/metrics"
 )
 
-// startupBuckets covers the NFR Performance startup budget (5s) plus a small
-// margin for the long tail.
-var startupBuckets = prometheus.ExponentialBuckets(0.05, 2, 9) // 50ms..~12.8s
+// 50ms..~12.8s
 
-// invokeBuckets covers per-invocation handler durations up to ~40s.
-var invokeBuckets = prometheus.ExponentialBuckets(0.005, 2, 14) // 5ms..~40s
+// 5ms..~40s
 
-// rotationBuckets covers the rotation-propagation 5s p95 SLO.
-var rotationBuckets = prometheus.ExponentialBuckets(0.05, 2, 9) // 50ms..~12.8s
+// 50ms..~12.8s
 
 // Recorder implements [metrics.Recorder] using Prometheus metric vectors
 // registered with a caller-supplied [prometheus.Registerer].
@@ -50,69 +46,6 @@ type Recorder struct {
 }
 
 var _ metrics.Recorder = (*Recorder)(nil)
-
-// New allocates and registers all Gibson plugin metric vectors with reg,
-// then returns a Recorder backed by them. Panics via reg.MustRegister if
-// any name collides — use a fresh [prometheus.Registry] per process or
-// per test to avoid conflicts.
-func New(reg prometheus.Registerer) *Recorder {
-	r := &Recorder{
-		startupSeconds: prometheus.NewHistogramVec(
-			prometheus.HistogramOpts{
-				Name:    "gibson_plugin_startup_seconds",
-				Help:    "Plugin startup time, measured from plugin.Serve entry to the first transition into the Ready lifecycle state.",
-				Buckets: startupBuckets,
-			},
-			[]string{"plugin"},
-		),
-		invokeDurationSeconds: prometheus.NewHistogramVec(
-			prometheus.HistogramOpts{
-				Name:    "gibson_plugin_invoke_duration_seconds",
-				Help:    "Per-invocation handler duration in seconds, labeled by plugin, method, and result outcome.",
-				Buckets: invokeBuckets,
-			},
-			[]string{"plugin", "method", "result"},
-		),
-		rotationPropagationSeconds: prometheus.NewHistogramVec(
-			prometheus.HistogramOpts{
-				Name:    "gibson_plugin_rotation_propagation_seconds",
-				Help:    "End-to-end secret rotation propagation latency, measured from the secret_rotated event server-side timestamp to the plugin's cache invalidation. SLO: p95 <= 5s.",
-				Buckets: rotationBuckets,
-			},
-			[]string{"plugin"},
-		),
-		invokeTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "gibson_plugin_invoke_total",
-				Help: "Total plugin method invocations, labeled by plugin, method, and result outcome.",
-			},
-			[]string{"plugin", "method", "result"},
-		),
-		lifecycleTransitionTotal: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "gibson_plugin_lifecycle_transition_total",
-				Help: "Total plugin lifecycle state transitions, labeled by plugin and the from / to state names.",
-			},
-			[]string{"plugin", "from", "to"},
-		),
-		stateGauge: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "gibson_plugin_state",
-				Help: "Current plugin lifecycle state, encoded as 0..7 (Bootstrapping=0, Registering=1, ResolvingSecrets=2, Starting=3, Ready=4, Degraded=5, Draining=6, Stopped=7).",
-			},
-			[]string{"plugin", "install_id"},
-		),
-	}
-	reg.MustRegister(
-		r.startupSeconds,
-		r.invokeDurationSeconds,
-		r.rotationPropagationSeconds,
-		r.invokeTotal,
-		r.lifecycleTransitionTotal,
-		r.stateGauge,
-	)
-	return r
-}
 
 // ObserveStartup records a startup duration sample for plugin.
 func (r *Recorder) ObserveStartup(plugin string, t0 time.Time) {

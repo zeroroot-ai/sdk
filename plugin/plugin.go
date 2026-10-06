@@ -35,8 +35,6 @@
 //	}
 package plugin
 
-import "github.com/zeroroot-ai/sdk/plugin/manifest"
-
 // Descriptor is a resolved, harness-visible snapshot of a plugin registration.
 // It is constructed from the plugin's manifest at registration time and returned
 // by agent.Harness.ListPlugins. Agents use it for method discovery without
@@ -76,32 +74,4 @@ type MethodDescriptor struct {
 	// Capabilities is the list of declared capability strings for the method
 	// (e.g. "cache", "rate_limit:tier1").
 	Capabilities []string `json:"capabilities,omitempty"`
-}
-
-// FromManifest constructs a Descriptor from a loaded manifest.Manifest.
-// It is called by the daemon at registration time and by the SDK framework
-// registry when building the harness-visible list.
-//
-// FromManifest does not call manifest.Load — it expects an already-loaded
-// and validated *manifest.Manifest. It sets each method's Name and Description;
-// the per-method request/response schema is derived from the registered Go
-// handlers (see [WithHandler]), not from the manifest, so InputSchema and
-// OutputSchema are left empty here.
-//
-// The returned Descriptor.Methods is always non-nil; it is an empty slice
-// when the manifest declares no methods.
-func FromManifest(m *manifest.Manifest) Descriptor {
-	methods := make([]MethodDescriptor, 0, len(m.Spec.Methods))
-	for _, meth := range m.Spec.Methods {
-		methods = append(methods, MethodDescriptor{
-			Name:        meth.Name,
-			Description: meth.Description,
-		})
-	}
-	return Descriptor{
-		Name:        m.Metadata.Name,
-		Version:     m.Metadata.Version,
-		Description: m.Metadata.Description,
-		Methods:     methods,
-	}
 }

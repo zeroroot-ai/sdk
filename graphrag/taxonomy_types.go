@@ -60,12 +60,6 @@ type NodeTypeInfo struct {
 
 // PropertyInfo contains metadata about a property.
 type PropertyInfo struct {
-	Name        string
-	Type        string // e.g., "string", "int32", "float64"
-	Required    bool
-	Description string
-	Format      string
-	Enum        []string
 }
 
 // RelationshipTypeInfo contains metadata about a relationship type.
@@ -86,7 +80,6 @@ type TechniqueInfo struct {
 	Description string
 	Taxonomy    string // e.g., "gibson", "mitre"
 	Tactic      string
-	URL         string
 }
 
 // Global taxonomy instance
@@ -100,30 +93,6 @@ func SetTaxonomy(t TaxonomyIntrospector) {
 	globalTaxonomyMu.Lock()
 	defer globalTaxonomyMu.Unlock()
 	globalTaxonomy = t
-}
-
-// GetTaxonomy returns the global taxonomy instance.
-func GetTaxonomy() TaxonomyIntrospector {
-	globalTaxonomyMu.RLock()
-	defer globalTaxonomyMu.RUnlock()
-	return globalTaxonomy
-}
-
-// TaxonomyRegistry manages taxonomy extensions from agents and plugins.
-// This allows runtime extension of the core taxonomy with custom node types
-// and relationships.
-type TaxonomyRegistry interface {
-	// RegisterExtension adds custom taxonomy definitions from an agent or plugin.
-	RegisterExtension(name string, ext TaxonomyExtension) error
-
-	// UnregisterExtension removes taxonomy definitions from an agent or plugin.
-	UnregisterExtension(name string) error
-
-	// GetExtension returns the taxonomy extension for a registered name.
-	GetExtension(name string) (TaxonomyExtension, bool)
-
-	// AllExtensions returns all registered taxonomy extensions.
-	AllExtensions() map[string]TaxonomyExtension
 }
 
 // TaxonomyExtension contains custom taxonomy definitions contributed by an agent or plugin.
@@ -338,11 +307,6 @@ func (r *DefaultTaxonomyRegistry) AllExtensions() map[string]TaxonomyExtension {
 		result[k] = v
 	}
 	return result
-}
-
-// Core returns the core taxonomy.
-func (r *DefaultTaxonomyRegistry) Core() TaxonomyIntrospector {
-	return r.core
 }
 
 // Version delegates to the core taxonomy.

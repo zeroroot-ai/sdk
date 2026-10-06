@@ -39,8 +39,6 @@ import (
 
 const (
 	envInputB64  = "GIBSON_TOOL_INPUT_B64"
-	envTraceID   = "GIBSON_TRACE_ID"
-	envSpanID    = "GIBSON_SPAN_ID"
 	markerOutput = "===GIBSON_TOOL_OUTPUT==="
 	markerError  = "===GIBSON_TOOL_ERROR==="
 

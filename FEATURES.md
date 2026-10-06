@@ -45,9 +45,7 @@ go get github.com/zeroroot-ai/sdk@latest
 |---------|-------------------|
 | `auth` | The SDK-side identity and authorization surface, including the tenant type |
 | `capabilitygrant` | The client half of the Capability Grant Protocol: enrollment, the host keypair store, grant verification |
-| `spiffe` | Thin helpers over the SPIFFE Workload API |
 | `serve` | gRPC servers for agents, tools and plugins, with Kubernetes health probes and graceful shutdown |
-| `daemonclient` | The client stub SDK consumers use to reach a running daemon |
 | `api` | The generated protobuf and gRPC types the wire contract is made of |
 
 ## Supporting packages
@@ -59,7 +57,6 @@ go get github.com/zeroroot-ai/sdk@latest
 | `enum` | A registry that normalizes shorthand enum values to their protobuf names |
 | `toolerr` | Structured, typed tool errors |
 | `protoresolver` | An LRU cache for parsed protobuf `FileDescriptorSet`s |
-| `eval` | A `testing`-integrated evaluation framework with scorers for security agents |
 | `codegen` | Primitives for generating, editing and validating code inside a workspace |
 
 ## What this module does not contain

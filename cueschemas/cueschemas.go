@@ -30,7 +30,6 @@ package cueschemas
 
 import (
 	"embed"
-	"io/fs"
 
 	sdk "github.com/zeroroot-ai/sdk"
 )
@@ -43,13 +42,3 @@ import (
 // The underlying embed.FS is initialized from the module root where
 // cue.mod/ and api/proto/ reside. See cue_schemas.go in the root package.
 var Schemas embed.FS = sdk.CueSchemas
-
-// Open is a convenience wrapper around [Schemas.Open].
-func Open(name string) (fs.File, error) {
-	return Schemas.Open(name)
-}
-
-// ReadFile is a convenience wrapper around [fs.ReadFile] on [Schemas].
-func ReadFile(name string) ([]byte, error) {
-	return fs.ReadFile(Schemas, name)
-}

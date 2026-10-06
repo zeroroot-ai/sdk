@@ -122,27 +122,6 @@ const (
 	MissionStatusCancelled MissionStatus = "cancelled"
 )
 
-// IsValid checks if the status is a recognized value.
-func (s MissionStatus) IsValid() bool {
-	switch s {
-	case MissionStatusPending, MissionStatusRunning, MissionStatusPaused,
-		MissionStatusCompleted, MissionStatusFailed, MissionStatusCancelled:
-		return true
-	default:
-		return false
-	}
-}
-
-// IsTerminal returns true if the status represents a final state.
-func (s MissionStatus) IsTerminal() bool {
-	switch s {
-	case MissionStatusCompleted, MissionStatusFailed, MissionStatusCancelled:
-		return true
-	default:
-		return false
-	}
-}
-
 // MissionStatusInfo provides detailed status information about a running mission.
 type MissionStatusInfo struct {
 	// Status is the current execution state.

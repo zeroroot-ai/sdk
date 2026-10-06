@@ -90,16 +90,15 @@
 // Plugin author code is the same across all three modes. The SDK selects mode
 // behaviour based on the GIBSON_PLUGIN_RUNTIME environment variable:
 //
-//   - process (default): laptop and CI. Network egress is informational only;
-//     no enforcement occurs. Use `gibson component run` locally.
+//   - process (default): laptop and CI. Use `gibson component run` locally.
 //
-//   - pod: Kubernetes deployment. The daemon emits a NetworkPolicy at
-//     registration time matching spec.egress[]. The SDK itself is a no-op in
-//     the egress path; the cluster enforces.
+//   - pod: Kubernetes deployment.
 //
-//   - setec: Setec microVM. The SDK registers spec.egress[] with the Setec
-//     orchestrator at startup; outbound traffic to undeclared targets is dropped
-//     at the microVM boundary.
+//   - setec: Setec microVM. A manifest with spec.policy.setec_required refuses
+//     to start in any other mode.
+//
+// The SDK does not enforce egress in any mode. The cluster network does
+// (D19).
 //
 // # Lifecycle States
 //
@@ -157,5 +156,4 @@
 //   - [pluginsecrets.Client] — credential resolution with caching.
 //   - [events.Subscriber] — rotation and revocation event handling.
 //   - [dispatch.Dispatcher] — PollWork → handler → SubmitResult dispatch loop.
-//   - [egress.Enforcer] — runtime-mode-specific egress enforcement.
 package plugin

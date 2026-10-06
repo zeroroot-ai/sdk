@@ -51,20 +51,6 @@ func TestResolveSecret_PropagatesClientError(t *testing.T) {
 		"a client-side resolve failure must not masquerade as a missing-client error")
 }
 
-// TestSecretsFromContext_RoundTrip verifies the lower-level accessor returns the
-// exact client that was injected, and reports absence correctly.
-func TestSecretsFromContext_RoundTrip(t *testing.T) {
-	fake := newFakeSecretsClient(map[string][]byte{})
-
-	_, ok := SecretsFromContext(context.Background())
-	assert.False(t, ok, "bare context carries no client")
-
-	ctx := pluginsecrets.NewContext(context.Background(), fake)
-	got, ok := SecretsFromContext(ctx)
-	require.True(t, ok)
-	assert.Same(t, fake, got.(*fakeSecretsClient))
-}
-
 // TestErrNoSecretsClient_IsStable guards the sentinel identity so downstream
 // plugins can match on it with errors.Is even through a wrapping layer.
 func TestErrNoSecretsClient_IsStable(t *testing.T) {

@@ -57,12 +57,11 @@ type CallbackHarness struct {
 	forkWatcher *fork.Watcher
 
 	// Context
-	logger         *slog.Logger
-	tracer         trace.Tracer
-	mission        types.MissionContext
-	target         types.TargetInfo
-	planContext    planning.PlanningContext
-	missionExecCtx types.MissionExecutionContext
+	logger      *slog.Logger
+	tracer      trace.Tracer
+	mission     types.MissionContext
+	target      types.TargetInfo
+	planContext planning.PlanningContext
 
 	// Taxonomy support
 	taxonomy         *TaxonomyAdapter
@@ -152,18 +151,6 @@ func (h *CallbackHarness) initTaxonomy(ctx context.Context) {
 			"relationship_types", len(h.taxonomy.RelationshipTypes()),
 			"techniques", len(h.taxonomy.TechniqueIDs("")))
 	})
-}
-
-// SetPlanContext sets the planning context for this harness.
-// This should be called by the orchestrator when executing a planned mission.
-func (h *CallbackHarness) SetPlanContext(ctx planning.PlanningContext) {
-	h.planContext = ctx
-}
-
-// SetMissionExecutionContext sets the mission execution context for this harness.
-// This should be called by the orchestrator when executing a mission with run history.
-func (h *CallbackHarness) SetMissionExecutionContext(ctx types.MissionExecutionContext) {
-	h.missionExecCtx = ctx
 }
 
 // ============================================================================
@@ -1500,125 +1487,6 @@ func protoToMissionResult(p *harnesspb.MissionResult) *mission.MissionResult {
 // Taxonomy Operations
 // ============================================================================
 
-// Taxonomy returns the taxonomy adapter for this harness.
-// Returns nil if taxonomy was not successfully initialized.
-func (h *CallbackHarness) Taxonomy() *TaxonomyAdapter {
-	return h.taxonomy
-}
-
-// HasTaxonomy returns true if taxonomy is available for this harness.
-func (h *CallbackHarness) HasTaxonomy() bool {
-	return h.taxonomy != nil
-}
-
-// GenerateNodeID generates a deterministic node ID using taxonomy templates.
-// Calls the orchestrator's GenerateNodeID RPC method.
-func (h *CallbackHarness) GenerateNodeID(ctx context.Context, nodeType string, properties map[string]any) (string, error) {
-	req := &harnesspb.GenerateNodeIDRequest{
-		NodeType:   nodeType,
-		Properties: ToTypedMap(properties),
-	}
-
-	resp, err := h.client.GenerateNodeID(ctx, req)
-	if err != nil {
-		return "", fmt.Errorf("GenerateNodeID callback failed: %w", err)
-	}
-
-	if resp.Error != nil {
-		return "", fmt.Errorf("GenerateNodeID error: %s", resp.Error.Message)
-	}
-
-	return resp.NodeId, nil
-}
-
-// ValidationResult represents the result of a taxonomy validation.
-type ValidationResult struct {
-	Valid    bool
-	Errors   []ValidationError
-	Warnings []string
-}
-
-// ValidationError represents a single validation error.
-type ValidationError struct {
-	Field   string
-	Message string
-	Code    string
-}
-
-// ValidateFinding validates a finding against the taxonomy schema.
-func (h *CallbackHarness) ValidateFinding(ctx context.Context, f *finding.Finding) (*ValidationResult, error) {
-	req := &harnesspb.ValidateFindingRequest{
-		Finding: FindingToProto(f),
-	}
-
-	resp, err := h.client.ValidateFinding(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("ValidateFinding callback failed: %w", err)
-	}
-
-	if resp.Error != nil {
-		return nil, fmt.Errorf("ValidateFinding error: %s", resp.Error.Message)
-	}
-
-	return convertValidationFields(resp.Valid, resp.Errors, resp.Warnings), nil
-}
-
-// ValidateGraphNode validates a graph node against the taxonomy schema.
-func (h *CallbackHarness) ValidateGraphNode(ctx context.Context, nodeType string, properties map[string]any) (*ValidationResult, error) {
-	req := &harnesspb.ValidateGraphNodeRequest{
-		NodeType:   nodeType,
-		Properties: ToTypedMap(properties),
-	}
-
-	resp, err := h.client.ValidateGraphNode(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("ValidateGraphNode callback failed: %w", err)
-	}
-
-	if resp.Error != nil {
-		return nil, fmt.Errorf("ValidateGraphNode error: %s", resp.Error.Message)
-	}
-
-	return convertValidationFields(resp.Valid, resp.Errors, resp.Warnings), nil
-}
-
-// ValidateRelationship validates a relationship against the taxonomy schema.
-func (h *CallbackHarness) ValidateRelationship(ctx context.Context, relType, _, _ string, properties map[string]any) (*ValidationResult, error) {
-	req := &harnesspb.ValidateRelationshipRequest{
-		RelationshipType: relType,
-		Properties:       ToTypedMap(properties),
-	}
-
-	resp, err := h.client.ValidateRelationship(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("ValidateRelationship callback failed: %w", err)
-	}
-
-	if resp.Error != nil {
-		return nil, fmt.Errorf("ValidateRelationship error: %s", resp.Error.Message)
-	}
-
-	return convertValidationFields(resp.Valid, resp.Errors, resp.Warnings), nil
-}
-
-// convertValidationFields converts proto validation fields to ValidationResult.
-func convertValidationFields(valid bool, errors []*harnesspb.ValidationError, warnings []string) *ValidationResult {
-	result := &ValidationResult{
-		Valid:    valid,
-		Warnings: warnings,
-	}
-
-	for _, e := range errors {
-		result.Errors = append(result.Errors, ValidationError{
-			Field:   e.Field,
-			Message: e.Message,
-			Code:    e.Code,
-		})
-	}
-
-	return result
-}
-
 // ============================================================================
 // Tool Work Queue Operations
 // ============================================================================
@@ -1909,19 +1777,6 @@ func (h *CallbackHarness) Workspaces() map[string]workspace.Workspace {
 // ============================================================================
 // Authorization Methods
 // ============================================================================
-
-// SetAuthzContext stores the mission run ID from the work envelope's AuthzContext.
-// This is called by the SDK serve loop after verifying the HMAC signature on the
-// envelope. The run ID is forwarded in every subsequent Authorize call so the
-// daemon can resolve the executing user and tenant.
-//
-// failOpen controls behavior when the daemon's Authorize RPC is unreachable:
-//   - false (default): fail-closed — treat Unavailable as deny.
-//   - true (dev mode): fail-open — log WARN and allow.
-func (h *CallbackHarness) SetAuthzContext(runID string, failOpen bool) {
-	h.authzRunID = runID
-	h.failOpenAuthz = failOpen
-}
 
 // Authorize implements agent.Harness by forwarding the authorization check to
 // the daemon's HarnessCallbackService.Authorize RPC.

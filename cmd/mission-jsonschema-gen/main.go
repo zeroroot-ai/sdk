@@ -36,7 +36,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -83,7 +82,6 @@ func run(inputPath, outputPath string) error {
 	}
 
 	g := &generator{
-		files:       files,
 		definitions: make(map[string]map[string]any),
 		seen:        make(map[string]bool),
 	}
@@ -107,7 +105,6 @@ func run(inputPath, outputPath string) error {
 }
 
 type generator struct {
-	files       *protoregistry.Files
 	definitions map[string]map[string]any
 	seen        map[string]bool
 }

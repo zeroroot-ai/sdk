@@ -38,14 +38,6 @@ import (
 // strings to keep cardinality bounded.
 type Result string
 
-const (
-	ResultOK               Result = "ok"
-	ResultError            Result = "error"
-	ResultDeadlineExceeded Result = "deadline_exceeded"
-	ResultPanic            Result = "panic"
-	ResultMethodNotFound   Result = "method_not_found"
-)
-
 // Recorder is the observability surface the plugin SDK emits metrics through.
 // A nil Recorder is safe: all call sites guard with if r == nil.
 // Use SetDefault to replace the package-level no-op with a real implementation.
@@ -61,16 +53,6 @@ type Recorder interface {
 // importing this package never mutates any global Prometheus registry.
 // Replace it with SetDefault before calling plugin.Serve.
 var Default Recorder = nopRecorder{}
-
-// SetDefault replaces the package-level Default recorder. It is not
-// goroutine-safe; call it once during program initialisation before any
-// plugin.Serve call.
-func SetDefault(r Recorder) {
-	if r == nil {
-		r = nopRecorder{}
-	}
-	Default = r
-}
 
 // nopRecorder is the zero-cost default. Every method is a no-op.
 type nopRecorder struct{}

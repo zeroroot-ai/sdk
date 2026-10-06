@@ -4,20 +4,10 @@
 package serve
 
 import (
-	"context"
 	"log/slog"
 	"os"
-	"time"
 
-	commonpb "github.com/zeroroot-ai/sdk/api/gen/gibson/common/v1"
-	toolpb "github.com/zeroroot-ai/sdk/api/gen/gibson/tool/v1"
-	"github.com/zeroroot-ai/sdk/enum"
 	"github.com/zeroroot-ai/sdk/tool"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/reflect/protoregistry"
 )
 
 // SchemaFlag is the command-line flag used to request schema output.
@@ -64,125 +54,4 @@ func hasSchemaFlag() bool {
 		}
 	}
 	return false
-}
-
-// toolServiceServer implements the gRPC ToolService for an SDK tool.
-// It bridges the gRPC protocol to the tool.Tool interface.
-type toolServiceServer struct {
-	toolpb.UnimplementedToolServiceServer
-	tool      tool.Tool
-	extractor EntityExtractor
-}
-
-// GetDescriptor returns the tool's descriptor including name, version, description, and tags.
-//
-// The input_schema and output_schema fields in ToolDescriptor are intentionally left empty.
-// These JSON Schema fields remain in tool.proto for wire compatibility with older clients but
-// carry no semantic value for tools built with this SDK. All type information is conveyed
-// through the fully-qualified proto message type names exposed by tool.InputMessageType() and
-// tool.OutputMessageType(), which the platform receives via RegisterComponent's
-// input_message_type and output_message_type fields. Once task 1.3 adds those fields
-// directly to ToolDescriptor, clients can read them from the descriptor response as well.
-func (s *toolServiceServer) GetDescriptor(ctx context.Context, req *toolpb.GetDescriptorRequest) (*toolpb.GetDescriptorResponse, error) {
-	return &toolpb.GetDescriptorResponse{
-		Name:        s.tool.Name(),
-		Description: s.tool.Description(),
-		Version:     s.tool.Version(),
-		Tags:        s.tool.Tags(),
-		// InputSchema/OutputSchema intentionally not populated: tools use proto message types,
-		// not JSON schemas. See comment on GetDescriptor for details.
-	}, nil
-}
-
-// Execute runs the tool with the provided input.
-// The input is serialized as JSON in the request and the output is
-// serialized as JSON in the response.
-func (s *toolServiceServer) Execute(ctx context.Context, req *toolpb.ExecuteRequest) (*toolpb.ExecuteResponse, error) {
-	// Apply timeout if specified
-	if req.TimeoutMs > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(req.TimeoutMs)*time.Millisecond)
-		defer cancel()
-	}
-
-	// Get the tool's input message type
-	inputTypeName := s.tool.InputMessageType()
-	if inputTypeName == "" {
-		return nil, status.Errorf(codes.Unimplemented, "tool does not specify InputMessageType")
-	}
-
-	// Find the proto message type in the global registry
-	messageType, err := protoregistry.GlobalTypes.FindMessageByName(protoreflect.FullName(inputTypeName))
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find message type %q: %v", inputTypeName, err)
-	}
-
-	// Create a new instance of the proto message
-	protoReq := messageType.New().Interface()
-
-	// Apply enum normalization using the centralized enum.Normalize function
-	normalizedJSON := enum.Normalize(s.tool.Name(), req.InputJson)
-
-	// Unmarshal JSON input into the proto message with lenient settings
-	unmarshaler := protojson.UnmarshalOptions{
-		DiscardUnknown: true, // Ignore unknown fields
-	}
-	if err := unmarshaler.Unmarshal([]byte(normalizedJSON), protoReq); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid input JSON for type %s: %v", inputTypeName, err)
-	}
-
-	// Execute the tool using ExecuteProto
-	protoResp, err := s.tool.ExecuteProto(ctx, protoReq)
-
-	// Build response
-	resp := &toolpb.ExecuteResponse{}
-
-	// Handle execution result
-	if err == nil {
-		// Run extraction if configured — populate field 100 before serializing.
-		if s.extractor != nil && protoResp != nil {
-			func() {
-				defer func() {
-					if r := recover(); r != nil {
-						slog.Error("extractor panicked, continuing without discovery",
-							"tool", s.tool.Name(), "panic", r)
-					}
-				}()
-				if discovery, extractErr := s.extractor.Extract(ctx, protoResp); extractErr != nil {
-					slog.Warn("extraction failed, continuing without discovery",
-						"tool", s.tool.Name(), "error", extractErr)
-				} else if discovery != nil {
-					setDiscoveryField(protoResp, discovery)
-				}
-			}()
-		}
-
-		// Marshal proto response to JSON
-		outputJSON, jsonErr := protojson.Marshal(protoResp)
-		if jsonErr != nil {
-			return nil, status.Errorf(codes.Internal, "failed to marshal output: %v", jsonErr)
-		}
-		resp.OutputJson = string(outputJSON)
-	} else {
-		// Map error to proto error
-		resp.Error = &commonpb.Error{
-			Code:      "EXECUTION_ERROR",
-			Message:   err.Error(),
-			Retryable: false,
-		}
-	}
-
-	return resp, nil
-}
-
-// Health returns the current health status of the tool.
-func (s *toolServiceServer) Health(ctx context.Context, req *toolpb.HealthRequest) (*toolpb.HealthResponse, error) {
-	health := s.tool.Health(ctx)
-
-	return &toolpb.HealthResponse{
-		Status: &commonpb.HealthStatus{
-			Status:  health.Status,
-			Message: health.Message,
-		},
-	}, nil
 }

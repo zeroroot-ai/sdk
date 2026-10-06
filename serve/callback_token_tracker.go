@@ -77,30 +77,3 @@ func (t *CallbackTokenTracker) Slots() []string {
 	}
 	return slots
 }
-
-// HasSlot returns true if the tracker has recorded usage for the given slot.
-// This method is thread-safe.
-func (t *CallbackTokenTracker) HasSlot(slot string) bool {
-	t.mu.RLock()
-	defer t.mu.RUnlock()
-	_, exists := t.slots[slot]
-	return exists
-}
-
-// Clone creates a deep copy of the tracker.
-// This method is thread-safe.
-func (t *CallbackTokenTracker) Clone() *CallbackTokenTracker {
-	t.mu.RLock()
-	defer t.mu.RUnlock()
-
-	clone := &CallbackTokenTracker{
-		slots: make(map[string]llm.TokenUsage, len(t.slots)),
-		total: t.total,
-	}
-
-	for slot, usage := range t.slots {
-		clone.slots[slot] = usage
-	}
-
-	return clone
-}

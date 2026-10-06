@@ -169,12 +169,12 @@ fmt:
 # Vet code
 # Note: protoresolver is excluded because it intentionally defines an UnmarshalJSON method
 # with a custom signature (not implementing json.Unmarshaler) which go vet stdmethods flags
-# as a false positive. The graphrag, serve, and eval packages are excluded because their test
+# as a false positive. The graphrag and serve packages are excluded because their test
 # files import api/gen/toolspb which is only generated when tool protos are present (external
 # tooling from core/tools/). These exclusions are tracked in pre-existing issue #toolspb.
 vet:
 	@echo "Vetting code..."
-	$(GOCMD) vet $(shell go list ./... | grep -v 'github.com/zeroroot-ai/sdk/protoresolver' | grep -v 'github.com/zeroroot-ai/sdk/graphrag$$' | grep -v 'github.com/zeroroot-ai/sdk/eval' | grep -v 'github.com/zeroroot-ai/sdk/serve')
+	$(GOCMD) vet $(shell go list ./... | grep -v 'github.com/zeroroot-ai/sdk/protoresolver' | grep -v 'github.com/zeroroot-ai/sdk/graphrag$$' | grep -v 'github.com/zeroroot-ai/sdk/serve')
 
 # Tidy modules
 tidy:

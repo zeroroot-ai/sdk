@@ -43,10 +43,6 @@ const KindPlugin = "Plugin"
 // schema. Tool and agent manifests are out of scope for this validator.
 const WorkloadClassPlugin = "plugin"
 
-// DefaultStartupTimeout is applied when spec.health.startup_timeout is
-// omitted from the manifest.
-const DefaultStartupTimeout = 30 * time.Second
-
 // DefaultLivenessInterval is applied when spec.health.liveness_interval is
 // omitted from the manifest.
 const DefaultLivenessInterval = 10 * time.Second
@@ -199,15 +195,6 @@ type ManifestHealth struct {
 	LivenessIntervalRaw parsedDuration `yaml:"liveness_interval,omitempty"`
 }
 
-// EffectiveStartupTimeout returns the configured startup timeout, falling back
-// to [DefaultStartupTimeout] (30s) when the manifest omits the field.
-func (h ManifestHealth) EffectiveStartupTimeout() time.Duration {
-	if h.StartupTimeoutRaw.d == 0 {
-		return DefaultStartupTimeout
-	}
-	return h.StartupTimeoutRaw.d
-}
-
 // EffectiveLivenessInterval returns the configured liveness probe interval,
 // falling back to [DefaultLivenessInterval] (10s) when the manifest omits
 // the field.
@@ -239,11 +226,6 @@ type EgressDecl struct {
 // in YAML (e.g. "30s", "1m30s"). A zero value represents "not set".
 type parsedDuration struct {
 	d time.Duration
-}
-
-// Duration returns the underlying time.Duration.
-func (p parsedDuration) Duration() time.Duration {
-	return p.d
 }
 
 // UnmarshalYAML implements yaml.Unmarshaler so duration fields are parsed

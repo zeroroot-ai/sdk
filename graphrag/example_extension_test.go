@@ -9,69 +9,6 @@ import (
 	"github.com/zeroroot-ai/sdk/graphrag"
 )
 
-// ExampleTaxonomyIntrospector_extensionQuery demonstrates how to query
-// taxonomy extensions and trace node types to their source.
-func ExampleTaxonomyIntrospector_extensionQuery() {
-	// Create core taxonomy
-	core := graphrag.NewSimpleTaxonomy()
-
-	// Create registry with core taxonomy
-	registry := graphrag.NewTaxonomyRegistry(core)
-
-	// Register a custom extension from an agent
-	agentExtension := graphrag.TaxonomyExtension{
-		NodeTypes: []graphrag.NodeTypeDefinition{
-			{
-				Name:        "kubernetes_pod",
-				Category:    "asset",
-				Description: "A Kubernetes pod in a cluster",
-				Properties: []graphrag.PropertyInfo{
-					{Name: "namespace", Type: "string", Required: true},
-					{Name: "name", Type: "string", Required: true},
-				},
-			},
-			{
-				Name:        "container",
-				Category:    "asset",
-				Description: "A container within a pod",
-			},
-		},
-		Relationships: []graphrag.RelationshipDefinition{
-			{
-				Name:        "RUNS_IN_POD",
-				Category:    "execution",
-				Description: "Container runs in pod",
-				FromTypes:   []string{"container"},
-				ToTypes:     []string{"kubernetes_pod"},
-			},
-		},
-	}
-
-	registry.RegisterExtension("k8s-scanner", agentExtension)
-
-	// Query all registered extensions
-	extensions := registry.ExtensionNames()
-	fmt.Printf("Registered extensions: %v\n", extensions)
-
-	// Get extension details
-	ext := registry.ExtensionInfo("k8s-scanner")
-	if ext != nil {
-		fmt.Printf("Extension 'k8s-scanner' has %d node types\n", len(ext.NodeTypes))
-	}
-
-	// Trace node type sources
-	fmt.Printf("Source of 'host': %s\n", registry.NodeTypeSource("host"))
-	fmt.Printf("Source of 'kubernetes_pod': %s\n", registry.NodeTypeSource("kubernetes_pod"))
-	fmt.Printf("Source of 'unknown_type': %s\n", registry.NodeTypeSource("unknown_type"))
-
-	// Output:
-	// Registered extensions: [k8s-scanner]
-	// Extension 'k8s-scanner' has 2 node types
-	// Source of 'host': core
-	// Source of 'kubernetes_pod': k8s-scanner
-	// Source of 'unknown_type': unknown
-}
-
 // ExampleTaxonomyIntrospector_multipleExtensions demonstrates managing
 // multiple taxonomy extensions from different agents.
 func ExampleTaxonomyIntrospector_multipleExtensions() {

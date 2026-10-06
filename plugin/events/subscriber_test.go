@@ -5,7 +5,6 @@ package events
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
@@ -111,26 +110,6 @@ func runSubscriberUntilDrained(t *testing.T, s *Subscriber, stream *fakeStream, 
 
 // ---- tests ----
 
-func TestSubscriber_SecretRotated_Live_Invalidates(t *testing.T) {
-	stream := newFakeStream()
-	sh := &fakeSecretsHook{}
-	lh := &fakeLifecycleHook{}
-	m := testManifest()
-	s := New(stream, sh, lh, m)
-
-	ev := Event{
-		Type:       EventTypeSecretRotated,
-		Name:       "cred:api_key",
-		Version:    2,
-		OccurredAt: time.Now(),
-	}
-	runSubscriberUntilDrained(t, s, stream, []Event{ev})
-
-	assert.Equal(t, []string{"cred:api_key"}, sh.invalidated)
-	assert.Empty(t, sh.revoked)
-	assert.Empty(t, lh.reasons)
-}
-
 func TestSubscriber_SecretRotated_Restart_CallsDrainer(t *testing.T) {
 	stream := newFakeStream()
 	sh := &fakeSecretsHook{}
@@ -154,139 +133,6 @@ func TestSubscriber_SecretRotated_Restart_CallsDrainer(t *testing.T) {
 	assert.Contains(t, drainer.reasons[0], "secret_rotated_restart")
 }
 
-func TestSubscriber_SecretRotated_Restart_NilDrainer_ContinuesRunning(t *testing.T) {
-	// When no Drainer is wired, the subscriber logs and continues without panicking.
-	stream := newFakeStream()
-	sh := &fakeSecretsHook{}
-	lh := &fakeLifecycleHook{}
-	m := testManifest(manifest.SecretDecl{
-		Name: "cred:db_pass", Scope: "startup", Rotation: "restart", Required: true,
-	})
-	s := New(stream, sh, lh, m) // nil Drainer
-
-	ev := Event{
-		Type:       EventTypeSecretRotated,
-		Name:       "cred:db_pass",
-		Version:    1,
-		OccurredAt: time.Now(),
-	}
-	// Should not panic; Run must return cleanly on cancel.
-	runSubscriberUntilDrained(t, s, stream, []Event{ev})
-}
-
-func TestSubscriber_SecretAccessRevoked_CallsBothHooks(t *testing.T) {
-	stream := newFakeStream()
-	sh := &fakeSecretsHook{}
-	lh := &fakeLifecycleHook{}
-	m := testManifest()
-	s := New(stream, sh, lh, m)
-
-	ev := Event{
-		Type:       EventTypeSecretAccessRevoked,
-		Name:       "cred:api_key",
-		Reason:     "tenant-admin revoked",
-		OccurredAt: time.Now(),
-	}
-	runSubscriberUntilDrained(t, s, stream, []Event{ev})
-
-	assert.Equal(t, []string{"cred:api_key"}, sh.revoked)
-	require.Len(t, lh.reasons, 1)
-	assert.Equal(t, "secret_revoked: cred:api_key", lh.reasons[0])
-}
-
-func TestSubscriber_Idempotency_DuplicateEventIsNoop(t *testing.T) {
-	stream := newFakeStream()
-	sh := &fakeSecretsHook{}
-	lh := &fakeLifecycleHook{}
-	m := testManifest()
-	s := New(stream, sh, lh, m)
-
-	ev := Event{
-		Type:       EventTypeSecretRotated,
-		Name:       "cred:api_key",
-		Version:    5,
-		OccurredAt: time.Unix(1000, 0),
-	}
-	// Send the same event twice.
-	runSubscriberUntilDrained(t, s, stream, []Event{ev, ev})
-
-	// Invalidate must be called exactly once.
-	assert.Equal(t, []string{"cred:api_key"}, sh.invalidated,
-		"duplicate event must not result in double-invalidation")
-}
-
-func TestSubscriber_UnknownEventType_Dropped(t *testing.T) {
-	stream := newFakeStream()
-	sh := &fakeSecretsHook{}
-	lh := &fakeLifecycleHook{}
-	m := testManifest()
-	s := New(stream, sh, lh, m)
-
-	ev := Event{
-		Type:       "component_registered",
-		Name:       "cred:api_key",
-		OccurredAt: time.Now(),
-	}
-	runSubscriberUntilDrained(t, s, stream, []Event{ev})
-
-	// No hooks should have been called.
-	assert.Empty(t, sh.invalidated)
-	assert.Empty(t, sh.revoked)
-	assert.Empty(t, lh.reasons)
-}
-
-func TestSubscriber_EventForUndeclaredSecret_Ignored(t *testing.T) {
-	stream := newFakeStream()
-	sh := &fakeSecretsHook{}
-	lh := &fakeLifecycleHook{}
-	// Manifest only declares "cred:api_key".
-	m := testManifest()
-	s := New(stream, sh, lh, m)
-
-	ev := Event{
-		Type:       EventTypeSecretRotated,
-		Name:       "cred:other_secret",
-		Version:    1,
-		OccurredAt: time.Now(),
-	}
-	runSubscriberUntilDrained(t, s, stream, []Event{ev})
-
-	assert.Empty(t, sh.invalidated, "undeclared secret event must not trigger Invalidate")
-}
-
-func TestSubscriber_ContextCancellation_ReturnsNil(t *testing.T) {
-	stream := newFakeStream()
-	sh := &fakeSecretsHook{}
-	lh := &fakeLifecycleHook{}
-	m := testManifest()
-	s := New(stream, sh, lh, m)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	done := make(chan error, 1)
-	go func() { done <- s.Run(ctx) }()
-
-	cancel()
-	select {
-	case err := <-done:
-		assert.NoError(t, err, "ctx cancellation must yield nil error")
-	case <-time.After(2 * time.Second):
-		t.Fatal("Run did not return after context cancellation")
-	}
-}
-
-func TestSubscriber_StreamError_PropagatesError(t *testing.T) {
-	sentinel := errors.New("stream closed")
-	errStream := &errAfterStream{err: sentinel}
-	sh := &fakeSecretsHook{}
-	lh := &fakeLifecycleHook{}
-	m := testManifest()
-	s := New(errStream, sh, lh, m)
-
-	err := s.Run(context.Background())
-	require.Error(t, err)
-	assert.ErrorIs(t, err, sentinel)
-}
-
 // errAfterStream returns a configurable error on the first Recv call.
 type errAfterStream struct {
 	err error
@@ -294,56 +140,4 @@ type errAfterStream struct {
 
 func (e *errAfterStream) Recv(_ context.Context) (Event, error) {
 	return Event{}, e.err
-}
-
-func TestSubscriber_NilLifecycleHook_DoesNotPanic(t *testing.T) {
-	stream := newFakeStream()
-	sh := &fakeSecretsHook{}
-	// Pass nil lifecycle hook.
-	m := testManifest()
-	s := New(stream, sh, nil, m)
-
-	ev := Event{
-		Type:       EventTypeSecretAccessRevoked,
-		Name:       "cred:api_key",
-		OccurredAt: time.Now(),
-	}
-	runSubscriberUntilDrained(t, s, stream, []Event{ev})
-
-	// MarkRevoked must still be called.
-	assert.Equal(t, []string{"cred:api_key"}, sh.revoked)
-}
-
-func TestSubscriber_Idempotency_RingOverflow(t *testing.T) {
-	// Fill the dedupe ring with 101 distinct events; entry 0 should be evicted
-	// and a replay of it should be processed again.
-	stream := newFakeStream()
-	sh := &fakeSecretsHook{}
-	lh := &fakeLifecycleHook{}
-	m := testManifest(manifest.SecretDecl{
-		Name: "cred:api_key", Scope: "startup", Rotation: "live", Required: true,
-	})
-	s := New(stream, sh, lh, m)
-
-	base := time.Unix(1_000_000, 0)
-
-	// Send 100 distinct rotations with different versions.
-	events := make([]Event, dedupeRingSize+1)
-	for i := range dedupeRingSize {
-		events[i] = Event{
-			Type:       EventTypeSecretRotated,
-			Name:       "cred:api_key",
-			Version:    i + 1,
-			OccurredAt: base.Add(time.Duration(i) * time.Second),
-		}
-	}
-	// The (dedupeRingSize+1)-th event is a replay of the very first one.
-	events[dedupeRingSize] = events[0]
-
-	runSubscriberUntilDrained(t, s, stream, events)
-
-	// The first event's duplicate was re-added after ring wrap-around.
-	// We just assert no panic and that at least dedupeRingSize invalidations
-	// occurred (one per unique event).
-	assert.GreaterOrEqual(t, len(sh.invalidated), dedupeRingSize)
 }

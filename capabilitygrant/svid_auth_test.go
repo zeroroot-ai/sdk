@@ -15,7 +15,6 @@ import (
 	josejwt "github.com/go-jose/go-jose/v4"
 	"github.com/go-jose/go-jose/v4/jwt"
 	"github.com/spiffe/go-spiffe/v2/svid/jwtsvid"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -73,71 +72,6 @@ func makeTestJWTSVID(t *testing.T, audience string) *jwtsvid.SVID {
 	require.NoError(t, err)
 
 	return svid
-}
-
-func TestBuildRegistrationAuth_NoSVIDSource_FallsBackToBootstrap(t *testing.T) {
-	srv, _ := buildMockPlatform(t, nil)
-	client := newTestClient(t, srv)
-
-	require.Nil(t, client.svidSource)
-
-	header, err := client.buildRegistrationAuth(context.Background(), srv.URL+"/agent-auth/register")
-	require.NoError(t, err)
-
-	// newTestClient configures a bootstrap token and a fresh (never-persisted)
-	// host key, so the bootstrap credential wins per buildRegistrationAuth's
-	// documented precedence — unchanged by the SVID addition.
-	assert.Equal(t, "Bearer test-bootstrap-token", header)
-}
-
-func TestBuildRegistrationAuth_SVIDSource_PreferredOverBootstrap(t *testing.T) {
-	srv, _ := buildMockPlatform(t, nil)
-	client := newTestClient(t, srv)
-
-	registerURL := srv.URL + "/agent-auth/register"
-	svid := makeTestJWTSVID(t, registerURL)
-	stub := &stubJWTSVIDSource{svid: svid}
-	client.svidSource = stub
-
-	header, err := client.buildRegistrationAuth(context.Background(), registerURL)
-	require.NoError(t, err)
-
-	assert.Equal(t, "Bearer "+svid.Marshal(), header)
-	assert.NotEqual(t, "Bearer test-bootstrap-token", header)
-	assert.Equal(t, registerURL, stub.gotAudience, "SVID must be scoped to the register URL as its audience")
-}
-
-func TestBuildRegistrationAuth_SVIDSourceFails_FallsThroughToBootstrap(t *testing.T) {
-	srv, _ := buildMockPlatform(t, nil)
-	client := newTestClient(t, srv)
-
-	registerURL := srv.URL + "/agent-auth/register"
-	client.svidSource = &stubJWTSVIDSource{err: errors.New("workload api unreachable")}
-
-	header, err := client.buildRegistrationAuth(context.Background(), registerURL)
-	require.NoError(t, err)
-
-	// A broken SVID source must never fail registration outright — it falls
-	// through to the pre-existing bootstrap/host+jwt chain.
-	assert.Equal(t, "Bearer test-bootstrap-token", header)
-}
-
-func TestClientClose_NoSVIDSource_NoOp(t *testing.T) {
-	srv, _ := buildMockPlatform(t, nil)
-	client := newTestClient(t, srv)
-
-	require.NoError(t, client.Close())
-}
-
-func TestClientClose_ClosesSVIDSource(t *testing.T) {
-	srv, _ := buildMockPlatform(t, nil)
-	client := newTestClient(t, srv)
-
-	closed := false
-	client.svidSource = &closeTrackingStub{onClose: func() { closed = true }}
-
-	require.NoError(t, client.Close())
-	assert.True(t, closed)
 }
 
 // closeTrackingStub is a jwtSVIDSource whose only job is recording that

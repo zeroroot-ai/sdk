@@ -159,12 +159,6 @@ func (t TenantID) IsZero() bool {
 	return t.s == ""
 }
 
-// IsSystem reports whether t is the reserved SystemTenant. Platform-
-// operator code paths use this to gate cross-tenant operations.
-func (t TenantID) IsSystem() bool {
-	return t.s == sysconst.Reserved
-}
-
 // MarshalText implements encoding.TextMarshaler so TenantID interoperates
 // with text-based serialization (logs, structured events, JSON tags that
 // flow through TextMarshaler). The output is the underlying tenant
@@ -176,20 +170,6 @@ func (t TenantID) IsSystem() bool {
 // "round-trip a malformed tenant through JSON" bugs.
 func (t TenantID) MarshalText() ([]byte, error) {
 	return []byte(t.s), nil
-}
-
-// LogValue implements slog.LogValuer so structured logging records the
-// tenant cleanly without leaking the unexported field name.
-func (t TenantID) LogValue() interface{} {
-	return t.s
-}
-
-// Equal reports whether t and other refer to the same tenant. Use this
-// instead of `==` if you want to insulate callers from the unexported
-// struct shape (the operators happen to work today, but a future
-// refactor could add unexported metadata fields that would break it).
-func (t TenantID) Equal(other TenantID) bool {
-	return t.s == other.s
 }
 
 // ErrInvalidTenant is returned by NewTenantID when the input fails

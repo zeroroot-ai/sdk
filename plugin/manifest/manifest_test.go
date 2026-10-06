@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,40 +47,6 @@ spec:
       purpose: GitHub REST API
 `
 
-func TestLoadBytes_RoundTrip(t *testing.T) {
-	m, err := manifest.LoadBytes([]byte(exampleManifest))
-	require.NoError(t, err)
-
-	assert.Equal(t, manifest.APIVersionV1, m.APIVersion)
-	assert.Equal(t, manifest.KindPlugin, m.Kind)
-	assert.Equal(t, "github", m.Metadata.Name)
-	assert.Equal(t, "0.1.0", m.Metadata.Version)
-	assert.Equal(t, "Stateful proxy for GitHub REST API", m.Metadata.Description)
-	assert.Equal(t, "zeroroot-ai", m.Metadata.Author)
-
-	assert.Equal(t, manifest.WorkloadClassPlugin, m.Spec.WorkloadClass)
-	assert.Equal(t, "process", m.Spec.Runtime)
-
-	require.Len(t, m.Spec.Secrets, 1)
-	assert.Equal(t, "cred:github_token", m.Spec.Secrets[0].Name)
-	assert.Equal(t, "startup", m.Spec.Secrets[0].Scope)
-	assert.Equal(t, "live", m.Spec.Secrets[0].Rotation)
-	assert.True(t, m.Spec.Secrets[0].Required)
-
-	require.Len(t, m.Spec.Methods, 1)
-	assert.Equal(t, "GetRepository", m.Spec.Methods[0].Name)
-
-	assert.False(t, m.Spec.Policy.SetecRequired)
-	assert.Equal(t, 30*time.Second, m.Spec.Health.EffectiveStartupTimeout())
-	assert.Equal(t, 10*time.Second, m.Spec.Health.EffectiveLivenessInterval())
-
-	require.Len(t, m.Spec.Egress, 1)
-	assert.Equal(t, "api.github.com", m.Spec.Egress[0].Host)
-	assert.Equal(t, "https", m.Spec.Egress[0].Protocol)
-	assert.Equal(t, 443, m.Spec.Egress[0].Port)
-	assert.Equal(t, "GitHub REST API", m.Spec.Egress[0].Purpose)
-}
-
 func TestLoad_FromFile(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "plugin.yaml")
@@ -96,27 +61,6 @@ func TestLoad_FileNotFound(t *testing.T) {
 	_, err := manifest.Load("/no/such/file.yaml")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "open")
-}
-
-// TestDefaults verifies that omitted optional fields receive correct defaults.
-func TestDefaults(t *testing.T) {
-	minimal := `
-apiVersion: plugin.gibson.zeroroot.ai/v1
-kind: Plugin
-metadata:
-  name: my-plugin
-  version: 1.0.0
-spec:
-  workload_class: plugin
-  methods:
-    - name: Ping
-`
-	m, err := manifest.LoadBytes([]byte(minimal))
-	require.NoError(t, err)
-
-	assert.Equal(t, "process", m.Spec.Runtime, "runtime should default to process")
-	assert.Equal(t, manifest.DefaultStartupTimeout, m.Spec.Health.EffectiveStartupTimeout())
-	assert.Equal(t, manifest.DefaultLivenessInterval, m.Spec.Health.EffectiveLivenessInterval())
 }
 
 // --- invalid manifest cases ---

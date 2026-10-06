@@ -114,8 +114,7 @@ type Option func(*config)
 // methodSchema holds the JSON-Schema documents derived from a handler's Go
 // request and response types.
 type methodSchema struct {
-	input  string
-	output string
+	input string
 }
 
 // WithManifest loads the plugin manifest from path. Required.
@@ -183,12 +182,11 @@ func WithHandler[Req, Resp any](name, description string, fn func(ctx context.Co
 			c.optionErrs = append(c.optionErrs, fmt.Errorf("WithHandler %q: derive request schema from %s: %w", name, reqType, err))
 			return
 		}
-		outSchema, err := schema.DeriveJSON(respType)
-		if err != nil {
+		if _, err := schema.DeriveJSON(respType); err != nil {
 			c.optionErrs = append(c.optionErrs, fmt.Errorf("WithHandler %q: derive response schema from %s: %w", name, respType, err))
 			return
 		}
-		c.methodSchemas[name] = methodSchema{input: string(inSchema), output: string(outSchema)}
+		c.methodSchemas[name] = methodSchema{input: string(inSchema)}
 
 		c.handlers[name] = func(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
 			var req Req
@@ -224,21 +222,6 @@ func WithParsedManifest(m *manifest.Manifest) Option {
 	}
 }
 
-// WithMethodSource registers a [MethodSource] that discovers methods at
-// startup (e.g. from an MCP server's tools/list). Discovered methods are
-// merged with statically registered [WithMethod] handlers — name collisions
-// are a startup error — and the combined set is registered with the daemon.
-//
-// The manifest must declare spec.dynamic_methods: true; conversely, a manifest
-// declaring dynamic_methods requires a method source. This keeps the manifest
-// the single declarative source of truth for how the plugin's method set is
-// produced.
-func WithMethodSource(src MethodSource) Option {
-	return func(c *config) {
-		c.methodSource = src
-	}
-}
-
 // WithLifecycle supplies optional lifecycle hooks that are called at specific
 // state transitions:
 //   - OnStart: called when the plugin transitions to Ready.
@@ -248,61 +231,6 @@ func WithMethodSource(src MethodSource) Option {
 func WithLifecycle(hooks lifecycle.LifecycleHooks) Option {
 	return func(c *config) {
 		c.hooks = hooks
-	}
-}
-
-// WithSecretsClient injects a [secrets.Client] implementation. When nil (the
-// default) [Serve] constructs a production client backed by the daemon's
-// HarnessCallbackService.GetCredential RPC.
-//
-// This option is intended for testing; pass a fake client to avoid real daemon
-// connectivity in unit tests.
-func WithSecretsClient(cl secrets.Client) Option {
-	return func(c *config) {
-		c.secretsClient = cl
-	}
-}
-
-// WithHealthAddr sets the TCP listen address for the HTTP health server.
-// Default is ":8080". Pass ":0" to bind to a random available port (useful in
-// tests).
-func WithHealthAddr(addr string) Option {
-	return func(c *config) {
-		c.healthAddr = addr
-	}
-}
-
-// WithDrainTimeout sets the maximum time [Serve] waits for in-flight handlers
-// to complete after receiving SIGTERM or SIGINT. Default is 30 seconds.
-func WithDrainTimeout(d time.Duration) Option {
-	return func(c *config) {
-		c.drainTimeout = d
-	}
-}
-
-// WithPlatformURL sets the Gibson platform base URL. When not supplied, [Serve]
-// reads GIBSON_URL from the environment. Primarily useful in tests.
-func WithPlatformURL(url string) Option {
-	return func(c *config) {
-		c.platformURL = url
-	}
-}
-
-// WithHTTPClient sets the HTTP client [Serve] uses for the platform HTTP
-// calls, discovery and registration. Use it to trust a private certificate
-// authority. Tests use it to trust an httptest TLS server.
-func WithHTTPClient(hc *http.Client) Option {
-	return func(c *config) {
-		c.httpClient = hc
-	}
-}
-
-// WithBootstrapToken sets the first-time registration token. When not supplied,
-// the capability-grant client falls back to GIBSON_BOOTSTRAP_TOKEN or the
-// Kubernetes service-account token.
-func WithBootstrapToken(token string) Option {
-	return func(c *config) {
-		c.bootstrapToken = token
 	}
 }
 

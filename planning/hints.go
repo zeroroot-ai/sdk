@@ -3,8 +3,6 @@
 
 package planning
 
-import "math"
-
 // StepHints allows agents to provide feedback to the planning system.
 // Use the builder pattern to construct hints fluently.
 //
@@ -30,51 +28,6 @@ type StepHints struct {
 
 	// keyFindings is a summary of important discoveries made during execution
 	keyFindings []string
-}
-
-// NewStepHints creates a new StepHints with default values.
-// Default confidence is 0.5 (neutral), no suggestions or findings.
-func NewStepHints() *StepHints {
-	return &StepHints{
-		confidence:    0.5,
-		suggestedNext: make([]string, 0),
-		keyFindings:   make([]string, 0),
-		replanReason:  "",
-	}
-}
-
-// WithConfidence sets the agent's self-assessed confidence in its results.
-// Confidence should be between 0.0 (no confidence) and 1.0 (fully confident).
-// Values outside this range are clamped.
-func (h *StepHints) WithConfidence(c float64) *StepHints {
-	// Clamp confidence to [0.0, 1.0]
-	h.confidence = math.Max(0.0, math.Min(1.0, c))
-	return h
-}
-
-// WithSuggestion adds a suggested next step to the hints.
-// Multiple suggestions can be added by chaining calls.
-func (h *StepHints) WithSuggestion(step string) *StepHints {
-	if step != "" {
-		h.suggestedNext = append(h.suggestedNext, step)
-	}
-	return h
-}
-
-// RecommendReplan sets the reason why replanning may be needed.
-// If called, the step scorer will consider triggering tactical replanning.
-func (h *StepHints) RecommendReplan(reason string) *StepHints {
-	h.replanReason = reason
-	return h
-}
-
-// WithKeyFinding adds a key finding to the hints.
-// Key findings are important discoveries that should influence planning.
-func (h *StepHints) WithKeyFinding(finding string) *StepHints {
-	if finding != "" {
-		h.keyFindings = append(h.keyFindings, finding)
-	}
-	return h
 }
 
 // ─── Getter Methods ──────────────────────────────────────────────────────────
@@ -104,9 +57,4 @@ func (h *StepHints) KeyFindings() []string {
 	result := make([]string, len(h.keyFindings))
 	copy(result, h.keyFindings)
 	return result
-}
-
-// HasReplanRecommendation returns true if replanning was recommended.
-func (h *StepHints) HasReplanRecommendation() bool {
-	return h.replanReason != ""
 }

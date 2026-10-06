@@ -5,7 +5,6 @@ package plugin
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,49 +31,6 @@ func applyOptions(opts ...Option) *config {
 	}
 	c.defaults()
 	return c
-}
-
-// TestWithHandler_DerivesSchemaAndDispatches is the hermetic end-to-end check
-// for the Go-first authoring path: WithHandler derives the request schema from
-// the Go struct and installs an adapter that decodes JSON into the typed
-// request, runs the handler, and encodes the typed response back to JSON.
-func TestWithHandler_DerivesSchemaAndDispatches(t *testing.T) {
-	called := false
-	handler := func(_ context.Context, req createIncidentReq) (createIncidentResp, error) {
-		called = true
-		assert.Equal(t, "db is down", req.Title)
-		assert.Equal(t, 1, req.Severity)
-		assert.Equal(t, []string{"prod", "db"}, req.Tags)
-		return createIncidentResp{ID: "INC-42"}, nil
-	}
-
-	c := applyOptions(WithHandler("CreateIncident", "test handler for CreateIncident", handler))
-	require.Empty(t, c.optionErrs, "no derivation errors expected for a plain struct handler")
-
-	// The derived request schema travels to the daemon as the tool-input contract.
-	ms, ok := c.methodSchemas["CreateIncident"]
-	require.True(t, ok, "method schema must be recorded")
-	var inSchema map[string]any
-	require.NoError(t, json.Unmarshal([]byte(ms.input), &inSchema))
-	assert.Equal(t, "object", inSchema["type"])
-	props := inSchema["properties"].(map[string]any)
-	assert.Contains(t, props, "title")
-	assert.Contains(t, props, "severity")
-	assert.Contains(t, props, "tags")
-	// title/severity are required; tags is omitempty.
-	assert.ElementsMatch(t, []any{"title", "severity"}, inSchema["required"])
-
-	var outSchema map[string]any
-	require.NoError(t, json.Unmarshal([]byte(ms.output), &outSchema))
-	assert.Equal(t, "object", outSchema["type"])
-
-	// Dispatch a raw JSON request through the installed adapter.
-	adapter, ok := c.handlers["CreateIncident"]
-	require.True(t, ok, "handler adapter must be installed")
-	respJSON, err := adapter(context.Background(), json.RawMessage(`{"title":"db is down","severity":1,"tags":["prod","db"]}`))
-	require.NoError(t, err)
-	assert.True(t, called, "typed handler must have been invoked")
-	assert.JSONEq(t, `{"id":"INC-42"}`, string(respJSON))
 }
 
 // TestWithHandler_UnderivableTypeRecordsError asserts that a handler whose

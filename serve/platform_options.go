@@ -7,7 +7,6 @@ import (
 	"log/slog"
 
 	"github.com/zeroroot-ai/sdk/types"
-	"go.opentelemetry.io/otel/trace"
 )
 
 // PlatformHarnessOption is a functional option for configuring PlatformHarness.
@@ -19,14 +18,6 @@ type PlatformHarnessOption func(*PlatformHarness)
 func WithPlatformLogger(l *slog.Logger) PlatformHarnessOption {
 	return func(h *PlatformHarness) {
 		h.logger = l
-	}
-}
-
-// WithPlatformTracer sets the OpenTelemetry tracer for distributed tracing.
-// Defaults to a no-op tracer when not supplied.
-func WithPlatformTracer(t trace.Tracer) PlatformHarnessOption {
-	return func(h *PlatformHarness) {
-		h.tracer = t
 	}
 }
 

@@ -11,7 +11,6 @@ package git
 
 import (
 	"context"
-	"time"
 )
 
 // GitOps provides Git operations for a repository workspace.
@@ -75,90 +74,12 @@ type GitOps interface {
 
 // GitStatus represents the status of a Git repository.
 type GitStatus struct {
-	// Branch is the name of the current branch, or empty if HEAD is detached
-	Branch string
-
-	// Commit is the current HEAD commit SHA
-	Commit string
-
-	// Staged contains paths of files that have been staged for commit
-	Staged []string
-
-	// Unstaged contains paths of files that have modifications but are not staged
-	Unstaged []string
-
-	// Untracked contains paths of files that are not tracked by Git
-	Untracked []string
-
-	// Ahead is the number of commits the current branch is ahead of its upstream
-	Ahead int
-
-	// Behind is the number of commits the current branch is behind its upstream
-	Behind int
-
-	// HasConflicts indicates whether there are unresolved merge conflicts
-	HasConflicts bool
 }
 
 // CommitOptions configures commit behavior.
 type CommitOptions struct {
-	// Author specifies the commit author in the format "Name <email>".
-	// If empty, Git's configured user.name and user.email will be used.
-	Author string
-
-	// AllowEmpty allows creating a commit even if there are no changes.
-	// Default is false.
-	AllowEmpty bool
-
-	// Timestamp specifies the commit timestamp.
-	// If zero, the current time will be used.
-	Timestamp time.Time
-
-	// Amend modifies the previous commit instead of creating a new one.
-	// Default is false.
-	Amend bool
 }
 
 // PushOptions configures push behavior.
 type PushOptions struct {
-	// Remote specifies the remote repository name.
-	// Default is "origin" if empty.
-	Remote string
-
-	// Force enables force push (use with caution).
-	// Default is false.
-	Force bool
-
-	// SetUpstream sets the upstream tracking branch for the current branch.
-	// This is equivalent to git push -u or git push --set-upstream.
-	// Default is false.
-	SetUpstream bool
-
-	// RefSpec allows specifying custom refspecs for the push operation.
-	// If empty, the current branch will be pushed to its upstream.
-	// Example: "refs/heads/main:refs/heads/main"
-	RefSpec string
-
-	// Tags controls whether to push tags along with the commits.
-	// Default is false (tags are not pushed).
-	Tags bool
-}
-
-// SnapshotMetadata contains information about a snapshot.
-// This is used internally by implementations to track snapshot state.
-type SnapshotMetadata struct {
-	// ID is the unique identifier for this snapshot
-	ID string
-
-	// CreatedAt is the timestamp when the snapshot was created
-	CreatedAt time.Time
-
-	// Branch is the branch that was active when the snapshot was created
-	Branch string
-
-	// Commit is the HEAD commit SHA when the snapshot was created
-	Commit string
-
-	// Description is an optional human-readable description of the snapshot
-	Description string
 }
