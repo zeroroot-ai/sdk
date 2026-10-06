@@ -8,8 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -26,54 +24,8 @@ import (
 	"github.com/zeroroot-ai/sdk/plugin/events"
 	"github.com/zeroroot-ai/sdk/plugin/health"
 	"github.com/zeroroot-ai/sdk/plugin/lifecycle"
-	"github.com/zeroroot-ai/sdk/plugin/manifest"
 	pluginsecrets "github.com/zeroroot-ai/sdk/plugin/secrets"
 )
-
-// ----------------------------------------------------------------------------
-// Helpers: fake manifest on disk
-// ----------------------------------------------------------------------------
-
-const testManifestYAML = `
-apiVersion: plugin.gibson.zeroroot.ai/v1
-kind: Plugin
-metadata:
-  name: test-plugin
-  version: 0.1.0
-  description: Test plugin
-spec:
-  workload_class: plugin
-  methods:
-    - name: Echo
-  runtime: process
-`
-
-const testManifestWithSecretsYAML = `
-apiVersion: plugin.gibson.zeroroot.ai/v1
-kind: Plugin
-metadata:
-  name: secret-plugin
-  version: 0.1.0
-spec:
-  workload_class: plugin
-  secrets:
-    - name: cred:api_key
-      scope: startup
-      rotation: restart
-      required: true
-  methods:
-    - name: Echo
-  runtime: process
-`
-
-// writeManifest writes YAML to a temp file and returns its path.
-func writeManifest(t *testing.T, yaml string) string {
-	t.Helper()
-	dir := t.TempDir()
-	path := filepath.Join(dir, "plugin.yaml")
-	require.NoError(t, os.WriteFile(path, []byte(yaml), 0600))
-	return path
-}
 
 // ----------------------------------------------------------------------------
 // Helpers: fake ComponentService backed by channels
@@ -173,124 +125,10 @@ func (f *fakeSecretsClient) isRevoked(name string) bool {
 }
 
 // ----------------------------------------------------------------------------
-// Unit tests: validateMethods
-// ----------------------------------------------------------------------------
-
-func TestValidateMethods_HappyPath(t *testing.T) {
-	m := &manifest.Manifest{
-		Spec: manifest.ManifestSpec{
-			Methods: []manifest.MethodDecl{
-				{Name: "Echo"},
-				{Name: "Ping"},
-			},
-		},
-	}
-	handlers := map[string]MethodHandler{
-		"Echo": func(_ context.Context, req json.RawMessage) (json.RawMessage, error) { return req, nil },
-		"Ping": func(_ context.Context, req json.RawMessage) (json.RawMessage, error) { return req, nil },
-	}
-	assert.NoError(t, validateMethods(m, handlers))
-}
-
-func TestValidateMethods_UndeclaredHandler(t *testing.T) {
-	m := &manifest.Manifest{
-		Spec: manifest.ManifestSpec{
-			Methods: []manifest.MethodDecl{
-				{Name: "Echo"},
-			},
-		},
-	}
-	handlers := map[string]MethodHandler{
-		"Echo":  func(_ context.Context, req json.RawMessage) (json.RawMessage, error) { return req, nil },
-		"Rogue": func(_ context.Context, req json.RawMessage) (json.RawMessage, error) { return req, nil },
-	}
-	err := validateMethods(m, handlers)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "Rogue")
-	assert.Contains(t, err.Error(), "undeclared")
-}
-
-func TestValidateMethods_UnregisteredDeclaration(t *testing.T) {
-	m := &manifest.Manifest{
-		Spec: manifest.ManifestSpec{
-			Methods: []manifest.MethodDecl{
-				{Name: "Echo"},
-				{Name: "Ping"},
-			},
-		},
-	}
-	handlers := map[string]MethodHandler{
-		"Echo": func(_ context.Context, req json.RawMessage) (json.RawMessage, error) { return req, nil },
-		// "Ping" not registered
-	}
-	err := validateMethods(m, handlers)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "Ping")
-	assert.Contains(t, err.Error(), "without registered handlers")
-}
-
-// ----------------------------------------------------------------------------
-// Test: Serve returns startup error for method mismatch (no daemon needed)
-// ----------------------------------------------------------------------------
-
-func TestServe_MethodMismatch_ReturnsStartupError(t *testing.T) {
-	path := writeManifest(t, testManifestYAML)
-
-	// Register a handler for an undeclared method.
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	err := Serve(ctx,
-		WithManifest(path),
-		WithHandler("UndeclaredMethod", "test handler for UndeclaredMethod", func(_ context.Context, req string) (string, error) {
-			return req, nil
-		}),
-	)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "UndeclaredMethod")
-	assert.Contains(t, err.Error(), "undeclared")
-}
-
-func TestServe_MissingManifestPath_ReturnsError(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	err := Serve(ctx,
-		WithHandler("Echo", "test handler for Echo", func(_ context.Context, req string) (string, error) {
-			return req, nil
-		}),
-	)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "WithManifest is required")
-}
-
-func TestServe_InvalidManifestPath_ReturnsError(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	err := Serve(ctx,
-		WithManifest("/nonexistent/path/plugin.yaml"),
-		WithHandler("Echo", "test handler for Echo", func(_ context.Context, req string) (string, error) {
-			return req, nil
-		}),
-	)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "load manifest")
-}
-
-// ----------------------------------------------------------------------------
 // Test: Serve delivers a revocation from WatchComponentEvents to the secrets
 // client and the lifecycle state machine. The fake daemon serves the stream,
 // the fake secrets client stands in for GetCredential.
 // ----------------------------------------------------------------------------
-
-// secretsManifest returns the in-memory form of testManifestWithSecretsYAML.
-func secretsManifest(t *testing.T) *manifest.Manifest {
-	t.Helper()
-	m, err := manifest.LoadBytes([]byte(testManifestWithSecretsYAML))
-	require.NoError(t, err)
-	return m
-}
 
 // revocationEvent is the wire message the daemon publishes when the operator
 // revokes the plugin's binding to name.
@@ -311,7 +149,6 @@ func TestServe_DeclaredSecrets_RevocationMarksDegraded(t *testing.T) {
 
 	fakeSecrets := newFakeSecretsClient(map[string][]byte{"cred:api_key": []byte("value")})
 	degraded := make(chan string, 1)
-	m := secretsManifest(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -319,7 +156,8 @@ func TestServe_DeclaredSecrets_RevocationMarksDegraded(t *testing.T) {
 	serveErr := make(chan error, 1)
 	go func() {
 		serveErr <- Serve(ctx,
-			WithParsedManifest(m),
+			WithName("secret-plugin"),
+			WithVersion("0.1.0"),
 			WithSecretsClient(fakeSecrets),
 			WithLifecycle(lifecycle.LifecycleHooks{
 				OnDegraded: func(reason string) { degraded <- reason },
@@ -369,7 +207,6 @@ func TestServe_DeclaredSecrets_RevocationReachesHeartbeat(t *testing.T) {
 
 	fakeSecrets := newFakeSecretsClient(map[string][]byte{"cred:api_key": []byte("value")})
 	degraded := make(chan string, 1)
-	m := secretsManifest(t)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -377,7 +214,8 @@ func TestServe_DeclaredSecrets_RevocationReachesHeartbeat(t *testing.T) {
 	serveErr := make(chan error, 1)
 	go func() {
 		serveErr <- Serve(ctx,
-			WithParsedManifest(m),
+			WithName("secret-plugin"),
+			WithVersion("0.1.0"),
 			WithSecretsClient(fakeSecrets),
 			WithLifecycle(lifecycle.LifecycleHooks{
 				OnDegraded: func(reason string) { degraded <- reason },
@@ -586,7 +424,7 @@ func TestComponentEventStream_RevocationThroughSubscriber(t *testing.T) {
 	sm := readyStateMachine(t, lifecycle.LifecycleHooks{
 		OnDegraded: func(reason string) { degraded <- reason },
 	})
-	sub := events.NewWithDrainer(stream, fakeSecrets, sm, nil, secretsManifest(t))
+	sub := events.New(stream, fakeSecrets, sm)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -675,89 +513,6 @@ func TestComponentEventStream_BackoffDoublesToCap(t *testing.T) {
 }
 
 // ----------------------------------------------------------------------------
-// Test: dispatch.Dispatcher drain integration (unit-level, no Serve call)
-// Verifies that the Drainer interface wired between events.Subscriber and
-// dispatch.Dispatcher behaves correctly.
-// ----------------------------------------------------------------------------
-
-func TestDrainerIntegration_RotationRestartCallsDrainThenExit(t *testing.T) {
-	m, err := manifest.LoadBytes([]byte(testManifestWithSecretsYAML))
-	require.NoError(t, err)
-
-	// Track the fake exiter call.
-	var exitCode int
-	var exitCalled atomic.Bool
-	origExiter := dispatch.SetExiterForTest(func(code int) {
-		exitCode = code
-		exitCalled.Store(true)
-	})
-	defer dispatch.SetExiterForTest(origExiter)
-
-	fakeClient := newFakeComponentClient()
-	disp := dispatch.New(fakeClient, dispatch.Config{
-		Handlers: map[string]dispatch.MethodHandler{
-			"Echo": func(_ context.Context, req json.RawMessage) (json.RawMessage, error) {
-				return req, nil
-			},
-		},
-	})
-
-	fakeSecrets := newFakeSecretsClient(map[string][]byte{
-		"cred:api_key": []byte("test-key"),
-	})
-	sm := lifecycle.New(lifecycle.LifecycleHooks{})
-
-	// Wire the subscriber with the dispatcher as Drainer.
-	eventCh := make(chan events.Event, 1)
-	stream := &chanEventStream{ch: eventCh}
-	sub := events.NewWithDrainer(stream, fakeSecrets, sm, disp, m)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Run subscriber in background.
-	go sub.Run(ctx)
-
-	// Send a rotation=restart event for the declared secret.
-	eventCh <- events.Event{
-		Type:       events.EventTypeSecretRotated,
-		Name:       "cred:api_key",
-		Version:    2,
-		OccurredAt: time.Now(),
-	}
-
-	// Wait for exit to be called.
-	deadline := time.After(2 * time.Second)
-	for !exitCalled.Load() {
-		select {
-		case <-deadline:
-			t.Fatal("timeout waiting for DrainThenExit to be called")
-		case <-time.After(5 * time.Millisecond):
-		}
-	}
-
-	assert.True(t, exitCalled.Load(), "DrainThenExit should have been called")
-	assert.Equal(t, 75, exitCode, "exit code should be 75 (rotation-restart sentinel)")
-}
-
-// chanEventStream is a test EventStream backed by a channel.
-type chanEventStream struct {
-	ch <-chan events.Event
-}
-
-func (s *chanEventStream) Recv(ctx context.Context) (events.Event, error) {
-	select {
-	case ev, ok := <-s.ch:
-		if !ok {
-			return events.Event{}, errors.New("event stream closed")
-		}
-		return ev, nil
-	case <-ctx.Done():
-		return events.Event{}, ctx.Err()
-	}
-}
-
-// ----------------------------------------------------------------------------
 // Test: SIGTERM drain path (unit-level via gracefulShutdown)
 // Verifies that gracefulShutdown transitions the lifecycle SM and drains
 // the dispatcher correctly.
@@ -804,18 +559,6 @@ func TestGracefulShutdown_TransitionsAndDrains(t *testing.T) {
 }
 
 // ----------------------------------------------------------------------------
-// Test: validateMethods with empty handlers map and empty manifest
-// ----------------------------------------------------------------------------
-
-func TestValidateMethods_BothEmpty(t *testing.T) {
-	m := &manifest.Manifest{
-		Spec: manifest.ManifestSpec{},
-	}
-	err := validateMethods(m, nil)
-	assert.NoError(t, err, "no declared methods and no handlers is not a mismatch")
-}
-
-// ----------------------------------------------------------------------------
 // Test: WithOptions ergonomics
 // ----------------------------------------------------------------------------
 
@@ -855,10 +598,12 @@ func TestWithSecretsClient_SetsClient(t *testing.T) {
 	assert.Equal(t, fake, c.secretsClient)
 }
 
-func TestWithManifest_SetsPath(t *testing.T) {
+func TestWithNameAndVersion_SetTheDeclaration(t *testing.T) {
 	c := &config{}
-	WithManifest("/some/path/plugin.yaml")(c)
-	assert.Equal(t, "/some/path/plugin.yaml", c.manifestPath)
+	WithName("incidents")(c)
+	WithVersion("1.2.3")(c)
+	assert.Equal(t, "incidents", c.name)
+	assert.Equal(t, "1.2.3", c.version)
 }
 
 // min is a local helper for older Go compat in test helper (also stdlib since 1.21).

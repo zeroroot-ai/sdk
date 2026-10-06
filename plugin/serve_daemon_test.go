@@ -5,15 +5,11 @@ package plugin
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -22,7 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	componentpb "github.com/zeroroot-ai/sdk/api/gen/gibson/component/v1"
-	"github.com/zeroroot-ai/sdk/plugin/manifest"
+	"github.com/zeroroot-ai/sdk/plugin/lifecycle"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -217,132 +213,53 @@ func dialFakeDaemon(t *testing.T, daemon *fakeDaemon) componentpb.ComponentServi
 	return componentpb.NewComponentServiceClient(conn)
 }
 
-// dynamicManifest returns an in-memory manifest with dynamic methods enabled
-// and no static method declarations.
-func dynamicManifest() *manifest.Manifest {
-	return &manifest.Manifest{
-		APIVersion: manifest.APIVersionV1,
-		Kind:       manifest.KindPlugin,
-		Metadata: manifest.ManifestMetadata{
-			Name:    "dyn-plugin",
-			Version: "0.1.0",
-		},
-		Spec: manifest.ManifestSpec{
-			WorkloadClass:  manifest.WorkloadClassPlugin,
-			DynamicMethods: true,
-		},
+// ----------------------------------------------------------------------------
+// The declaration in code (ADR-0097): name, version and at least one handler.
+// ----------------------------------------------------------------------------
+
+func echoOption() Option {
+	return WithHandler("Echo", "echoes the message back", func(_ context.Context, req echoReq) (echoResp, error) {
+		return echoResp{Echoed: req.Msg}, nil
+	})
+}
+
+type echoReq struct {
+	Msg string `json:"msg"`
+}
+
+type echoResp struct {
+	Echoed string `json:"echoed"`
+}
+
+func TestServe_DeclarationIsRequired(t *testing.T) {
+	ctx := context.Background()
+	cases := []struct {
+		name string
+		opts []Option
+		want string
+	}{
+		{"no name", []Option{WithVersion("0.1.0"), echoOption()}, "WithName is required"},
+		{"no version", []Option{WithName("p"), echoOption()}, "WithVersion is required"},
+		{"no handler", []Option{WithName("p"), WithVersion("0.1.0")}, "no methods to register"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := Serve(ctx, tc.opts...)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.want)
+		})
 	}
 }
 
 // ----------------------------------------------------------------------------
-// Manifest validation: dynamic_methods relaxes the non-empty methods rule
+// Full Serve: the handlers are the method set, registered and invocable.
 // ----------------------------------------------------------------------------
 
-func TestManifest_DynamicMethods_AllowsEmptyMethods(t *testing.T) {
-	m, err := manifest.LoadBytes([]byte(`
-apiVersion: plugin.gibson.zeroroot.ai/v1
-kind: Plugin
-metadata:
-  name: dyn-plugin
-  version: 0.1.0
-spec:
-  workload_class: plugin
-  dynamic_methods: true
-`))
-	require.NoError(t, err)
-	assert.True(t, m.Spec.DynamicMethods)
-	assert.Empty(t, m.Spec.Methods)
-}
-
-func TestManifest_NoMethodsNoDynamic_Fails(t *testing.T) {
-	_, err := manifest.LoadBytes([]byte(`
-apiVersion: plugin.gibson.zeroroot.ai/v1
-kind: Plugin
-metadata:
-  name: static-plugin
-  version: 0.1.0
-spec:
-  workload_class: plugin
-`))
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "spec.methods is required")
-}
-
-// ----------------------------------------------------------------------------
-// Serve startup validation for method sources
-// ----------------------------------------------------------------------------
-
-func TestServe_DynamicMethodsWithoutSource_ReturnsError(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	err := Serve(ctx, WithParsedManifest(dynamicManifest()))
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "WithMethodSource")
-}
-
-func TestServe_MethodSourceWithoutDynamicMethods_ReturnsError(t *testing.T) {
-	path := writeManifest(t, testManifestYAML) // static manifest, no dynamic_methods
-
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	err := Serve(ctx,
-		WithManifest(path),
-		WithHandler("Echo", "test handler for Echo", func(_ context.Context, req string) (string, error) {
-			return req, nil
-		}),
-		WithMethodSource(func(_ context.Context) ([]DiscoveredMethod, error) {
-			return nil, nil
-		}),
-	)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "dynamic_methods")
-}
-
-func TestServe_ParsedManifestInvalid_ReturnsError(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	m := dynamicManifest()
-	m.Metadata.Name = "BAD NAME"
-	err := Serve(ctx,
-		WithParsedManifest(m),
-		WithMethodSource(func(_ context.Context) ([]DiscoveredMethod, error) {
-			return nil, nil
-		}),
-	)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "validate manifest")
-}
-
-// ----------------------------------------------------------------------------
-// Full Serve: discovered methods are registered and invocable end-to-end
-// ----------------------------------------------------------------------------
-
-func TestServe_MethodSource_RegistersAndRoundTrips(t *testing.T) {
+func TestServe_RegistersHandlersAndRoundTrips(t *testing.T) {
 	t.Setenv("HOME", t.TempDir()) // keep capability-grant host keys out of the real home
 	platform := fakeCGPlatform(t)
 	t.Setenv("GIBSON_URL", platform.URL)
 	daemon := startFakeDaemon(t)
-
-	echoHandler := func(_ context.Context, req json.RawMessage) (json.RawMessage, error) {
-		var in struct {
-			Msg string `json:"msg"`
-		}
-		if err := json.Unmarshal(req, &in); err != nil {
-			return nil, err
-		}
-		return json.Marshal(struct {
-			Echoed string `json:"echoed"`
-		}{Echoed: in.Msg})
-	}
-
-	source := func(ctx context.Context) ([]DiscoveredMethod, error) {
-		return []DiscoveredMethod{
-			{Name: "vendor_echo", Description: "echoes its input", Handler: echoHandler},
-		}, nil
-	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -350,19 +267,20 @@ func TestServe_MethodSource_RegistersAndRoundTrips(t *testing.T) {
 	serveErr := make(chan error, 1)
 	go func() {
 		serveErr <- Serve(ctx,
-			WithParsedManifest(dynamicManifest()),
-			WithMethodSource(source),
+			WithName("echo-plugin"),
+			WithVersion("0.1.0"),
+			echoOption(),
 			WithHTTPClient(platform.Client()),
 			WithHealthAddr(":0"),
 		)
 	}()
 
-	// Enqueue a plugin_invoke for the discovered method. The Go-first wire
-	// format carries the JSON request in the Any's value.
+	// Enqueue a plugin_invoke. The Go-first wire format carries the JSON
+	// request in the Any's value.
 	invoke := &pluginpb.PluginInvokeRequest{
-		PluginName: "dyn-plugin",
-		Method:     "vendor_echo",
-		Request:    &anypb.Any{TypeUrl: "json:vendor_echo_request", Value: []byte(`{"msg":"hello"}`)},
+		PluginName: "echo-plugin",
+		Method:     "Echo",
+		Request:    &anypb.Any{TypeUrl: "json:Echo_request", Value: []byte(`{"msg":"hello"}`)},
 		DeadlineMs: 5000,
 	}
 	payload, err := proto.Marshal(invoke)
@@ -373,106 +291,59 @@ func TestServe_MethodSource_RegistersAndRoundTrips(t *testing.T) {
 		Payload:  payload,
 	}
 
-	// Await the submitted result.
 	var result *componentpb.SubmitResultRequest
 	select {
 	case result = <-daemon.resultCh:
 	case <-ctx.Done():
 		t.Fatal("timeout waiting for SubmitResult")
 	}
-
 	require.Nil(t, result.GetError(), "handler should not error: %v", result.GetError())
-	// The result is the handler's raw JSON response, submitted verbatim.
-	var resp struct {
-		Echoed string `json:"echoed"`
-	}
+	var resp echoResp
 	require.NoError(t, json.Unmarshal(result.GetResult(), &resp))
 	assert.Equal(t, "hello", resp.Echoed)
 
-	// The discovered method must be in the RegisterComponent declaration.
-	assert.Contains(t, daemon.registeredMethods(t), "vendor_echo")
+	assert.Equal(t, []string{"Echo"}, daemon.registeredMethods(t))
 
-	// gibson#997: the plugin:* metadata keys the daemon reads to populate the
-	// ComponentInstall record are now forwarded (previously written by nobody).
+	// plugin:host_id is the one metadata key. No key declares a secret, a
+	// runtime, a trust level or a manifest hash (sdk#129): the daemon decides
+	// each of those itself.
 	md := daemon.registeredMetadata(t)
-	assert.Equal(t, "process", md["plugin:runtime_mode"], "runtime mode forwarded")
-	assert.Equal(t, "false", md["plugin:setec_required"], "setec_required forwarded")
-	assert.Equal(t, "trusted", md["plugin:content_trust"], "content_trust forwarded")
 	assert.NotEmpty(t, md["plugin:host_id"], "host_id thumbprint forwarded (keys per-host install uniqueness)")
+	assert.Len(t, md, 1, "metadata = %v", md)
 
 	cancel()
 	require.NoError(t, <-serveErr)
 }
 
-func TestServe_MethodSource_CollisionWithStatic_ReturnsError(t *testing.T) {
+// A plugin that needs a secret it was not granted fails at boot with an error
+// that names the secret. The plugin resolves the secret in OnStart; no
+// declaration exists for the SDK to interpret (sdk#129).
+func TestServe_UngrantedStartupSecret_FailsAtBootNamingTheSecret(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	platform := fakeCGPlatform(t)
 	t.Setenv("GIBSON_URL", platform.URL)
 	startFakeDaemon(t)
 
-	m := dynamicManifest()
-	m.Spec.Methods = []manifest.MethodDecl{{Name: "vendor_echo"}}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	err := Serve(ctx,
-		WithParsedManifest(m),
+		WithName("needs-a-secret"),
+		WithVersion("0.1.0"),
+		echoOption(),
 		WithHTTPClient(platform.Client()),
-		WithHandler("vendor_echo", "test handler for vendor_echo", func(_ context.Context, req string) (string, error) {
-			return req, nil
-		}),
-		WithMethodSource(func(_ context.Context) ([]DiscoveredMethod, error) {
-			return []DiscoveredMethod{
-				{Name: "vendor_echo", Handler: func(_ context.Context, req json.RawMessage) (json.RawMessage, error) {
-					return req, nil
-				}},
-			}, nil
+		WithHealthAddr(":0"),
+		WithSecretsClient(newFakeSecretsClient(nil)),
+		WithLifecycle(lifecycle.LifecycleHooks{
+			OnStart: func(ctx context.Context) error {
+				if _, err := ResolveSecret(ctx, "cred:vendor_token"); err != nil {
+					return fmt.Errorf("resolve startup secret %q: %w", "cred:vendor_token", err)
+				}
+				return nil
+			},
 		}),
 	)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "collides")
-}
-
-func TestServe_MethodSource_EmptySetNoStatic_ReturnsError(t *testing.T) {
-	t.Setenv("HOME", t.TempDir())
-	platform := fakeCGPlatform(t)
-	t.Setenv("GIBSON_URL", platform.URL)
-	startFakeDaemon(t)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	err := Serve(ctx,
-		WithParsedManifest(dynamicManifest()),
-		WithHTTPClient(platform.Client()),
-		WithMethodSource(func(_ context.Context) ([]DiscoveredMethod, error) {
-			return nil, nil
-		}),
-	)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "no methods to register")
-}
-
-func TestManifestHashFromPath(t *testing.T) {
-	// Empty path → empty hash (in-memory parsed manifest case).
-	if got := manifestHashFromPath(""); got != "" {
-		t.Errorf("empty path: got %q, want empty", got)
-	}
-	// Missing file → empty hash (best-effort).
-	if got := manifestHashFromPath(filepath.Join(t.TempDir(), "nope.yaml")); got != "" {
-		t.Errorf("missing file: got %q, want empty", got)
-	}
-	// Real file → deterministic SHA-256 hex of its bytes.
-	dir := t.TempDir()
-	p := filepath.Join(dir, "plugin.yaml")
-	content := []byte("apiVersion: x\nkind: Plugin\n")
-	if err := os.WriteFile(p, content, 0o600); err != nil {
-		t.Fatal(err)
-	}
-	sum := sha256.Sum256(content)
-	want := hex.EncodeToString(sum[:])
-	if got := manifestHashFromPath(p); got != want {
-		t.Errorf("hash mismatch: got %q, want %q", got, want)
-	}
+	assert.Contains(t, err.Error(), "cred:vendor_token")
+	assert.Contains(t, err.Error(), "OnStart hook failed")
 }

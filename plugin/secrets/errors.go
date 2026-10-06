@@ -34,8 +34,6 @@ var ErrNotFound = errors.New("secrets: not found")
 // callback RPC.
 var ErrPermissionDenied = errors.New("secrets: permission denied")
 
-// ErrInvalidArgument is returned by Resolve when the requested name is not
-// declared in the plugin's manifest spec.secrets. The plugin author must
-// declare every secret it consumes; this sentinel signals a manifest
-// authoring error rather than a runtime data error.
+// ErrInvalidArgument is returned by Resolve when the requested name is empty.
+// It signals a plugin authoring error rather than a runtime data error.
 var ErrInvalidArgument = errors.New("secrets: invalid argument")

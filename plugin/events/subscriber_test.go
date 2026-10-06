@@ -11,8 +11,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/zeroroot-ai/sdk/plugin/manifest"
 )
 
 // ---- fakes ----
@@ -55,40 +53,6 @@ func (f *fakeLifecycleHook) MarkDegraded(reason string) error {
 	return f.failErr
 }
 
-// fakeDrainer records DrainThenExit calls without actually exiting.
-type fakeDrainer struct {
-	reasons []string
-}
-
-func (f *fakeDrainer) DrainThenExit(reason string) {
-	f.reasons = append(f.reasons, reason)
-}
-
-// testManifest builds a minimal valid manifest with the given secrets.
-func testManifest(secrets ...manifest.SecretDecl) *manifest.Manifest {
-	if len(secrets) == 0 {
-		secrets = []manifest.SecretDecl{
-			{Name: "cred:api_key", Scope: "startup", Rotation: "live", Required: true},
-		}
-	}
-	return &manifest.Manifest{
-		APIVersion: manifest.APIVersionV1,
-		Kind:       manifest.KindPlugin,
-		Metadata: manifest.ManifestMetadata{
-			Name:    "test-plugin",
-			Version: "0.1.0",
-		},
-		Spec: manifest.ManifestSpec{
-			WorkloadClass: manifest.WorkloadClassPlugin,
-			Secrets:       secrets,
-			Methods: []manifest.MethodDecl{{
-				Name: "Do",
-			}},
-			Runtime: "process",
-		},
-	}
-}
-
 // runSubscriberUntilDrained sends events to the stream, then cancels the
 // subscriber and waits for it to return.
 func runSubscriberUntilDrained(t *testing.T, s *Subscriber, stream *fakeStream, events []Event) {
@@ -115,8 +79,7 @@ func TestSubscriber_SecretRotated_Live_Invalidates(t *testing.T) {
 	stream := newFakeStream()
 	sh := &fakeSecretsHook{}
 	lh := &fakeLifecycleHook{}
-	m := testManifest()
-	s := New(stream, sh, lh, m)
+	s := New(stream, sh, lh)
 
 	ev := Event{
 		Type:       EventTypeSecretRotated,
@@ -131,55 +94,11 @@ func TestSubscriber_SecretRotated_Live_Invalidates(t *testing.T) {
 	assert.Empty(t, lh.reasons)
 }
 
-func TestSubscriber_SecretRotated_Restart_CallsDrainer(t *testing.T) {
-	stream := newFakeStream()
-	sh := &fakeSecretsHook{}
-	lh := &fakeLifecycleHook{}
-	drainer := &fakeDrainer{}
-	m := testManifest(manifest.SecretDecl{
-		Name: "cred:db_pass", Scope: "startup", Rotation: "restart", Required: true,
-	})
-	s := NewWithDrainer(stream, sh, lh, drainer, m)
-
-	ev := Event{
-		Type:       EventTypeSecretRotated,
-		Name:       "cred:db_pass",
-		Version:    3,
-		OccurredAt: time.Now(),
-	}
-	runSubscriberUntilDrained(t, s, stream, []Event{ev})
-
-	require.Len(t, drainer.reasons, 1)
-	assert.Contains(t, drainer.reasons[0], "cred:db_pass")
-	assert.Contains(t, drainer.reasons[0], "secret_rotated_restart")
-}
-
-func TestSubscriber_SecretRotated_Restart_NilDrainer_ContinuesRunning(t *testing.T) {
-	// When no Drainer is wired, the subscriber logs and continues without panicking.
-	stream := newFakeStream()
-	sh := &fakeSecretsHook{}
-	lh := &fakeLifecycleHook{}
-	m := testManifest(manifest.SecretDecl{
-		Name: "cred:db_pass", Scope: "startup", Rotation: "restart", Required: true,
-	})
-	s := New(stream, sh, lh, m) // nil Drainer
-
-	ev := Event{
-		Type:       EventTypeSecretRotated,
-		Name:       "cred:db_pass",
-		Version:    1,
-		OccurredAt: time.Now(),
-	}
-	// Should not panic; Run must return cleanly on cancel.
-	runSubscriberUntilDrained(t, s, stream, []Event{ev})
-}
-
 func TestSubscriber_SecretAccessRevoked_CallsBothHooks(t *testing.T) {
 	stream := newFakeStream()
 	sh := &fakeSecretsHook{}
 	lh := &fakeLifecycleHook{}
-	m := testManifest()
-	s := New(stream, sh, lh, m)
+	s := New(stream, sh, lh)
 
 	ev := Event{
 		Type:       EventTypeSecretAccessRevoked,
@@ -198,8 +117,7 @@ func TestSubscriber_Idempotency_DuplicateEventIsNoop(t *testing.T) {
 	stream := newFakeStream()
 	sh := &fakeSecretsHook{}
 	lh := &fakeLifecycleHook{}
-	m := testManifest()
-	s := New(stream, sh, lh, m)
+	s := New(stream, sh, lh)
 
 	ev := Event{
 		Type:       EventTypeSecretRotated,
@@ -219,8 +137,7 @@ func TestSubscriber_UnknownEventType_Dropped(t *testing.T) {
 	stream := newFakeStream()
 	sh := &fakeSecretsHook{}
 	lh := &fakeLifecycleHook{}
-	m := testManifest()
-	s := New(stream, sh, lh, m)
+	s := New(stream, sh, lh)
 
 	ev := Event{
 		Type:       "component_registered",
@@ -235,13 +152,11 @@ func TestSubscriber_UnknownEventType_Dropped(t *testing.T) {
 	assert.Empty(t, lh.reasons)
 }
 
-func TestSubscriber_EventForUndeclaredSecret_Ignored(t *testing.T) {
+func TestSubscriber_SecretRotated_AnySecret_Invalidates(t *testing.T) {
 	stream := newFakeStream()
 	sh := &fakeSecretsHook{}
 	lh := &fakeLifecycleHook{}
-	// Manifest only declares "cred:api_key".
-	m := testManifest()
-	s := New(stream, sh, lh, m)
+	s := New(stream, sh, lh)
 
 	ev := Event{
 		Type:       EventTypeSecretRotated,
@@ -251,15 +166,15 @@ func TestSubscriber_EventForUndeclaredSecret_Ignored(t *testing.T) {
 	}
 	runSubscriberUntilDrained(t, s, stream, []Event{ev})
 
-	assert.Empty(t, sh.invalidated, "undeclared secret event must not trigger Invalidate")
+	assert.Equal(t, []string{"cred:other_secret"}, sh.invalidated,
+		"the daemon sends an event only for a grant this plugin holds; each one invalidates")
 }
 
 func TestSubscriber_ContextCancellation_ReturnsNil(t *testing.T) {
 	stream := newFakeStream()
 	sh := &fakeSecretsHook{}
 	lh := &fakeLifecycleHook{}
-	m := testManifest()
-	s := New(stream, sh, lh, m)
+	s := New(stream, sh, lh)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
@@ -279,8 +194,7 @@ func TestSubscriber_StreamError_PropagatesError(t *testing.T) {
 	errStream := &errAfterStream{err: sentinel}
 	sh := &fakeSecretsHook{}
 	lh := &fakeLifecycleHook{}
-	m := testManifest()
-	s := New(errStream, sh, lh, m)
+	s := New(errStream, sh, lh)
 
 	err := s.Run(context.Background())
 	require.Error(t, err)
@@ -300,8 +214,7 @@ func TestSubscriber_NilLifecycleHook_DoesNotPanic(t *testing.T) {
 	stream := newFakeStream()
 	sh := &fakeSecretsHook{}
 	// Pass nil lifecycle hook.
-	m := testManifest()
-	s := New(stream, sh, nil, m)
+	s := New(stream, sh, nil)
 
 	ev := Event{
 		Type:       EventTypeSecretAccessRevoked,
@@ -320,10 +233,7 @@ func TestSubscriber_Idempotency_RingOverflow(t *testing.T) {
 	stream := newFakeStream()
 	sh := &fakeSecretsHook{}
 	lh := &fakeLifecycleHook{}
-	m := testManifest(manifest.SecretDecl{
-		Name: "cred:api_key", Scope: "startup", Rotation: "live", Required: true,
-	})
-	s := New(stream, sh, lh, m)
+	s := New(stream, sh, lh)
 
 	base := time.Unix(1_000_000, 0)
 

@@ -3,68 +3,46 @@
 
 package plugin
 
-import (
-	"testing"
-
-	"github.com/zeroroot-ai/sdk/plugin/manifest"
-)
+import "testing"
 
 // buildMethodMetadata must carry per-method descriptions (the thing the
-// connector catalog / SearchTools surface) and keep names + descriptors aligned,
-// declared methods first then discovered.
+// connector catalog / SearchTools surface), keep names and descriptors
+// aligned, and forward the Go-derived input schema.
 func TestBuildMethodMetadata(t *testing.T) {
-	declared := []manifest.MethodDecl{
-		{Name: "Echo", Description: "echoes the input"},
+	descriptions := map[string]string{
+		"Echo":        "echoes the input",
+		"CreateIssue": "open an issue",
 	}
-	discovered := []DiscoveredMethod{
-		{Name: "create_issue", Description: "open an issue"},
-		{Name: "list_issues", Description: "list issues"},
-	}
-
 	schemas := map[string]methodSchema{
 		"Echo": {input: `{"type":"object","properties":{"msg":{"type":"string"}}}`, output: `{"type":"string"}`},
 	}
-	names, detailed := buildMethodMetadata(declared, discovered, schemas, nil)
+	names, detailed := buildMethodMetadata(schemas, descriptions)
 
-	wantNames := []string{"Echo", "create_issue", "list_issues"}
-	if len(names) != len(wantNames) {
-		t.Fatalf("names = %v, want %v", names, wantNames)
+	wantNames := []string{"CreateIssue", "Echo"}
+	if len(names) != len(wantNames) || len(detailed) != len(wantNames) {
+		t.Fatalf("names = %v, descriptors = %d, want %v", names, len(detailed), wantNames)
 	}
 	for i, n := range wantNames {
 		if names[i] != n {
-			t.Fatalf("names[%d] = %q, want %q (order: declared then discovered)", i, names[i], n)
+			t.Fatalf("names[%d] = %q, want %q (sorted)", i, names[i], n)
+		}
+		if detailed[i].GetName() != n {
+			t.Fatalf("detailed[%d].name = %q, want aligned with names", i, detailed[i].GetName())
+		}
+		if got := detailed[i].GetDescription(); got != descriptions[n] {
+			t.Fatalf("description for %q = %q, want %q", n, got, descriptions[n])
 		}
 	}
-
-	if len(detailed) != len(wantNames) {
-		t.Fatalf("detailed len = %d, want %d", len(detailed), len(wantNames))
-	}
-	wantDesc := map[string]string{
-		"Echo":         "echoes the input",
-		"create_issue": "open an issue",
-		"list_issues":  "list issues",
-	}
-	for i, d := range detailed {
-		if d.GetName() != names[i] {
-			t.Fatalf("detailed[%d].name = %q, want aligned with names[%d]=%q", i, d.GetName(), i, names[i])
-		}
-		if got := d.GetDescription(); got != wantDesc[d.GetName()] {
-			t.Fatalf("description for %q = %q, want %q", d.GetName(), got, wantDesc[d.GetName()])
-		}
-	}
-
-	// The derived input schema for a declared method is forwarded on its
-	// descriptor; discovered methods carry none.
-	if got := detailed[0].GetInputSchemaJson(); got != schemas["Echo"].input {
+	if got := detailed[1].GetInputSchemaJson(); got != schemas["Echo"].input {
 		t.Fatalf("Echo input_schema_json = %q, want %q", got, schemas["Echo"].input)
 	}
-	if got := detailed[1].GetInputSchemaJson(); got != "" {
-		t.Fatalf("discovered method input_schema_json = %q, want empty", got)
+	if got := detailed[0].GetInputSchemaJson(); got != "" {
+		t.Fatalf("a method with no schema carries input_schema_json %q, want empty", got)
 	}
 }
 
 func TestBuildMethodMetadataEmpty(t *testing.T) {
-	names, detailed := buildMethodMetadata(nil, nil, nil, nil)
+	names, detailed := buildMethodMetadata(nil, nil)
 	if len(names) != 0 || len(detailed) != 0 {
 		t.Fatalf("empty inputs = (%v, %v), want empty", names, detailed)
 	}

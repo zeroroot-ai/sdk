@@ -469,6 +469,7 @@ type ComponentCapability struct {
 	OwnerTenant  string   `protobuf:"bytes,7,opt,name=owner_tenant,json=ownerTenant,proto3" json:"owner_tenant,omitempty"`
 	Permissions  []string `protobuf:"bytes,10,rep,name=permissions,proto3" json:"permissions,omitempty"`
 	// Types that are assignable to Contract:
+	//
 	//	*ComponentCapability_AgentContract
 	//	*ComponentCapability_ToolContract
 	//	*ComponentCapability_PluginContract
@@ -478,8 +479,7 @@ type ComponentCapability struct {
 	// daemon at manifest-resolution time; set by the SDK loader when
 	// converting YAML manifests. Must agree with the populated
 	// `contract` oneof (PRINCIPAL_KIND_AGENT ↔ agent_contract, etc.) —
-	// mismatches are rejected by the daemon's RegisterPlugin /
-	// CreateAgentIdentity validators.
+	// mismatches are rejected by the daemon's CreateAgentIdentity validator.
 	//
 	// Spec: component-bootstrap-e2e Requirement 12.
 	PrincipalKind v1.PrincipalKind `protobuf:"varint,40,opt,name=principal_kind,json=principalKind,proto3,enum=gibson.identity.v1.PrincipalKind" json:"principal_kind,omitempty"`

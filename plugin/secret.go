@@ -18,7 +18,7 @@ import (
 var ErrNoSecretsClient = errors.New("plugin: no secrets client in context; " +
 	"ResolveSecret must be called from within a plugin.Serve method handler or lifecycle hook")
 
-// ResolveSecret fetches the value of a manifest-declared secret by name, using
+// ResolveSecret fetches the value of a secret by name, using
 // the broker-backed secrets client that [Serve] injects into every handler and
 // lifecycle-hook context.
 //
@@ -37,9 +37,12 @@ var ErrNoSecretsClient = errors.New("plugin: no secrets client in context; " +
 //	    return req, nil
 //	}
 //
-// name MUST be declared in the manifest's spec.secrets; the SDK rejects
-// undeclared names before any RPC. Resolved values are cached in-process with a
-// default 60s TTL; pass [secrets.WithCache](false) to force a fresh fetch.
+// The daemon decides whether this plugin may read name: a tenant admin grants
+// the access, and the SDK keeps no allow-list. A plugin that needs a secret to
+// start calls ResolveSecret in its OnStart hook and returns the error, so
+// [Serve] fails at boot with the secret named. Resolved values are cached
+// in-process with a default 60s TTL; pass [secrets.WithCache](false) to force a
+// fresh fetch.
 //
 // ResolveSecret returns [ErrNoSecretsClient] when called outside a Serve
 // handler or lifecycle-hook context.

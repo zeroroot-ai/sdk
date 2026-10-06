@@ -32,7 +32,6 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	PluginAdminService_ListPluginInstalls_FullMethodName        = "/gibson.pluginadmin.v1.PluginAdminService/ListPluginInstalls"
 	PluginAdminService_GetPluginInstall_FullMethodName          = "/gibson.pluginadmin.v1.PluginAdminService/GetPluginInstall"
-	PluginAdminService_RegisterPlugin_FullMethodName            = "/gibson.pluginadmin.v1.PluginAdminService/RegisterPlugin"
 	PluginAdminService_EditPluginSecretBinding_FullMethodName   = "/gibson.pluginadmin.v1.PluginAdminService/EditPluginSecretBinding"
 	PluginAdminService_RevokePluginSecretBinding_FullMethodName = "/gibson.pluginadmin.v1.PluginAdminService/RevokePluginSecretBinding"
 )
@@ -47,11 +46,6 @@ type PluginAdminServiceClient interface {
 	ListPluginInstalls(ctx context.Context, in *ListPluginInstallsRequest, opts ...grpc.CallOption) (*ListPluginInstallsResponse, error)
 	// GetPluginInstall returns one install by ID.
 	GetPluginInstall(ctx context.Context, in *GetPluginInstallRequest, opts ...grpc.CallOption) (*GetPluginInstallResponse, error)
-	// RegisterPlugin atomically registers a plugin per Spec 2 R3.1: validates
-	// manifest, creates the Zitadel plugin_principal SA, writes per-binding
-	// FGA can_resolve tuples (creating any inline secrets in the broker),
-	// returns the bootstrap token. Any partial failure rolls back all created state.
-	RegisterPlugin(ctx context.Context, in *RegisterPluginRequest, opts ...grpc.CallOption) (*RegisterPluginResponse, error)
 	// EditPluginSecretBinding modifies an existing binding (rebind to a different
 	// existing secret). Used by the plugin detail page's bindings table.
 	EditPluginSecretBinding(ctx context.Context, in *EditPluginSecretBindingRequest, opts ...grpc.CallOption) (*EditPluginSecretBindingResponse, error)
@@ -88,16 +82,6 @@ func (c *pluginAdminServiceClient) GetPluginInstall(ctx context.Context, in *Get
 	return out, nil
 }
 
-func (c *pluginAdminServiceClient) RegisterPlugin(ctx context.Context, in *RegisterPluginRequest, opts ...grpc.CallOption) (*RegisterPluginResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(RegisterPluginResponse)
-	err := c.cc.Invoke(ctx, PluginAdminService_RegisterPlugin_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *pluginAdminServiceClient) EditPluginSecretBinding(ctx context.Context, in *EditPluginSecretBindingRequest, opts ...grpc.CallOption) (*EditPluginSecretBindingResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(EditPluginSecretBindingResponse)
@@ -128,11 +112,6 @@ type PluginAdminServiceServer interface {
 	ListPluginInstalls(context.Context, *ListPluginInstallsRequest) (*ListPluginInstallsResponse, error)
 	// GetPluginInstall returns one install by ID.
 	GetPluginInstall(context.Context, *GetPluginInstallRequest) (*GetPluginInstallResponse, error)
-	// RegisterPlugin atomically registers a plugin per Spec 2 R3.1: validates
-	// manifest, creates the Zitadel plugin_principal SA, writes per-binding
-	// FGA can_resolve tuples (creating any inline secrets in the broker),
-	// returns the bootstrap token. Any partial failure rolls back all created state.
-	RegisterPlugin(context.Context, *RegisterPluginRequest) (*RegisterPluginResponse, error)
 	// EditPluginSecretBinding modifies an existing binding (rebind to a different
 	// existing secret). Used by the plugin detail page's bindings table.
 	EditPluginSecretBinding(context.Context, *EditPluginSecretBindingRequest) (*EditPluginSecretBindingResponse, error)
@@ -154,9 +133,6 @@ func (UnimplementedPluginAdminServiceServer) ListPluginInstalls(context.Context,
 }
 func (UnimplementedPluginAdminServiceServer) GetPluginInstall(context.Context, *GetPluginInstallRequest) (*GetPluginInstallResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPluginInstall not implemented")
-}
-func (UnimplementedPluginAdminServiceServer) RegisterPlugin(context.Context, *RegisterPluginRequest) (*RegisterPluginResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RegisterPlugin not implemented")
 }
 func (UnimplementedPluginAdminServiceServer) EditPluginSecretBinding(context.Context, *EditPluginSecretBindingRequest) (*EditPluginSecretBindingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method EditPluginSecretBinding not implemented")
@@ -221,24 +197,6 @@ func _PluginAdminService_GetPluginInstall_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PluginAdminService_RegisterPlugin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RegisterPluginRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PluginAdminServiceServer).RegisterPlugin(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: PluginAdminService_RegisterPlugin_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PluginAdminServiceServer).RegisterPlugin(ctx, req.(*RegisterPluginRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _PluginAdminService_EditPluginSecretBinding_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EditPluginSecretBindingRequest)
 	if err := dec(in); err != nil {
@@ -289,10 +247,6 @@ var PluginAdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPluginInstall",
 			Handler:    _PluginAdminService_GetPluginInstall_Handler,
-		},
-		{
-			MethodName: "RegisterPlugin",
-			Handler:    _PluginAdminService_RegisterPlugin_Handler,
 		},
 		{
 			MethodName: "EditPluginSecretBinding",

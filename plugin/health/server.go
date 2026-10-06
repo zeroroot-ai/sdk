@@ -77,8 +77,8 @@ type Server struct {
 // ":8080".
 //
 // livenessWindow is the maximum age of the last daemon heartbeat before
-// /livez returns 503. This is typically sourced from the manifest's
-// spec.health.liveness_interval; the Kubernetes livenessProbe
+// /livez returns 503. Serve passes DefaultLivenessInterval. The Kubernetes
+// livenessProbe
 // periodSeconds/failureThreshold should be set to match so the probe does
 // not fire before the plugin has had a chance to reconnect.
 func New(state *lifecycle.StateMachine, addr string, livenessWindow time.Duration) *Server {
@@ -253,3 +253,7 @@ func writeProbe(w http.ResponseWriter, healthy bool, resp probeResponse) {
 	}
 	_ = json.NewEncoder(w).Encode(resp)
 }
+
+// DefaultLivenessInterval is the liveness window that Serve passes to [New]:
+// the maximum age of the last daemon heartbeat before /livez returns 503.
+const DefaultLivenessInterval = 10 * time.Second
