@@ -16020,9 +16020,9 @@ type ClaimForkRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// sandbox_id is the hostname of the fork. setec sets the hostname of a
-	// sandbox from its name, so the daemon compares it with the hostname form
-	// of each fork id that the fork call returned.
+	// sandbox_id is the hostname of the fork. It is a hint, not a proof: the
+	// daemon takes the fork from the identity token, and refuses a
+	// sandbox_id that names another sandbox than the token.
 	SandboxId string `protobuf:"bytes,1,opt,name=sandbox_id,json=sandboxId,proto3" json:"sandbox_id,omitempty"`
 }
 

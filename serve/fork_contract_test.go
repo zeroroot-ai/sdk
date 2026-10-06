@@ -5,8 +5,12 @@ package serve
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net"
+	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -76,6 +80,46 @@ func forkDispatch() *harnesspb.ClaimForkResponse {
 	}
 }
 
+// fakeIdentity is a fake setec identity socket (setec#235). Each request gets
+// a new token of the current generation. A snapshot raises the generation.
+type fakeIdentity struct {
+	mu         sync.Mutex
+	generation int
+	requests   int
+}
+
+func (f *fakeIdentity) snapshot() { f.mu.Lock(); f.generation++; f.mu.Unlock() }
+
+func (f *fakeIdentity) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.requests++
+	if r.URL.Query().Get("audience") != fork.SandboxIdentityAudience {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"wrong audience"}`))
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]any{"token": fmt.Sprintf("gen%d-req%d", f.generation, f.requests)})
+}
+
+// serveIdentity serves a fake identity socket and names it in
+// SETEC_IDENTITY_SOCKET for one test.
+func serveIdentity(t *testing.T) *fakeIdentity {
+	t.Helper()
+	dir, err := os.MkdirTemp("", "id") // a Unix socket path has a short limit
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	path := filepath.Join(dir, "identity.sock")
+	lis, err := (&net.ListenConfig{}).Listen(context.Background(), "unix", path)
+	require.NoError(t, err)
+	f := &fakeIdentity{}
+	srv := &http.Server{Handler: f} //nolint:gosec // a test socket
+	go func() { _ = srv.Serve(lis) }()
+	t.Cleanup(func() { _ = srv.Close() })
+	t.Setenv(fork.EnvIdentitySocket, path)
+	return f
+}
+
 // serveForkTCP serves s on a loopback TCP port and returns a client connected
 // through Connect, so the dial options of the client are the real ones.
 func serveForkTCP(t *testing.T, s *forkServer) *CallbackClient {
@@ -95,13 +139,14 @@ func serveForkTCP(t *testing.T, s *forkServer) *CallbackClient {
 }
 
 // TestCallbackClient_SendsTheSandboxIDOnEachCall proves that Connect installs
-// the interceptors of the contract: each call carries the hostname of the
-// process.
+// the interceptors of the contract: each call carries a new identity token
+// and the hostname of the process.
 func TestCallbackClient_SendsTheSandboxIDOnEachCall(t *testing.T) {
 	want, err := os.Hostname()
 	require.NoError(t, err)
 	want = strings.TrimSpace(want)
 
+	serveIdentity(t)
 	s := &forkServer{claimAnswer: forkDispatch()}
 	client := serveForkTCP(t, s)
 
@@ -109,6 +154,7 @@ func TestCallbackClient_SendsTheSandboxIDOnEachCall(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, s.claimMD, 1)
 	require.Equal(t, []string{want}, s.claimMD[0].Get(fork.MetadataSandboxID))
+	require.Equal(t, []string{"gen0-req1"}, s.claimMD[0].Get(fork.MetadataSandboxIdentity))
 	require.Equal(t, []string{"Bearer parent-grant"}, s.claimMD[0].Get("authorization"),
 		"a fork claims with the grant of its parent")
 	require.Equal(t, "sbx-fork-1", s.claims[0].GetSandboxId())
@@ -118,6 +164,7 @@ func TestCallbackClient_SendsTheSandboxIDOnEachCall(t *testing.T) {
 // call carries the grant and the ids of the fork, and never the grant of the
 // parent.
 func TestCallbackClient_ApplyClaimSwitchesTheGrant(t *testing.T) {
+	serveIdentity(t)
 	s := &forkServer{claimAnswer: forkDispatch()}
 	client := serveForkTCP(t, s)
 	client.SetFullContext(TaskContextParams{TaskID: "task-a", MissionID: "parent-1", AgentRunID: "parent-run-1"})
@@ -173,6 +220,7 @@ func (h *forkHost) read() (string, error) {
 
 func forkHarness(t *testing.T, s *forkServer, h *forkHost) *CallbackHarness {
 	t.Helper()
+	serveIdentity(t)
 	srv := grpc.NewServer()
 	harnesspb.RegisterHarnessCallbackServiceServer(srv, s)
 	conn := dialBufconn(t, srv)
@@ -255,6 +303,7 @@ func TestCreateMission_ForkNeedsASandboxID(t *testing.T) {
 }
 
 func TestCallbackClient_ClaimForkErrors(t *testing.T) {
+	serveIdentity(t)
 	_, err := (&CallbackClient{}).ClaimFork(context.Background(), "sbx-fork-1")
 	require.Error(t, err, "a client that is not connected")
 
@@ -305,4 +354,43 @@ func TestCreateMission_AClaimWithNoGrantIsRefused(t *testing.T) {
 	var forked *fork.ErrForked
 	require.NotErrorAs(t, err, &forked)
 	require.Equal(t, "parent-grant", harness.client.token)
+}
+
+// TestCreateMission_TheForkClaimsWithItsOwnToken is the #803 path over the
+// real interceptors. The daemon snapshots the caller while CreateMission is
+// open. The call of the parent carries the token of the parent. The claim of
+// the fork carries a new token of the new generation, never the parent token.
+func TestCreateMission_TheForkClaimsWithItsOwnToken(t *testing.T) {
+	id := serveIdentity(t)
+	h := &forkHost{name: "sbx-parent"}
+	s := &forkServer{claimAnswer: forkDispatch()}
+	s.duringFork = func() { id.snapshot(); h.set("sbx-fork-1") }
+	s.failCreate = status.Error(codes.Unavailable, "the connection of the fork is gone")
+	client := serveForkTCP(t, s)
+	w, err := fork.NewWatcherWith(h.read)
+	require.NoError(t, err)
+	harness := &CallbackHarness{client: client, tracer: defaultNoopTracer(), forkWatcher: w}
+
+	_, err = harness.CreateMission(context.Background(), map[string]any{"name": "m"}, "target-1",
+		&mission.CreateMissionOpts{StartsFromCallerState: true})
+
+	var forked *fork.ErrForked
+	require.ErrorAs(t, err, &forked)
+	require.Equal(t, []string{"gen0-req1"}, s.createMD[0].Get(fork.MetadataSandboxIdentity))
+	require.Len(t, s.claimMD, 1)
+	require.Equal(t, []string{"gen1-req2"}, s.claimMD[0].Get(fork.MetadataSandboxIdentity),
+		"the fork claims with its own token")
+}
+
+// TestCallbackClient_ClaimForkNeedsTheIdentity proves that a process with no
+// identity socket cannot claim a fork, and that the error says why.
+func TestCallbackClient_ClaimForkNeedsTheIdentity(t *testing.T) {
+	t.Setenv(fork.EnvIdentitySocket, "")
+	s := &forkServer{claimAnswer: forkDispatch()}
+	client := serveForkTCP(t, s)
+
+	_, err := client.ClaimFork(context.Background(), "sbx-fork-1")
+	require.ErrorIs(t, err, fork.ErrNoSandboxIdentity)
+	require.ErrorContains(t, err, fork.EnvIdentitySocket)
+	require.Empty(t, s.claims, "no call is sent")
 }

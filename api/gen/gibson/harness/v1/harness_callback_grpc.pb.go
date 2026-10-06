@@ -298,11 +298,15 @@ type HarnessCallbackServiceClient interface {
 	// ClaimFork returns the dispatch of a fork (D74, sdk#248). A fork from a
 	// snapshot starts with the grant of its parent in memory. It calls
 	// ClaimFork first, with that grant, and from then on uses only the grant
-	// of the response. The daemon accepts the call only when sandbox_id is a
-	// fork of the sandbox of the grant, and only one time for each fork.
+	// of the response. The daemon knows the fork only from the setec identity
+	// token in the metadata key x-gibson-sandbox-identity (sdk#251). It
+	// accepts the call only when that sandbox is a fork of the sandbox of the
+	// grant, and only one time for each fork.
 	//
-	// Errors: PermissionDenied (the id is not a fork of the grant),
-	// AlreadyExists (the fork was claimed before), InvalidArgument.
+	// Errors: Unauthenticated (no identity token, or a token that does not
+	// verify), PermissionDenied (the sandbox is not a fork of the grant, or
+	// sandbox_id names another sandbox than the token), AlreadyExists (the
+	// fork was claimed before), InvalidArgument.
 	ClaimFork(ctx context.Context, in *ClaimForkRequest, opts ...grpc.CallOption) (*ClaimForkResponse, error)
 }
 
@@ -1239,11 +1243,15 @@ type HarnessCallbackServiceServer interface {
 	// ClaimFork returns the dispatch of a fork (D74, sdk#248). A fork from a
 	// snapshot starts with the grant of its parent in memory. It calls
 	// ClaimFork first, with that grant, and from then on uses only the grant
-	// of the response. The daemon accepts the call only when sandbox_id is a
-	// fork of the sandbox of the grant, and only one time for each fork.
+	// of the response. The daemon knows the fork only from the setec identity
+	// token in the metadata key x-gibson-sandbox-identity (sdk#251). It
+	// accepts the call only when that sandbox is a fork of the sandbox of the
+	// grant, and only one time for each fork.
 	//
-	// Errors: PermissionDenied (the id is not a fork of the grant),
-	// AlreadyExists (the fork was claimed before), InvalidArgument.
+	// Errors: Unauthenticated (no identity token, or a token that does not
+	// verify), PermissionDenied (the sandbox is not a fork of the grant, or
+	// sandbox_id names another sandbox than the token), AlreadyExists (the
+	// fork was claimed before), InvalidArgument.
 	ClaimFork(context.Context, *ClaimForkRequest) (*ClaimForkResponse, error)
 	mustEmbedUnimplementedHarnessCallbackServiceServer()
 }

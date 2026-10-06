@@ -8,12 +8,17 @@
 // package lets the process find out that it is a fork, and claim its own
 // dispatch from the daemon before it does anything else.
 //
-// The contract has four parts:
+// The contract has five parts:
 //
-//   - The sandbox id travels with each callback. The callback client sends
-//     MetadataSandboxID on each call, read at the time of the call. The value
-//     is the hostname of the process: setec gives each sandbox a hostname from
-//     its name, so a fork reads its own id.
+//   - The sandbox identity travels with each callback. The callback client
+//     gets a new identity token from setec on each call (setec#235) and sends
+//     it in MetadataSandboxIdentity. setec signs the token with a key of the
+//     sandbox that no process in the sandbox can read. Each snapshot raises
+//     the identity generation, so a token of the parent does not verify in a
+//     fork. The daemon takes the sandbox of the caller only from this token.
+//   - The client also sends MetadataSandboxID, the hostname of the process.
+//     It is a hint, not a proof. The daemon refuses a call whose hostname
+//     names another sandbox than the token.
 //   - The daemon refuses the grant of a forked source outside the source
 //     sandbox. The refusal is FAILED_PRECONDITION with the reason
 //     ReasonForkUnclaimed. IsForkUnclaimed recognizes it.
@@ -22,17 +27,17 @@
 //   - A source that may be forked (EnvForkable) parks after its result line
 //     (Park). An agent that forks its current state gets ErrForked in the fork
 //     (Point).
-//
-// The daemon trusts the hostname that the process sends. A fork that sends the
-// id of its parent acts as the parent. The contract stops a fork from using the
-// parent credential by accident. It does not stop agent code that lies on
-// purpose; a per-sandbox identity from setec closes that gap.
 package fork
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net"
+	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -56,9 +61,28 @@ const (
 	// Unset or empty means DefaultParkTimeout.
 	EnvParkTimeout = "GIBSON_PARK_TIMEOUT"
 
-	// MetadataSandboxID is the metadata key that carries the sandbox id of
+	// MetadataSandboxID is the metadata key that carries the hostname of
 	// the caller on each callback.
 	MetadataSandboxID = "x-gibson-sandbox-id"
+
+	// MetadataSandboxIdentity is the metadata key that carries the setec
+	// identity token of the caller on each callback.
+	MetadataSandboxIdentity = "x-gibson-sandbox-identity"
+
+	// SandboxIdentityAudience is the audience of the identity token that a
+	// callback sends. The daemon verifies the token for this audience.
+	SandboxIdentityAudience = "gibson-harness-callback"
+
+	// EnvIdentitySocket names the Unix socket of setec that gives the
+	// identity tokens of the sandbox. setec sets it in the environment of
+	// each process in a sandbox.
+	EnvIdentitySocket = "SETEC_IDENTITY_SOCKET"
+
+	// identityTokenPath is the HTTP path of a token on the identity socket.
+	identityTokenPath = "/v1/token"
+
+	// identityTimeout bounds one request for a token.
+	identityTimeout = 5 * time.Second
 
 	// ReasonForkUnclaimed is the ErrorInfo reason of the refusal of a grant
 	// outside the sandbox it was given to.
@@ -255,26 +279,100 @@ func IsForkUnclaimed(err error) bool {
 	return false
 }
 
-// withSandboxID adds the sandbox id of the process to the outgoing metadata.
-// A process with no readable hostname sends no id, and the daemon decides.
-func withSandboxID(ctx context.Context) context.Context {
-	id, err := SandboxID()
-	if err != nil || id == "" {
-		return ctx
-	}
-	return metadata.AppendToOutgoingContext(ctx, MetadataSandboxID, id)
+// ErrNoSandboxIdentity is the error of a process that has no identity socket:
+// EnvIdentitySocket is not set. Such a process does not run in a setec
+// sandbox, and it cannot prove which sandbox it is.
+var ErrNoSandboxIdentity = errors.New("fork: this process has no sandbox identity: " + EnvIdentitySocket + " is not set")
+
+// IdentitySocket returns the path of the setec identity socket from
+// EnvIdentitySocket, or "" when the process has none.
+func IdentitySocket() string {
+	return strings.TrimSpace(os.Getenv(EnvIdentitySocket))
 }
 
-// UnaryClientInterceptor sends MetadataSandboxID on each unary call.
+// IdentityToken gets a new identity token of the sandbox of the process from
+// the setec identity socket, for SandboxIdentityAudience. It reads
+// EnvIdentitySocket and asks the socket on each call, and it keeps no copy.
+// So a fork, which gets a new identity, never sends the token of its parent.
+// It returns ErrNoSandboxIdentity when EnvIdentitySocket is not set.
+func IdentityToken(ctx context.Context) (string, error) {
+	socket := IdentitySocket()
+	if socket == "" {
+		return "", ErrNoSandboxIdentity
+	}
+	ctx, cancel := context.WithTimeout(ctx, identityTimeout)
+	defer cancel()
+	client := &http.Client{Transport: &http.Transport{
+		DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+			return (&net.Dialer{}).DialContext(ctx, "unix", socket)
+		},
+	}}
+	defer client.CloseIdleConnections()
+	u := "http://setec-identity" + identityTokenPath + "?" + url.Values{"audience": {SandboxIdentityAudience}}.Encode()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
+	if err != nil {
+		return "", fmt.Errorf("fork: make the identity token request: %w", err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("fork: get the sandbox identity token from %s: %w", socket, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	var body struct {
+		Token string `json:"token"`
+		Error string `json:"error"`
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 16<<10)).Decode(&body); err != nil {
+		return "", fmt.Errorf("fork: the identity socket %s answered %s with no JSON: %w", socket, resp.Status, err)
+	}
+	switch {
+	case resp.StatusCode != http.StatusOK:
+		return "", fmt.Errorf("fork: the identity socket %s refused the token: %s: %s", socket, resp.Status, body.Error)
+	case body.Token == "":
+		return "", fmt.Errorf("fork: the identity socket %s answered no token", socket)
+	}
+	return body.Token, nil
+}
+
+// withSandboxIdentity adds the identity token and the hostname of the
+// process to the outgoing metadata. A process with no identity socket sends
+// no token, and the daemon decides. A process with a socket that gives no
+// token sends no call: the daemon would refuse it.
+func withSandboxIdentity(ctx context.Context) (context.Context, error) {
+	token, err := IdentityToken(ctx)
+	switch {
+	case errors.Is(err, ErrNoSandboxIdentity):
+	case err != nil:
+		return ctx, status.Errorf(codes.Unauthenticated, "%v", err)
+	default:
+		ctx = metadata.AppendToOutgoingContext(ctx, MetadataSandboxIdentity, token)
+	}
+	if id, err := SandboxID(); err == nil && id != "" {
+		ctx = metadata.AppendToOutgoingContext(ctx, MetadataSandboxID, id)
+	}
+	return ctx, nil
+}
+
+// UnaryClientInterceptor sends MetadataSandboxIdentity and MetadataSandboxID
+// on each unary call.
 func UnaryClientInterceptor() grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-		return invoker(withSandboxID(ctx), method, req, reply, cc, opts...)
+		ctx, err := withSandboxIdentity(ctx)
+		if err != nil {
+			return err
+		}
+		return invoker(ctx, method, req, reply, cc, opts...)
 	}
 }
 
-// StreamClientInterceptor sends MetadataSandboxID on each stream.
+// StreamClientInterceptor sends MetadataSandboxIdentity and MetadataSandboxID
+// on each stream.
 func StreamClientInterceptor() grpc.StreamClientInterceptor {
 	return func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
-		return streamer(withSandboxID(ctx), desc, cc, method, opts...)
+		ctx, err := withSandboxIdentity(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return streamer(ctx, desc, cc, method, opts...)
 	}
 }
