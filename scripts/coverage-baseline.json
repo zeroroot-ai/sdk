@@ -2,7 +2,6 @@
   "_comment": "Packages below the 80% coverage floor when the gate landed (sdk#356). Burndown: sdk#388. Each entry is held at its recorded level (no regression) and removed once it reaches 80%. Regenerate with `make coverage-baseline`. These numbers are toolchain-dependent: `go test -cover` counts statements, and the count changes between Go releases. Re-recorded under go1.27.1, the floor in go.mod. Moving the floor toolchain moves these numbers in both directions on an unchanged tree, so re-record this file in the same PR that moves the floor.",
   "floor": 80,
   "packages": {
-    "github.com/zeroroot-ai/sdk/capabilitygrant": 72.9,
     "github.com/zeroroot-ai/sdk/cmd/mission-docs-gen": 0,
     "github.com/zeroroot-ai/sdk/cmd/mission-jsonschema-gen": 0,
     "github.com/zeroroot-ai/sdk/cmd/sdk-bump": 0,
