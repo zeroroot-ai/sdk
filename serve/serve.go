@@ -80,12 +80,6 @@ type Config struct {
 	// If nil, no extraction is performed and field 100 is left as-is.
 	Extractor EntityExtractor
 
-	// AuthzFailOpen controls the policy when the daemon's Authorize RPC is
-	// unreachable:
-	//   false (default) — fail-closed; treat Unavailable as deny.
-	//   true            — fail-open (dev mode); log WARN and proceed.
-	AuthzFailOpen bool
-
 	// SPIFFEEndpointSocket is the path to the SPIRE Workload API Unix socket.
 	// When set (and the socket exists), SPIFFE mode is used.
 	// Set via WithSPIFFE() or read from SPIFFE_ENDPOINT_SOCKET by WithSPIFFEFromEnv().

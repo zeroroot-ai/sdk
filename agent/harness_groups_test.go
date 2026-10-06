@@ -4,14 +4,10 @@
 package agent
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"reflect"
 	"sort"
 	"testing"
-
-	"github.com/zeroroot-ai/sdk/finding"
 )
 
 // Harness must satisfy every capability group it is composed of. These are
@@ -126,41 +122,4 @@ func wrapRead(err error) error {
 		return nil
 	}
 	return fmt.Errorf("knowledge read: %w", err)
-}
-
-func TestKnowledgeReadsAreUnavailableNotEmpty(t *testing.T) {
-	var h Harness = &BaseHarness{}
-	ctx := context.Background()
-
-	checks := []struct {
-		name string
-		call func() error
-	}{
-		{"QueryNodes", func() error { _, err := h.QueryNodes(ctx, nil); return wrapRead(err) }},
-		{"FindSimilarAttacks", func() error { _, err := h.FindSimilarAttacks(ctx, "x", 1); return wrapRead(err) }},
-		{"GetAttackChains", func() error { _, err := h.GetAttackChains(ctx, "T1566", 2); return wrapRead(err) }},
-		{"FindSimilarFindings", func() error { _, err := h.FindSimilarFindings(ctx, "f-1", 1); return wrapRead(err) }},
-		{"GetRelatedFindings", func() error { _, err := h.GetRelatedFindings(ctx, "f-1"); return wrapRead(err) }},
-		{"GetFindings", func() error { _, err := h.GetFindings(ctx, finding.Filter{}); return wrapRead(err) }},
-		{"GetRunFindings", func() error {
-			_, err := h.GetRunFindings(ctx, RunScopePrevious, finding.Filter{})
-			return wrapRead(err)
-		}},
-		{"GetMissionRunHistory", func() error { _, err := h.GetMissionRunHistory(ctx); return wrapRead(err) }},
-		{"ApplicationFindings", func() error {
-			_, err := h.ApplicationFindings(ctx, "customer-portal", nil, 0)
-			return wrapRead(err)
-		}},
-	}
-	for _, c := range checks {
-		err := c.call()
-		if err == nil {
-			t.Errorf("%s returned a nil error with no platform behind it; an agent cannot "+
-				"tell that from a genuinely empty result", c.name)
-			continue
-		}
-		if !errors.Is(err, ErrKnowledgeUnavailable) {
-			t.Errorf("%s error is not matchable as ErrKnowledgeUnavailable: %v", c.name, err)
-		}
-	}
 }

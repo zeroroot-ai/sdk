@@ -18,8 +18,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
-	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -39,7 +37,6 @@ import (
 	"github.com/zeroroot-ai/sdk/plugin/health"
 	"github.com/zeroroot-ai/sdk/plugin/lifecycle"
 	"github.com/zeroroot-ai/sdk/plugin/manifest"
-	"github.com/zeroroot-ai/sdk/plugin/metrics"
 	pluginsecrets "github.com/zeroroot-ai/sdk/plugin/secrets"
 )
 
@@ -75,11 +72,6 @@ const envRuntimeKey = "GIBSON_PLUGIN_RUNTIME"
 //
 // Serve returns the first fatal error encountered, or nil on clean shutdown.
 func Serve(ctx context.Context, opts ...Option) error {
-	// t0 anchors the gibson_plugin_startup_seconds histogram. It is observed
-	// by the lifecycle observer below the first time the state machine
-	// transitions into Ready.
-	t0 := time.Now()
-
 	cfg := &config{}
 	for _, o := range opts {
 		o(cfg)
@@ -163,29 +155,6 @@ func Serve(ctx context.Context, opts ...Option) error {
 			"from", from.String(),
 			"to", to.String(),
 		)
-	})
-
-	// Metrics observer: bumps gibson_plugin_lifecycle_transition_total and
-	// updates gibson_plugin_state. The install_id label is empty until
-	// RegisterComponent assigns one; the gauge is backfilled below via
-	// metrics.Default.SetState(plugin, instanceID, Current()) once known.
-	//
-	// Startup observation: on the first transition into Ready, observe
-	// gibson_plugin_startup_seconds(plugin) using the t0 captured above.
-	var (
-		startupOnce        sync.Once
-		instanceIDForGauge atomic.Pointer[string]
-	)
-	emptyInstance := ""
-	instanceIDForGauge.Store(&emptyInstance)
-	sm.OnTransition(func(from, to lifecycle.State) {
-		iid := *instanceIDForGauge.Load()
-		metrics.Default.RecordTransition(m.Metadata.Name, iid, from, to)
-		if to == lifecycle.Ready {
-			startupOnce.Do(func() {
-				metrics.Default.ObserveStartup(m.Metadata.Name, t0)
-			})
-		}
 	})
 
 	// -------------------------------------------------------------------------
@@ -377,12 +346,6 @@ func Serve(ctx context.Context, opts ...Option) error {
 		"instance_id", instanceID,
 	)
 
-	// Now that an install_id exists, backfill the per-install gauge to the
-	// state machine's current state. Subsequent transitions update the gauge
-	// via the observer registered above.
-	instanceIDForGauge.Store(&instanceID)
-	metrics.Default.SetState(m.Metadata.Name, instanceID, sm.Current())
-
 	// -------------------------------------------------------------------------
 	// Step 8: Transition to ResolvingSecrets. The secrets client itself was
 	// constructed before RegisterComponent (above) so the method source could
@@ -443,13 +406,6 @@ func Serve(ctx context.Context, opts ...Option) error {
 	disp := dispatch.New(compAdapter, dispatch.Config{
 		Handlers:    cfg.handlers,
 		PollTimeout: pollTimeout,
-		OnInvocationComplete: func(method string, dur time.Duration, res dispatch.InvocationResult) {
-			// dispatch.InvocationResult and metrics.Result share string
-			// values; the cast is exact and bounded by the two enums.
-			metrics.Default.ObserveInvocation(
-				m.Metadata.Name, method, metrics.Result(res), dur,
-			)
-		},
 	})
 
 	// -------------------------------------------------------------------------
@@ -458,10 +414,6 @@ func Serve(ctx context.Context, opts ...Option) error {
 	eventStream := newComponentEventStream(componentSvcClient, m.Metadata.Name)
 
 	sub := events.NewWithDrainer(eventStream, secretsClient, sm, disp, m)
-	pluginName := m.Metadata.Name
-	sub.SetOnRotation(func(_ string, lag time.Duration) {
-		metrics.Default.ObserveRotationPropagation(pluginName, lag)
-	})
 
 	// -------------------------------------------------------------------------
 	// Step 15: Run background goroutines.

@@ -17,7 +17,6 @@
 package harness
 
 import (
-	"context"
 	"errors"
 )
 
@@ -43,27 +42,3 @@ var (
 // ============================================================================
 // Authorizer — narrow interface for context injection
 // ============================================================================
-
-// Authorizer is a narrow interface exposing only the authorization check.
-// Tools retrieve an Authorizer from their execution context via AuthorizerFromContext
-// rather than receiving the full agent.Harness (which would create an import cycle
-// between tool packages and the agent package).
-//
-// The CallbackHarness in the serve package satisfies this interface.
-// When no authorizer is present in the context, AuthorizerFromContext returns
-// a fail-closed deny-all authorizer; permissive behavior must be opted into
-// explicitly via ContextWithAllowAllAuthorizer.
-type Authorizer interface {
-	Authorize(ctx context.Context, action, resource string) error
-}
-
-// authorizerContextKey is the unexported key used to store an Authorizer in a
-// context. Using a private type prevents key collisions with third-party code.
-type authorizerContextKey struct{}
-
-// ContextWithAuthorizer returns a derived context carrying the given Authorizer.
-// Call this in the SDK serve loop before invoking ExecuteProto so that tools
-// can retrieve the authorizer via AuthorizerFromContext.
-func ContextWithAuthorizer(ctx context.Context, a Authorizer) context.Context {
-	return context.WithValue(ctx, authorizerContextKey{}, a)
-}

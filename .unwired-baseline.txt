@@ -6,7 +6,7 @@
 # This file only shrinks. Adding an entry means accepting a declaration
 # nothing reads, so put the reason on a # line above it.
 #
-# measured 2026-10-06: 543 of 1781 declarations across 147 packages and 326 files
+# measured 2026-10-06: 484 of 1650 declarations across 141 packages and 315 files
 
 const auth.CredentialCapabilityGrant	# auth/identity.go:52
 const auth.CredentialClientCredentials	# auth/identity.go:46
@@ -183,7 +183,7 @@ func graphrag.OntologyExtensionFromProto	# graphrag/ontology_proto.go:54
 func http.RedisPingFunc	# health/http/checks.go:20
 func manifest.IsValidationError	# plugin/manifest/manifest.go:487
 func plugin.ResolveSecret	# plugin/secret.go:46
-func plugin.Serve	# plugin/serve.go:77
+func plugin.Serve	# plugin/serve.go:74
 func plugin.WithHandler	# plugin/options.go:155
 func plugin.WithLifecycle	# plugin/options.go:231
 func plugin.WithManifest	# plugin/options.go:124
@@ -195,9 +195,9 @@ func schema.Array	# schema/schema.go:45
 func schema.Int	# schema/schema.go:40
 func schema.Object	# schema/schema.go:53
 func schema.StringWithDesc	# schema/schema.go:32
-func sdk.NewAgent	# gibson.go:27
-func sdk.NewTool	# gibson.go:53
-func sdk.ServeAgent	# gibson.go:69
+func sdk.NewAgent	# gibson.go:29
+func sdk.NewTool	# gibson.go:55
+func sdk.ServeAgent	# gibson.go:71
 func sdk.WithDescription	# options.go:36
 func sdk.WithExecuteFunc	# options.go:67
 func sdk.WithExecuteProtoHandler	# options.go:128
@@ -219,30 +219,6 @@ func secretenv.Lookup	# secretenv/secretenv.go:65
 func serve.WithCallbackTLS	# serve/callback_client.go:79
 func taxonomy.EmbeddedOntology	# taxonomy/embed.go:33
 func taxonomy.Parse	# taxonomy/ontology_schema.go:95
-method agent.BaseHarness.ApplicationFindings	# agent/base_harness.go:358
-method agent.BaseHarness.Authorize	# agent/base_harness.go:304
-method agent.BaseHarness.CallToolProtoStream	# agent/base_harness.go:102
-method agent.BaseHarness.CancelMission	# agent/base_harness.go:264
-method agent.BaseHarness.CompleteStructured	# agent/base_harness.go:83
-method agent.BaseHarness.CompleteStructuredAny	# agent/base_harness.go:88
-method agent.BaseHarness.CreateMission	# agent/base_harness.go:239
-method agent.BaseHarness.FindSimilarAttacks	# agent/base_harness.go:323
-method agent.BaseHarness.FindSimilarFindings	# agent/base_harness.go:333
-method agent.BaseHarness.GetAttackChains	# agent/base_harness.go:328
-method agent.BaseHarness.GetFindings	# agent/base_harness.go:343
-method agent.BaseHarness.GetMissionResults	# agent/base_harness.go:269
-method agent.BaseHarness.GetMissionRunHistory	# agent/base_harness.go:353
-method agent.BaseHarness.GetMissionStatus	# agent/base_harness.go:249
-method agent.BaseHarness.GetRelatedFindings	# agent/base_harness.go:338
-method agent.BaseHarness.GetRunFindings	# agent/base_harness.go:348
-method agent.BaseHarness.ListMissions	# agent/base_harness.go:259
-method agent.BaseHarness.QueryNodes	# agent/base_harness.go:318
-method agent.BaseHarness.QueueToolWork	# agent/base_harness.go:112
-method agent.BaseHarness.RunMission	# agent/base_harness.go:244
-method agent.BaseHarness.ToolResults	# agent/base_harness.go:118
-method agent.BaseHarness.WaitForMission	# agent/base_harness.go:254
-method agent.BaseHarness.Workspace	# agent/base_harness.go:278
-method agent.BaseHarness.Workspaces	# agent/base_harness.go:283
 method agent.ResultError.MarshalJSON	# agent/errors.go:88
 method agent.ResultError.UnmarshalJSON	# agent/errors.go:94
 method agent.ResultError.Unwrap	# agent/errors.go:80
@@ -282,9 +258,6 @@ method parser.ParseError.Error	# cmd/taxonomy-gen/parser/parser.go:55
 method protoresolver.DefaultProtoResolver.InvalidateCache	# protoresolver/default_resolver.go:241
 method protoresolver.DefaultProtoResolver.ResolveOutputType	# protoresolver/default_resolver.go:72
 method protoresolver.DefaultProtoResolver.UnmarshalProtoJSON	# protoresolver/default_resolver.go:220
-method protoresolver.NoOpMetricsRecorder.RecordCounter	# protoresolver/metrics.go:168
-method protoresolver.NoOpMetricsRecorder.RecordGauge	# protoresolver/metrics.go:173
-method protoresolver.NoOpMetricsRecorder.RecordHistogram	# protoresolver/metrics.go:178
 method protoresolver.SchemaNotFoundError.Error	# protoresolver/resolver.go:100
 method protoresolver.SchemaNotFoundError.Unwrap	# protoresolver/resolver.go:116
 method protoresolver.lruCache.Stats	# protoresolver/cache.go:176
@@ -319,7 +292,7 @@ method serve.CallbackTokenTracker.BySlot	# serve/callback_token_tracker.go:52
 method serve.CallbackTokenTracker.Reset	# serve/callback_token_tracker.go:60
 method serve.CallbackTokenTracker.Slots	# serve/callback_token_tracker.go:70
 method serve.CallbackTokenTracker.Total	# serve/callback_token_tracker.go:43
-method serve.PlatformClient.GetCredential	# serve/platform_client.go:1133
+method serve.PlatformClient.GetCredential	# serve/platform_client.go:1125
 method serve.PlatformHarness.ApplicationFindings	# serve/platform_harness.go:1105
 method serve.PlatformHarness.Authorize	# serve/platform_harness.go:1049
 method serve.PlatformHarness.CallToolProtoStream	# serve/platform_harness.go:381
@@ -364,22 +337,7 @@ method serve.partialGitOps.CreateBranch	# serve/workspace_proxy.go:238
 method serve.partialGitOps.CurrentBranch	# serve/workspace_proxy.go:230
 method serve.partialGitOps.Pull	# serve/workspace_proxy.go:250
 method serve.partialGitOps.Status	# serve/workspace_proxy.go:234
-method serve.toolCallbackAuthorizer.Authorize	# serve/platform_serve.go:637
-method taxonomy.DefaultTaxonomyValidator.Mode	# taxonomy/validator.go:183
-method taxonomy.DefaultTaxonomyValidator.SetMode	# taxonomy/validator.go:188
-method taxonomy.DefaultTaxonomyValidator.ValidateEntityType	# taxonomy/validator.go:278
-method taxonomy.DefaultTaxonomyValidator.ValidateFinding	# taxonomy/validator.go:193
-method taxonomy.DefaultTaxonomyValidator.ValidateProperties	# taxonomy/validator.go:318
-method taxonomy.DefaultTaxonomyValidator.ValidateRelationshipType	# taxonomy/validator.go:298
-method taxonomy.NoOpTaxonomyValidator.Mode	# taxonomy/validator.go:571
-method taxonomy.NoOpTaxonomyValidator.SetMode	# taxonomy/validator.go:576
-method taxonomy.NoOpTaxonomyValidator.ValidateCategory	# taxonomy/validator.go:551
-method taxonomy.NoOpTaxonomyValidator.ValidateEntityType	# taxonomy/validator.go:556
-method taxonomy.NoOpTaxonomyValidator.ValidateFinding	# taxonomy/validator.go:546
-method taxonomy.NoOpTaxonomyValidator.ValidateProperties	# taxonomy/validator.go:566
-method taxonomy.NoOpTaxonomyValidator.ValidateRelationshipType	# taxonomy/validator.go:561
 method taxonomy.Ontology.Validate	# taxonomy/ontology_validator.go:27
-method taxonomy.ValidationWarning.String	# taxonomy/validator.go:92
 method types.MissionContext.UnmarshalJSON	# types/mission.go:69
 method types.TargetInfo.URL	# types/target.go:50
 method types.TargetSchema.String	# types/target_schema.go:63
@@ -415,26 +373,6 @@ field schema.Taxonomy.NestedTypes	# cmd/taxonomy-gen/schema/types.go:24
 # Interface methods. An implementation must satisfy its interface, so these stay
 # (lane 11, D77 rule 5). The counter sees no call because each call goes through
 # the interface.
-method agent.BaseHarness.CallToolProto	# agent/base_harness.go:97
-method agent.BaseHarness.Complete	# agent/base_harness.go:68
-method agent.BaseHarness.CompleteWithTools	# agent/base_harness.go:73
-method agent.BaseHarness.DelegateToAgent	# agent/base_harness.go:143
-method agent.BaseHarness.ListAgents	# agent/base_harness.go:148
-method agent.BaseHarness.ListPlugins	# agent/base_harness.go:134
-method agent.BaseHarness.ListTools	# agent/base_harness.go:107
-method agent.BaseHarness.Logger	# agent/base_harness.go:185
-method agent.BaseHarness.Mission	# agent/base_harness.go:166
-method agent.BaseHarness.Observe	# agent/base_harness.go:199
-method agent.BaseHarness.PlaceBet	# agent/base_harness.go:204
-method agent.BaseHarness.PlanContext	# agent/base_harness.go:225
-method agent.BaseHarness.QueryPlugin	# agent/base_harness.go:129
-method agent.BaseHarness.ReportStepHints	# agent/base_harness.go:230
-method agent.BaseHarness.Stream	# agent/base_harness.go:78
-method agent.BaseHarness.SubmitFinding	# agent/base_harness.go:157
-method agent.BaseHarness.Target	# agent/base_harness.go:171
-method agent.BaseHarness.TokenUsage	# agent/base_harness.go:190
-method agent.BaseHarness.Tracer	# agent/base_harness.go:180
-method agent.BaseHarness.WorldView	# agent/base_harness.go:216
 method agent.sdkAgent.Health	# agent/builder.go:244
 method agent.sdkAgent.LLMSlots	# agent/builder.go:224
 method main.helloTool.Health	# examples/tool-runner-hello/main.go:29
@@ -483,7 +421,6 @@ method serve.partialGitOps.Commit	# serve/workspace_proxy.go:222
 method serve.partialGitOps.Push	# serve/workspace_proxy.go:226
 method serve.partialGitOps.Rollback	# serve/workspace_proxy.go:258
 method serve.partialGitOps.Snapshot	# serve/workspace_proxy.go:254
-method taxonomy.ValidationError.Error	# taxonomy/validator.go:71
 method tool.sdkTool.Health	# tool/builder.go:148
 
 # Read by a first-party repo outside this module (gibson, adk, gibson-executor or
@@ -584,3 +521,7 @@ method serve.CallbackClient.SetFullContext	# serve/callback_client.go:207
 method serve.CallbackClient.ValidateFinding	# serve/callback_client.go:624
 method serve.CallbackClient.ValidateGraphNode	# serve/callback_client.go:639
 method serve.CallbackClient.ValidateRelationship	# serve/callback_client.go:654
+func serve.NewCallbackClient	# serve/callback_client.go:58
+func serve.WithCallbackCredentials	# serve/callback_client.go:96
+func serve.WithCallbackTransportCredentials	# serve/callback_client.go:105
+method serve.CallbackClient.Close	# serve/callback_client.go:257

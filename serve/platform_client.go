@@ -289,14 +289,6 @@ func (pc *PlatformClient) Authenticate(ctx context.Context, componentName, compo
 	return nil
 }
 
-// CapabilityGrantClient returns the underlying capabilitygrant.Client after a successful
-// Authenticate call. Returns nil if Authenticate has not been called.
-func (pc *PlatformClient) CapabilityGrantClient() *capabilitygrant.Client {
-	pc.mu.RLock()
-	defer pc.mu.RUnlock()
-	return pc.capabilityGrantClient
-}
-
 // Connect dials the Gibson platform with appropriate transport credentials.
 //
 // TLS selection rules:

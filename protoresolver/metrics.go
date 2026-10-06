@@ -29,25 +29,6 @@ const (
 	StatusError   = "error"
 )
 
-// MetricsRecorder defines the interface for recording proto resolution metrics.
-// Implementations should be thread-safe for concurrent use.
-//
-// This interface allows decoupling from specific metrics implementations
-// (e.g., Prometheus, OpenTelemetry, in-memory counters) for testing and flexibility.
-type MetricsRecorder interface {
-	// RecordCounter increments a counter metric by the given value.
-	// Counters are cumulative metrics that only increase.
-	RecordCounter(name string, value int64, labels map[string]string)
-
-	// RecordGauge sets a gauge metric to the given value.
-	// Gauges represent point-in-time measurements that can go up or down.
-	RecordGauge(name string, value float64, labels map[string]string)
-
-	// RecordHistogram records a value in a histogram metric.
-	// Histograms track distributions of values over time.
-	RecordHistogram(name string, value float64, labels map[string]string)
-}
-
 // ProtoMetricsCollector implements metrics collection for ProtoResolver operations.
 // It uses atomic operations for thread-safe concurrent access without locks.
 //
@@ -160,24 +141,4 @@ func (c *ProtoMetricsCollector) recordDuration(duration time.Duration) {
 	c.resolutionDurations = append(c.resolutionDurations, duration)
 }
 
-// NoOpMetricsRecorder is a no-operation implementation of MetricsRecorder.
-// It discards all metrics and is useful for testing or when metrics are disabled.
-type NoOpMetricsRecorder struct{}
-
-// RecordCounter is a no-op implementation.
-func (n *NoOpMetricsRecorder) RecordCounter(name string, value int64, labels map[string]string) {
-	// No-op: metrics are discarded
-}
-
-// RecordGauge is a no-op implementation.
-func (n *NoOpMetricsRecorder) RecordGauge(name string, value float64, labels map[string]string) {
-	// No-op: metrics are discarded
-}
-
-// RecordHistogram is a no-op implementation.
-func (n *NoOpMetricsRecorder) RecordHistogram(name string, value float64, labels map[string]string) {
-	// No-op: metrics are discarded
-}
-
 // Ensure NoOpMetricsRecorder implements MetricsRecorder at compile time
-var _ MetricsRecorder = (*NoOpMetricsRecorder)(nil)

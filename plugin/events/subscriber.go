@@ -116,25 +116,13 @@ type dedupeKey struct {
 	occurredAt time.Time
 }
 
-// RotationCallback is the optional callback invoked after a secret_rotated
-// event has been processed (cache invalidated for rotation=live, or drain
-// initiated for rotation=restart). The metrics package wires this to record
-// gibson_plugin_rotation_propagation_seconds.
-//
-// name is the secret name from the event. lag is the wall-clock time
-// between event.OccurredAt (server-side timestamp) and the moment the
-// subscriber finished processing it. lag may be negative under clock skew;
-// the metric recorder clamps to zero in that case.
-type RotationCallback func(name string, lag time.Duration)
-
 // Subscriber consumes the component callback stream and dispatches
 // rotation/revocation events to the secrets client and lifecycle hook.
 type Subscriber struct {
-	stream     EventStream
-	secrets    SecretsHook
-	lifecycle  LifecycleHook
-	drainer    Drainer          // may be nil in pre-Phase-8 wiring
-	onRotation RotationCallback // may be nil
+	stream    EventStream
+	secrets   SecretsHook
+	lifecycle LifecycleHook
+	drainer   Drainer // may be nil in pre-Phase-8 wiring
 
 	// secretAttrs is built once from the manifest for O(1) lookup of
 	// a secret's rotation policy.
@@ -143,16 +131,6 @@ type Subscriber struct {
 	// dedupeRing holds the last dedupeRingSize event keys for idempotency.
 	dedupeRing [dedupeRingSize]dedupeKey
 	ringHead   int // index of the slot to overwrite next (circular)
-}
-
-// SetOnRotation registers cb as the rotation observation callback.
-// Subsequent secret_rotated events fire cb after Invalidate or
-// drainer.DrainThenExit has returned. SetOnRotation is not safe for
-// concurrent use with Run; call it before Run is invoked.
-//
-// Passing nil clears any previously set callback.
-func (s *Subscriber) SetOnRotation(cb RotationCallback) {
-	s.onRotation = cb
 }
 
 // NewWithDrainer constructs a Subscriber wired to a Drainer for the
@@ -245,7 +223,6 @@ func (s *Subscriber) handleRotated(ev Event) {
 		s.secrets.Invalidate(ev.Name)
 		slog.Info("events: secret rotated (live), cache invalidated",
 			"name", ev.Name, "version", ev.Version)
-		s.fireOnRotation(ev)
 
 	case "restart":
 		reason := fmt.Sprintf("secret_rotated_restart: %s v%d", ev.Name, ev.Version)
@@ -253,7 +230,6 @@ func (s *Subscriber) handleRotated(ev Event) {
 			"name", ev.Name, "version", ev.Version)
 		// Fire the callback BEFORE DrainThenExit because that path may not
 		// return (it calls os.Exit(75) in production).
-		s.fireOnRotation(ev)
 		if s.drainer != nil {
 			s.drainer.DrainThenExit(reason)
 		} else {
@@ -265,20 +241,6 @@ func (s *Subscriber) handleRotated(ev Event) {
 				"name", ev.Name, "version", ev.Version)
 		}
 	}
-}
-
-// fireOnRotation invokes the OnRotation callback with the propagation lag
-// when one is configured. lag is zero (rather than negative) when
-// ev.OccurredAt is unset.
-func (s *Subscriber) fireOnRotation(ev Event) {
-	if s.onRotation == nil {
-		return
-	}
-	var lag time.Duration
-	if !ev.OccurredAt.IsZero() {
-		lag = time.Since(ev.OccurredAt)
-	}
-	s.onRotation(ev.Name, lag)
 }
 
 // handleRevoked handles secret_access_revoked events.
