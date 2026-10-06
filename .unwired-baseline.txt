@@ -7,6 +7,7 @@
 # nothing reads, so put the reason on a # line above it.
 #
 # measured 2026-10-06: 1334 of 3418 declarations across 183 packages and 517 files
+# measured 2026-10-06: 1303 of 3395 declarations across 176 packages and 492 files
 
 const auth.CredentialCapabilityGrant	# auth/identity.go:52
 const auth.CredentialClientCredentials	# auth/identity.go:46
@@ -124,6 +125,10 @@ field codegen.Diagnostic.Line	# codegen/types.go:127
 field codegen.Diagnostic.Message	# codegen/types.go:142
 field codegen.Diagnostic.Path	# codegen/types.go:124
 field codegen.Diagnostic.Source	# codegen/types.go:145
+# PageResult is the published page result of daemonclient (sdk#186). Its
+# readers are the CLI in adk and the operators in gibson, outside this module.
+field daemonclient.PageResult.NextToken	# daemonclient/types.go:207
+field daemonclient.PageResult.Total	# daemonclient/types.go:205
 field daemonclient.AgentInfo.Address	# daemonclient/types.go:61
 field daemonclient.AgentInfo.Description	# daemonclient/types.go:60
 field daemonclient.AgentInfo.Name	# daemonclient/types.go:58
@@ -310,6 +315,7 @@ field lsp.jsonrpcRequest.JSONRPC	# codegen/lsp/client.go:32
 field lsp.jsonrpcRequest.Method	# codegen/lsp/client.go:34
 field lsp.jsonrpcRequest.Params	# codegen/lsp/client.go:35
 field lsp.jsonrpcResponse.JSONRPC	# codegen/lsp/client.go:40
+field manifest.ManifestMetadata.Author	# plugin/manifest/manifest.go:99
 field mission.MissionInfo.CreatedAt	# mission/types.go:96
 field mission.MissionInfo.Name	# mission/types.go:83
 field mission.MissionInfo.ParentMissionID	# mission/types.go:93
@@ -336,6 +342,7 @@ field mission.MissionStatusInfo.Progress	# mission/types.go:152
 field mission.MissionStatusInfo.Status	# mission/types.go:149
 field mission.MissionStatusInfo.TokenUsage	# mission/types.go:162
 field plugin.Descriptor.Description	# plugin/plugin.go:51
+field plugin.Descriptor.Description	# plugin/plugin.go:50
 field plugin.Descriptor.Methods	# plugin/plugin.go:53
 field plugin.Descriptor.Name	# plugin/plugin.go:47
 field plugin.Descriptor.Version	# plugin/plugin.go:49
@@ -377,27 +384,22 @@ field registry.CategoryInfo.Icon	# finding/registry/registry.go:33
 field schema.JSON.Default	# schema/schema.go:23
 field schema.JSON.Description	# schema/schema.go:18
 field schema.JSON.Format	# schema/schema.go:29
-field schema.NestedType.Fields	# cmd/taxonomy-gen/schema/types.go:32
-field schema.NestedTypeField.Description	# cmd/taxonomy-gen/schema/types.go:40
-field schema.NestedTypeField.Name	# cmd/taxonomy-gen/schema/types.go:37
-field schema.NestedTypeField.Required	# cmd/taxonomy-gen/schema/types.go:39
-field schema.NodeType.Category	# cmd/taxonomy-gen/schema/types.go:119
-field schema.NodeType.Description	# cmd/taxonomy-gen/schema/types.go:120
-field schema.NodeType.IdentifyingProperties	# cmd/taxonomy-gen/schema/types.go:123
-field schema.ParentConfig.Relationship	# cmd/taxonomy-gen/schema/types.go:161
-field schema.Property.Description	# cmd/taxonomy-gen/schema/types.go:133
-field schema.Property.Volatile	# cmd/taxonomy-gen/schema/types.go:139
-field schema.RelationshipType.Cardinality	# cmd/taxonomy-gen/schema/types.go:184
-field schema.RelationshipType.Description	# cmd/taxonomy-gen/schema/types.go:181
-field schema.RelationshipType.Properties	# cmd/taxonomy-gen/schema/types.go:185
-field schema.ReservedKeyDef.Description	# cmd/taxonomy-gen/schema/types.go:154
-field schema.Technique.Description	# cmd/taxonomy-gen/schema/types.go:194
-field schema.Technique.Name	# cmd/taxonomy-gen/schema/types.go:191
-field schema.Technique.Tactic	# cmd/taxonomy-gen/schema/types.go:193
-field schema.Technique.Taxonomy	# cmd/taxonomy-gen/schema/types.go:192
-field schema.Technique.URL	# cmd/taxonomy-gen/schema/types.go:195
-field schema.ValidationRule.Message	# cmd/taxonomy-gen/schema/types.go:168
-field schema.ValidationRule.Rule	# cmd/taxonomy-gen/schema/types.go:167
+field schema.NestedType.Fields	# cmd/taxonomy-gen/schema/types.go:30
+field schema.NestedTypeField.Description	# cmd/taxonomy-gen/schema/types.go:38
+field schema.NestedTypeField.Name	# cmd/taxonomy-gen/schema/types.go:35
+field schema.NestedTypeField.Required	# cmd/taxonomy-gen/schema/types.go:37
+field schema.NodeType.Category	# cmd/taxonomy-gen/schema/types.go:62
+field schema.NodeType.Description	# cmd/taxonomy-gen/schema/types.go:63
+field schema.NodeType.IdentifyingProperties	# cmd/taxonomy-gen/schema/types.go:66
+field schema.ParentConfig.Relationship	# cmd/taxonomy-gen/schema/types.go:104
+field schema.Property.Description	# cmd/taxonomy-gen/schema/types.go:76
+field schema.Property.Volatile	# cmd/taxonomy-gen/schema/types.go:82
+field schema.RelationshipType.Cardinality	# cmd/taxonomy-gen/schema/types.go:127
+field schema.RelationshipType.Description	# cmd/taxonomy-gen/schema/types.go:124
+field schema.RelationshipType.Properties	# cmd/taxonomy-gen/schema/types.go:128
+field schema.ReservedKeyDef.Description	# cmd/taxonomy-gen/schema/types.go:97
+field schema.ValidationRule.Message	# cmd/taxonomy-gen/schema/types.go:111
+field schema.ValidationRule.Rule	# cmd/taxonomy-gen/schema/types.go:110
 field sdk.FindingRecord.MissionID	# framework_store.go:36
 field sdk.Mission.AgentNames	# framework.go:109
 field sdk.Mission.CompletedAt	# framework.go:118
@@ -450,6 +452,11 @@ field serve.ValidationError.Field	# serve/callback_harness.go:1546
 field serve.ValidationError.Message	# serve/callback_harness.go:1547
 field serve.ValidationResult.Valid	# serve/callback_harness.go:1539
 field serve.ValidationResult.Warnings	# serve/callback_harness.go:1541
+field serve.ValidationError.Code	# serve/callback_harness.go:1545
+field serve.ValidationError.Field	# serve/callback_harness.go:1543
+field serve.ValidationError.Message	# serve/callback_harness.go:1544
+field serve.ValidationResult.Valid	# serve/callback_harness.go:1536
+field serve.ValidationResult.Warnings	# serve/callback_harness.go:1538
 field serve.capabilityInfo.Description	# serve/taxonomy_adapter.go:58
 field serve.capabilityInfo.ID	# serve/taxonomy_adapter.go:56
 field serve.capabilityInfo.Name	# serve/taxonomy_adapter.go:57
@@ -642,9 +649,6 @@ func llm.WithTools	# llm/completion.go:92
 func llm.WithTopP	# llm/completion.go:78
 func lsp.DefaultLSPConfig	# codegen/lsp/lsp.go:106
 func metrics.SetDefault	# plugin/metrics/metrics.go:68
-func parser.ValidateCardinality	# cmd/taxonomy-gen/parser/parser.go:73
-func parser.ValidateNodeCategory	# cmd/taxonomy-gen/parser/parser.go:83
-func parser.ValidatePropertyType	# cmd/taxonomy-gen/parser/parser.go:63
 func planning.NewStepHints	# planning/hints.go:37
 func plugin.ResolveSecret	# plugin/secret.go:49
 func plugin.SecretsFromContext	# plugin/secret.go:62
@@ -661,22 +665,25 @@ func plugin.WithPlatformURL	# plugin/options.go:228
 func plugin.WithSecretsClient	# plugin/options.go:203
 # plugin authoring API (sdk#129): read by each plugin main, for example gibson plugins/github/handler.go
 func plugin.WithVersion	# plugin/options.go:97
+func plugin.FromManifest	# plugin/plugin.go:93
+func plugin.ResolveSecret	# plugin/secret.go:46
+func plugin.SecretsFromContext	# plugin/secret.go:59
+func plugin.Serve	# plugin/serve.go:75
+func plugin.WithBootstrapToken	# plugin/options.go:303
+func plugin.WithDrainTimeout	# plugin/options.go:277
+func plugin.WithHTTPClient	# plugin/options.go:294
+func plugin.WithHandler	# plugin/options.go:156
+func plugin.WithHealthAddr	# plugin/options.go:269
+func plugin.WithLifecycle	# plugin/options.go:248
+func plugin.WithManifest	# plugin/options.go:125
+func plugin.WithMethodSource	# plugin/options.go:236
+func plugin.WithParsedManifest	# plugin/options.go:221
+func plugin.WithPlatformURL	# plugin/options.go:285
+func plugin.WithSecretsClient	# plugin/options.go:260
 func prometheus.New	# plugin/metrics/prometheus/recorder.go:58
-func protoconv.IdentifyingProperties	# graphrag/protoconv/converter.go:91
 func protoresolver.DefaultConfig	# protoresolver/default_resolver.go:54
 func protoresolver.NewDefaultProtoResolver	# protoresolver/default_resolver.go:33
 func protoresolver.NewNoOpMetricsRecorder	# protoresolver/metrics.go:325
-func query.BuildMatch	# graphrag/query/cypher.go:17
-func query.BuildReturn	# graphrag/query/cypher.go:110
-func query.BuildTraversal	# graphrag/query/cypher.go:138
-func query.BuildWhere	# graphrag/query/cypher.go:36
-func query.ExtractIDFields	# graphrag/query/mapper.go:433
-func query.FindingsByControlQuery	# graphrag/query/findings_compliance.go:18
-func query.FindingsCoverageByFrameworkQuery	# graphrag/query/findings_compliance.go:46
-func query.FindingsMultiFrameworkQuery	# graphrag/query/findings_compliance.go:65
-func query.MapFieldsFromProto	# graphrag/query/mapper.go:348
-func query.MapRowsToProtos	# graphrag/query/mapper.go:88
-func query.ValidateRequiredFields	# graphrag/query/mapper.go:478
 func registry.DefaultRegistry	# finding/registry/registry.go:146
 func schema.Any	# schema/schema.go:35
 func schema.Array	# schema/schema.go:68
@@ -1057,6 +1064,13 @@ method lsp.jsonrpcError.Error	# codegen/lsp/client.go:60
 method mission.MissionStatus.IsTerminal	# mission/types.go:137
 method mission.MissionStatus.IsValid	# mission/types.go:126
 method parser.MergeError.Error	# cmd/taxonomy-gen/parser/merger.go:125
+method manifest.ManifestHealth.EffectiveStartupTimeout	# plugin/manifest/manifest.go:204
+method manifest.ValidationError.Error	# plugin/manifest/manifest.go:286
+method manifest.parsedDuration.Duration	# plugin/manifest/manifest.go:245
+method manifest.parsedDuration.MarshalYAML	# plugin/manifest/manifest.go:269
+method manifest.parsedDuration.UnmarshalYAML	# plugin/manifest/manifest.go:251
+method mission.MissionStatus.IsTerminal	# mission/types.go:137
+method mission.MissionStatus.IsValid	# mission/types.go:126
 method parser.ParseError.Error	# cmd/taxonomy-gen/parser/parser.go:55
 method planning.StepHints.HasReplanRecommendation	# planning/hints.go:110
 method planning.StepHints.RecommendReplan	# planning/hints.go:66
@@ -1074,32 +1088,12 @@ method protoresolver.SchemaNotFoundError.Error	# protoresolver/resolver.go:151
 method protoresolver.SchemaNotFoundError.Unwrap	# protoresolver/resolver.go:167
 method protoresolver.TypeNotFoundError.Error	# protoresolver/resolver.go:186
 method protoresolver.lruCache.Stats	# protoresolver/cache.go:180
-method query.Op.String	# graphrag/query/types.go:44
 method registry.CategoryRegistry.GetInfo	# finding/registry/registry.go:102
 method registry.CategoryRegistry.ListAll	# finding/registry/registry.go:132
 method registry.CategoryRegistry.ListByDomain	# finding/registry/registry.go:112
 method registry.CategoryRegistry.Validate	# finding/registry/registry.go:83
-method schema.NestedTypeField.GoType	# cmd/taxonomy-gen/schema/types.go:44
-method schema.NestedTypeField.ProtoType	# cmd/taxonomy-gen/schema/types.go:66
-method schema.NodeType.HasParent	# cmd/taxonomy-gen/schema/types.go:204
-method schema.NodeType.HasRequiredParent	# cmd/taxonomy-gen/schema/types.go:199
-method schema.NodeType.IsRoot	# cmd/taxonomy-gen/schema/types.go:209
-method schema.NodeType.OptionalProperties	# cmd/taxonomy-gen/schema/types.go:225
-method schema.NodeType.PropertyByName	# cmd/taxonomy-gen/schema/types.go:236
-method schema.NodeType.RequiredProperties	# cmd/taxonomy-gen/schema/types.go:214
-method schema.Property.HasEnum	# cmd/taxonomy-gen/schema/types.go:292
-method schema.Property.IsBool	# cmd/taxonomy-gen/schema/types.go:282
-method schema.Property.IsBytes	# cmd/taxonomy-gen/schema/types.go:287
-method schema.Property.IsListType	# cmd/taxonomy-gen/schema/types.go:367
-method schema.Property.IsNumeric	# cmd/taxonomy-gen/schema/types.go:272
-method schema.Property.IsString	# cmd/taxonomy-gen/schema/types.go:277
-method schema.Property.IsTimestamp	# cmd/taxonomy-gen/schema/types.go:267
-method schema.Property.ProtoType	# cmd/taxonomy-gen/schema/types.go:341
 method schema.Schema.MarshalJSON	# plugin/schema/schema.go:100
-method schema.Taxonomy.NodeTypeByName	# cmd/taxonomy-gen/schema/types.go:444
-method schema.Taxonomy.RelationshipTypeByName	# cmd/taxonomy-gen/schema/types.go:454
-method schema.Taxonomy.SortedNestedTypeNames	# cmd/taxonomy-gen/schema/types.go:89
-method schema.ValidationError.Error	# cmd/taxonomy-gen/schema/types.go:469
+method schema.ValidationError.Error	# cmd/taxonomy-gen/schema/types.go:209
 method sdk.SDKError.Error	# errors.go:97
 method sdk.SDKError.Is	# errors.go:117
 method sdk.SDKError.Unwrap	# errors.go:111
@@ -1159,6 +1153,40 @@ method serve.CallbackHarness.ValidateRelationship	# serve/callback_harness.go:15
 method serve.CallbackHarness.WaitForMission	# serve/callback_harness.go:1235
 method serve.CallbackHarness.Workspace	# serve/callback_harness.go:1877
 method serve.CallbackHarness.Workspaces	# serve/callback_harness.go:1898
+method serve.CallbackClient.GetCredential	# serve/callback_client.go:575
+method serve.CallbackClient.GetPlanContext	# serve/callback_client.go:522
+method serve.CallbackHarness.ApplicationFindings	# serve/callback_harness.go:2143
+method serve.CallbackHarness.Authorize	# serve/callback_harness.go:1938
+method serve.CallbackHarness.CallToolProtoStream	# serve/callback_harness.go:568
+method serve.CallbackHarness.CancelMission	# serve/callback_harness.go:1329
+method serve.CallbackHarness.CompleteStructuredAny	# serve/callback_harness.go:401
+method serve.CallbackHarness.CreateMission	# serve/callback_harness.go:1058
+method serve.CallbackHarness.FindSimilarAttacks	# serve/callback_harness.go:2044
+method serve.CallbackHarness.FindSimilarFindings	# serve/callback_harness.go:2072
+method serve.CallbackHarness.GenerateNodeID	# serve/callback_harness.go:1516
+method serve.CallbackHarness.GetAttackChains	# serve/callback_harness.go:2058
+method serve.CallbackHarness.GetFindings	# serve/callback_harness.go:2098
+method serve.CallbackHarness.GetMissionResults	# serve/callback_harness.go:1354
+method serve.CallbackHarness.GetMissionRunHistory	# serve/callback_harness.go:2124
+method serve.CallbackHarness.GetMissionStatus	# serve/callback_harness.go:1207
+method serve.CallbackHarness.GetRelatedFindings	# serve/callback_harness.go:2086
+method serve.CallbackHarness.GetRunFindings	# serve/callback_harness.go:2110
+method serve.CallbackHarness.HasTaxonomy	# serve/callback_harness.go:1510
+method serve.CallbackHarness.ListMissions	# serve/callback_harness.go:1258
+method serve.CallbackHarness.QueryNodes	# serve/callback_harness.go:2032
+method serve.CallbackHarness.QueueToolWork	# serve/callback_harness.go:1629
+method serve.CallbackHarness.RunMission	# serve/callback_harness.go:1176
+method serve.CallbackHarness.SetAuthzContext	# serve/callback_harness.go:1921
+method serve.CallbackHarness.SetMissionExecutionContext	# serve/callback_harness.go:165
+method serve.CallbackHarness.SetPlanContext	# serve/callback_harness.go:159
+method serve.CallbackHarness.Taxonomy	# serve/callback_harness.go:1505
+method serve.CallbackHarness.ToolResults	# serve/callback_harness.go:1717
+method serve.CallbackHarness.ValidateFinding	# serve/callback_harness.go:1549
+method serve.CallbackHarness.ValidateGraphNode	# serve/callback_harness.go:1567
+method serve.CallbackHarness.ValidateRelationship	# serve/callback_harness.go:1586
+method serve.CallbackHarness.WaitForMission	# serve/callback_harness.go:1232
+method serve.CallbackHarness.Workspace	# serve/callback_harness.go:1872
+method serve.CallbackHarness.Workspaces	# serve/callback_harness.go:1893
 method serve.CallbackTokenTracker.BySlot	# serve/callback_token_tracker.go:52
 method serve.CallbackTokenTracker.Clone	# serve/callback_token_tracker.go:92
 method serve.CallbackTokenTracker.HasSlot	# serve/callback_token_tracker.go:83
@@ -1225,11 +1253,6 @@ method serve.partialGitOps.CreateBranch	# serve/workspace_proxy.go:238
 method serve.partialGitOps.CurrentBranch	# serve/workspace_proxy.go:230
 method serve.partialGitOps.Pull	# serve/workspace_proxy.go:250
 method serve.partialGitOps.Status	# serve/workspace_proxy.go:234
-method serve.planContextWrapper.CurrentStepIndex	# serve/planning_context.go:14
-method serve.planContextWrapper.MissionBudgetRemaining	# serve/planning_context.go:49
-method serve.planContextWrapper.RemainingSteps	# serve/planning_context.go:30
-method serve.planContextWrapper.StepBudget	# serve/planning_context.go:41
-method serve.planContextWrapper.TotalSteps	# serve/planning_context.go:22
 method serve.toolCallbackAuthorizer.Authorize	# serve/platform_serve.go:637
 method serve.toolServiceServer.Execute	# serve/tool.go:100
 method serve.toolServiceServer.GetDescriptor	# serve/tool.go:86
@@ -1324,7 +1347,6 @@ type graphrag.TaxonomyRegistry	# graphrag/taxonomy_types.go:115
 type id.Generator	# graphrag/id/generator.go:20
 type protoresolver.CachingProtoResolver	# protoresolver/resolver.go:58
 type protoresolver.ResolutionResult	# protoresolver/resolver.go:101
-type query.GraphClient	# graphrag/query/types.go:99
 type tool.StreamingTool	# tool/streaming.go:47
 var auth.SystemTenant	# auth/tenantid.go:143
 var codegen.ErrCloneFailed	# codegen/errors.go:11
@@ -1351,3 +1373,29 @@ var secrets.ErrNotFound	# plugin/secrets/errors.go:28
 var toolerr.ErrBinaryNotFound	# toolerr/error.go:211
 var toolerr.ErrInvalidInput	# toolerr/error.go:217
 var toolerr.ErrTimeout	# toolerr/error.go:214
+
+# The runtime fork contract (D74, sdk#248) for a oneshot driver. No Go oneshot driver is in this module: the zerocool-plugins drivers and the daemon tests of gibson#802 and gibson#803 use it.
+field fork.Claim.Model	# fork/fork.go:90
+func fork.Forkable	# fork/fork.go:216
+func fork.IsForkUnclaimed	# fork/fork.go:238
+func fork.Park	# fork/fork.go:188
+func fork.ParkTimeout	# fork/fork.go:221
+method fork.ErrForked.Error	# fork/fork.go:108
+
+# taxonomy-gen decodes these from taxonomy/core.yaml. The constants template reads
+# NodeType.Parent and ParentConfig.Type and .Required through text/template
+# reflection, which the scanner cannot see. The other keys lost their Go reader
+# with the proto, domain and validator generators (lane 11, S1). They stay as
+# schema data for the planned ark-component codegen of ADR-0102. The owner decides
+# whether core.yaml keeps them.
+field schema.NestedTypeField.Type	# cmd/taxonomy-gen/schema/types.go:36
+field schema.NodeType.Parent	# cmd/taxonomy-gen/schema/types.go:65
+field schema.NodeType.Validations	# cmd/taxonomy-gen/schema/types.go:67
+field schema.ParentConfig.RefField	# cmd/taxonomy-gen/schema/types.go:103
+field schema.ParentConfig.Required	# cmd/taxonomy-gen/schema/types.go:105
+field schema.ParentConfig.Type	# cmd/taxonomy-gen/schema/types.go:102
+field schema.Property.Enum	# cmd/taxonomy-gen/schema/types.go:75
+field schema.Property.Required	# cmd/taxonomy-gen/schema/types.go:74
+field schema.Property.ReservedKeys	# cmd/taxonomy-gen/schema/types.go:87
+field schema.ReservedKeyDef.ClosedVocabulary	# cmd/taxonomy-gen/schema/types.go:95
+field schema.Taxonomy.NestedTypes	# cmd/taxonomy-gen/schema/types.go:24

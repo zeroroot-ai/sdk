@@ -589,71 +589,6 @@ service ComponentService {
     }
 }
 
-// Resources declares the compute budget a sandboxed component requires per
-// call. Units mirror Kubernetes resource conventions (vcpu is whole CPUs;
-// memory is a quantity string like "256Mi" or "1Gi"). Only meaningful when
-// dispatch_mode == DISPATCH_MODE_SANDBOXED.
-message Resources {
-    int32 vcpu = 1;
-    string memory = 2;
-}
-
-// ComponentDescriptor is the unified persisted description of a component
-// registered in the Gibson ComponentRegistry, regardless of how it is
-// dispatched. Consumers (orchestrator, dashboard, CLI, authz) look up a
-// descriptor by name and switch on dispatch_mode to choose the routing.
-//
-// Legacy fields (name, version, kind, tags, metadata) describe every
-// component. Sandboxed-dispatch fields (image, command, env, resources,
-// default_timeout_seconds, input_schema_json, output_proto_type,
-// default_parse_quality) are populated by the daemon's catalog refresher
-// for sandboxed tools. Plugin/agent entries leave those fields zero.
-message ComponentDescriptor {
-    // Common metadata — populated for every dispatch_mode.
-    string name = 1;
-    string version = 2;
-    string kind = 3;  // "tool" | "plugin" | "agent"
-    string description = 4;
-    repeated string tags = 5;
-    map<string, string> metadata = 6;
-    DispatchMode dispatch_mode = 7;
-
-    // Sandboxed-dispatch fields (DISPATCH_MODE_SANDBOXED only).
-    // image is an OCI reference pinned by digest for reproducibility.
-    string image = 10;
-    // command is the argv the runner executes inside the microVM.
-    repeated string command = 11;
-    // env is static environment variables prepended to every Launch call.
-    // The daemon adds GIBSON_TOOL_INPUT_B64 and tracing headers on top.
-    map<string, string> env = 12;
-    // resources is the vCPU + memory budget per sandbox.
-    Resources resources = 13;
-    // default_timeout_seconds bounds the synchronous tool call.
-    int32 default_timeout_seconds = 14;
-    // input_schema_json is the JSON Schema document describing the tool's
-    // typed arguments (fed to the orchestrator LLM for tool_use selection).
-    bytes input_schema_json = 15;
-    // output_proto_type is the fully-qualified proto message name the tool's
-    // response conforms to, e.g. "gibson.tool.nmap.v1.ExecuteResponse".
-    string output_proto_type = 16;
-    // default_parse_quality advertises how richly the runner's parser will
-    // populate the response's field-100 DiscoveryResult for this tool.
-    ParseQuality default_parse_quality = 17;
-
-    // content_trust classifies the trust level of input data this component
-    // processes at call-time. Consumed by the daemon's dispatch policy gate
-    // together with `dispatch_mode` (see `ContentTrust` doc above).
-    //
-    // The default zero (CONTENT_TRUST_UNSPECIFIED) is treated as TRUSTED at
-    // gate-evaluation time for backward compatibility with descriptors
-    // registered before this field existed.
-    //
-    // NOTE: field 100 is reserved platform-wide for `gibson.graphrag.DiscoveryResult`
-    // on tool response messages (see `api/proto/DISCOVERY_RESULT.md`); do not
-    // assign new fields >= 100 on any component message without coordination.
-    ContentTrust content_trust = 18;
-}
-
 // RegisterComponentRequest is sent by a component on startup to announce
 // itself and declare its capabilities.
 message RegisterComponentRequest {
@@ -750,9 +685,8 @@ message HeartbeatResponse {
     // registered indicates whether the server still considers this instance registered.
     // A false value means the component must re-register before polling for work.
     bool registered = 1;
-    // config_updates carries any configuration values that have changed since the
-    // last heartbeat. The component should merge these into its running config.
-    map<string, string> config_updates = 2;
+    reserved 2;
+    reserved "config_updates";
 }
 
 // PollWorkRequest is sent by a component to request the next available work item.
@@ -963,8 +897,8 @@ message PluginCatalogEntryProto {
     string health_status = 8;
     // source identifies where this plugin was discovered (e.g. "registry", "local").
     string source = 9;
-    // instance_count is the number of running instances currently registered.
-    int32 instance_count = 10;
+    reserved 10;
+    reserved "instance_count";
 }
 
 // EnablePluginRequest activates a plugin and optionally supplies initial configuration.
@@ -1018,11 +952,11 @@ message GetPluginConfigRequest {
 
 // GetPluginConfigResponse carries the stored configuration and its schema.
 message GetPluginConfigResponse {
-    // config_json is the JSON-encoded configuration currently stored for the plugin.
-    string config_json = 1;
     // config_schema_json is the JSON Schema document describing the plugin's
     // configurable fields.
     string config_schema_json = 2;
+    reserved 1;
+    reserved "config_json";
 }
 
 // TestPluginConnectionRequest asks the daemon to validate plugin credentials and
@@ -1094,12 +1028,12 @@ message PluginAccessProto {
     bool enabled = 3;
     // source identifies how the tenant gained access to this plugin (e.g. "manual", "helm").
     string source = 4;
-    // configured_at is the RFC 3339 timestamp of the last configuration change.
-    string configured_at = 5;
-    // configured_by is the identity (user or service account) that applied the last config.
-    string configured_by = 6;
-    // has_config indicates whether a non-empty configuration blob is stored for this record.
-    bool has_config = 7;
+    reserved 5;
+    reserved "configured_at";
+    reserved 6;
+    reserved "configured_by";
+    reserved 7;
+    reserved "has_config";
 }
 
 // =============================================================================
@@ -1519,8 +1453,8 @@ message GetMissionRunHistoryRequest {
 
 // GetMissionRunHistoryResponse carries run summaries.
 message GetMissionRunHistoryResponse {
-    // runs_json is the JSON-encoded []types.MissionRunSummary.
-    bytes runs_json = 1;
+    reserved 1;
+    reserved "runs_json";
 }
 
 // ReportStepHintsRequest reports planning step hints from an agent.

@@ -9,7 +9,8 @@ import "buf/validate/validate.proto";
 message HealthStatus {
     string status = 1;     // healthy, degraded, unhealthy
     string message = 2;
-    int64 checked_at = 3;  // Unix timestamp in milliseconds
+    reserved 3;
+    reserved "checked_at";
 }
 
 message JSONSchema {
@@ -112,20 +113,6 @@ enum ErrorCode {
     ERROR_CODE_DELEGATION_FAILED = 23;
     ERROR_CODE_CHILD_AGENT_FAILED = 24;
     ERROR_CODE_CONFIG_ERROR = 25;
-}
-
-// HealthState defines standard health states
-enum HealthState {
-    HEALTH_STATE_UNSPECIFIED = 0;
-    HEALTH_STATE_HEALTHY = 1;
-    HEALTH_STATE_DEGRADED = 2;
-    HEALTH_STATE_UNHEALTHY = 3;
-}
-
-// Metadata contains labels and annotations for resources
-message Metadata {
-    map<string, string> labels = 1;
-    map<string, string> annotations = 2;
 }
 
 // Principal names who acts: a person, the tenant, a component run, or a

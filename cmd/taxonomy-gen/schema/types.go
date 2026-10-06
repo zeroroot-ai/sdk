@@ -6,7 +6,6 @@ package schema
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 )
 
@@ -18,7 +17,6 @@ type Taxonomy struct {
 
 	NodeTypes         []NodeType         `yaml:"node_types"`
 	RelationshipTypes []RelationshipType `yaml:"relationship_types"`
-	Techniques        []Technique        `yaml:"techniques,omitempty"`
 	// NestedTypes holds embedded value-object types (e.g. ComplianceMapping).
 	// These are not graph nodes — they have no identifying_properties, no parent
 	// relationships, and do not get domain constructors. They exist solely so
@@ -38,61 +36,6 @@ type NestedTypeField struct {
 	Type        string `yaml:"type"`
 	Required    bool   `yaml:"required,omitempty"`
 	Description string `yaml:"description,omitempty"`
-}
-
-// GoType returns the Go type for this nested-type field.
-func (f *NestedTypeField) GoType() string {
-	switch f.Type {
-	case "string":
-		return "string"
-	case "int32":
-		return "int32"
-	case "int64":
-		return "int64"
-	case "float64":
-		return "float64"
-	case "bool":
-		return "bool"
-	case "timestamp":
-		return "int64"
-	case "bytes":
-		return "[]byte"
-	default:
-		return "any"
-	}
-}
-
-// ProtoType returns the protobuf type for this nested-type field.
-func (f *NestedTypeField) ProtoType() string {
-	switch f.Type {
-	case "string":
-		return "string"
-	case "int32":
-		return "int32"
-	case "int64":
-		return "int64"
-	case "float64":
-		return "double"
-	case "bool":
-		return "bool"
-	case "timestamp":
-		return "int64"
-	case "bytes":
-		return "bytes"
-	default:
-		return "string"
-	}
-}
-
-// SortedNestedTypeNames returns the nested type names in sorted order for
-// deterministic code generation.
-func (t *Taxonomy) SortedNestedTypeNames() []string {
-	names := make([]string, 0, len(t.NestedTypes))
-	for name := range t.NestedTypes {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	return names
 }
 
 // NodeType represents a node type definition in the taxonomy.
@@ -185,189 +128,6 @@ type RelationshipType struct {
 	Properties  []Property `yaml:"properties,omitempty"`
 }
 
-// Technique represents an attack technique (MITRE/Gibson).
-type Technique struct {
-	ID          string `yaml:"id"` // e.g., "GIB-T1001"
-	Name        string `yaml:"name"`
-	Taxonomy    string `yaml:"taxonomy"` // mitre_attack, mitre_atlas, gibson
-	Tactic      string `yaml:"tactic"`
-	Description string `yaml:"description,omitempty"`
-	URL         string `yaml:"url,omitempty"`
-}
-
-// HasRequiredParent returns true if this node type requires a parent.
-func (n *NodeType) HasRequiredParent() bool {
-	return n.Parent != nil && n.Parent.Required
-}
-
-// HasParent returns true if this node type has any parent configuration.
-func (n *NodeType) HasParent() bool {
-	return n.Parent != nil
-}
-
-// IsRoot returns true if this node type is a root node (no parent).
-func (n *NodeType) IsRoot() bool {
-	return n.Parent == nil
-}
-
-// RequiredProperties returns only the required properties.
-func (n *NodeType) RequiredProperties() []Property {
-	var required []Property
-	for _, p := range n.Properties {
-		if p.Required {
-			required = append(required, p)
-		}
-	}
-	return required
-}
-
-// OptionalProperties returns only the optional properties.
-func (n *NodeType) OptionalProperties() []Property {
-	var optional []Property
-	for _, p := range n.Properties {
-		if !p.Required {
-			optional = append(optional, p)
-		}
-	}
-	return optional
-}
-
-// PropertyByName returns a property by name, or nil if not found.
-func (n *NodeType) PropertyByName(name string) *Property {
-	for i := range n.Properties {
-		if n.Properties[i].Name == name {
-			return &n.Properties[i]
-		}
-	}
-	return nil
-}
-
-// IsMap returns true if the property type is a map type.
-func (p *Property) IsMap() bool {
-	return p.Type == "map<string,string>"
-}
-
-// HasReservedKeys returns true if the property has any reserved key definitions.
-func (p *Property) HasReservedKeys() bool {
-	return len(p.ReservedKeys) > 0
-}
-
-// SortedReservedKeys returns the reserved keys in sorted (deterministic) order.
-// This ensures that generator output is byte-identical across runs.
-func (p *Property) SortedReservedKeys() []string {
-	keys := make([]string, 0, len(p.ReservedKeys))
-	for k := range p.ReservedKeys {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	return keys
-}
-
-// IsTimestamp returns true if the property type is timestamp.
-func (p *Property) IsTimestamp() bool {
-	return p.Type == "timestamp"
-}
-
-// IsNumeric returns true if the property type is numeric.
-func (p *Property) IsNumeric() bool {
-	return p.Type == "int32" || p.Type == "int64" || p.Type == "float64"
-}
-
-// IsString returns true if the property type is string.
-func (p *Property) IsString() bool {
-	return p.Type == "string"
-}
-
-// IsBool returns true if the property type is bool.
-func (p *Property) IsBool() bool {
-	return p.Type == "bool"
-}
-
-// IsBytes returns true if the property type is bytes.
-func (p *Property) IsBytes() bool {
-	return p.Type == "bytes"
-}
-
-// HasEnum returns true if the property has enum values.
-func (p *Property) HasEnum() bool {
-	return len(p.Enum) > 0
-}
-
-// GoType returns the Go type for this property type.
-func (p *Property) GoType() string {
-	switch p.Type {
-	case "string":
-		return "string"
-	case "int32":
-		return "int32"
-	case "int64":
-		return "int64"
-	case "float64":
-		return "float64"
-	case "bool":
-		return "bool"
-	case "timestamp":
-		return "int64"
-	case "bytes":
-		return "[]byte"
-	default:
-		// Handle list<TypeName> — e.g. list<ComplianceMapping>, list<string>
-		if strings.HasPrefix(p.Type, "list<") && strings.HasSuffix(p.Type, ">") {
-			inner := p.Type[len("list<") : len(p.Type)-1]
-			// Primitive types get a plain slice; message types get a pointer slice.
-			switch inner {
-			case "string":
-				return "[]string"
-			case "int32":
-				return "[]int32"
-			case "int64":
-				return "[]int64"
-			case "float64":
-				return "[]float64"
-			case "bool":
-				return "[]bool"
-			default:
-				// Named message / nested type
-				return "[]*" + inner
-			}
-		}
-		return "any"
-	}
-}
-
-// ProtoType returns the protobuf type for this property type.
-// For list<TypeName> properties this returns only the element type; the
-// "repeated" keyword is emitted by the template separately via IsListType().
-func (p *Property) ProtoType() string {
-	switch p.Type {
-	case "string":
-		return "string"
-	case "int32":
-		return "int32"
-	case "int64":
-		return "int64"
-	case "float64":
-		return "double"
-	case "bool":
-		return "bool"
-	case "timestamp":
-		return "int64"
-	case "bytes":
-		return "bytes"
-	default:
-		// Handle list<TypeName> — return the inner message type name.
-		if strings.HasPrefix(p.Type, "list<") && strings.HasSuffix(p.Type, ">") {
-			return p.Type[len("list<") : len(p.Type)-1]
-		}
-		return "string"
-	}
-}
-
-// IsListType returns true when this property holds a repeated/list value.
-func (p *Property) IsListType() bool {
-	return strings.HasPrefix(p.Type, "list<") && strings.HasSuffix(p.Type, ">")
-}
-
 // Validate performs basic validation on the taxonomy.
 func (t *Taxonomy) Validate() error {
 	if t.Version == "" {
@@ -437,26 +197,6 @@ func (t *Taxonomy) Validate() error {
 		return err
 	}
 
-	return nil
-}
-
-// NodeTypeByName returns a node type by name, or nil if not found.
-func (t *Taxonomy) NodeTypeByName(name string) *NodeType {
-	for i := range t.NodeTypes {
-		if t.NodeTypes[i].Name == name {
-			return &t.NodeTypes[i]
-		}
-	}
-	return nil
-}
-
-// RelationshipTypeByName returns a relationship type by name, or nil if not found.
-func (t *Taxonomy) RelationshipTypeByName(name string) *RelationshipType {
-	for i := range t.RelationshipTypes {
-		if t.RelationshipTypes[i].Name == name {
-			return &t.RelationshipTypes[i]
-		}
-	}
 	return nil
 }
 

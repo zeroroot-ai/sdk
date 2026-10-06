@@ -405,7 +405,6 @@ func TestToolServiceServer_Health(t *testing.T) {
 			require.NotNil(t, resp.Status)
 			assert.Equal(t, tt.expectStatus, resp.Status.Status)
 			assert.NotEmpty(t, resp.Status.Message)
-			assert.Positive(t, resp.Status.CheckedAt)
 		})
 	}
 }

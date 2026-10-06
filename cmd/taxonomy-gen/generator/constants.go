@@ -44,7 +44,6 @@ func GenerateConstants(taxonomy *schema.Taxonomy, outputPath, pkgName string) er
 func constantsFuncMap() template.FuncMap {
 	return template.FuncMap{
 		"toPascalCase": toPascalCase,
-		"toUpperSnake": toUpperSnake,
 	}
 }
 

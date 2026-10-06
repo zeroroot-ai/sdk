@@ -1,7 +1,7 @@
 # Gibson SDK Makefile
 # The SDK is a library - no binary to compile, but we build examples and run tests
 
-.PHONY: all bootstrap build examples image test test-race test-coverage test-integration test-integration-all lint lint-deadcode fmt vet tidy clean deps check check-no-gibson check-coverage check-buf-pinned proto proto-deps proto-clean proto-breaking taxonomy-gen taxonomy-proto generate verify-idempotent release-prep help tool-runner-image tool-runner-load sdk-bump mission-jsonschema mission-docs mission-authoring-bundle cue-defs ensure-cue
+.PHONY: all bootstrap build examples image test test-race test-coverage test-integration test-integration-all lint lint-deadcode fmt vet tidy clean deps check check-no-gibson check-coverage check-buf-pinned proto proto-deps proto-clean proto-breaking taxonomy-gen generate verify-idempotent release-prep help tool-runner-image tool-runner-load sdk-bump mission-jsonschema mission-docs mission-authoring-bundle cue-defs ensure-cue
 
 # Protoc plugin versions (single source of truth for deterministic generation)
 # buf CLI version is pinned as a go.mod tool dependency (github.com/bufbuild/buf)
@@ -37,18 +37,10 @@ GOMOD=$(GOCMD) mod
 # Directories
 BIN_DIR=bin
 EXAMPLES_DIR=examples
-PROTO_DIR=api/proto
 PROTO_OUT=api/gen
-COMMONPB_OUT=$(PROTO_OUT)/commonpb
-GRAPHRAGPB_OUT=$(PROTO_OUT)/graphragpb
-TAXONOMYPB_OUT=$(PROTO_OUT)/taxonomypb
-TOOLSPB_OUT=$(PROTO_OUT)/toolspb
-COMPONENTPB_OUT=$(PROTO_OUT)/componentpb
 
 # Taxonomy generation
 TAXONOMY_YAML=taxonomy/core.yaml
-# Taxonomy generation uses the gibson taxonomy-gen command from the module cache
-TAXONOMY_GEN_CMD=go run github.com/zeroroot-ai/gibson/cmd/taxonomy-gen
 
 # Buf code generation (uses local buf.yaml + buf.gen.yaml in this directory).
 # buf is a go.mod `tool` dependency, so `go tool buf` is hermetic: plain
@@ -612,52 +604,15 @@ proto-breaking:
 		exit 1; \
 	fi
 
-# Taxonomy generation from YAML
+# Taxonomy generation from YAML: the graphrag node and relationship type constants.
 taxonomy-gen:
-	@echo "Generating taxonomy from YAML..."
-	@mkdir -p $(TAXONOMYPB_OUT) $(PROTO_DIR)/taxonomy/v1 graphrag/domain graphrag/validation graphrag/query graphrag/taxonomy
-	@rm -f $(PROTO_DIR)/taxonomy.proto
-	@echo "  Generating proto and domain/validators (package: domain)..."
-	@go run ./cmd/taxonomy-gen \
-		--base $(TAXONOMY_YAML) \
-		--output-proto $(PROTO_DIR)/taxonomy/v1/taxonomy.proto \
-		--output-domain graphrag/domain/domain_generated.go \
-		--output-validators graphrag/validation/validators_generated.go \
-		--package domain
-	@echo "  Generating constants (package: graphrag)..."
+	@echo "Generating taxonomy constants from YAML..."
 	@go run ./cmd/taxonomy-gen \
 		--base $(TAXONOMY_YAML) \
 		--output-constants graphrag/constants_generated.go \
 		--package graphrag
-	@echo "  Generating query builders (package: query)..."
-	@go run ./cmd/taxonomy-gen \
-		--base $(TAXONOMY_YAML) \
-		--output-query graphrag/query/query_generated.go \
-		--package query
-	@echo "  Generating SDK helpers (package: graphrag)..."
-	@go run ./cmd/taxonomy-gen \
-		--base $(TAXONOMY_YAML) \
-		--output-helpers graphrag/helpers_generated.go \
-		--package graphrag
-	@echo "  Generating relationships mapping (package: taxonomy)..."
-	@go run ./cmd/taxonomy-gen \
-		--base $(TAXONOMY_YAML) \
-		--output-relationships graphrag/taxonomy/relationships_generated.go \
-		--package taxonomy
-	@echo "Formatting generated files..."
-	@gofmt -w graphrag/domain/domain_generated.go \
-		graphrag/validation/validators_generated.go \
-		graphrag/constants_generated.go \
-		graphrag/query/query_generated.go \
-		graphrag/helpers_generated.go \
-		graphrag/taxonomy/relationships_generated.go
+	@gofmt -w graphrag/constants_generated.go
 	@echo "Taxonomy generation complete"
-
-# Generate taxonomy proto
-taxonomy-proto: taxonomy-gen proto-deps
-	@echo "Generating Go code from taxonomy.proto via Buf..."
-	@$(BUF_GENERATE)
-	@echo "Taxonomy proto generation complete"
 
 # Full generate: YAML -> Proto -> Go code
 # Always starts with a clean api/gen/ to prevent orphan files from renamed/deleted protos
@@ -719,8 +674,7 @@ help:
 	@echo "  make proto-deps    - Install protoc plugins"
 	@echo "  make proto-clean   - Remove generated proto files"
 	@echo "  make proto-breaking - Check for breaking proto changes against target branch"
-	@echo "  make taxonomy-gen  - Generate taxonomy from YAML (proto, domain, validators, helpers)"
-	@echo "  make taxonomy-proto- Generate Go code from taxonomy.proto"
+	@echo "  make taxonomy-gen  - Generate the graphrag type constants from taxonomy YAML"
 	@echo "  make generate      - Full generation: YAML -> Proto -> Go"
 	@echo "  make verify-idempotent - Verify generation is idempotent (periodic CI check)"
 	@echo "  make release-prep   - Stage generated files for a release tag"

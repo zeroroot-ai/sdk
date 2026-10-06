@@ -187,9 +187,6 @@ import (
 
 // ConnectResponse returns connection metadata.
 #ConnectResponse: {
-	// daemon_version is the version of the running daemon
-	daemonVersion?: string @protobuf(1,string,name=daemon_version)
-
 	// session_id is a unique identifier for this client session
 	sessionId?: string @protobuf(2,string,name=session_id)
 
@@ -260,65 +257,14 @@ import (
 	// completed_at is the Unix timestamp (milliseconds) when the operation completed
 	completedAt?: int64 @protobuf(4,int64,name=completed_at)
 
-	// turns_used is the number of agent turns/iterations executed
-	turnsUsed?: int32 @protobuf(5,int32,name=turns_used)
-
-	// tokens_used is the total LLM tokens consumed
-	tokensUsed?: int64 @protobuf(6,int64,name=tokens_used)
-
-	// nodes_executed is the number of mission nodes that ran successfully
-	nodesExecuted?: int32 @protobuf(7,int32,name=nodes_executed)
-
-	// nodes_failed is the number of mission nodes that failed
-	nodesFailed?: int32 @protobuf(8,int32,name=nodes_failed)
-
 	// findings_count is the total number of findings discovered
 	findingsCount?: int32 @protobuf(9,int32,name=findings_count)
-
-	// critical_count is the number of critical severity findings
-	criticalCount?: int32 @protobuf(10,int32,name=critical_count)
-
-	// high_count is the number of high severity findings
-	highCount?: int32 @protobuf(11,int32,name=high_count)
-
-	// medium_count is the number of medium severity findings
-	mediumCount?: int32 @protobuf(12,int32,name=medium_count)
-
-	// low_count is the number of low severity findings
-	lowCount?: int32 @protobuf(13,int32,name=low_count)
 
 	// error_message contains the error message if status == "failed"
 	errorMessage?: string @protobuf(14,string,name=error_message)
 
 	// error_code contains a machine-readable error code if status == "failed"
 	errorCode?: string @protobuf(15,string,name=error_code)
-}
-
-// FindingInfo describes a discovered vulnerability.
-#FindingInfo: {
-	// id is the unique finding identifier
-	id?: string @protobuf(1,string)
-
-	// title is the finding title
-	title?: string @protobuf(2,string)
-
-	// severity is the severity level (info, low, medium, high, critical)
-	severity?: string @protobuf(3,string)
-
-	// category is the finding category
-	category?: string @protobuf(4,string)
-
-	// description is the detailed finding description
-	description?: string @protobuf(5,string)
-
-	// technique is the MITRE ATT&CK or ATLAS technique ID
-	technique?: string @protobuf(6,string)
-
-	// evidence contains supporting evidence
-	evidence?: string @protobuf(7,string)
-
-	// timestamp is when the finding was discovered (Unix timestamp)
-	timestamp?: int64 @protobuf(8,int64)
 }
 
 // MissionEvent represents a mission execution event.
@@ -348,209 +294,6 @@ import (
 	result?: #OperationResult @protobuf(8,OperationResult)
 }
 
-// AgentEvent represents an agent lifecycle event.
-#AgentEvent: {
-	// event_type identifies the agent event type (registered, unregistered, health_change)
-	eventType?: string @protobuf(1,string,name=event_type)
-
-	// timestamp is when the event occurred (Unix timestamp)
-	timestamp?: int64 @protobuf(2,int64)
-
-	// agent_id is the agent identifier
-	agentId?: string @protobuf(3,string,name=agent_id)
-
-	// agent_name is the agent name
-	agentName?: string @protobuf(4,string,name=agent_name)
-
-	// message is a human-readable message
-	message?: string @protobuf(5,string)
-
-	// data contains event-specific data (typed map)
-	data?: commonpb.#TypedMap @protobuf(6,gibson.common.v1.TypedMap)
-}
-
-// FindingEvent represents a finding discovery event.
-#FindingEvent: {
-	// event_type identifies the finding event type (discovered, updated)
-	eventType?: string @protobuf(1,string,name=event_type)
-
-	// timestamp is when the event occurred (Unix timestamp)
-	timestamp?: int64 @protobuf(2,int64)
-
-	// finding is the finding information
-	finding?: #FindingInfo @protobuf(3,FindingInfo)
-
-	// mission_id is the mission that discovered the finding
-	missionId?: string @protobuf(4,string,name=mission_id)
-}
-
-// ToolEvent represents a tool execution event.
-#ToolEvent: {
-	// event_type identifies the tool event type (tool.started, tool.completed, tool.failed, tool.progress, tool.warning)
-	eventType?: string @protobuf(1,string,name=event_type)
-
-	// timestamp is when the event occurred (Unix timestamp)
-	timestamp?: int64 @protobuf(2,int64)
-
-	// tool_name is the name of the tool being executed
-	toolName?: string @protobuf(3,string,name=tool_name)
-
-	// agent_id is the agent identifier executing the tool
-	agentId?: string @protobuf(4,string,name=agent_id)
-
-	// agent_name is the agent name executing the tool
-	agentName?: string @protobuf(5,string,name=agent_name)
-
-	// mission_id is the mission context for this tool execution
-	missionId?: string @protobuf(6,string,name=mission_id)
-
-	// message is a human-readable event message
-	message?: string @protobuf(7,string)
-
-	// duration is the execution time in seconds (for completed/failed events)
-	duration?: float64 @protobuf(8,double)
-
-	// progress is the completion percentage (0-1 for progress events)
-	progress?: float64 @protobuf(9,double)
-
-	// error contains error information if the event represents an error
-	error?: string @protobuf(10,string)
-
-	// error_code contains a machine-readable error code
-	errorCode?: string @protobuf(11,string,name=error_code)
-
-	// warning contains warning information if the event represents a warning
-	warning?: string @protobuf(12,string)
-
-	// warning_severity is the severity level (low, medium, high)
-	warningSeverity?: string @protobuf(13,string,name=warning_severity)
-
-	// data contains event-specific data (typed map)
-	data?: commonpb.#TypedMap @protobuf(14,gibson.common.v1.TypedMap)
-}
-
-// LLMEvent represents an LLM activity event.
-#LLMEvent: {
-	// event_type identifies the LLM event type (llm.request.started, llm.request.completed, llm.request.failed)
-	eventType?: string @protobuf(1,string,name=event_type)
-
-	// timestamp is when the event occurred (Unix timestamp)
-	timestamp?: int64 @protobuf(2,int64)
-
-	// agent_id is the agent identifier
-	agentId?: string @protobuf(3,string,name=agent_id)
-
-	// agent_name is the agent name
-	agentName?: string @protobuf(4,string,name=agent_name)
-
-	// model is the LLM model identifier (e.g., "claude-3-5-sonnet-20241022")
-	model?: string @protobuf(5,string)
-
-	// slot is the LLM slot (primary, fast, reasoning)
-	slot?: string @protobuf(6,string)
-
-	// message_count is the number of messages in the request
-	messageCount?: int32 @protobuf(7,int32,name=message_count)
-
-	// prompt_tokens is the number of input tokens
-	promptTokens?: int32 @protobuf(8,int32,name=prompt_tokens)
-
-	// completion_tokens is the number of output tokens
-	completionTokens?: int32 @protobuf(9,int32,name=completion_tokens)
-
-	// total_tokens is the sum of prompt and completion tokens
-	totalTokens?: int32 @protobuf(10,int32,name=total_tokens)
-
-	// duration_ms is the request duration in milliseconds
-	durationMs?: float64 @protobuf(11,double,name=duration_ms)
-
-	// cached indicates if the response was served from cache
-	cached?: bool @protobuf(12,bool)
-
-	// error contains error information if the event represents a failure
-	error?: string @protobuf(13,string)
-
-	// error_code identifies the error type (rate_limit, context_length, api_error, timeout)
-	errorCode?: string @protobuf(14,string,name=error_code)
-
-	// will_retry indicates if the failed request will be retried
-	willRetry?: bool @protobuf(15,bool,name=will_retry)
-}
-
-// OrchestratorEvent represents an orchestrator decision event.
-#OrchestratorEvent: {
-	// event_type identifies the orchestrator event type (orchestrator.decision, orchestrator.approval_required)
-	eventType?: string @protobuf(1,string,name=event_type)
-
-	// timestamp is when the event occurred (Unix timestamp)
-	timestamp?: int64 @protobuf(2,int64)
-
-	// mission_id is the mission identifier
-	missionId?: string @protobuf(3,string,name=mission_id)
-
-	// iteration is the orchestrator iteration number
-	iteration?: int32 @protobuf(4,int32)
-
-	// action is the orchestrator action (execute_agent, skip_node, wait, complete, request_approval)
-	action?: string @protobuf(5,string)
-
-	// target_node_id is the mission node ID being targeted
-	targetNodeId?: string @protobuf(6,string,name=target_node_id)
-
-	// target_agent_name is the agent name being targeted
-	targetAgentName?: string @protobuf(7,string,name=target_agent_name)
-
-	// confidence is the decision confidence score (0-1)
-	confidence?: float64 @protobuf(8,double)
-
-	// reasoning is the orchestrator's reasoning (max 500 chars in practice)
-	reasoning?: string @protobuf(9,string)
-
-	// tokens_used is the number of tokens consumed for this decision
-	tokensUsed?: int32 @protobuf(10,int32,name=tokens_used)
-
-	// latency_ms is the decision latency in milliseconds
-	latencyMs?: float64 @protobuf(11,double,name=latency_ms)
-
-	// approval_id is set when approval is required
-	approvalId?: string @protobuf(12,string,name=approval_id)
-
-	// risk is the risk level (low, medium, high, critical)
-	risk?: string @protobuf(13,string)
-
-	// timeout_seconds is the timeout for approval requests
-	timeoutSeconds?: int32 @protobuf(14,int32,name=timeout_seconds)
-}
-
-// Event represents a generic daemon event.
-#Event: {
-	// event_type identifies the type of event
-	eventType?: string @protobuf(1,string,name=event_type)
-
-	// timestamp is when the event occurred (Unix timestamp)
-	timestamp?: int64 @protobuf(2,int64)
-
-	// source is the event source (mission, agent, daemon, etc.)
-	source?: string @protobuf(3,string)
-
-	// data contains event-specific data (typed map)
-	data?: commonpb.#TypedMap @protobuf(4,gibson.common.v1.TypedMap)
-	// Specific event types (only one will be set)
-	{} | {
-		missionEvent: #MissionEvent @protobuf(5,MissionEvent,name=mission_event)
-	} | {
-		agentEvent: #AgentEvent @protobuf(7,AgentEvent,name=agent_event)
-	} | {
-		findingEvent: #FindingEvent @protobuf(8,FindingEvent,name=finding_event)
-	} | {
-		toolEvent: #ToolEvent @protobuf(9,ToolEvent,name=tool_event)
-	} | {
-		llmEvent: #LLMEvent @protobuf(10,LLMEvent,name=llm_event)
-	} | {
-		orchestratorEvent: #OrchestratorEvent @protobuf(11,OrchestratorEvent,name=orchestrator_event)
-	}
-}
-
 // SubscribeRequest establishes an event stream.
 #SubscribeRequest: {
 	// event_types filters which event types to receive (empty = all)
@@ -576,16 +319,6 @@ import (
 	// Specific event types (only one will be set)
 	{} | {
 		missionEvent: #MissionEvent @protobuf(5,MissionEvent,name=mission_event)
-	} | {
-		agentEvent: #AgentEvent @protobuf(7,AgentEvent,name=agent_event)
-	} | {
-		findingEvent: #FindingEvent @protobuf(8,FindingEvent,name=finding_event)
-	} | {
-		toolEvent: #ToolEvent @protobuf(9,ToolEvent,name=tool_event)
-	} | {
-		llmEvent: #LLMEvent @protobuf(10,LLMEvent,name=llm_event)
-	} | {
-		orchestratorEvent: #OrchestratorEvent @protobuf(11,OrchestratorEvent,name=orchestrator_event)
 	}
 }
 
@@ -885,9 +618,6 @@ import (
 	// findings_count is the number of findings discovered in this run
 	findingsCount?: int32 @protobuf(6,int32,name=findings_count)
 
-	// previous_run_id is the ID of the previous run (if any)
-	previousRunId?: string @protobuf(7,string,name=previous_run_id)
-
 	// trace_id is the OTel trace ID for Langfuse lookup
 	traceId?: string @protobuf(8,string,name=trace_id)
 
@@ -1122,32 +852,8 @@ import (
 
 // MissionMetrics contains execution metrics for a mission.
 #MissionMetrics: {
-	// turns_used is the number of agent turns/iterations executed
-	turnsUsed?: int32 @protobuf(1,int32,name=turns_used)
-
-	// nodes_executed is the number of mission nodes that ran successfully
-	nodesExecuted?: int32 @protobuf(2,int32,name=nodes_executed)
-
-	// nodes_failed is the number of mission nodes that failed
-	nodesFailed?: int32 @protobuf(3,int32,name=nodes_failed)
-
 	// findings_count is the total number of findings discovered
 	findingsCount?: int32 @protobuf(4,int32,name=findings_count)
-
-	// critical_count is the number of critical severity findings
-	criticalCount?: int32 @protobuf(5,int32,name=critical_count)
-
-	// high_count is the number of high severity findings
-	highCount?: int32 @protobuf(6,int32,name=high_count)
-
-	// medium_count is the number of medium severity findings
-	mediumCount?: int32 @protobuf(7,int32,name=medium_count)
-
-	// low_count is the number of low severity findings
-	lowCount?: int32 @protobuf(8,int32,name=low_count)
-
-	// tokens_used is the total LLM tokens consumed
-	tokensUsed?: int64 @protobuf(9,int64,name=tokens_used)
 }
 
 // MissionCheckpoint describes a saved checkpoint state blob. The daemon has
@@ -1226,13 +932,6 @@ import (
 	// memory_continuity defines how agent memory is shared across mission runs
 	// Valid values: "isolated" (default), "inherit", "shared"
 	memoryContinuity?: string @protobuf(8,string,name=memory_continuity,"(buf.validate.field).string=")
-
-	// source_yaml is the original YAML the dashboard used to construct this
-	// mission. Optional. When non-empty, the daemon stores it alongside the
-	// structured mission state. Empty for programmatic callers that never had
-	// a YAML source.
-	// Spec: dashboard-neo4j-crud-removal Req 3.5.
-	sourceYaml?: string @protobuf(9,string,name=source_yaml,"(buf.validate.field).string=")
 
 	// idempotency_key makes a retry safe (ADR-0028). A second request with the
 	// same key returns the result of the first request and does the work one
@@ -1438,12 +1137,6 @@ import (
 
 	// active indicates if the agent is currently executing a task
 	active?: bool @protobuf(2,bool)
-
-	// current_task describes the active task (if any)
-	currentTask?: string @protobuf(3,string,name=current_task)
-
-	// task_start_time is when the current task started (Unix timestamp)
-	taskStartTime?: int64 @protobuf(4,int64,name=task_start_time)
 }
 
 // ListToolsRequest queries tool registry.
@@ -1641,21 +1334,6 @@ import (
 	lines?: int32 @protobuf(4,int32)
 }
 
-// LogEntry represents a single log entry from a component.
-#LogEntry: {
-	// timestamp is when the log entry was created (Unix timestamp)
-	timestamp?: int64 @protobuf(1,int64)
-
-	// level is the log level (debug, info, warn, error)
-	level?: string @protobuf(2,string)
-
-	// message is the log message
-	message?: string @protobuf(3,string)
-
-	// fields contains additional structured log fields (typed map)
-	fields?: commonpb.#TypedMap @protobuf(4,gibson.common.v1.TypedMap)
-}
-
 // GetComponentLogsResponse wraps a LogEntry for the GetComponentLogs streaming RPC.
 #GetComponentLogsResponse: {
 	// timestamp is when the log entry was created (Unix timestamp)
@@ -1687,18 +1365,6 @@ import (
 	actions?: [...string] @protobuf(2,string)
 }
 
-// PermissionTeamMembership describes the caller's membership in a team.
-#PermissionTeamMembership: {
-	// team_id is the unique team identifier
-	teamId?: string @protobuf(1,string,name=team_id)
-
-	// team_name is the human-readable team name
-	teamName?: string @protobuf(2,string,name=team_name)
-
-	// is_admin is true when the caller is an admin of the team
-	isAdmin?: bool @protobuf(3,bool,name=is_admin)
-}
-
 // GetMyPermissionsResponse returns a compact summary of the caller's permissions.
 #GetMyPermissionsResponse: {
 	// tenant_id is the tenant this summary is scoped to
@@ -1712,9 +1378,6 @@ import (
 
 	// component_grants lists the component access grants held by the caller
 	componentGrants?: [...#PermissionComponentGrant] @protobuf(4,PermissionComponentGrant,name=component_grants)
-
-	// team_memberships lists the teams the caller belongs to within this tenant
-	teamMemberships?: [...#PermissionTeamMembership] @protobuf(5,PermissionTeamMembership,name=team_memberships)
 }
 
 // ListMyMembershipsRequest has no fields. The caller is identified via the

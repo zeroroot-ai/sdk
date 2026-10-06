@@ -758,13 +758,6 @@ message HarnessError {
     bool retryable = 3;
 }
 
-// HealthStatus represents the health status of a service.
-message HarnessHealthStatus {
-    string state = 1;      // healthy, degraded, unhealthy
-    string message = 2;
-    int64 checked_at = 3;  // Unix timestamp in milliseconds
-}
-
 message ContextInfo {
     string task_id = 1;
     string agent_name = 2;
@@ -940,7 +933,8 @@ message CallToolProtoStreamResponse {
     string trace_id = 10;
     string span_id = 11;
     int64 sequence = 12;
-    int64 timestamp_ms = 13;
+    reserved 13;
+    reserved "timestamp_ms";
 }
 
 // ToolProgressEvent indicates progress during tool execution
@@ -989,7 +983,8 @@ message HarnessToolDescriptor {
     reserved 4;  // Previously output_schema_json
     // Structured schemas with full taxonomy support
     JSONSchemaNode input_schema = 5;
-    JSONSchemaNode output_schema = 6;
+    reserved 6;
+    reserved "output_schema";
 }
 
 // SearchToolsRequest carries a tool-discovery query: free text plus structured
@@ -1071,21 +1066,25 @@ message JSONSchemaNode {
     optional double maximum = 9;
     optional int32 min_length = 10;
     optional int32 max_length = 11;
-    optional int32 min_items = 12;
-    optional int32 max_items = 13;
     optional string pattern = 14;
     optional string default_value = 15;
-    bool nullable = 16;
     TaxonomyMapping taxonomy = 17;  // Taxonomy mapping for knowledge graph extraction
+    reserved 12;
+    reserved "min_items";
+    reserved 13;
+    reserved "max_items";
+    reserved 16;
+    reserved "nullable";
 }
 
 // TaxonomyMapping defines how tool output maps to knowledge graph nodes.
 // Uses deterministic ID generation based on identifying properties instead of templates.
 message TaxonomyMapping {
     string node_type = 1;  // e.g., "host", "port", "finding"
-    map<string, string> identifying_properties = 2;  // Property name -> JSONPath expression for ID generation
     repeated PropertyMapping properties = 3;
     repeated RelationshipMapping relationships = 4;
+    reserved 2;
+    reserved "identifying_properties";
 }
 
 // PropertyMapping maps a source field to a target property.
@@ -1109,7 +1108,8 @@ message RelationshipMapping {
     NodeReference from = 2;  // Source node reference (use type="self" for current node)
     NodeReference to = 3;  // Target node reference
     string condition = 4;  // Optional condition for creating this relationship
-    repeated PropertyMapping rel_properties = 5;  // Property mappings for the relationship edge
+    reserved 5;
+    reserved "rel_properties";
 }
 
 // ============================================================================
@@ -1450,136 +1450,21 @@ message GetMissionRunHistoryResponse {
 // Memory Operations
 // ============================================================================
 
-// MemoryTier specifies which memory tier to use for an operation.
-enum MemoryTier {
-    MEMORY_TIER_UNSPECIFIED = 0;  // Default to WORKING for backward compatibility
-    MEMORY_TIER_WORKING = 1;      // Ephemeral in-memory
-    MEMORY_TIER_MISSION = 2;      // Persistent per-mission with FTS
-    MEMORY_TIER_LONG_TERM = 3;    // Vector-based semantic storage
-}
-
 // ============================================================================
 // Mission Memory Operations
 // ============================================================================
-
-message MissionMemoryResult {
-    string key = 1;
-    gibson.common.v1.TypedValue value = 2;
-    map<string, gibson.common.v1.TypedValue> metadata = 3;
-    double score = 4;
-    string created_at = 5;
-    string updated_at = 6;
-}
-
-message MissionMemoryItem {
-    string key = 1;
-    gibson.common.v1.TypedValue value = 2;
-    map<string, gibson.common.v1.TypedValue> metadata = 3;
-    string created_at = 4;
-    string updated_at = 5;
-}
-
-message HistoricalValueItem {
-    gibson.common.v1.TypedValue value = 1;
-    int32 run_number = 2;
-    string mission_id = 3;
-    string stored_at = 4;
-}
 
 // ============================================================================
 // Long-Term Memory Operations
 // ============================================================================
 
-message LongTermMemoryResult {
-    string id = 1;
-    string content = 2;
-    map<string, gibson.common.v1.TypedValue> metadata = 3;
-    double score = 4;
-    string created_at = 5;
-}
-
 // ============================================================================
 // GraphRAG Query Operations
 // ============================================================================
 
-message GraphRAGResult {
-    GraphNode node = 1;
-    double score = 2;
-    double vector_score = 3;
-    double graph_score = 4;
-    repeated string path = 5;
-    int32 distance = 6;
-}
-
-message GraphNode {
-    string id = 1;
-    string type = 2;
-    map<string, gibson.common.v1.TypedValue> properties = 3;
-    string content = 4;
-    string mission_id = 5;
-    string agent_name = 6;
-    int64 created_at = 7;  // Unix timestamp
-    int64 updated_at = 8;  // Unix timestamp
-}
-
-message AttackPattern {
-    string technique_id = 1;
-    string name = 2;
-    string description = 3;
-    repeated string tactics = 4;
-    repeated string platforms = 5;
-    double similarity = 6;
-}
-
-message FindingNode {
-    string id = 1;
-    string title = 2;
-    string description = 3;
-    string severity = 4;
-    string category = 5;
-    double confidence = 6;
-    double similarity = 7;
-}
-
-message AttackChain {
-    string id = 1;
-    string name = 2;
-    string severity = 3;
-    repeated AttackStep steps = 4;
-}
-
-message AttackStep {
-    int32 order = 1;
-    string technique_id = 2;
-    string node_id = 3;
-    string description = 4;
-    double confidence = 5;
-}
-
 // ============================================================================
 // GraphRAG Storage Operations
 // ============================================================================
-
-message Relationship {
-    string from_id = 1;
-    string to_id = 2;
-    string type = 3;
-    map<string, gibson.common.v1.TypedValue> properties = 4;
-    bool bidirectional = 5;
-}
-
-message TraversalOptions {
-    int32 max_depth = 1;
-    repeated string relationship_types = 2;
-    repeated string node_types = 3;
-    string direction = 4;  // outgoing, incoming, both
-}
-
-message TraversalResult {
-    GraphNode node = 1;
-    repeated string path = 2;
-    int32 distance = 3;
-}
 
 // ============================================================================
 // Proto-Canonical GraphRAG Operations (uses graphragpb types)
@@ -1974,11 +1859,9 @@ message RequestDestructiveAuthorizationRequest {
 // RequestDestructiveAuthorizationResponse returns immediately: the fleet
 // keeps working while the human decision is pending (ADR-0132).
 message RequestDestructiveAuthorizationResponse {
-    // authorization_request_id names the pending request. The agent reads
-    // the decision back before it performs the destructive act, then names
-    // this same hypothesis_id on the eventual SubmitProof.
-    string authorization_request_id = 1;
     HarnessError error = 2;
+    reserved 1;
+    reserved "authorization_request_id";
 }
 
 // ============================================================================
@@ -2056,16 +1939,9 @@ message GetPlanContextRequest {
 }
 
 message GetPlanContextResponse {
-    PlanContext plan_context = 1;
     HarnessError error = 2;
-}
-
-message PlanContext {
-    int32 current_step_index = 1;
-    int32 total_steps = 2;
-    repeated string remaining_steps = 3;
-    int32 step_budget = 4;
-    int32 mission_budget_remaining = 5;
+    reserved 1;
+    reserved "plan_context";
 }
 
 message ReportStepHintsRequest {
@@ -2079,9 +1955,12 @@ message ReportStepHintsResponse {
 
 message StepHints {
     double confidence = 1;
-    repeated string suggested_next = 2;
-    string replan_reason = 3;
-    repeated string key_findings = 4;
+    reserved 2;
+    reserved "suggested_next";
+    reserved 3;
+    reserved "replan_reason";
+    reserved 4;
+    reserved "key_findings";
 }
 
 // ============================================================================
@@ -2208,9 +2087,11 @@ message BasicAuth {
 // OAuthCredential represents OAuth tokens
 message OAuthCredential {
     string access_token = 1;
-    string refresh_token = 2;
-    string token_type = 3;
     int64 expires_at = 4;  // Unix timestamp in milliseconds
+    reserved 2;
+    reserved "refresh_token";
+    reserved 3;
+    reserved "token_type";
 }
 
 // ============================================================================
@@ -2238,8 +2119,9 @@ message TaxonomyNodeType {
     string type = 3;
     string category = 4;
     string description = 5;
-    repeated string identifying_properties = 6;  // Properties used for deterministic ID generation
     repeated TaxonomyProperty properties = 7;
+    reserved 6;
+    reserved "identifying_properties";
 }
 
 message TaxonomyRelationshipType {
@@ -2261,8 +2143,10 @@ message TaxonomyTechnique {
     string category = 4;
     string description = 5;
     string tactic = 6;
-    repeated string platforms = 7;
-    repeated string mitre_mapping = 8;
+    reserved 7;
+    reserved "platforms";
+    reserved 8;
+    reserved "mitre_mapping";
 }
 
 message TaxonomyTargetType {
@@ -2297,8 +2181,9 @@ message TaxonomyProperty {
     string type = 2;  // string, int, float64, bool, []string, map[string]any
     bool required = 3;
     string description = 4;
-    repeated string enum_values = 5;
     string default_value = 6;  // JSON-encoded
+    reserved 5;
+    reserved "enum_values";
 }
 
 // ============================================================================
@@ -2355,10 +2240,9 @@ message ProposeOntologyExtensionRequest {
 // recurrence.
 message ProposeOntologyExtensionResponse {
     bool accepted = 1;
-    // rejection_reason states, in plain words, why an unaccepted proposal
-    // was refused — e.g. an invalid identifier. Empty when accepted is true.
-    string rejection_reason = 2;
     HarnessError error = 3;
+    reserved 2;
+    reserved "rejection_reason";
 }
 
 message GenerateNodeIDRequest {
@@ -2386,16 +2270,11 @@ message ValidateGraphNodeRequest {
 message ValidateRelationshipRequest {
     ContextInfo context = 1;
     string relationship_type = 2 [(buf.validate.field).string = { max_len: 1024 }];
-    string from_node_type = 3 [(buf.validate.field).string = { max_len: 1024 }];
-    string to_node_type = 4 [(buf.validate.field).string = { max_len: 1024 }];
     map<string, gibson.common.v1.TypedValue> properties = 5;
-}
-
-message ValidationResponse {
-    bool valid = 1;
-    repeated ValidationError errors = 2;
-    repeated string warnings = 3;
-    HarnessError error = 4;
+    reserved 3;
+    reserved "from_node_type";
+    reserved 4;
+    reserved "to_node_type";
 }
 
 message ValidateFindingResponse {
@@ -2449,10 +2328,11 @@ enum MissionStatus {
 message MissionConstraints {
     option deprecated = true;
 
-    int64 max_duration_ms = 1;   // Maximum duration in milliseconds (0 = no limit)
     int64 max_tokens = 2;         // Maximum LLM tokens (0 = no limit)
     double max_cost = 3;          // Maximum dollar cost (0 = no limit)
     int32 max_findings = 4;       // Maximum findings count (0 = no limit)
+    reserved 1;
+    reserved "max_duration_ms";
 }
 
 // MissionMetrics aggregates execution statistics.
@@ -2722,26 +2602,6 @@ message AuthorizeResponse {
 // ============================================================================
 // Mission Memory: Cross-Run History Operations (Spec 5 R6)
 // ============================================================================
-
-// MissionRunSummary is the proto wire type for types.MissionRunSummary,
-// used by GetMissionRunHistory to return chronological run records to
-// the SDK CallbackHarness.
-//
-// Spec: headline-feature-completion R6.1.
-message MissionRunSummary {
-    // mission_id uniquely identifies this run.
-    string mission_id = 1;
-    // run_number is the sequential run number for this mission name (1-based).
-    int32 run_number = 2;
-    // status is the final status string (`running`, `completed`, `failed`, `cancelled`, `paused`).
-    string status = 3;
-    // findings_count is the number of findings discovered in this run.
-    int32 findings_count = 4;
-    // created_at is when the run was created (Unix epoch seconds).
-    int64 created_at_unix = 5;
-    // completed_at_unix is when the run completed (Unix epoch seconds, 0 if still running).
-    int64 completed_at_unix = 6;
-}
 
 // ============================================================================
 // Workspace operations — request/response messages
