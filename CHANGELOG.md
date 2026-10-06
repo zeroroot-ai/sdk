@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.198.0](https://github.com/zeroroot-ai/sdk/compare/v0.197.0...v0.198.0) (2026-10-06)
+
+
+### Features
+
+* **fork:** the runtime fork contract ([#249](https://github.com/zeroroot-ai/sdk/issues/249)) ([b9127ba](https://github.com/zeroroot-ai/sdk/commit/b9127ba64565b2b6a54e435abc677e368ff53c27))
+
 ## [0.197.0](https://github.com/zeroroot-ai/sdk/compare/v0.196.1...v0.197.0) (2026-10-06)
 
 
