@@ -11,10 +11,11 @@ lint:
     - STANDARD
 breaking:
   use:
-    # FILE is the breaking-change rule of the sdk (ADR-0028, rule 5; sdk#208).
-    # The sdk is the public component-developer surface, and its consumers
-    # compile generated code. FILE refuses each change that breaks that code:
-    # a renamed or moved field, message or file, and a deleted field, also
-    # when its number is reserved. WIRE checked only the binary encoding.
-    # scripts/proto-breaking-selftest.sh proves that a renamed field fails.
-    - FILE
+    # WIRE_JSON is the breaking-change rule of the sdk (ADR-0028, rule 5).
+    # Deployed components and the daemon talk over the binary wire and over
+    # JSON. WIRE_JSON refuses each change that alters what a field number or a
+    # JSON name means: a reused or renumbered field, a changed type, and a
+    # renamed field. A field may be deleted when its number and its name are
+    # reserved. No outside user compiles against the generated code, so the
+    # names of generated source are not part of the contract.
+    - WIRE_JSON
