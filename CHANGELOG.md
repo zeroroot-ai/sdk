@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.199.0](https://github.com/zeroroot-ai/sdk/compare/v0.198.0...v0.199.0) (2026-10-06)
+
+
+### Features
+
+* **fork:** the callback client sends the setec sandbox identity token ([#252](https://github.com/zeroroot-ai/sdk/issues/252)) ([12b7d1e](https://github.com/zeroroot-ai/sdk/commit/12b7d1e9c9d21cb047ce2ba30c0bcbe6c8c3306f))
+
 ## [0.198.0](https://github.com/zeroroot-ai/sdk/compare/v0.197.0...v0.198.0) (2026-10-06)
 
 
