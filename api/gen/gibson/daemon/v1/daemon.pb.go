@@ -2341,11 +2341,10 @@ type ResumeMissionResponse struct {
 	Error string `protobuf:"bytes,7,opt,name=error,proto3" json:"error,omitempty"`
 	// result contains typed operation metrics (for mission.completed events)
 	Result *OperationResult `protobuf:"bytes,8,opt,name=result,proto3" json:"result,omitempty"`
-	// checkpoint_metadata surfaces the source checkpoint metadata at the
-	// start of a resumed stream so the dashboard can render the
-	// "Resumed from checkpoint X" affordance. Populated on the first
-	// event of a resume stream; nil/empty on subsequent events.
-	// Spec: mission-checkpointing R9.
+	// checkpoint_metadata is not set by the daemon. A resume continues the
+	// same run, so a resume stream has no source checkpoint. A run that
+	// starts at a checkpoint is a new run from RewindMission, and it records
+	// the checkpoint in parent_checkpoint_id (ADR-0170).
 	CheckpointMetadata *CheckpointMetadata `protobuf:"bytes,9,opt,name=checkpoint_metadata,json=checkpointMetadata,proto3" json:"checkpoint_metadata,omitempty"`
 }
 
@@ -2444,17 +2443,16 @@ func (x *ResumeMissionResponse) GetCheckpointMetadata() *CheckpointMetadata {
 	return nil
 }
 
-// CheckpointMetadata is the lightweight summary of the source checkpoint
-// streamed back on a ResumeMission response so the dashboard can render
-// "Resumed from checkpoint X".
-//
-// Spec: mission-checkpointing R9.
+// CheckpointMetadata is the summary of a source checkpoint on a
+// ResumeMission response. The daemon does not send it today: see
+// ResumeMissionResponse.checkpoint_metadata. The checkpoints of a run are listed by
+// GetMissionCheckpoints (ADR-0170).
 type CheckpointMetadata struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// checkpoint_id is the unique identifier of the source checkpoint.
+	// checkpoint_id is the identifier of the source checkpoint.
 	CheckpointId string `protobuf:"bytes,1,opt,name=checkpoint_id,json=checkpointId,proto3" json:"checkpoint_id,omitempty"`
 	// saved_at_unix_seconds is when the checkpoint was captured (Unix epoch seconds).
 	SavedAtUnixSeconds int64 `protobuf:"varint,2,opt,name=saved_at_unix_seconds,json=savedAtUnixSeconds,proto3" json:"saved_at_unix_seconds,omitempty"`
@@ -2979,7 +2977,7 @@ type PauseMissionRequest struct {
 
 	// mission_id is the unique identifier of the mission to pause
 	MissionId string `protobuf:"bytes,1,opt,name=mission_id,json=missionId,proto3" json:"mission_id,omitempty"`
-	// force indicates whether to pause immediately without waiting for a clean checkpoint boundary
+	// force indicates whether to pause immediately without waiting for the current node to end
 	// If false (default), waits for the current node to complete before pausing
 	Force bool `protobuf:"varint,2,opt,name=force,proto3" json:"force,omitempty"`
 }
@@ -3038,7 +3036,9 @@ type PauseMissionResponse struct {
 
 	// success indicates if the pause request was accepted
 	Success bool `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	// checkpoint_id is the ID of the checkpoint created during pause
+	// checkpoint_id is empty. A pause does not make a checkpoint: a
+	// checkpoint is the end of a node in a run (ADR-0170). Use
+	// GetMissionCheckpoints to list the checkpoints of a run.
 	CheckpointId string `protobuf:"bytes,2,opt,name=checkpoint_id,json=checkpointId,proto3" json:"checkpoint_id,omitempty"`
 	// message provides additional context about the pause operation
 	Message string `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
@@ -3105,14 +3105,14 @@ type ResumeMissionRequest struct {
 
 	// mission_id is the unique identifier of the mission to resume
 	MissionId string `protobuf:"bytes,1,opt,name=mission_id,json=missionId,proto3" json:"mission_id,omitempty"`
-	// checkpoint_id optionally specifies a specific checkpoint to resume from
-	// If empty, resumes from the latest checkpoint
+	// checkpoint_id must be empty. A resume continues the same run, and the
+	// daemon refuses a request that sets this field with InvalidArgument. To
+	// start a run at a checkpoint, call RewindMission (ADR-0170).
 	CheckpointId string `protobuf:"bytes,2,opt,name=checkpoint_id,json=checkpointId,proto3" json:"checkpoint_id,omitempty"`
-	// Empty string = legacy resume-from-latest behavior (backward compatible).
-	// When non-empty, the daemon rewinds the mission to the named checkpoint
-	// and resumes execution from that point. The handler additionally enforces
-	// the mission#admin FGA relation when this field is non-empty per
-	// mission-checkpointing R16.3.
+	// target_checkpoint_id must be empty, for the same reason as
+	// checkpoint_id. The daemon refuses a request that sets it with
+	// InvalidArgument. RewindMission starts a new run at a checkpoint
+	// (ADR-0170).
 	TargetCheckpointId string `protobuf:"bytes,3,opt,name=target_checkpoint_id,json=targetCheckpointId,proto3" json:"target_checkpoint_id,omitempty"`
 }
 
@@ -4273,7 +4273,8 @@ type Mission struct {
 	Constraints *v11.MissionConstraints `protobuf:"bytes,6,opt,name=constraints,proto3" json:"constraints,omitempty"`
 	// metrics contains current execution metrics
 	Metrics *MissionMetrics `protobuf:"bytes,7,opt,name=metrics,proto3" json:"metrics,omitempty"`
-	// checkpoint is the latest checkpoint (if any)
+	// checkpoint is not set by the daemon. The checkpoints of a run are
+	// listed by GetMissionCheckpoints (ADR-0170).
 	Checkpoint *MissionCheckpoint `protobuf:"bytes,8,opt,name=checkpoint,proto3" json:"checkpoint,omitempty"`
 	// run_number is the sequential run number for this mission name
 	RunNumber int32 `protobuf:"varint,9,opt,name=run_number,json=runNumber,proto3" json:"run_number,omitempty"`
@@ -4541,7 +4542,10 @@ func (x *MissionMetrics) GetTokensUsed() int64 {
 	return 0
 }
 
-// MissionCheckpoint represents a saved checkpoint state for pause/resume.
+// MissionCheckpoint describes a saved checkpoint state blob. The daemon has
+// no checkpoint store and does not send this message: the World snapshot is
+// the only snapshot (ADR-0163). NodeCheckpoint describes a checkpoint of a
+// run (ADR-0170).
 type MissionCheckpoint struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
