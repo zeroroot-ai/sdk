@@ -1087,7 +1087,7 @@ func (h *CallbackHarness) CreateMission(ctx context.Context, missionDef any, tar
 		claim, perr := fork.Point(ctx, h.forkWatcher, h.client)
 		if perr != nil {
 			span.RecordError(perr)
-			return nil, perr
+			return nil, fmt.Errorf("CreateMission: %w", perr)
 		}
 		if claim != nil {
 			if aerr := h.client.ApplyClaim(claim); aerr != nil {

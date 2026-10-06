@@ -121,7 +121,7 @@ func TestPointReportsAFailedClaim(t *testing.T) {
 	w, _ := NewWatcherWith(h.read)
 	h.set("sbx-fork-1")
 	_, err := Point(context.Background(), w, &claimer{err: status.Error(codes.AlreadyExists, "claimed")})
-	if status.Code(errors.Unwrap(err)) != codes.AlreadyExists {
+	if status.Code(err) != codes.AlreadyExists {
 		t.Fatalf("Point with a refused claim = %v; want the AlreadyExists of the daemon", err)
 	}
 }
@@ -199,7 +199,7 @@ func unclaimed(t *testing.T, code codes.Code, reason, domain string) error {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return st.Err()
+	return st.Err() //nolint:wrapcheck // the test builds the status error that the daemon sends
 }
 
 func TestIsForkUnclaimed(t *testing.T) {

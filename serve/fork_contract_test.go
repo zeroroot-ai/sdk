@@ -5,7 +5,6 @@ package serve
 
 import (
 	"context"
-	"errors"
 	"net"
 	"os"
 	"strings"
@@ -204,7 +203,7 @@ func TestCreateMission_TheForkGetsErrForked(t *testing.T) {
 		&mission.CreateMissionOpts{StartsFromCallerState: true})
 
 	var forked *fork.ErrForked
-	require.True(t, errors.As(err, &forked), "the fork gets ErrForked, got %v", err)
+	require.ErrorAs(t, err, &forked, "the fork gets ErrForked")
 	require.Equal(t, "node-b", forked.Claim.NodeID)
 	require.Equal(t, "task-b", forked.Claim.Task.GetId())
 	require.Equal(t, harnesspb.OriginationStart_ORIGINATION_START_CALLER_STATE, s.create[0].GetStartsFrom())
@@ -264,7 +263,7 @@ func TestCallbackClient_ClaimForkErrors(t *testing.T) {
 	conn := dialBufconn(t, srv)
 	c := &CallbackClient{conn: conn, client: harnesspb.NewHarnessCallbackServiceClient(conn), connected: true}
 	_, err = c.ClaimFork(context.Background(), "sbx-fork-1")
-	require.Equal(t, codes.Unimplemented, status.Code(errors.Unwrap(err)))
+	require.Equal(t, codes.Unimplemented, status.Code(err))
 }
 
 // TestCreateMission_AFailedClaimIsReported proves that a fork that cannot
@@ -278,9 +277,9 @@ func TestCreateMission_AFailedClaimIsReported(t *testing.T) {
 
 	_, err := harness.CreateMission(context.Background(), map[string]any{"name": "m"}, "target-1",
 		&mission.CreateMissionOpts{StartsFromCallerState: true})
-	require.Equal(t, codes.AlreadyExists, status.Code(errors.Unwrap(errors.Unwrap(err))), "got %v", err)
+	require.Equal(t, codes.AlreadyExists, status.Code(err), "got %v", err)
 	var forked *fork.ErrForked
-	require.False(t, errors.As(err, &forked))
+	require.NotErrorAs(t, err, &forked)
 }
 
 // failingClaims refuses each claim, as the daemon refuses a second claim.
@@ -289,7 +288,7 @@ type failingClaims struct {
 }
 
 func (failingClaims) ClaimFork(context.Context, *harnesspb.ClaimForkRequest, ...grpc.CallOption) (*harnesspb.ClaimForkResponse, error) {
-	return nil, status.Error(codes.AlreadyExists, "claimed before")
+	return nil, status.Error(codes.AlreadyExists, "claimed before") //nolint:wrapcheck // the fake answers as the daemon does
 }
 
 // TestCreateMission_AClaimWithNoGrantIsRefused proves that the fork does not
@@ -304,7 +303,7 @@ func TestCreateMission_AClaimWithNoGrantIsRefused(t *testing.T) {
 		&mission.CreateMissionOpts{StartsFromCallerState: true})
 	require.Error(t, err)
 	var forked *fork.ErrForked
-	require.False(t, errors.As(err, &forked))
+	require.NotErrorAs(t, err, &forked)
 	require.Equal(t, "parent-grant", harness.client.token)
 }
 

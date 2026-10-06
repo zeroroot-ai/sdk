@@ -153,12 +153,12 @@ func (w *Watcher) Origin() string { return w.origin }
 
 // Forked reports whether the process now runs in another sandbox than the one
 // the watcher was made in. It returns the current sandbox id.
-func (w *Watcher) Forked() (string, bool, error) {
-	id, err := w.read()
+func (w *Watcher) Forked() (sandboxID string, forked bool, err error) {
+	sandboxID, err = w.read()
 	if err != nil {
-		return "", false, err
+		return "", false, fmt.Errorf("fork: read the sandbox id: %w", err)
 	}
-	return id, id != w.origin, nil
+	return sandboxID, sandboxID != w.origin, nil
 }
 
 // Point checks whether the process is a fork. In the parent it returns a nil
@@ -206,7 +206,7 @@ func Park(ctx context.Context, w *Watcher, c Claimer, opts ParkOptions) (*Claim,
 		}
 		select {
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			return nil, fmt.Errorf("fork: park: %w", ctx.Err())
 		case <-deadline.C:
 			return nil, nil
 		case <-tick.C:

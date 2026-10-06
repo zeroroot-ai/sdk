@@ -150,18 +150,17 @@ func (c *CallbackClient) Connect(ctx context.Context) error {
 	}
 
 	// Each call carries the sandbox id of the process, read at the time of the
-	// call, so the daemon can tell a fork from its parent (D74, sdk#248).
+	// call, so the daemon can tell a fork from its parent (D74, sdk#248). The
+	// keepalive keeps an idle callback connection open.
 	dialOpts = append(dialOpts,
 		grpc.WithChainUnaryInterceptor(fork.UnaryClientInterceptor()),
 		grpc.WithChainStreamInterceptor(fork.StreamClientInterceptor()),
+		grpc.WithKeepaliveParams(keepalive.ClientParameters{
+			Time:                10 * time.Second,
+			Timeout:             5 * time.Second,
+			PermitWithoutStream: true,
+		}),
 	)
-
-	// Add keepalive configuration
-	dialOpts = append(dialOpts, grpc.WithKeepaliveParams(keepalive.ClientParameters{
-		Time:                10 * time.Second,
-		Timeout:             5 * time.Second,
-		PermitWithoutStream: true,
-	}))
 
 	// Create context with timeout for connection establishment
 	connCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
