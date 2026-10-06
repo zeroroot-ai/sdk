@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.197.0](https://github.com/zeroroot-ai/sdk/compare/v0.196.1...v0.197.0) (2026-10-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* **capability:** capabilitypb.IsolationMode and CapabilityGrantInfo.Isolation are removed.
+* **mission:** mission.MissionConstraints is removed. CreateMissionOpts.Constraints takes *missionpb.MissionConstraints. MaxDuration is a *durationpb.Duration.
+
+### Bug Fixes
+
+* **capability:** a grant has no isolation mode ([#243](https://github.com/zeroroot-ai/sdk/issues/243)) ([e55306f](https://github.com/zeroroot-ai/sdk/commit/e55306f6c791402e046d4feb6a07267af740099b)), closes [#202](https://github.com/zeroroot-ai/sdk/issues/202)
+* **mission:** the callback sends the platform constraint type ([#242](https://github.com/zeroroot-ai/sdk/issues/242)) ([a5901e3](https://github.com/zeroroot-ai/sdk/commit/a5901e3d3c9f5c0ccd4678e0b8be15a4668f42bf)), closes [#180](https://github.com/zeroroot-ai/sdk/issues/180)
+
 ## [0.196.1](https://github.com/zeroroot-ai/sdk/compare/v0.196.0...v0.196.1) (2026-10-06)
 
 
