@@ -825,17 +825,6 @@ import (
 #ResumeMissionRequest: {
 	// mission_id is the unique identifier of the mission to resume
 	missionId?: string @protobuf(1,string,name=mission_id,"(buf.validate.field).string=")
-
-	// checkpoint_id must be empty. A resume continues the same run, and the
-	// daemon refuses a request that sets this field with InvalidArgument. To
-	// start a run at a checkpoint, call RewindMission (ADR-0170).
-	checkpointId?: string @protobuf(2,string,name=checkpoint_id,"(buf.validate.field).string=")
-
-	// target_checkpoint_id must be empty, for the same reason as
-	// checkpoint_id. The daemon refuses a request that sets it with
-	// InvalidArgument. RewindMission starts a new run at a checkpoint
-	// (ADR-0170).
-	targetCheckpointId?: string @protobuf(3,string,name=target_checkpoint_id,"(buf.validate.field).string=")
 }
 
 // GetMissionHistoryRequest queries mission execution history by name.
@@ -915,8 +904,7 @@ import (
 }
 
 // NodeCheckpoint is the end of one node in a mission run (ADR-0170). It is
-// the point at which a rewind can start a new run. It is not the older
-// MissionCheckpoint, which describes a saved state blob.
+// the point at which a rewind can start a new run.
 #NodeCheckpoint: {
 	// checkpoint_id identifies the checkpoint inside its mission run. Pass it
 	// to RewindMission.
@@ -1096,10 +1084,6 @@ import (
 	// metrics contains current execution metrics
 	metrics?: #MissionMetrics @protobuf(7,MissionMetrics)
 
-	// checkpoint is not set by the daemon. The checkpoints of a run are
-	// listed by GetMissionCheckpoints (ADR-0170).
-	checkpoint?: #MissionCheckpoint @protobuf(8,MissionCheckpoint)
-
 	// run_number is the sequential run number for this mission name
 	runNumber?: int32 @protobuf(9,int32,name=run_number)
 
@@ -1148,30 +1132,6 @@ import (
 
 	// tokens_used is the total LLM tokens consumed
 	tokensUsed?: int64 @protobuf(9,int64,name=tokens_used)
-}
-
-// MissionCheckpoint describes a saved checkpoint state blob. The daemon has
-// no checkpoint store and does not send this message: the World snapshot is
-// the only snapshot (ADR-0163). NodeCheckpoint describes a checkpoint of a
-// run (ADR-0170).
-#MissionCheckpoint: {
-	// id is the unique checkpoint identifier
-	id?: string @protobuf(1,string)
-
-	// version is the checkpoint format version
-	version?: int32 @protobuf(2,int32)
-
-	// completed_nodes is the number of nodes that had completed at checkpoint time
-	completedNodes?: int32 @protobuf(3,int32,name=completed_nodes)
-
-	// total_nodes is the total number of nodes in the mission
-	totalNodes?: int32 @protobuf(4,int32,name=total_nodes)
-
-	// created_at is when this checkpoint was created (Unix timestamp in milliseconds)
-	createdAt?: int64 @protobuf(5,int64,name=created_at)
-
-	// state_data is the serialized checkpoint state (opaque blob)
-	stateData?: bytes @protobuf(6,bytes,name=state_data)
 }
 
 // CreateMissionRequest requests creation of a new mission.

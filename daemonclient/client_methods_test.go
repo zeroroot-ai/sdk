@@ -479,7 +479,7 @@ func TestClient_PauseMission_FailedPrecondition(t *testing.T) {
 
 func TestClient_ResumeMission_NotFound(t *testing.T) {
 	c := &Client{daemon: &extendedMockClient{}}
-	_, err := c.ResumeMission(context.Background(), "m1", "")
+	_, err := c.ResumeMission(context.Background(), "m1")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not found")
 }

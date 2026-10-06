@@ -1067,20 +1067,20 @@ func (c *Client) PauseMission(ctx context.Context, missionID string, force bool)
 	return resp.CheckpointId, nil
 }
 
-// ResumeMission resumes a paused mission from its last checkpoint.
+// ResumeMission resumes a paused mission. A resume continues the same run.
+// To start a run at a checkpoint, call RewindMission on the daemon
+// (ADR-0170).
 //
 // Parameters:
 //   - ctx: Context for the RPC call
 //   - missionID: ID of the mission to resume
-//   - fromCheckpoint: Optional specific checkpoint ID to resume from (empty for latest)
 //
 // Returns:
 //   - <-chan MissionEvent: Channel streaming mission events during execution
 //   - error: Non-nil if the resume operation fails to start
-func (c *Client) ResumeMission(ctx context.Context, missionID string, fromCheckpoint string) (<-chan MissionEvent, error) {
+func (c *Client) ResumeMission(ctx context.Context, missionID string) (<-chan MissionEvent, error) {
 	stream, err := c.daemon.ResumeMission(ctx, &daemonpb.ResumeMissionRequest{
-		MissionId:    missionID,
-		CheckpointId: fromCheckpoint,
+		MissionId: missionID,
 	})
 	if err != nil {
 		if st, ok := status.FromError(err); ok {
