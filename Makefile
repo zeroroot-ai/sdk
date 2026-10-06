@@ -587,11 +587,15 @@ mission-authoring-bundle: mission-jsonschema mission-docs
 # origin/<branch> is used when it exists and the bare name is the fallback, so a
 # detached CI checkout without remote refs still works.
 #
+# The rule is FILE (buf.yaml, ADR-0028 rule 5). The selftest runs first: a
+# renamed field must fail, which WIRE would permit (sdk#208).
+#
 # There is no override. The target used to pass when the pull request body held
 # the text "buf:breaking:ignore": a marker that proves itself by existing, which
 # anyone could type. CI never passed the body in, so the marker did nothing
 # there, and now CI runs this target (sdk#177).
 proto-breaking:
+	@BUF="$(BUF)" bash scripts/proto-breaking-selftest.sh
 	@BASE=$${GITHUB_BASE_REF:-$${CI_MERGE_REQUEST_TARGET_BRANCH:-main}}; \
 	if git rev-parse --verify --quiet "refs/remotes/origin/$$BASE" >/dev/null; then \
 		TARGET="origin/$$BASE"; \
