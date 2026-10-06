@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.196.1](https://github.com/zeroroot-ai/sdk/compare/v0.196.0...v0.196.1) (2026-10-06)
+
+
+### Bug Fixes
+
+* **proto:** secrets.proto cites no retired ADR ([#235](https://github.com/zeroroot-ai/sdk/issues/235)) ([c46ee78](https://github.com/zeroroot-ai/sdk/commit/c46ee7831b18eb9fbb05aba63996d63375549f6a)), closes [#233](https://github.com/zeroroot-ai/sdk/issues/233)
+
 ## [0.196.0](https://github.com/zeroroot-ai/sdk/compare/v0.195.0...v0.196.0) (2026-10-05)
 
 
