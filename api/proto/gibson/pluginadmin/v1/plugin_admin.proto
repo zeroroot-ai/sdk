@@ -188,11 +188,14 @@ message RegisterPluginRequest {
 
 message RegisterPluginResponse {
   string install_id = 1;
-  string plugin_principal_id = 2;
   // bootstrap_token is the single-use enrollment token. Empty when dry_run.
   string bootstrap_token = 3;
-  int64 bootstrap_token_expires_at_unix = 4;
-  repeated PluginManifestValidationError validation_errors = 5;
+  reserved 2;
+  reserved "plugin_principal_id";
+  reserved 4;
+  reserved "bootstrap_token_expires_at_unix";
+  reserved 5;
+  reserved "validation_errors";
 }
 
 message EditPluginSecretBindingRequest {

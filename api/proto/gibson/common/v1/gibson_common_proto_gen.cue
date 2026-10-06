@@ -1,9 +1,8 @@
 package commonpb
 
 #HealthStatus: {
-	status?:    string @protobuf(1,string) // healthy, degraded, unhealthy
-	message?:   string @protobuf(2,string)
-	checkedAt?: int64  @protobuf(3,int64,name=checked_at) // Unix timestamp in milliseconds
+	status?:  string @protobuf(1,string) // healthy, degraded, unhealthy
+	message?: string @protobuf(2,string)
 }
 
 #JSONSchema: {

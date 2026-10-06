@@ -942,10 +942,7 @@ func (h *CallbackHarness) ReportStepHints(ctx context.Context, hints *planning.S
 	// Convert to proto message
 	protoReq := &harnesspb.ReportStepHintsRequest{
 		Hints: &harnesspb.StepHints{
-			Confidence:    hints.Confidence(),
-			SuggestedNext: hints.SuggestedNext(),
-			ReplanReason:  hints.ReplanReason(),
-			KeyFindings:   hints.KeyFindings(),
+			Confidence: hints.Confidence(),
 		},
 	}
 
@@ -1586,11 +1583,9 @@ func (h *CallbackHarness) ValidateGraphNode(ctx context.Context, nodeType string
 }
 
 // ValidateRelationship validates a relationship against the taxonomy schema.
-func (h *CallbackHarness) ValidateRelationship(ctx context.Context, relType string, fromNodeType string, toNodeType string, properties map[string]any) (*ValidationResult, error) {
+func (h *CallbackHarness) ValidateRelationship(ctx context.Context, relType string, _ string, _ string, properties map[string]any) (*ValidationResult, error) {
 	req := &harnesspb.ValidateRelationshipRequest{
 		RelationshipType: relType,
-		FromNodeType:     fromNodeType,
-		ToNodeType:       toNodeType,
 		Properties:       ToTypedMap(properties),
 	}
 

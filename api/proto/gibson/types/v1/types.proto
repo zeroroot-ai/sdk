@@ -130,11 +130,8 @@ message Finding {
   int64 created_at = 23;  // Unix timestamp in milliseconds
   int64 updated_at = 24;  // Unix timestamp in milliseconds
 
-  // Compliance framework mappings — added by audit-finding-compliance-mappings.
-  // Links the finding to specific control IDs in compliance frameworks
-  // (SOC2, NIST AI RMF, MITRE ATLAS, MITRE ATT&CK). Multiple entries per
-  // framework allowed; downstream exporters (SARIF) surface them.
-  repeated ComplianceMapping compliance_mappings = 25;
+  reserved 25;
+  reserved "compliance_mappings";
 }
 
 // ComplianceMapping links a Finding to a compliance framework control.
@@ -150,8 +147,8 @@ message ComplianceMapping {
   // Optional human-readable rationale.
   string rationale = 3;
 
-  // Optional pointer to supporting evidence.
-  string evidence_ref = 4;
+  reserved 4;
+  reserved "evidence_ref";
 }
 
 // MitreMapping represents a mapping to MITRE ATT&CK or ATLAS framework.
@@ -187,14 +184,16 @@ message GraphQuery {
   int32 top_k = 3;
   repeated string node_types = 4;
   double min_score = 5;
-  double max_score = 6;
   string mission_id = 7;
   string mission_run_id = 8;
   QueryScope scope = 9;
   map<string, string> filters = 10;
-  // Weights for hybrid scoring (must sum to 1.0)
-  double vector_weight = 11;
-  double graph_weight = 12;
+  reserved 6;
+  reserved "max_score";
+  reserved 11;
+  reserved "vector_weight";
+  reserved 12;
+  reserved "graph_weight";
 }
 
 // MissionRunSummary describes one run of a mission.

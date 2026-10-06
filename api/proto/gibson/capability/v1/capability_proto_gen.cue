@@ -80,9 +80,6 @@ package capabilityv1
 	// empty or the grant is mission-wide.
 	taskId?: string @protobuf(7,string,name=task_id)
 
-	// issued_at_unix is the iat claim, Unix seconds.
-	issuedAtUnix?: int64 @protobuf(8,int64,name=issued_at_unix)
-
 	// expires_at_unix is the exp claim, Unix seconds.
 	expiresAtUnix?: int64 @protobuf(9,int64,name=expires_at_unix)
 

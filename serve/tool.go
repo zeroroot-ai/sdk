@@ -181,9 +181,8 @@ func (s *toolServiceServer) Health(ctx context.Context, req *toolpb.HealthReques
 
 	return &toolpb.HealthResponse{
 		Status: &commonpb.HealthStatus{
-			Status:    health.Status,
-			Message:   health.Message,
-			CheckedAt: time.Now().UnixMilli(),
+			Status:  health.Status,
+			Message: health.Message,
 		},
 	}, nil
 }

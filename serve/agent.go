@@ -269,9 +269,8 @@ func (s *agentServiceServer) Health(ctx context.Context, req *agentpb.HealthRequ
 
 	return &agentpb.HealthResponse{
 		Status: &commonpb.HealthStatus{
-			Status:    health.Status,
-			Message:   health.Message,
-			CheckedAt: time.Now().UnixMilli(),
+			Status:  health.Status,
+			Message: health.Message,
 		},
 	}, nil
 }

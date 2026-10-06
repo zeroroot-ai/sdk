@@ -204,12 +204,6 @@ import (
 	tags?: [...string] @protobuf(22,string)
 	createdAt?: int64 @protobuf(23,int64,name=created_at) // Unix timestamp in milliseconds
 	updatedAt?: int64 @protobuf(24,int64,name=updated_at) // Unix timestamp in milliseconds
-
-	// Compliance framework mappings — added by audit-finding-compliance-mappings.
-	// Links the finding to specific control IDs in compliance frameworks
-	// (SOC2, NIST AI RMF, MITRE ATLAS, MITRE ATT&CK). Multiple entries per
-	// framework allowed; downstream exporters (SARIF) surface them.
-	complianceMappings?: [...#ComplianceMapping] @protobuf(25,ComplianceMapping,name=compliance_mappings)
 }
 
 // ComplianceMapping links a Finding to a compliance framework control.
@@ -224,9 +218,6 @@ import (
 
 	// Optional human-readable rationale.
 	rationale?: string @protobuf(3,string)
-
-	// Optional pointer to supporting evidence.
-	evidenceRef?: string @protobuf(4,string,name=evidence_ref)
 }
 
 // MitreMapping represents a mapping to MITRE ATT&CK or ATLAS framework.
@@ -264,17 +255,12 @@ import (
 	topK?: int32 @protobuf(3,int32,name=top_k)
 	nodeTypes?: [...string] @protobuf(4,string,name=node_types)
 	minScore?:     float64     @protobuf(5,double,name=min_score)
-	maxScore?:     float64     @protobuf(6,double,name=max_score)
 	missionId?:    string      @protobuf(7,string,name=mission_id)
 	missionRunId?: string      @protobuf(8,string,name=mission_run_id)
 	scope?:        #QueryScope @protobuf(9,QueryScope)
 	filters?: {
 		[string]: string
 	} @protobuf(10,map[string]string)
-
-	// Weights for hybrid scoring (must sum to 1.0)
-	vectorWeight?: float64 @protobuf(11,double,name=vector_weight)
-	graphWeight?:  float64 @protobuf(12,double,name=graph_weight)
 }
 
 // MissionRunSummary describes one run of a mission.

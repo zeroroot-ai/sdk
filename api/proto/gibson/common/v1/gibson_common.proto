@@ -9,7 +9,8 @@ import "buf/validate/validate.proto";
 message HealthStatus {
     string status = 1;     // healthy, degraded, unhealthy
     string message = 2;
-    int64 checked_at = 3;  // Unix timestamp in milliseconds
+    reserved 3;
+    reserved "checked_at";
 }
 
 message JSONSchema {

@@ -51,7 +51,8 @@ message GetDescriptorResponse {
     string version = 3;
     repeated string tags = 4;
     gibson.common.v1.JSONSchema input_schema = 5;
-    gibson.common.v1.JSONSchema output_schema = 6;
+    reserved 6;
+    reserved "output_schema";
 }
 
 message ExecuteRequest {
@@ -103,7 +104,8 @@ message StreamExecuteResponse {
     string trace_id = 10;
     string span_id = 11;
     int64 sequence = 12;
-    int64 timestamp_ms = 13;
+    reserved 13;
+    reserved "timestamp_ms";
 }
 
 message ToolProgress {

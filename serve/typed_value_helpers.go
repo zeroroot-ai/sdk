@@ -921,11 +921,6 @@ func JSONSchemaToProtoNode(schema map[string]any) *harnesspb.JSONSchemaNode {
 		node.DefaultValue = &defaultStr
 	}
 
-	// Nullable
-	if nullable, ok := schema["nullable"].(bool); ok {
-		node.Nullable = nullable
-	}
-
 	// Numeric constraints
 	if min, ok := schema["minimum"].(float64); ok {
 		node.Minimum = &min
@@ -942,16 +937,6 @@ func JSONSchemaToProtoNode(schema map[string]any) *harnesspb.JSONSchemaNode {
 	if maxLen, ok := schema["maxLength"].(float64); ok {
 		maxLenInt := int32(maxLen)
 		node.MaxLength = &maxLenInt
-	}
-
-	// Array constraints
-	if minItems, ok := schema["minItems"].(float64); ok {
-		minItemsInt := int32(minItems)
-		node.MinItems = &minItemsInt
-	}
-	if maxItems, ok := schema["maxItems"].(float64); ok {
-		maxItemsInt := int32(maxItems)
-		node.MaxItems = &maxItemsInt
 	}
 
 	return node

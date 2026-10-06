@@ -648,14 +648,13 @@ message ConnectRequest {
 
 // ConnectResponse returns connection metadata.
 message ConnectResponse {
-  // daemon_version is the version of the running daemon
-  string daemon_version = 1;
-
   // session_id is a unique identifier for this client session
   string session_id = 2;
 
   // grpc_address is the address the daemon is listening on
   string grpc_address = 3;
+  reserved 1;
+  reserved "daemon_version";
 }
 
 // PingRequest is an empty health check request.
@@ -725,38 +724,30 @@ message OperationResult {
   // completed_at is the Unix timestamp (milliseconds) when the operation completed
   int64 completed_at = 4;
 
-  // turns_used is the number of agent turns/iterations executed
-  int32 turns_used = 5;
-
-  // tokens_used is the total LLM tokens consumed
-  int64 tokens_used = 6;
-
-  // nodes_executed is the number of mission nodes that ran successfully
-  int32 nodes_executed = 7;
-
-  // nodes_failed is the number of mission nodes that failed
-  int32 nodes_failed = 8;
-
   // findings_count is the total number of findings discovered
   int32 findings_count = 9;
-
-  // critical_count is the number of critical severity findings
-  int32 critical_count = 10;
-
-  // high_count is the number of high severity findings
-  int32 high_count = 11;
-
-  // medium_count is the number of medium severity findings
-  int32 medium_count = 12;
-
-  // low_count is the number of low severity findings
-  int32 low_count = 13;
 
   // error_message contains the error message if status == "failed"
   string error_message = 14;
 
   // error_code contains a machine-readable error code if status == "failed"
   string error_code = 15;
+  reserved 5;
+  reserved "turns_used";
+  reserved 6;
+  reserved "tokens_used";
+  reserved 7;
+  reserved "nodes_executed";
+  reserved 8;
+  reserved "nodes_failed";
+  reserved 10;
+  reserved "critical_count";
+  reserved 11;
+  reserved "high_count";
+  reserved 12;
+  reserved "medium_count";
+  reserved 13;
+  reserved "low_count";
 }
 
 // FindingInfo describes a discovered vulnerability.
@@ -887,11 +878,10 @@ message ToolEvent {
   // warning contains warning information if the event represents a warning
   string warning = 12;
 
-  // warning_severity is the severity level (low, medium, high)
-  string warning_severity = 13;
-
   // data contains event-specific data (typed map)
   gibson.common.v1.TypedMap data = 14;
+  reserved 13;
+  reserved "warning_severity";
 }
 
 // LLMEvent represents an LLM activity event.
@@ -938,8 +928,8 @@ message LLMEvent {
   // error_code identifies the error type (rate_limit, context_length, api_error, timeout)
   string error_code = 14;
 
-  // will_retry indicates if the failed request will be retried
-  bool will_retry = 15;
+  reserved 15;
+  reserved "will_retry";
 }
 
 // OrchestratorEvent represents an orchestrator decision event.
@@ -959,32 +949,28 @@ message OrchestratorEvent {
   // action is the orchestrator action (execute_agent, skip_node, wait, complete, request_approval)
   string action = 5;
 
-  // target_node_id is the mission node ID being targeted
-  string target_node_id = 6;
-
-  // target_agent_name is the agent name being targeted
-  string target_agent_name = 7;
-
   // confidence is the decision confidence score (0-1)
   double confidence = 8;
 
   // reasoning is the orchestrator's reasoning (max 500 chars in practice)
   string reasoning = 9;
 
-  // tokens_used is the number of tokens consumed for this decision
-  int32 tokens_used = 10;
-
   // latency_ms is the decision latency in milliseconds
   double latency_ms = 11;
-
-  // approval_id is set when approval is required
-  string approval_id = 12;
 
   // risk is the risk level (low, medium, high, critical)
   string risk = 13;
 
   // timeout_seconds is the timeout for approval requests
   int32 timeout_seconds = 14;
+  reserved 6;
+  reserved "target_node_id";
+  reserved 7;
+  reserved "target_agent_name";
+  reserved 10;
+  reserved "tokens_used";
+  reserved 12;
+  reserved "approval_id";
 }
 
 // Event represents a generic daemon event.
@@ -1010,12 +996,17 @@ message Event {
   // Specific event types (only one will be set)
   oneof event {
     MissionEvent mission_event = 5;
-    AgentEvent agent_event = 7;
-    FindingEvent finding_event = 8;
-    ToolEvent tool_event = 9;
-    LLMEvent llm_event = 10;
-    OrchestratorEvent orchestrator_event = 11;
   }
+  reserved 7;
+  reserved "agent_event";
+  reserved 8;
+  reserved "finding_event";
+  reserved 9;
+  reserved "tool_event";
+  reserved 10;
+  reserved "llm_event";
+  reserved 11;
+  reserved "orchestrator_event";
 }
 
 // ---------------------------------------------------------------------------
@@ -1054,12 +1045,17 @@ message SubscribeResponse {
   // Specific event types (only one will be set)
   oneof event {
     MissionEvent mission_event = 5;
-    AgentEvent agent_event = 7;
-    FindingEvent finding_event = 8;
-    ToolEvent tool_event = 9;
-    LLMEvent llm_event = 10;
-    OrchestratorEvent orchestrator_event = 11;
   }
+  reserved 7;
+  reserved "agent_event";
+  reserved 8;
+  reserved "finding_event";
+  reserved 9;
+  reserved "tool_event";
+  reserved 10;
+  reserved "llm_event";
+  reserved 11;
+  reserved "orchestrator_event";
 }
 
 // ---------------------------------------------------------------------------
@@ -1379,9 +1375,6 @@ message MissionRun {
   // findings_count is the number of findings discovered in this run
   int32 findings_count = 6;
 
-  // previous_run_id is the ID of the previous run (if any)
-  string previous_run_id = 7;
-
   // trace_id is the OTel trace ID for Langfuse lookup
   string trace_id = 8;
 
@@ -1393,6 +1386,8 @@ message MissionRun {
   // parent_checkpoint_id is the id of the checkpoint of the parent run at
   // which this run started. Empty when parent_mission_id is empty.
   string parent_checkpoint_id = 10 [(buf.validate.field).string = { max_len: 256 }];
+  reserved 7;
+  reserved "previous_run_id";
 }
 
 // GetMissionCheckpointsRequest asks for the checkpoints of one mission run.
@@ -1463,7 +1458,6 @@ message RewindMissionResponse {
 
 // ListMissionDefinitionsRequest queries installed mission definitions.
 message ListMissionDefinitionsRequest {
-
   // The limit and offset fields are reserved. A list request uses page_size
   // and page_token (ADR-0028, rule 3).
   reserved 1, 2;
@@ -1635,32 +1629,25 @@ message Mission {
 
 // MissionMetrics contains execution metrics for a mission.
 message MissionMetrics {
-  // turns_used is the number of agent turns/iterations executed
-  int32 turns_used = 1;
-
-  // nodes_executed is the number of mission nodes that ran successfully
-  int32 nodes_executed = 2;
-
-  // nodes_failed is the number of mission nodes that failed
-  int32 nodes_failed = 3;
-
   // findings_count is the total number of findings discovered
   int32 findings_count = 4;
 
-  // critical_count is the number of critical severity findings
-  int32 critical_count = 5;
-
-  // high_count is the number of high severity findings
-  int32 high_count = 6;
-
-  // medium_count is the number of medium severity findings
-  int32 medium_count = 7;
-
-  // low_count is the number of low severity findings
-  int32 low_count = 8;
-
-  // tokens_used is the total LLM tokens consumed
-  int64 tokens_used = 9;
+  reserved 1;
+  reserved "turns_used";
+  reserved 2;
+  reserved "nodes_executed";
+  reserved 3;
+  reserved "nodes_failed";
+  reserved 5;
+  reserved "critical_count";
+  reserved 6;
+  reserved "high_count";
+  reserved 7;
+  reserved "medium_count";
+  reserved 8;
+  reserved "low_count";
+  reserved 9;
+  reserved "tokens_used";
 }
 
 // MissionCheckpoint describes a saved checkpoint state blob. The daemon has
@@ -1742,13 +1729,6 @@ message CreateMissionRequest {
   // Valid values: "isolated" (default), "inherit", "shared"
   string memory_continuity = 8 [(buf.validate.field).string = { max_len: 4096 }];
 
-  // source_yaml is the original YAML the dashboard used to construct this
-  // mission. Optional. When non-empty, the daemon stores it alongside the
-  // structured mission state. Empty for programmatic callers that never had
-  // a YAML source.
-  // Spec: dashboard-neo4j-crud-removal Req 3.5.
-  string source_yaml = 9 [(buf.validate.field).string = { max_len: 16777216 }];
-
   // Fields removed under spec mission-api-only-cleanup (Phase 2).
   // The oneof target_config (field 10: inline_target) and oneof workflow_config
   // (field 11: inline_workflow) plus workflow_yaml (field 12) supported inline
@@ -1762,6 +1742,8 @@ message CreateMissionRequest {
   // same key returns the result of the first request and does the work one
   // time. An empty key turns the protection off for the call.
   string idempotency_key = 13 [(buf.validate.field).string = { max_len: 128 }];
+  reserved 9;
+  reserved "source_yaml";
 }
 
 // ListCatalogMissionsRequest takes nothing. The catalog is the same for every
@@ -1974,11 +1956,10 @@ message GetAgentStatusResponse {
   // active indicates if the agent is currently executing a task
   bool active = 2;
 
-  // current_task describes the active task (if any)
-  string current_task = 3;
-
-  // task_start_time is when the current task started (Unix timestamp)
-  int64 task_start_time = 4;
+  reserved 3;
+  reserved "current_task";
+  reserved 4;
+  reserved "task_start_time";
 }
 
 // ---------------------------------------------------------------------------
@@ -2247,11 +2228,10 @@ message PermissionTeamMembership {
   // team_id is the unique team identifier
   string team_id = 1;
 
-  // team_name is the human-readable team name
-  string team_name = 2;
-
   // is_admin is true when the caller is an admin of the team
   bool is_admin = 3;
+  reserved 2;
+  reserved "team_name";
 }
 
 // GetMyPermissionsResponse returns a compact summary of the caller's permissions.
@@ -2268,8 +2248,8 @@ message GetMyPermissionsResponse {
   // component_grants lists the component access grants held by the caller
   repeated PermissionComponentGrant component_grants = 4;
 
-  // team_memberships lists the teams the caller belongs to within this tenant
-  repeated PermissionTeamMembership team_memberships = 5;
+  reserved 5;
+  reserved "team_memberships";
 }
 
 // ---------------------------------------------------------------------------

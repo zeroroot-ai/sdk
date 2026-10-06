@@ -187,9 +187,6 @@ import (
 
 // ConnectResponse returns connection metadata.
 #ConnectResponse: {
-	// daemon_version is the version of the running daemon
-	daemonVersion?: string @protobuf(1,string,name=daemon_version)
-
 	// session_id is a unique identifier for this client session
 	sessionId?: string @protobuf(2,string,name=session_id)
 
@@ -260,32 +257,8 @@ import (
 	// completed_at is the Unix timestamp (milliseconds) when the operation completed
 	completedAt?: int64 @protobuf(4,int64,name=completed_at)
 
-	// turns_used is the number of agent turns/iterations executed
-	turnsUsed?: int32 @protobuf(5,int32,name=turns_used)
-
-	// tokens_used is the total LLM tokens consumed
-	tokensUsed?: int64 @protobuf(6,int64,name=tokens_used)
-
-	// nodes_executed is the number of mission nodes that ran successfully
-	nodesExecuted?: int32 @protobuf(7,int32,name=nodes_executed)
-
-	// nodes_failed is the number of mission nodes that failed
-	nodesFailed?: int32 @protobuf(8,int32,name=nodes_failed)
-
 	// findings_count is the total number of findings discovered
 	findingsCount?: int32 @protobuf(9,int32,name=findings_count)
-
-	// critical_count is the number of critical severity findings
-	criticalCount?: int32 @protobuf(10,int32,name=critical_count)
-
-	// high_count is the number of high severity findings
-	highCount?: int32 @protobuf(11,int32,name=high_count)
-
-	// medium_count is the number of medium severity findings
-	mediumCount?: int32 @protobuf(12,int32,name=medium_count)
-
-	// low_count is the number of low severity findings
-	lowCount?: int32 @protobuf(13,int32,name=low_count)
 
 	// error_message contains the error message if status == "failed"
 	errorMessage?: string @protobuf(14,string,name=error_message)
@@ -422,9 +395,6 @@ import (
 	// warning contains warning information if the event represents a warning
 	warning?: string @protobuf(12,string)
 
-	// warning_severity is the severity level (low, medium, high)
-	warningSeverity?: string @protobuf(13,string,name=warning_severity)
-
 	// data contains event-specific data (typed map)
 	data?: commonpb.#TypedMap @protobuf(14,gibson.common.v1.TypedMap)
 }
@@ -472,9 +442,6 @@ import (
 
 	// error_code identifies the error type (rate_limit, context_length, api_error, timeout)
 	errorCode?: string @protobuf(14,string,name=error_code)
-
-	// will_retry indicates if the failed request will be retried
-	willRetry?: bool @protobuf(15,bool,name=will_retry)
 }
 
 // OrchestratorEvent represents an orchestrator decision event.
@@ -494,26 +461,14 @@ import (
 	// action is the orchestrator action (execute_agent, skip_node, wait, complete, request_approval)
 	action?: string @protobuf(5,string)
 
-	// target_node_id is the mission node ID being targeted
-	targetNodeId?: string @protobuf(6,string,name=target_node_id)
-
-	// target_agent_name is the agent name being targeted
-	targetAgentName?: string @protobuf(7,string,name=target_agent_name)
-
 	// confidence is the decision confidence score (0-1)
 	confidence?: float64 @protobuf(8,double)
 
 	// reasoning is the orchestrator's reasoning (max 500 chars in practice)
 	reasoning?: string @protobuf(9,string)
 
-	// tokens_used is the number of tokens consumed for this decision
-	tokensUsed?: int32 @protobuf(10,int32,name=tokens_used)
-
 	// latency_ms is the decision latency in milliseconds
 	latencyMs?: float64 @protobuf(11,double,name=latency_ms)
-
-	// approval_id is set when approval is required
-	approvalId?: string @protobuf(12,string,name=approval_id)
 
 	// risk is the risk level (low, medium, high, critical)
 	risk?: string @protobuf(13,string)
@@ -538,16 +493,6 @@ import (
 	// Specific event types (only one will be set)
 	{} | {
 		missionEvent: #MissionEvent @protobuf(5,MissionEvent,name=mission_event)
-	} | {
-		agentEvent: #AgentEvent @protobuf(7,AgentEvent,name=agent_event)
-	} | {
-		findingEvent: #FindingEvent @protobuf(8,FindingEvent,name=finding_event)
-	} | {
-		toolEvent: #ToolEvent @protobuf(9,ToolEvent,name=tool_event)
-	} | {
-		llmEvent: #LLMEvent @protobuf(10,LLMEvent,name=llm_event)
-	} | {
-		orchestratorEvent: #OrchestratorEvent @protobuf(11,OrchestratorEvent,name=orchestrator_event)
 	}
 }
 
@@ -576,16 +521,6 @@ import (
 	// Specific event types (only one will be set)
 	{} | {
 		missionEvent: #MissionEvent @protobuf(5,MissionEvent,name=mission_event)
-	} | {
-		agentEvent: #AgentEvent @protobuf(7,AgentEvent,name=agent_event)
-	} | {
-		findingEvent: #FindingEvent @protobuf(8,FindingEvent,name=finding_event)
-	} | {
-		toolEvent: #ToolEvent @protobuf(9,ToolEvent,name=tool_event)
-	} | {
-		llmEvent: #LLMEvent @protobuf(10,LLMEvent,name=llm_event)
-	} | {
-		orchestratorEvent: #OrchestratorEvent @protobuf(11,OrchestratorEvent,name=orchestrator_event)
 	}
 }
 
@@ -885,9 +820,6 @@ import (
 	// findings_count is the number of findings discovered in this run
 	findingsCount?: int32 @protobuf(6,int32,name=findings_count)
 
-	// previous_run_id is the ID of the previous run (if any)
-	previousRunId?: string @protobuf(7,string,name=previous_run_id)
-
 	// trace_id is the OTel trace ID for Langfuse lookup
 	traceId?: string @protobuf(8,string,name=trace_id)
 
@@ -1122,32 +1054,8 @@ import (
 
 // MissionMetrics contains execution metrics for a mission.
 #MissionMetrics: {
-	// turns_used is the number of agent turns/iterations executed
-	turnsUsed?: int32 @protobuf(1,int32,name=turns_used)
-
-	// nodes_executed is the number of mission nodes that ran successfully
-	nodesExecuted?: int32 @protobuf(2,int32,name=nodes_executed)
-
-	// nodes_failed is the number of mission nodes that failed
-	nodesFailed?: int32 @protobuf(3,int32,name=nodes_failed)
-
 	// findings_count is the total number of findings discovered
 	findingsCount?: int32 @protobuf(4,int32,name=findings_count)
-
-	// critical_count is the number of critical severity findings
-	criticalCount?: int32 @protobuf(5,int32,name=critical_count)
-
-	// high_count is the number of high severity findings
-	highCount?: int32 @protobuf(6,int32,name=high_count)
-
-	// medium_count is the number of medium severity findings
-	mediumCount?: int32 @protobuf(7,int32,name=medium_count)
-
-	// low_count is the number of low severity findings
-	lowCount?: int32 @protobuf(8,int32,name=low_count)
-
-	// tokens_used is the total LLM tokens consumed
-	tokensUsed?: int64 @protobuf(9,int64,name=tokens_used)
 }
 
 // MissionCheckpoint describes a saved checkpoint state blob. The daemon has
@@ -1226,13 +1134,6 @@ import (
 	// memory_continuity defines how agent memory is shared across mission runs
 	// Valid values: "isolated" (default), "inherit", "shared"
 	memoryContinuity?: string @protobuf(8,string,name=memory_continuity,"(buf.validate.field).string=")
-
-	// source_yaml is the original YAML the dashboard used to construct this
-	// mission. Optional. When non-empty, the daemon stores it alongside the
-	// structured mission state. Empty for programmatic callers that never had
-	// a YAML source.
-	// Spec: dashboard-neo4j-crud-removal Req 3.5.
-	sourceYaml?: string @protobuf(9,string,name=source_yaml,"(buf.validate.field).string=")
 
 	// idempotency_key makes a retry safe (ADR-0028). A second request with the
 	// same key returns the result of the first request and does the work one
@@ -1438,12 +1339,6 @@ import (
 
 	// active indicates if the agent is currently executing a task
 	active?: bool @protobuf(2,bool)
-
-	// current_task describes the active task (if any)
-	currentTask?: string @protobuf(3,string,name=current_task)
-
-	// task_start_time is when the current task started (Unix timestamp)
-	taskStartTime?: int64 @protobuf(4,int64,name=task_start_time)
 }
 
 // ListToolsRequest queries tool registry.
@@ -1692,9 +1587,6 @@ import (
 	// team_id is the unique team identifier
 	teamId?: string @protobuf(1,string,name=team_id)
 
-	// team_name is the human-readable team name
-	teamName?: string @protobuf(2,string,name=team_name)
-
 	// is_admin is true when the caller is an admin of the team
 	isAdmin?: bool @protobuf(3,bool,name=is_admin)
 }
@@ -1712,9 +1604,6 @@ import (
 
 	// component_grants lists the component access grants held by the caller
 	componentGrants?: [...#PermissionComponentGrant] @protobuf(4,PermissionComponentGrant,name=component_grants)
-
-	// team_memberships lists the teams the caller belongs to within this tenant
-	teamMemberships?: [...#PermissionTeamMembership] @protobuf(5,PermissionTeamMembership,name=team_memberships)
 }
 
 // ListMyMembershipsRequest has no fields. The caller is identified via the
