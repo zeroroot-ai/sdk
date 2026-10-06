@@ -18,8 +18,8 @@
 //	// Create a sub-mission
 //	info, err := mm.CreateMission(ctx, mission, targetID, &mission.CreateMissionOpts{
 //	    Name: "network-scan-phase-2",
-//	    Constraints: &mission.MissionConstraints{
-//	        MaxDuration: 30 * time.Minute,
+//	    Constraints: &missionpb.MissionConstraints{
+//	        MaxDuration: durationpb.New(30 * time.Minute),
 //	        MaxTokens:   100000,
 //	    },
 //	    Tags: []string{"automated", "network"},
@@ -53,13 +53,15 @@
 //
 // # Mission Constraints
 //
-// Constraints prevent runaway missions from consuming excessive resources:
+// Constraints use the platform constraint type,
+// gibson.mission.v1.MissionConstraints (package missionpb). They prevent
+// runaway missions from consuming excessive resources:
 //
-//	constraints := &mission.MissionConstraints{
-//	    MaxDuration: 1 * time.Hour,        // Maximum execution time
-//	    MaxTokens:   500000,               // Maximum LLM tokens
-//	    MaxCost:     10.0,                 // Maximum API cost in dollars
-//	    MaxFindings: 1000,                 // Maximum findings to generate
+//	constraints := &missionpb.MissionConstraints{
+//	    MaxDuration: durationpb.New(1 * time.Hour), // Maximum execution time
+//	    MaxTokens:   500000,                        // Maximum LLM tokens
+//	    MaxCost:     10.0,                          // Maximum API cost in dollars
+//	    MaxFindings: 1000,                          // Maximum findings to generate
 //	}
 //
 // Zero values for any constraint field means no limit.

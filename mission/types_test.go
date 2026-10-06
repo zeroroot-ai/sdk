@@ -9,6 +9,10 @@ import (
 	"testing"
 	"time"
 
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/durationpb"
+
+	missionpb "github.com/zeroroot-ai/sdk/api/gen/gibson/mission/v1"
 	"github.com/zeroroot-ai/sdk/finding"
 )
 
@@ -31,8 +35,8 @@ func TestCreateMissionOpts(t *testing.T) {
 	})
 
 	t.Run("with all fields", func(t *testing.T) {
-		constraints := &MissionConstraints{
-			MaxDuration: 5 * time.Minute,
+		constraints := &missionpb.MissionConstraints{
+			MaxDuration: durationpb.New(5 * time.Minute),
 			MaxTokens:   1000,
 			MaxCost:     10.50,
 			MaxFindings: 100,
@@ -53,8 +57,8 @@ func TestCreateMissionOpts(t *testing.T) {
 		if opts.Constraints == nil {
 			t.Fatal("expected constraints to be set")
 		}
-		if opts.Constraints.MaxDuration != 5*time.Minute {
-			t.Errorf("expected MaxDuration 5m, got %v", opts.Constraints.MaxDuration)
+		if got := opts.Constraints.GetMaxDuration().AsDuration(); got != 5*time.Minute {
+			t.Errorf("expected MaxDuration 5m, got %v", got)
 		}
 		if len(opts.Metadata) != 2 {
 			t.Errorf("expected 2 metadata entries, got %d", len(opts.Metadata))
@@ -70,8 +74,8 @@ func TestCreateMissionOptsJSON(t *testing.T) {
 	t.Run("marshal and unmarshal", func(t *testing.T) {
 		original := CreateMissionOpts{
 			Name: "test-mission",
-			Constraints: &MissionConstraints{
-				MaxDuration: 10 * time.Minute,
+			Constraints: &missionpb.MissionConstraints{
+				MaxDuration: durationpb.New(10 * time.Minute),
 				MaxTokens:   5000,
 				MaxCost:     25.75,
 				MaxFindings: 50,
@@ -96,8 +100,8 @@ func TestCreateMissionOptsJSON(t *testing.T) {
 		if unmarshaled.Name != original.Name {
 			t.Errorf("name mismatch: expected %s, got %s", original.Name, unmarshaled.Name)
 		}
-		if unmarshaled.Constraints.MaxDuration != original.Constraints.MaxDuration {
-			t.Errorf("MaxDuration mismatch: expected %v, got %v", original.Constraints.MaxDuration, unmarshaled.Constraints.MaxDuration)
+		if !proto.Equal(unmarshaled.Constraints, original.Constraints) {
+			t.Errorf("Constraints mismatch: expected %v, got %v", original.Constraints, unmarshaled.Constraints)
 		}
 		if len(unmarshaled.Tags) != len(original.Tags) {
 			t.Errorf("tags length mismatch: expected %d, got %d", len(original.Tags), len(unmarshaled.Tags))
@@ -118,82 +122,6 @@ func TestCreateMissionOptsJSON(t *testing.T) {
 		jsonStr := string(data)
 		if jsonStr != `{"name":"minimal"}` {
 			t.Errorf("expected minimal JSON, got %s", jsonStr)
-		}
-	})
-}
-
-// TestMissionConstraints tests the MissionConstraints struct
-func TestMissionConstraints(t *testing.T) {
-	t.Run("zero values", func(t *testing.T) {
-		c := MissionConstraints{}
-		if c.MaxDuration != 0 {
-			t.Errorf("expected zero MaxDuration, got %v", c.MaxDuration)
-		}
-		if c.MaxTokens != 0 {
-			t.Errorf("expected zero MaxTokens, got %d", c.MaxTokens)
-		}
-		if c.MaxCost != 0 {
-			t.Errorf("expected zero MaxCost, got %f", c.MaxCost)
-		}
-		if c.MaxFindings != 0 {
-			t.Errorf("expected zero MaxFindings, got %d", c.MaxFindings)
-		}
-	})
-
-	t.Run("all constraints set", func(t *testing.T) {
-		c := MissionConstraints{
-			MaxDuration: 30 * time.Minute,
-			MaxTokens:   100000,
-			MaxCost:     50.00,
-			MaxFindings: 500,
-		}
-
-		if c.MaxDuration != 30*time.Minute {
-			t.Errorf("expected MaxDuration 30m, got %v", c.MaxDuration)
-		}
-		if c.MaxTokens != 100000 {
-			t.Errorf("expected MaxTokens 100000, got %d", c.MaxTokens)
-		}
-		if c.MaxCost != 50.00 {
-			t.Errorf("expected MaxCost 50.00, got %f", c.MaxCost)
-		}
-		if c.MaxFindings != 500 {
-			t.Errorf("expected MaxFindings 500, got %d", c.MaxFindings)
-		}
-	})
-}
-
-// TestMissionConstraintsJSON tests JSON marshaling of MissionConstraints
-func TestMissionConstraintsJSON(t *testing.T) {
-	t.Run("marshal and unmarshal", func(t *testing.T) {
-		original := MissionConstraints{
-			MaxDuration: 15 * time.Minute,
-			MaxTokens:   50000,
-			MaxCost:     100.50,
-			MaxFindings: 200,
-		}
-
-		data, err := json.Marshal(original)
-		if err != nil {
-			t.Fatalf("failed to marshal: %v", err)
-		}
-
-		var unmarshaled MissionConstraints
-		if err := json.Unmarshal(data, &unmarshaled); err != nil {
-			t.Fatalf("failed to unmarshal: %v", err)
-		}
-
-		if unmarshaled.MaxDuration != original.MaxDuration {
-			t.Errorf("MaxDuration mismatch: expected %v, got %v", original.MaxDuration, unmarshaled.MaxDuration)
-		}
-		if unmarshaled.MaxTokens != original.MaxTokens {
-			t.Errorf("MaxTokens mismatch: expected %d, got %d", original.MaxTokens, unmarshaled.MaxTokens)
-		}
-		if unmarshaled.MaxCost != original.MaxCost {
-			t.Errorf("MaxCost mismatch: expected %f, got %f", original.MaxCost, unmarshaled.MaxCost)
-		}
-		if unmarshaled.MaxFindings != original.MaxFindings {
-			t.Errorf("MaxFindings mismatch: expected %d, got %d", original.MaxFindings, unmarshaled.MaxFindings)
 		}
 	})
 }
@@ -781,12 +709,9 @@ func TestJSONRoundTrip(t *testing.T) {
 		types := []any{
 			CreateMissionOpts{
 				Name: "test",
-				Constraints: &MissionConstraints{
-					MaxDuration: time.Hour,
+				Constraints: &missionpb.MissionConstraints{
+					MaxDuration: durationpb.New(time.Hour),
 				},
-			},
-			MissionConstraints{
-				MaxTokens: 1000,
 			},
 			RunMissionOpts{
 				Wait:    true,
@@ -827,8 +752,6 @@ func TestJSONRoundTrip(t *testing.T) {
 			switch original.(type) {
 			case CreateMissionOpts:
 				unmarshaled = &CreateMissionOpts{}
-			case MissionConstraints:
-				unmarshaled = &MissionConstraints{}
 			case RunMissionOpts:
 				unmarshaled = &RunMissionOpts{}
 			case MissionInfo:
@@ -852,53 +775,6 @@ func TestJSONRoundTrip(t *testing.T) {
 
 // TestEdgeCases tests edge cases and boundary conditions
 func TestEdgeCases(t *testing.T) {
-	t.Run("negative values in constraints", func(t *testing.T) {
-		// Negative values are technically allowed, but may have special meaning
-		c := MissionConstraints{
-			MaxDuration: -1 * time.Hour,
-			MaxTokens:   -1000,
-			MaxCost:     -50.0,
-			MaxFindings: -10,
-		}
-
-		data, err := json.Marshal(c)
-		if err != nil {
-			t.Fatalf("failed to marshal: %v", err)
-		}
-
-		var unmarshaled MissionConstraints
-		if err := json.Unmarshal(data, &unmarshaled); err != nil {
-			t.Fatalf("failed to unmarshal: %v", err)
-		}
-
-		if unmarshaled.MaxTokens != c.MaxTokens {
-			t.Errorf("MaxTokens mismatch: expected %d, got %d", c.MaxTokens, unmarshaled.MaxTokens)
-		}
-	})
-
-	t.Run("very large values", func(t *testing.T) {
-		c := MissionConstraints{
-			MaxDuration: 1000000 * time.Hour,
-			MaxTokens:   9223372036854775807, // Max int64
-			MaxCost:     999999999.99,
-			MaxFindings: 2147483647, // Max int32
-		}
-
-		data, err := json.Marshal(c)
-		if err != nil {
-			t.Fatalf("failed to marshal: %v", err)
-		}
-
-		var unmarshaled MissionConstraints
-		if err := json.Unmarshal(data, &unmarshaled); err != nil {
-			t.Fatalf("failed to unmarshal: %v", err)
-		}
-
-		if unmarshaled.MaxTokens != c.MaxTokens {
-			t.Errorf("MaxTokens mismatch: expected %d, got %d", c.MaxTokens, unmarshaled.MaxTokens)
-		}
-	})
-
 	t.Run("empty strings in filter", func(t *testing.T) {
 		emptyStr := ""
 		filter := MissionFilter{

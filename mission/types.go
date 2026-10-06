@@ -6,6 +6,7 @@ package mission
 import (
 	"time"
 
+	missionpb "github.com/zeroroot-ai/sdk/api/gen/gibson/mission/v1"
 	"github.com/zeroroot-ai/sdk/finding"
 )
 
@@ -16,9 +17,11 @@ type CreateMissionOpts struct {
 	// If empty, a name will be auto-generated based on the mission.
 	Name string `json:"name,omitempty"`
 
-	// Constraints defines execution limits for the mission.
+	// Constraints defines execution limits for the mission. It is the
+	// constraint type of the platform, gibson.mission.v1.MissionConstraints
+	// (ADR-0004), so each of its fields reaches the daemon.
 	// If nil, default constraints will be applied.
-	Constraints *MissionConstraints `json:"constraints,omitempty"`
+	Constraints *missionpb.MissionConstraints `json:"constraints,omitempty"`
 
 	// Metadata contains arbitrary key-value pairs for storing
 	// additional mission context or configuration.
@@ -50,26 +53,6 @@ type CreateMissionOpts struct {
 	//
 	// Only meaningful alongside CatalogMission.
 	CatalogParams map[string]string `json:"catalog_params,omitempty"`
-}
-
-// MissionConstraints limits mission execution to prevent resource exhaustion.
-// All constraints are enforced by the mission orchestrator.
-type MissionConstraints struct {
-	// MaxDuration is the maximum time allowed for mission execution.
-	// Zero value means no duration limit.
-	MaxDuration time.Duration `json:"max_duration,omitempty"`
-
-	// MaxTokens is the maximum number of LLM tokens the mission can consume.
-	// Zero value means no token limit.
-	MaxTokens int64 `json:"max_tokens,omitempty"`
-
-	// MaxCost is the maximum dollar cost for LLM API calls.
-	// Zero value means no cost limit.
-	MaxCost float64 `json:"max_cost,omitempty"`
-
-	// MaxFindings is the maximum number of findings the mission can generate.
-	// Zero value means no finding limit.
-	MaxFindings int `json:"max_findings,omitempty"`
 }
 
 // RunMissionOpts configures mission execution behavior.
