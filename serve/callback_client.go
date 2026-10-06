@@ -253,6 +253,17 @@ func (c *CallbackClient) contextWithMetadata(ctx context.Context) context.Contex
 	return metadata.NewOutgoingContext(ctx, md)
 }
 
+// withoutGrant removes the grant from the outgoing metadata of a call.
+func withoutGrant(ctx context.Context) context.Context {
+	md, ok := metadata.FromOutgoingContext(ctx)
+	if !ok {
+		return ctx
+	}
+	md = md.Copy()
+	md.Delete("authorization")
+	return metadata.NewOutgoingContext(ctx, md)
+}
+
 // Close closes the gRPC connection and cleans up resources.
 // The client cannot be reused after Close() is called.
 func (c *CallbackClient) Close() error {
@@ -1130,12 +1141,16 @@ func (c *CallbackClient) GetMissionRunHistory(ctx context.Context, req *harnessp
 }
 
 // ClaimFork asks the daemon for the dispatch of this process as a fork (D74,
-// sdk#248). Call it with the grant of the parent, before any other call of the
-// fork. It implements fork.Claimer.
+// sdk#248). Call it before any other call of the fork. It implements
+// fork.Claimer. Pass the claim to ApplyClaim, so each later call carries the
+// grant of the claim.
 //
-// The daemon knows the fork only from its setec identity token, which the
-// interceptors of the client send. A process with no identity socket cannot
-// claim, so ClaimFork refuses it before the call.
+// The setec identity token, which the interceptors of the client send, is the
+// only proof (D80). The call carries no grant: the grant in memory is the one
+// of the source, and it can be long expired after a restore. A process with no
+// identity socket cannot claim, so ClaimFork refuses it before the call. A
+// client with per-RPC credentials sends a grant on each call, so ClaimFork
+// refuses it too.
 func (c *CallbackClient) ClaimFork(ctx context.Context, sandboxID string) (*fork.Claim, error) {
 	if !c.IsConnected() {
 		return nil, errors.New("ClaimFork: client not connected")
@@ -1143,7 +1158,13 @@ func (c *CallbackClient) ClaimFork(ctx context.Context, sandboxID string) (*fork
 	if fork.IdentitySocket() == "" {
 		return nil, fmt.Errorf("ClaimFork: %w", fork.ErrNoSandboxIdentity)
 	}
-	ctx = c.contextWithMetadata(ctx)
+	c.mu.RLock()
+	perRPC := c.perRPCCreds != nil
+	c.mu.RUnlock()
+	if perRPC {
+		return nil, errors.New("ClaimFork: the client sends per-RPC credentials, and a claim carries no grant")
+	}
+	ctx = withoutGrant(ctx)
 	resp, err := c.client.ClaimFork(ctx, &harnesspb.ClaimForkRequest{SandboxId: sandboxID})
 	if err != nil {
 		return nil, fmt.Errorf("ClaimFork: %w", err)

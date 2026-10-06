@@ -297,7 +297,7 @@ type HarnessCallbackServiceClient interface {
 	CloseJob(ctx context.Context, in *CloseJobRequest, opts ...grpc.CallOption) (*CloseJobResponse, error)
 	// ClaimFork returns the dispatch of a fork (D74, sdk#248). A fork from a
 	// snapshot starts with the grant of its parent in memory. It calls
-	// ClaimFork first, with that grant, and from then on uses only the grant
+	// ClaimFork first, with no grant (D80), and from then on uses only the grant
 	// of the response. The daemon knows the fork only from the setec identity
 	// token in the metadata key x-gibson-sandbox-identity (sdk#251). It
 	// accepts the call only when that sandbox is a fork of the sandbox of the
@@ -1242,7 +1242,7 @@ type HarnessCallbackServiceServer interface {
 	CloseJob(context.Context, *CloseJobRequest) (*CloseJobResponse, error)
 	// ClaimFork returns the dispatch of a fork (D74, sdk#248). A fork from a
 	// snapshot starts with the grant of its parent in memory. It calls
-	// ClaimFork first, with that grant, and from then on uses only the grant
+	// ClaimFork first, with no grant (D80), and from then on uses only the grant
 	// of the response. The daemon knows the fork only from the setec identity
 	// token in the metadata key x-gibson-sandbox-identity (sdk#251). It
 	// accepts the call only when that sandbox is a fork of the sandbox of the
