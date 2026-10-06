@@ -270,8 +270,8 @@ func TestServe_RegistersHandlersAndRoundTrips(t *testing.T) {
 			WithName("echo-plugin"),
 			WithVersion("0.1.0"),
 			echoOption(),
-			WithHTTPClient(platform.Client()),
-			WithHealthAddr(":0"),
+			testHTTPClient(platform.Client()),
+			testHealthAddr(":0"),
 		)
 	}()
 
@@ -331,9 +331,9 @@ func TestServe_UngrantedStartupSecret_FailsAtBootNamingTheSecret(t *testing.T) {
 		WithName("needs-a-secret"),
 		WithVersion("0.1.0"),
 		echoOption(),
-		WithHTTPClient(platform.Client()),
-		WithHealthAddr(":0"),
-		WithSecretsClient(newFakeSecretsClient(nil)),
+		testHTTPClient(platform.Client()),
+		testHealthAddr(":0"),
+		testSecretsClient(newFakeSecretsClient(nil)),
 		WithLifecycle(lifecycle.LifecycleHooks{
 			OnStart: func(ctx context.Context) error {
 				if _, err := ResolveSecret(ctx, "cred:vendor_token"); err != nil {

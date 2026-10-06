@@ -21,7 +21,6 @@ One Go module, `github.com/zeroroot-ai/sdk`, rooted at the repo root. A componen
 ```bash
 make test             # unit tests
 make test-race        # the race detector
-make test-integration # Git-backed codegen tests; LSP tests skip without language servers
 make lint             # golangci-lint
 make lint-deadcode    # the blocking unused gate
 make check-no-gibson  # the import boundary

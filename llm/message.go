@@ -12,12 +12,6 @@ const (
 
 	// RoleUser represents messages from the user.
 	RoleUser Role = "user"
-
-	// RoleAssistant represents messages from the AI assistant.
-	RoleAssistant Role = "assistant"
-
-	// RoleTool represents tool execution results.
-	RoleTool Role = "tool"
 )
 
 // Message represents a single message in a conversation.
@@ -41,32 +35,7 @@ type Message struct {
 	Name string
 }
 
-// IsValid validates that the message has appropriate fields set for its role.
-func (m Message) IsValid() bool {
-	switch m.Role {
-	case RoleSystem, RoleUser:
-		return m.Content != "" && len(m.ToolCalls) == 0 && len(m.ToolResults) == 0 && m.Name == ""
-	case RoleAssistant:
-		// Assistant can have content, tool calls, or both
-		return m.Content != "" || len(m.ToolCalls) > 0
-	case RoleTool:
-		return m.Name != "" && len(m.ToolResults) > 0
-	default:
-		return false
-	}
-}
-
 // String returns a string representation of the role.
 func (r Role) String() string {
 	return string(r)
-}
-
-// IsValid checks if the role is one of the defined constants.
-func (r Role) IsValid() bool {
-	switch r {
-	case RoleSystem, RoleUser, RoleAssistant, RoleTool:
-		return true
-	default:
-		return false
-	}
 }

@@ -131,10 +131,3 @@ func TestPlatformHarnessWorldView_Unsupported(t *testing.T) {
 		t.Fatal("platform pull-mode WorldView must fail loudly, not return an empty slice")
 	}
 }
-
-func TestBaseHarnessWorldViewIsNotImplemented(t *testing.T) {
-	var b agent.BaseHarness
-	if _, err := b.WorldView(context.Background()); err == nil {
-		t.Fatal("BaseHarness.WorldView must fail rather than return an empty World")
-	}
-}

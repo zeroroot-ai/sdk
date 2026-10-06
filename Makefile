@@ -1,7 +1,7 @@
 # Gibson SDK Makefile
 # The SDK is a library - no binary to compile, but we build examples and run tests
 
-.PHONY: all bootstrap build examples image test test-race test-coverage test-integration test-integration-all lint lint-deadcode fmt vet tidy clean deps check check-no-gibson check-coverage check-buf-pinned proto proto-deps proto-clean proto-breaking taxonomy-gen generate verify-idempotent release-prep help tool-runner-image tool-runner-load sdk-bump mission-jsonschema mission-docs mission-authoring-bundle cue-defs ensure-cue
+.PHONY: all bootstrap build examples image test test-race test-coverage lint lint-deadcode fmt vet tidy clean deps check check-no-gibson check-coverage check-buf-pinned proto proto-deps proto-clean proto-breaking taxonomy-gen generate verify-idempotent release-prep help tool-runner-image tool-runner-load sdk-bump mission-jsonschema mission-docs mission-authoring-bundle cue-defs ensure-cue
 
 # Protoc plugin versions (single source of truth for deterministic generation)
 # buf CLI version is pinned as a go.mod tool dependency (github.com/bufbuild/buf)
@@ -95,23 +95,6 @@ test-coverage:
 	@echo "Coverage report:"
 	@$(GOCMD) tool cover -func=coverage.out
 
-# Run integration tests (requires git, optionally gopls/pyright/tsserver)
-test-integration:
-	@echo "Running integration tests (Git only)..."
-	@echo "Note: LSP tests will be skipped if language servers are not installed"
-	@cd codegen && $(GOTEST) -v -tags=integration -timeout=10m -run 'Test(FullWorkflow|MultiRepo|Worktree|Cleanup|EdgeCases)'
-	@echo "Integration tests complete"
-
-# Run all integration tests including LSP
-test-integration-all:
-	@echo "Running all integration tests (including LSP)..."
-	@echo "Installing language servers if needed..."
-	@command -v gopls > /dev/null || echo "  gopls not found - Go LSP tests will be skipped"
-	@command -v pyright-langserver > /dev/null || echo "  pyright-langserver not found - Python LSP tests will be skipped"
-	@command -v typescript-language-server > /dev/null || echo "  typescript-language-server not found - TypeScript LSP tests will be skipped"
-	@cd codegen && $(GOTEST) -v -tags=integration -timeout=15m
-	@echo "All integration tests complete"
-
 # Generate coverage HTML report
 coverage-html: test-coverage
 	@$(GOCMD) tool cover -html=coverage.out -o coverage.html
@@ -169,12 +152,12 @@ fmt:
 # Vet code
 # Note: protoresolver is excluded because it intentionally defines an UnmarshalJSON method
 # with a custom signature (not implementing json.Unmarshaler) which go vet stdmethods flags
-# as a false positive. The graphrag, serve, and eval packages are excluded because their test
+# as a false positive. The graphrag and serve packages are excluded because their test
 # files import api/gen/toolspb which is only generated when tool protos are present (external
 # tooling from core/tools/). These exclusions are tracked in pre-existing issue #toolspb.
 vet:
 	@echo "Vetting code..."
-	$(GOCMD) vet $(shell go list ./... | grep -v 'github.com/zeroroot-ai/sdk/protoresolver' | grep -v 'github.com/zeroroot-ai/sdk/graphrag$$' | grep -v 'github.com/zeroroot-ai/sdk/eval' | grep -v 'github.com/zeroroot-ai/sdk/serve')
+	$(GOCMD) vet $(shell go list ./... | grep -v 'github.com/zeroroot-ai/sdk/protoresolver' | grep -v 'github.com/zeroroot-ai/sdk/graphrag$$' | grep -v 'github.com/zeroroot-ai/sdk/serve')
 
 # Tidy modules
 tidy:
@@ -660,8 +643,6 @@ help:
 	@echo "  make test-race          - Run tests with race detection"
 	@echo "  make test-coverage      - Run tests with coverage"
 	@echo "  make coverage-html      - Generate HTML coverage report"
-	@echo "  make test-integration   - Run integration tests (Git only)"
-	@echo "  make test-integration-all - Run all integration tests (requires LSP servers)"
 	@echo "  make lint          - Run golangci-lint"
 	@echo "  make fmt           - Format Go code"
 	@echo "  make vet           - Run go vet"

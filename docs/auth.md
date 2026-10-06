@@ -22,8 +22,6 @@ live in Envoy and ext-authz upstream. The SDK owns:
 | `auth.WithIdentity`, `auth.IdentityFromContext`, `auth.TenantFromContext` | [`auth/context.go:35`](../auth/context.go), [`:50`](../auth/context.go), [`:89`](../auth/context.go) | Context plumbing. **No fallback to `_system` on miss.** |
 | `auth.UnaryServerInterceptor`, `auth.StreamServerInterceptor` | [`auth/interceptor.go:34`](../auth/interceptor.go), [`:48`](../auth/interceptor.go) | The single gRPC interceptor every Gibson Go server installs. |
 | `capabilitygrant.Claims`, `capabilitygrant.Verify` | [`capabilitygrant/claims.go`](../capabilitygrant/claims.go), [`capabilitygrant/verify.go:70`](../capabilitygrant/verify.go) | CG-JWT verifier (used by ext-authz; daemon does not verify its own grants). |
-| `spiffe.DialOptions`, `spiffe.ExpectPeerSPIFFEID` | [`spiffe/dial.go`](../spiffe/dial.go) | Workload API auto-detect dial helper. |
-| `agent.Connect` | [`agent/connect.go:1`](../agent/connect.go) | One-call agent dial: credentials → Zitadel JWT → SPIFFE-aware mTLS → `*grpc.ClientConn`. |
 
 ## TenantID is sealed
 
@@ -180,18 +178,6 @@ Claims (see [`capabilitygrant/claims.go`](../capabilitygrant/claims.go)):
 | `iat`, `exp` | `exp - iat <= 30m` enforced by mint; verify rejects `now > exp`. |
 | `jti` | Unique per grant; reserved for a future revocation list. |
 
-## SPIFFE dial helper
-
-`spiffe.DialOptions(ctx)` ([`spiffe/dial.go`](../spiffe/dial.go))
-auto-detects the SPIFFE Workload API socket via `SPIFFE_ENDPOINT_SOCKET`.
-If present → mTLS DialOption with `tlsconfig.MTLSClientConfig` against
-the X509 source. If absent → server-side TLS only with system CAs (the
-ADK / customer-network agent path).
-
-`spiffe.ExpectPeerSPIFFEID(spiffeID)` returns a server option that
-rejects any peer SVID that does not match — used by the daemon to pin
-its inbound connections to Envoy's SPIFFE ID.
-
 ## What lives elsewhere
 
 | Concern | Owner | File |
@@ -202,7 +188,6 @@ its inbound connections to Envoy's SPIFFE ID.
 | CG-JWT minting (Ed25519, KMS-derived) and JWKS publication | gibson daemon | `core/gibson/internal/capabilitygrant/{mint,jwks}.go` |
 | Browser session (Auth.js + Zitadel OIDC) | dashboard | `dashboard` repo: `auth.ts` |
 | Service-account token cache (client_credentials) | dashboard | `dashboard` repo: `src/lib/auth/service-token.ts` |
-| Per-tenant data plane | daemon client | `daemonclient/` in this repository |
 | Tenant lifecycle (Zitadel org create/delete) | tenant-operator | `gibson` repo: `operators/tenant/internal/saga/flows/` |
 
 ## Annotations: every RPC declares its policy
@@ -235,4 +220,3 @@ annotation fails CI.
 - Daemon-side auth model: `core/gibson/docs/auth.md`.
 - ext-authz internals: `core/ext-authz/docs/auth.md`.
 - Helm wiring (Envoy, SPIRE, Vault): the `charts` repo.
-- Data-plane half (per-tenant Conn): the dial helpers in `daemonclient/`.

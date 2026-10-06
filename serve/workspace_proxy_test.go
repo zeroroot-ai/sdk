@@ -15,8 +15,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	harnesspb "github.com/zeroroot-ai/sdk/api/gen/gibson/harness/v1"
-	"github.com/zeroroot-ai/sdk/codegen/editor"
-	"github.com/zeroroot-ai/sdk/codegen/git"
 )
 
 func insecureTransportCreds() grpc.DialOption {
@@ -211,64 +209,9 @@ func TestCallbackWorkspace_Push(t *testing.T) {
 	assert.NotNil(t, fake.lastPushReq, "push RPC must be invoked")
 }
 
-func TestCallbackWorkspace_Close_NoOp(t *testing.T) {
-	w := &callbackWorkspace{}
-	assert.NoError(t, w.Close(),
-		"Close must be a no-op on the callback path; the daemon owns the workspace lifetime")
-}
-
 // ---------------------------------------------------------------------------
 // Editor + GitOps deferred-surface enforcement
 // ---------------------------------------------------------------------------
-
-func TestCallbackWorkspace_Editor_NotImplemented(t *testing.T) {
-	w := &callbackWorkspace{}
-	ed := w.Editor()
-	require.NotNil(t, ed)
-
-	// Apply, ApplyBatch, Validate must all return ErrWorkspaceNotImplemented.
-	_, err := ed.Apply(context.Background(), editor.Edit{})
-	require.ErrorIs(t, err, ErrWorkspaceNotImplemented)
-
-	_, err = ed.ApplyBatch(context.Background(), nil)
-	require.ErrorIs(t, err, ErrWorkspaceNotImplemented)
-
-	_, err = ed.Validate(context.Background(), "main.go")
-	require.ErrorIs(t, err, ErrWorkspaceNotImplemented)
-
-	// Setters are no-ops (don't panic).
-	ed.SetFuzzyThreshold(0.9)
-	ed.SetValidationTimeout(0)
-}
-
-func TestCallbackWorkspace_Git_PartialOps(t *testing.T) {
-	fake := &fakeHarnessCallbackClient{
-		commitResp: &harnesspb.WorkspaceCommitResponse{CommitSha: "abc123"},
-		pushResp:   &harnesspb.WorkspacePushResponse{},
-	}
-	c := newFakeCallbackClient(t, fake)
-	w := newCallbackWorkspace(c, &harnesspb.WorkspaceInfo{Name: "backend"})
-	g := w.Git()
-
-	// Commit + Push are the two methods that ARE proxied.
-	sha, err := g.Commit(context.Background(), "msg", git.CommitOptions{})
-	require.NoError(t, err)
-	assert.Equal(t, "abc123", sha)
-	require.NoError(t, g.Push(context.Background(), git.PushOptions{}))
-
-	// Every other GitOps method returns ErrWorkspaceNotImplemented.
-	_, err = g.CurrentBranch()
-	require.ErrorIs(t, err, ErrWorkspaceNotImplemented)
-	_, err = g.Status()
-	require.ErrorIs(t, err, ErrWorkspaceNotImplemented)
-	require.ErrorIs(t, g.CreateBranch(context.Background(), "feature/x"), ErrWorkspaceNotImplemented)
-	require.ErrorIs(t, g.Checkout(context.Background(), "main"), ErrWorkspaceNotImplemented)
-	require.ErrorIs(t, g.Add(context.Background(), "."), ErrWorkspaceNotImplemented)
-	require.ErrorIs(t, g.Pull(context.Background()), ErrWorkspaceNotImplemented)
-	_, err = g.Snapshot(context.Background())
-	require.ErrorIs(t, err, ErrWorkspaceNotImplemented)
-	require.ErrorIs(t, g.Rollback(context.Background(), "snap-1"), ErrWorkspaceNotImplemented)
-}
 
 // ---------------------------------------------------------------------------
 // Error translation

@@ -89,7 +89,7 @@
 //
 // State transitions are logged with structured slog at Info level.
 //
-// Health endpoints (HTTP on the port configured by [WithHealthAddr]):
+// Health endpoints (HTTP on port 8080):
 //   - /healthz: returns 200 once Ready; 503 before.
 //   - /livez:   returns 200 when Ready or Degraded AND daemon heartbeat is fresh;
 //     503 otherwise.

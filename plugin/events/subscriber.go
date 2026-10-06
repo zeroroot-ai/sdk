@@ -97,37 +97,16 @@ type dedupeKey struct {
 	occurredAt time.Time
 }
 
-// RotationCallback is the optional callback invoked after a secret_rotated
-// event has been processed (the cache entry invalidated). The metrics package
-// wires this to record
-// gibson_plugin_rotation_propagation_seconds.
-//
-// name is the secret name from the event. lag is the wall-clock time
-// between event.OccurredAt (server-side timestamp) and the moment the
-// subscriber finished processing it. lag may be negative under clock skew;
-// the metric recorder clamps to zero in that case.
-type RotationCallback func(name string, lag time.Duration)
-
 // Subscriber consumes the component callback stream and dispatches
 // rotation/revocation events to the secrets client and lifecycle hook.
 type Subscriber struct {
-	stream     EventStream
-	secrets    SecretsHook
-	lifecycle  LifecycleHook
-	onRotation RotationCallback // may be nil
+	stream    EventStream
+	secrets   SecretsHook
+	lifecycle LifecycleHook
 
 	// dedupeRing holds the last dedupeRingSize event keys for idempotency.
 	dedupeRing [dedupeRingSize]dedupeKey
 	ringHead   int // index of the slot to overwrite next (circular)
-}
-
-// SetOnRotation registers cb as the rotation observation callback.
-// Subsequent secret_rotated events fire cb after Invalidate has returned. SetOnRotation is not safe for
-// concurrent use with Run; call it before Run is invoked.
-//
-// Passing nil clears any previously set callback.
-func (s *Subscriber) SetOnRotation(cb RotationCallback) {
-	s.onRotation = cb
 }
 
 // New constructs a Subscriber.
@@ -190,29 +169,12 @@ func (s *Subscriber) dispatch(ev Event) {
 }
 
 // handleRotated handles secret_rotated events. It invalidates the cached
-// value, so the next Resolve fetches the new version, and then fires the
-// OnRotation callback when one is configured so the metrics recorder can
-// observe end-to-end propagation lag. A secret this plugin never resolved has
-// no cache entry, and the invalidation is a no-op.
+// value, so the next Resolve fetches the new version. A secret this plugin
+// never resolved has no cache entry, and the invalidation is a no-op.
 func (s *Subscriber) handleRotated(ev Event) {
 	s.secrets.Invalidate(ev.Name)
 	slog.Info("events: secret rotated, cache invalidated",
 		"name", ev.Name, "version", ev.Version)
-	s.fireOnRotation(ev)
-}
-
-// fireOnRotation invokes the OnRotation callback with the propagation lag
-// when one is configured. lag is zero (rather than negative) when
-// ev.OccurredAt is unset.
-func (s *Subscriber) fireOnRotation(ev Event) {
-	if s.onRotation == nil {
-		return
-	}
-	var lag time.Duration
-	if !ev.OccurredAt.IsZero() {
-		lag = time.Since(ev.OccurredAt)
-	}
-	s.onRotation(ev.Name, lag)
 }
 
 // handleRevoked handles secret_access_revoked events. The daemon sends one

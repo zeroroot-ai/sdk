@@ -9,51 +9,29 @@ import (
 	"fmt"
 
 	"github.com/zeroroot-ai/sdk/llm"
-	"github.com/zeroroot-ai/sdk/types"
 )
 
 // Config holds configuration for building an agent using the SDK.
 // This provides a flexible way to define agent behavior without implementing
 // the full Agent interface from scratch.
 type Config struct {
-	name           string
-	version        string
-	description    string
-	capabilities   []string
-	targetSchemas  []types.TargetSchema
-	targetTypes    []string
-	techniqueTypes []string
-	llmSlots       []llm.SlotDefinition
-	executeFunc    ExecuteFunc
-	initFunc       InitFunc
-	shutdownFunc   ShutdownFunc
-	healthFunc     HealthFunc
+	name        string
+	version     string
+	description string
+	targetTypes []string
+	llmSlots    []llm.SlotDefinition
+	executeFunc ExecuteFunc
 }
 
 // ExecuteFunc is the function signature for agent task execution.
 // Implementations should perform the task and return the result.
 type ExecuteFunc func(ctx context.Context, harness Harness, task Task) (Result, error)
 
-// InitFunc is the function signature for agent initialization.
-// Implementations should prepare the agent for execution.
-type InitFunc func(ctx context.Context, config map[string]any) error
-
-// ShutdownFunc is the function signature for agent shutdown.
-// Implementations should release resources and perform cleanup.
-type ShutdownFunc func(ctx context.Context) error
-
-// HealthFunc is the function signature for health checks.
-// Implementations should return the current health status.
-type HealthFunc func(ctx context.Context) types.HealthStatus
-
 // NewConfig creates a new agent configuration with default values.
 func NewConfig() *Config {
 	return &Config{
-		capabilities:   []string{},
-		targetSchemas:  []types.TargetSchema{},
-		targetTypes:    []string{},
-		techniqueTypes: []string{},
-		llmSlots:       []llm.SlotDefinition{},
+		targetTypes: []string{},
+		llmSlots:    []llm.SlotDefinition{},
 	}
 }
 
@@ -78,53 +56,9 @@ func (c *Config) SetDescription(desc string) *Config {
 	return c
 }
 
-// SetCapabilities sets the agent's security testing capabilities.
-func (c *Config) SetCapabilities(caps []string) *Config {
-	c.capabilities = caps
-	return c
-}
-
-// AddCapability adds a single capability to the agent.
-func (c *Config) AddCapability(cap string) *Config {
-	c.capabilities = append(c.capabilities, cap)
-	return c
-}
-
-// SetTargetSchemas sets the target schemas the agent supports.
-// Use this to define connection parameter requirements for each target type.
-func (c *Config) SetTargetSchemas(schemas []types.TargetSchema) *Config {
-	c.targetSchemas = schemas
-	return c
-}
-
-// AddTargetSchema adds a single target schema to the agent.
-// Use this to declare support for a specific target type with connection parameters.
-func (c *Config) AddTargetSchema(schema types.TargetSchema) *Config {
-	c.targetSchemas = append(c.targetSchemas, schema)
-	return c
-}
-
 // SetTargetTypes sets the types of targets the agent can test.
 func (c *Config) SetTargetTypes(types []string) *Config {
 	c.targetTypes = types
-	return c
-}
-
-// AddTargetType adds a single target type to the agent.
-func (c *Config) AddTargetType(t string) *Config {
-	c.targetTypes = append(c.targetTypes, t)
-	return c
-}
-
-// SetTechniqueTypes sets the attack techniques the agent employs.
-func (c *Config) SetTechniqueTypes(types []string) *Config {
-	c.techniqueTypes = types
-	return c
-}
-
-// AddTechniqueType adds a single technique type to the agent.
-func (c *Config) AddTechniqueType(t string) *Config {
-	c.techniqueTypes = append(c.techniqueTypes, t)
 	return c
 }
 
@@ -143,37 +77,10 @@ func (c *Config) AddLLMSlot(name string, requirements llm.SlotRequirements) *Con
 	return c
 }
 
-// AddLLMSlotDefinition adds a fully configured LLM slot definition.
-func (c *Config) AddLLMSlotDefinition(slot llm.SlotDefinition) *Config {
-	c.llmSlots = append(c.llmSlots, slot)
-	return c
-}
-
 // SetExecuteFunc sets the function that executes tasks.
 // This is the core agent logic.
 func (c *Config) SetExecuteFunc(fn ExecuteFunc) *Config {
 	c.executeFunc = fn
-	return c
-}
-
-// SetInitFunc sets the function that initializes the agent.
-// If not set, a default no-op implementation is used.
-func (c *Config) SetInitFunc(fn InitFunc) *Config {
-	c.initFunc = fn
-	return c
-}
-
-// SetShutdownFunc sets the function that shuts down the agent.
-// If not set, a default no-op implementation is used.
-func (c *Config) SetShutdownFunc(fn ShutdownFunc) *Config {
-	c.shutdownFunc = fn
-	return c
-}
-
-// SetHealthFunc sets the function that checks agent health.
-// If not set, a default implementation that returns healthy is used.
-func (c *Config) SetHealthFunc(fn HealthFunc) *Config {
-	c.healthFunc = fn
 	return c
 }
 
@@ -201,59 +108,25 @@ func New(cfg *Config) (Agent, error) {
 		return nil, fmt.Errorf("invalid agent config: %w", err)
 	}
 
-	// Set defaults for optional functions
-	initFunc := cfg.initFunc
-	if initFunc == nil {
-		initFunc = func(ctx context.Context, config map[string]any) error {
-			return nil
-		}
-	}
-
-	shutdownFunc := cfg.shutdownFunc
-	if shutdownFunc == nil {
-		shutdownFunc = func(ctx context.Context) error {
-			return nil
-		}
-	}
-
-	healthFunc := cfg.healthFunc
-	if healthFunc == nil {
-		healthFunc = func(ctx context.Context) types.HealthStatus {
-			return types.NewHealthyStatus("agent is operational")
-		}
-	}
-
 	return &sdkAgent{
-		name:           cfg.name,
-		version:        cfg.version,
-		description:    cfg.description,
-		capabilities:   cfg.capabilities,
-		targetSchemas:  cfg.targetSchemas,
-		targetTypes:    cfg.targetTypes,
-		techniqueTypes: cfg.techniqueTypes,
-		llmSlots:       cfg.llmSlots,
-		executeFunc:    cfg.executeFunc,
-		initFunc:       initFunc,
-		shutdownFunc:   shutdownFunc,
-		healthFunc:     healthFunc,
+		name:        cfg.name,
+		version:     cfg.version,
+		description: cfg.description,
+		targetTypes: cfg.targetTypes,
+		llmSlots:    cfg.llmSlots,
+		executeFunc: cfg.executeFunc,
 	}, nil
 }
 
 // sdkAgent is the internal implementation of the Agent interface.
 // It wraps user-provided functions to implement the full Agent interface.
 type sdkAgent struct {
-	name           string
-	version        string
-	description    string
-	capabilities   []string
-	targetSchemas  []types.TargetSchema
-	targetTypes    []string
-	techniqueTypes []string
-	llmSlots       []llm.SlotDefinition
-	executeFunc    ExecuteFunc
-	initFunc       InitFunc
-	shutdownFunc   ShutdownFunc
-	healthFunc     HealthFunc
+	name        string
+	version     string
+	description string
+	targetTypes []string
+	llmSlots    []llm.SlotDefinition
+	executeFunc ExecuteFunc
 }
 
 // Name returns the agent's unique identifier.
@@ -272,13 +145,9 @@ func (a *sdkAgent) Description() string {
 }
 
 // Capabilities returns the security testing capabilities the agent provides.
+// An agent built with New declares none.
 func (a *sdkAgent) Capabilities() []string {
-	return a.capabilities
-}
-
-// TargetSchemas returns the target schemas this agent supports.
-func (a *sdkAgent) TargetSchemas() []types.TargetSchema {
-	return a.targetSchemas
+	return []string{}
 }
 
 // TargetTypes returns the types of targets the agent can test.
@@ -287,13 +156,9 @@ func (a *sdkAgent) TargetTypes() []string {
 }
 
 // TechniqueTypes returns the attack techniques the agent employs.
+// An agent built with New declares none.
 func (a *sdkAgent) TechniqueTypes() []string {
-	return a.techniqueTypes
-}
-
-// LLMSlots returns the LLM slot definitions required by the agent.
-func (a *sdkAgent) LLMSlots() []llm.SlotDefinition {
-	return a.llmSlots
+	return []string{}
 }
 
 // Execute performs a task using the configured execute function.
@@ -301,17 +166,7 @@ func (a *sdkAgent) Execute(ctx context.Context, harness Harness, task Task) (Res
 	return a.executeFunc(ctx, harness, task)
 }
 
-// Initialize calls the configured init function.
-func (a *sdkAgent) Initialize(ctx context.Context, config map[string]any) error {
-	return a.initFunc(ctx, config)
-}
-
-// Shutdown calls the configured shutdown function.
-func (a *sdkAgent) Shutdown(ctx context.Context) error {
-	return a.shutdownFunc(ctx)
-}
-
-// Health calls the configured health function.
-func (a *sdkAgent) Health(ctx context.Context) types.HealthStatus {
-	return a.healthFunc(ctx)
+// Shutdown has nothing to release for an agent built with New.
+func (a *sdkAgent) Shutdown(_ context.Context) error {
+	return nil
 }

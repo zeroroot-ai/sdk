@@ -14,7 +14,7 @@ func TestBuildMethodMetadata(t *testing.T) {
 		"CreateIssue": "open an issue",
 	}
 	schemas := map[string]methodSchema{
-		"Echo": {input: `{"type":"object","properties":{"msg":{"type":"string"}}}`, output: `{"type":"string"}`},
+		"Echo":         {input: `{"type":"object","properties":{"msg":{"type":"string"}}}`},
 	}
 	names, detailed := buildMethodMetadata(schemas, descriptions)
 

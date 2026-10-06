@@ -54,14 +54,6 @@ type resolveOpts struct {
 	useCache *bool // nil means "use the client default (true)"
 }
 
-// WithCache overrides the client-level caching behaviour for this single
-// Resolve call. Pass false to force an RPC even when a cached value exists.
-func WithCache(enabled bool) Option {
-	return func(o *resolveOpts) {
-		o.useCache = &enabled
-	}
-}
-
 // GetCredentialFn is the function the secrets client calls to fetch a raw
 // credential value when the cache is empty.
 //

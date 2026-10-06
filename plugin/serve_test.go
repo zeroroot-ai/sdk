@@ -158,15 +158,15 @@ func TestServe_DeclaredSecrets_RevocationMarksDegraded(t *testing.T) {
 		serveErr <- Serve(ctx,
 			WithName("secret-plugin"),
 			WithVersion("0.1.0"),
-			WithSecretsClient(fakeSecrets),
+			testSecretsClient(fakeSecrets),
 			WithLifecycle(lifecycle.LifecycleHooks{
 				OnDegraded: func(reason string) { degraded <- reason },
 			}),
 			WithHandler("Echo", "test handler for Echo", func(_ context.Context, req string) (string, error) {
 				return req, nil
 			}),
-			WithHTTPClient(platform.Client()),
-			WithHealthAddr(":0"),
+			testHTTPClient(platform.Client()),
+			testHealthAddr(":0"),
 		)
 	}()
 
@@ -216,15 +216,15 @@ func TestServe_DeclaredSecrets_RevocationReachesHeartbeat(t *testing.T) {
 		serveErr <- Serve(ctx,
 			WithName("secret-plugin"),
 			WithVersion("0.1.0"),
-			WithSecretsClient(fakeSecrets),
+			testSecretsClient(fakeSecrets),
 			WithLifecycle(lifecycle.LifecycleHooks{
 				OnDegraded: func(reason string) { degraded <- reason },
 			}),
 			WithHandler("Echo", "test handler for Echo", func(_ context.Context, req string) (string, error) {
 				return req, nil
 			}),
-			WithHTTPClient(platform.Client()),
-			WithHealthAddr(":0"),
+			testHTTPClient(platform.Client()),
+			testHealthAddr(":0"),
 		)
 	}()
 
@@ -570,18 +570,6 @@ func TestOptions_Defaults(t *testing.T) {
 	assert.NotNil(t, c.handlers)
 }
 
-func TestWithHealthAddr(t *testing.T) {
-	c := &config{}
-	WithHealthAddr(":9090")(c)
-	assert.Equal(t, ":9090", c.healthAddr)
-}
-
-func TestWithDrainTimeout(t *testing.T) {
-	c := &config{}
-	WithDrainTimeout(10 * time.Second)(c)
-	assert.Equal(t, 10*time.Second, c.drainTimeout)
-}
-
 func TestWithHandler_RegistersHandler(t *testing.T) {
 	c := &config{}
 	handler := func(_ context.Context, req string) (string, error) {
@@ -589,13 +577,6 @@ func TestWithHandler_RegistersHandler(t *testing.T) {
 	}
 	WithHandler("Echo", "test handler for Echo", handler)(c)
 	require.NotNil(t, c.handlers["Echo"])
-}
-
-func TestWithSecretsClient_SetsClient(t *testing.T) {
-	c := &config{}
-	fake := newFakeSecretsClient(nil)
-	WithSecretsClient(fake)(c)
-	assert.Equal(t, fake, c.secretsClient)
 }
 
 func TestWithNameAndVersion_SetTheDeclaration(t *testing.T) {

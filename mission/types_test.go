@@ -257,37 +257,6 @@ func TestMissionInfoJSON(t *testing.T) {
 	})
 }
 
-// TestMissionStatus tests the MissionStatus type and its methods
-func TestMissionStatus(t *testing.T) {
-	tests := []struct {
-		name      string
-		status    MissionStatus
-		wantValid bool
-		wantTerm  bool
-	}{
-		{"pending", MissionStatusPending, true, false},
-		{"running", MissionStatusRunning, true, false},
-		{"paused", MissionStatusPaused, true, false},
-		{"completed", MissionStatusCompleted, true, true},
-		{"failed", MissionStatusFailed, true, true},
-		{"cancelled", MissionStatusCancelled, true, true},
-		{"invalid", MissionStatus("invalid"), false, false},
-		{"empty", MissionStatus(""), false, false},
-		{"unknown", MissionStatus("unknown-status"), false, false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.status.IsValid(); got != tt.wantValid {
-				t.Errorf("IsValid() = %v, want %v", got, tt.wantValid)
-			}
-			if got := tt.status.IsTerminal(); got != tt.wantTerm {
-				t.Errorf("IsTerminal() = %v, want %v", got, tt.wantTerm)
-			}
-		})
-	}
-}
-
 // TestMissionStatusJSON tests JSON marshaling of MissionStatus
 func TestMissionStatusJSON(t *testing.T) {
 	t.Run("marshal valid status", func(t *testing.T) {

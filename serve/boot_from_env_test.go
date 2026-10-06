@@ -69,45 +69,6 @@ func TestNoEnvStillFailsLoudly(t *testing.T) {
 	}
 }
 
-// TestExplicitOptionsWinOverTheEnvironment. Reading the environment by default
-// must not take the wheel from a caller who said otherwise in code.
-func TestExplicitOptionsWinOverTheEnvironment(t *testing.T) {
-	t.Setenv("GIBSON_URL", "https://from-the-env.example.com")
-	t.Setenv("GIBSON_BOOTSTRAP_TOKEN", "env-token")
-
-	cfg := DefaultConfig()
-	for _, opt := range []Option{
-		WithCapabilityGrant("https://from-the-code.example.com"),
-		WithBootstrapToken("code-token"),
-	} {
-		opt(cfg)
-	}
-	if cfg.PlatformURL != "https://from-the-code.example.com" {
-		t.Errorf("PlatformURL = %q; an explicit option must win", cfg.PlatformURL)
-	}
-	if cfg.BootstrapToken != "code-token" {
-		t.Errorf("BootstrapToken = %q; an explicit option must win", cfg.BootstrapToken)
-	}
-}
-
-// TestWithCapabilityGrantFromEnvIsNowRedundant. The option is deprecated, not
-// deleted: it is exported API and removing it would break compilation. It has
-// to stay harmless, which means producing the same config the default already
-// produces.
-func TestWithCapabilityGrantFromEnvIsNowRedundant(t *testing.T) {
-	t.Setenv("GIBSON_URL", "https://platform.example.com")
-	t.Setenv("GIBSON_BOOTSTRAP_TOKEN", "one-time-token")
-	t.Setenv("GIBSON_HOST_KEY_PATH", "/tmp/k/host_key.json")
-
-	withOption := DefaultConfig()
-	WithCapabilityGrantFromEnv()(withOption)
-	without := DefaultConfig()
-
-	if *withOption != *without {
-		t.Errorf("the option changes the config:\n with: %+v\n plain: %+v", *withOption, *without)
-	}
-}
-
 // TestTheEnvNamesAreTheOnesPluginServeReads. plugin.Serve reads GIBSON_URL
 // directly, and capabilitygrant.ResolveBootstrap reads GIBSON_BOOTSTRAP_TOKEN.
 // Three entry points reading three spellings of the same idea is how they came

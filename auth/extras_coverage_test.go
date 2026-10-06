@@ -6,7 +6,6 @@ package auth
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -43,29 +42,6 @@ func TestInitiatorUserContext(t *testing.T) {
 	assert.Equal(t, "user-2", got)
 }
 
-func TestExecutorUserContext(t *testing.T) {
-	ctx := context.Background()
-
-	_, ok := ExecutorUserFromContext(ctx)
-	assert.False(t, ok)
-	assert.Equal(t, ctx, ContextWithExecutorUser(ctx, ""))
-
-	ctx = ContextWithExecutorUser(ctx, "user-3")
-	got, ok := ExecutorUserFromContext(ctx)
-	assert.True(t, ok)
-	assert.Equal(t, "user-3", got)
-}
-
-func TestComponentScopeContext(t *testing.T) {
-	ctx := context.Background()
-
-	assert.Empty(t, ComponentScopeFromContext(ctx))
-	assert.Equal(t, ctx, ContextWithComponentScope(ctx, ""))
-
-	ctx = ContextWithComponentScope(ctx, "component:agent-abc")
-	assert.Equal(t, "component:agent-abc", ComponentScopeFromContext(ctx))
-}
-
 func TestTenantStringContextHelpers(t *testing.T) {
 	ctx := context.Background()
 
@@ -81,24 +57,4 @@ func TestTenantStringContextHelpers(t *testing.T) {
 
 	ctx3 := ContextWithTenantString(context.Background(), "")
 	assert.Empty(t, TenantStringFromContext(ctx3))
-}
-
-func TestIdentity_IsZeroAndLogValue(t *testing.T) {
-	var zero Identity
-	assert.True(t, zero.IsZero())
-	assert.NotNil(t, zero.LogValue())
-
-	populated := Identity{
-		Subject:  "svc-account",
-		Issuer:   "https://issuer.example",
-		Tenant:   MustNewTenantID("acme"),
-		IssuedAt: time.Unix(1700000000, 0),
-	}
-	assert.False(t, populated.IsZero())
-	assert.NotNil(t, populated.LogValue())
-}
-
-func TestTenantID_LogValue(t *testing.T) {
-	tid := MustNewTenantID("acme")
-	assert.Equal(t, "acme", tid.LogValue())
 }

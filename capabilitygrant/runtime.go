@@ -9,8 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"google.golang.org/grpc/credentials"
 )
@@ -53,26 +51,6 @@ func (rc RuntimeCredential) Valid() error {
 	return nil
 }
 
-// RuntimeCredential extracts the runtime signing material from a Client after a
-// successful Register. Returns an error if registration has not completed.
-func (c *Client) RuntimeCredential() (RuntimeCredential, error) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	if c.agentID == "" || c.componentScope == "" || c.agentKey == nil {
-		return RuntimeCredential{}, errors.New("capabilitygrant: RuntimeCredential: client not registered (call Register first)")
-	}
-	return RuntimeCredential{
-		HostID:         c.hostID,
-		AgentID:        c.agentID,
-		ComponentScope: c.componentScope,
-		AgentKeySeed:   c.agentKey.Seed(),
-	}, nil
-}
-
-// Encode serialises the credential to bytes (JSON). Suitable for an env-var or
-// secret transport after base64-wrapping by the caller.
-func (rc RuntimeCredential) Encode() ([]byte, error) { return json.Marshal(rc) }
-
 // DecodeRuntimeCredential parses bytes produced by Encode.
 func DecodeRuntimeCredential(data []byte) (RuntimeCredential, error) {
 	var rc RuntimeCredential
@@ -93,61 +71,6 @@ func DecodeRuntimeCredentialBase64(s string) (RuntimeCredential, error) {
 		}
 	}
 	return DecodeRuntimeCredential(dec)
-}
-
-// SaveRuntimeCredential writes rc to path as JSON with 0600 permissions,
-// atomically (temp file + rename). The parent directory is created if absent.
-func SaveRuntimeCredential(path string, rc RuntimeCredential) error {
-	if err := rc.Valid(); err != nil {
-		return err
-	}
-	data, err := json.Marshal(rc)
-	if err != nil {
-		return fmt.Errorf("capabilitygrant: marshal RuntimeCredential: %w", err)
-	}
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0700); err != nil {
-		return fmt.Errorf("capabilitygrant: create runtime-credential dir: %w", err)
-	}
-	tmp, err := os.CreateTemp(dir, ".runtime-cred-*.tmp")
-	if err != nil {
-		return fmt.Errorf("capabilitygrant: create temp runtime-credential: %w", err)
-	}
-	tmpName := tmp.Name()
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		os.Remove(tmpName)
-		return fmt.Errorf("capabilitygrant: write runtime-credential: %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		os.Remove(tmpName)
-		return fmt.Errorf("capabilitygrant: close runtime-credential temp: %w", err)
-	}
-	if err := os.Chmod(tmpName, 0600); err != nil {
-		os.Remove(tmpName)
-		return fmt.Errorf("capabilitygrant: chmod runtime-credential: %w", err)
-	}
-	if err := os.Rename(tmpName, path); err != nil {
-		os.Remove(tmpName)
-		return fmt.Errorf("capabilitygrant: rename runtime-credential into place: %w", err)
-	}
-	return nil
-}
-
-// LoadRuntimeCredential reads a credential written by SaveRuntimeCredential.
-func LoadRuntimeCredential(path string) (RuntimeCredential, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return RuntimeCredential{}, fmt.Errorf("capabilitygrant: read runtime-credential: %w", err)
-	}
-	rc, err := DecodeRuntimeCredential(data)
-	if err != nil {
-		return RuntimeCredential{}, err
-	}
-	if err := rc.Valid(); err != nil {
-		return RuntimeCredential{}, err
-	}
-	return rc, nil
 }
 
 // PerRPCCredentials returns a gRPC credentials.PerRPCCredentials that signs a

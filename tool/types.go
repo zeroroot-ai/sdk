@@ -24,16 +24,3 @@ type Descriptor struct {
 	// OutputMessageType is the fully-qualified proto message type name for output.
 	OutputMessageType string `json:"output_message_type"`
 }
-
-// ToDescriptor converts a Tool to its Descriptor.
-// This extracts the metadata from a Tool without including the execution logic.
-func ToDescriptor(t Tool) Descriptor {
-	return Descriptor{
-		Name:              t.Name(),
-		Version:           t.Version(),
-		Description:       t.Description(),
-		Tags:              t.Tags(),
-		InputMessageType:  t.InputMessageType(),
-		OutputMessageType: t.OutputMessageType(),
-	}
-}

@@ -39,8 +39,6 @@ import (
 
 const (
 	missionPkg     = "gibson.mission.v1"
-	missionRoot    = "gibson.mission.v1.MissionDefinition"
-	missionNode    = "gibson.mission.v1.MissionNode"
 	missionEnumNT  = "gibson.mission.v1.NodeType"
 	mergeStrategyT = "gibson.mission.v1.MergeStrategy"
 )

@@ -21,15 +21,11 @@ import (
 	"github.com/spiffe/go-spiffe/v2/workloadapi"
 	"github.com/zeroroot-ai/sdk/agent"
 	componentpb "github.com/zeroroot-ai/sdk/api/gen/gibson/component/v1"
-	harnesspb "github.com/zeroroot-ai/sdk/api/gen/gibson/harness/v1"
 	typespb "github.com/zeroroot-ai/sdk/api/gen/gibson/types/v1"
-	harnessconst "github.com/zeroroot-ai/sdk/harness"
 	"github.com/zeroroot-ai/sdk/tool"
 	"github.com/zeroroot-ai/sdk/types"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
-	grpcstatus "google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	protolib "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -408,10 +404,6 @@ func servePlatformTool(t tool.Tool, cfg *Config) error {
 		return fmt.Errorf("capability grant bootstrap: %w", err)
 	}
 
-	// Create a CallbackClient for per-work-item authorization checks. A nil
-	// callbackClient disables Authorize calls (dev mode without a daemon).
-	var callbackClient *CallbackClient
-
 	// Connect: SPIFFE mTLS transport upgrade when socket is present; CG TLS otherwise.
 	if useSPIFFETransport(cfg) {
 		slog.Info("upgrading to SPIFFE mTLS transport",
@@ -429,27 +421,6 @@ func servePlatformTool(t tool.Tool, cfg *Config) error {
 		// Wire the SPIFFE conn into the PlatformClient; CG per-RPC creds travel on every call.
 		client.conn = conn
 		client.service = componentpb.NewComponentServiceClient(conn)
-
-		// Callback client: SPIFFE mTLS transport + CG per-RPC for Authorize calls.
-		tlsCreds := grpccredentials.MTLSClientCredentials(source, source, tlsconfig.AuthorizeAny())
-		cc, ccErr := NewCallbackClient(cfg.DaemonAddress,
-			WithCallbackTransportCredentials(tlsCreds),
-			WithCallbackCredentials(cgPerRPC),
-		)
-		if ccErr != nil {
-			slog.Warn("failed to create callback client for tool authz — Authorize calls will be no-op",
-				"tool", t.Name(), "error", ccErr)
-		} else if connErr := cc.Connect(ctx); connErr != nil {
-			slog.Warn("callback client connect failed — Authorize calls will be no-op",
-				"tool", t.Name(), "error", connErr)
-		} else {
-			callbackClient = cc
-			defer func() {
-				if cerr := callbackClient.Close(); cerr != nil {
-					slog.Warn("error closing callback client", "tool", t.Name(), "error", cerr)
-				}
-			}()
-		}
 	} else {
 		slog.Info("connecting to platform", "component", "tool", "name", t.Name(), "platform_url", cfg.PlatformURL)
 		if err := client.connectWithBackoff(ctx); err != nil {
@@ -460,28 +431,6 @@ func servePlatformTool(t tool.Tool, cfg *Config) error {
 				slog.Warn("error closing platform client", "component", "tool", "name", t.Name(), "error", cerr)
 			}
 		}()
-
-		if cfg.PlatformURL != "" {
-			var callbackOpts []CallbackClientOption
-			if ac := client.CapabilityGrantClient(); ac != nil {
-				callbackOpts = append(callbackOpts, WithCallbackCredentials(ac.GRPCPerRPCCredentials()))
-			}
-			cc, ccErr := NewCallbackClient(cfg.PlatformURL, callbackOpts...)
-			if ccErr != nil {
-				slog.Warn("failed to create callback client for tool authz — Authorize calls will be no-op",
-					"tool", t.Name(), "error", ccErr)
-			} else if connErr := cc.Connect(ctx); connErr != nil {
-				slog.Warn("callback client connect failed — Authorize calls will be no-op",
-					"tool", t.Name(), "error", connErr)
-			} else {
-				callbackClient = cc
-				defer func() {
-					if cerr := callbackClient.Close(); cerr != nil {
-						slog.Warn("error closing callback client", "tool", t.Name(), "error", cerr)
-					}
-				}()
-			}
-		}
 	}
 
 	// Build registration metadata — mirrors what serveToolGRPC populates.
@@ -621,86 +570,19 @@ func servePlatformTool(t tool.Tool, cfg *Config) error {
 			continue
 		}
 
-		go executePlatformToolWork(ctx, client, t, work, cfg.Extractor, cfg.AuthzFailOpen, callbackClient)
+		go executePlatformToolWork(ctx, client, t, work, cfg.Extractor)
 	}
-}
-
-// toolCallbackAuthorizer is a minimal harnessconst.Authorizer backed by a
-// CallbackClient. One instance is created per work-item execution and carries
-// the verified run_id from the work envelope's AuthzContext.
-type toolCallbackAuthorizer struct {
-	client   *CallbackClient
-	runID    string
-	failOpen bool
-}
-
-func (a *toolCallbackAuthorizer) Authorize(ctx context.Context, action, resource string) error {
-	if a.client == nil || !a.client.IsConnected() {
-		// No connection — dev mode or startup race; allow (matches CallbackHarness dev-mode behaviour).
-		return nil
-	}
-	if a.runID == "" {
-		return nil
-	}
-
-	req := &harnesspb.AuthorizeRequest{
-		RunId:    a.runID,
-		Action:   action,
-		Resource: resource,
-	}
-	resp, err := a.client.Authorize(ctx, req)
-	if err != nil {
-		st, ok := grpcstatus.FromError(err)
-		if !ok {
-			if a.failOpen {
-				slog.WarnContext(ctx, "tool authz unavailable — proceeding (fail-open)", "action", action, "resource", resource, "error", err)
-				return nil
-			}
-			slog.ErrorContext(ctx, "tool authz unavailable — denying (fail-closed)", "action", action, "resource", resource, "error", err)
-			return harnessconst.ErrAuthzServiceUnavailable
-		}
-		switch st.Code() {
-		case codes.Unimplemented:
-			slog.Debug("daemon does not support Authorize RPC; defaulting to allow", "action", action, "resource", resource)
-			return nil
-		case codes.Unavailable, codes.DeadlineExceeded:
-			if a.failOpen {
-				slog.WarnContext(ctx, "tool authz unavailable — proceeding (fail-open)", "action", action, "resource", resource)
-				return nil
-			}
-			slog.ErrorContext(ctx, "tool authz unavailable — denying (fail-closed)", "action", action, "resource", resource)
-			return harnessconst.ErrAuthzServiceUnavailable
-		case codes.NotFound, codes.FailedPrecondition:
-			slog.WarnContext(ctx, "tool authz denied", "action", action, "resource", resource, "code", st.Code())
-			return harnessconst.ErrUnauthorized
-		default:
-			return harnessconst.ErrUnauthorized
-		}
-	}
-	if !resp.Allowed {
-		slog.InfoContext(ctx, "tool authz denied by FGA",
-			"action", action, "resource", resource, "run_id", a.runID)
-		return harnessconst.ErrUnauthorized
-	}
-	return nil
 }
 
 // executePlatformToolWork deserializes a work item payload, invokes the tool's
 // ExecuteProto, and submits the result back to the platform.
-//
-// callbackClient is the harness callback connection used to forward Authorize calls
-// to the daemon. When nil, authorization is skipped (dev mode).
-func executePlatformToolWork(ctx context.Context, client *PlatformClient, t tool.Tool, work *WorkItem, extractor EntityExtractor, failOpen bool, callbackClient *CallbackClient) {
+func executePlatformToolWork(ctx context.Context, client *PlatformClient, t tool.Tool, work *WorkItem, extractor EntityExtractor) {
 	slog.Info("tool executing work item",
 		"component", "tool",
 		"name", t.Name(),
 		"work_id", work.WorkID,
 		"work_type", work.WorkType,
 	)
-
-	// run_id is carried in the work item context by the daemon; Capability Grant JWTs
-	// authenticate the transport-level connection, not individual work items.
-	var verifiedRunID string
 
 	inputTypeName := t.InputMessageType()
 	if inputTypeName == "" {
@@ -757,16 +639,6 @@ func executePlatformToolWork(ctx context.Context, client *PlatformClient, t tool
 		toolCtx, toolCancel = context.WithTimeout(ctx, time.Duration(work.TimeoutMs)*time.Millisecond)
 		defer toolCancel()
 	}
-
-	// Inject a per-work-item Authorizer into the context so that ExecuteProto
-	// implementations can call harness.AuthorizerFromContext(ctx).Authorize(...)
-	// for defense-in-depth checks without receiving the full agent.Harness interface.
-	// When callbackClient is nil (dev mode) the toolCallbackAuthorizer no-ops safely.
-	toolCtx = harnessconst.ContextWithAuthorizer(toolCtx, &toolCallbackAuthorizer{
-		client:   callbackClient,
-		runID:    verifiedRunID,
-		failOpen: failOpen,
-	})
 
 	protoResp, err := t.ExecuteProto(toolCtx, protoReq)
 	if err != nil {

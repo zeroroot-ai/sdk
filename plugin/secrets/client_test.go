@@ -5,6 +5,7 @@ package secrets
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -231,34 +232,22 @@ func TestClient_MarkRevoked_PersistsAcrossInvalidate(t *testing.T) {
 		"revoked flag must persist after Invalidate")
 }
 
-func TestClient_WithCacheFalse_AlwaysCallsRPC(t *testing.T) {
-	calls := 0
-	fn := func(_ context.Context, _ string) ([]byte, error) {
-		calls++
-		return []byte("v"), nil
-	}
-	cl := New(fn, CacheConfig{})
-
-	for range 3 {
-		_, err := cl.Resolve(context.Background(), "cred:key", WithCache(false))
-		require.NoError(t, err)
-	}
-	assert.Equal(t, 3, calls, "WithCache(false) must invoke RPC every time")
-}
+// errUnavailable stands in for any error the GetCredential RPC returns.
+var errUnavailable = errors.New("credential unavailable")
 
 func TestClient_RPCError_NotCached(t *testing.T) {
 	callCount := 0
 	fn := func(_ context.Context, _ string) ([]byte, error) {
 		callCount++
 		if callCount == 1 {
-			return nil, ErrNotFound
+			return nil, errUnavailable
 		}
 		return []byte("found"), nil
 	}
 	cl := New(fn, CacheConfig{})
 
 	_, err := cl.Resolve(context.Background(), "cred:key")
-	require.ErrorIs(t, err, ErrNotFound)
+	require.ErrorIs(t, err, errUnavailable)
 
 	// Second call must not get a cached negative; should call RPC again.
 	v, err := cl.Resolve(context.Background(), "cred:key")

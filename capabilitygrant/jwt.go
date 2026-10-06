@@ -72,9 +72,6 @@ func AgentKeyFromSeed(seed []byte) (*AgentKey, error) {
 	}, nil
 }
 
-// Seed returns the 32-byte Ed25519 seed for persistence (ADR-0045 lifecycle A).
-func (k *AgentKey) Seed() []byte { return k.PrivateKey.Seed() }
-
 // PublicKeyJWK returns the agent's public key as a public-only OKP JWK.
 // Submit this to the platform during registration.
 func (k *AgentKey) PublicKeyJWK() json.RawMessage {

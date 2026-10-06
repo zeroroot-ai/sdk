@@ -4,7 +4,6 @@
 package graphrag
 
 import (
-	"errors"
 	"time"
 )
 
@@ -13,10 +12,6 @@ import (
 type GraphNode struct {
 	// ID is the unique node identifier. Auto-generated if empty.
 	ID string `json:"id"`
-
-	// Type is the custom node type (e.g., "AttackAttempt", "Conversation").
-	// Required field.
-	Type string `json:"type"`
 
 	// Properties contains arbitrary key-value properties for the node.
 	Properties map[string]any `json:"properties,omitempty"`
@@ -35,54 +30,4 @@ type GraphNode struct {
 
 	// UpdatedAt is the timestamp when the node was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
-}
-
-// NewGraphNode creates a new GraphNode with the specified type and sensible defaults.
-// The timestamps are set to the current time, and Properties map is initialized.
-func NewGraphNode(nodeType string) *GraphNode {
-	now := time.Now()
-	return &GraphNode{
-		Type:       nodeType,
-		Properties: make(map[string]any),
-		CreatedAt:  now,
-		UpdatedAt:  now,
-	}
-}
-
-// WithID sets the node ID and returns the node for method chaining.
-func (n *GraphNode) WithID(id string) *GraphNode {
-	n.ID = id
-	return n
-}
-
-// WithProperty sets a single property and returns the node for method chaining.
-// If the Properties map is nil, it will be initialized.
-func (n *GraphNode) WithProperty(key string, value any) *GraphNode {
-	if n.Properties == nil {
-		n.Properties = make(map[string]any)
-	}
-	n.Properties[key] = value
-	return n
-}
-
-// WithProperties sets multiple properties and returns the node for method chaining.
-// This replaces the entire Properties map.
-func (n *GraphNode) WithProperties(props map[string]any) *GraphNode {
-	n.Properties = props
-	return n
-}
-
-// WithContent sets the content field and returns the node for method chaining.
-func (n *GraphNode) WithContent(content string) *GraphNode {
-	n.Content = content
-	return n
-}
-
-// Validate checks that the node has all required fields set correctly.
-// Returns an error if Type is empty.
-func (n *GraphNode) Validate() error {
-	if n.Type == "" {
-		return errors.New("node type is required")
-	}
-	return nil
 }

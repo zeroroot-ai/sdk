@@ -109,28 +109,6 @@ func TestIdentityFromMetadata_BadIssuedAt(t *testing.T) {
 	}
 }
 
-func TestIdentityToMetadata_RoundTrip(t *testing.T) {
-	// Use time.Now() truncated to second precision so the round-trip
-	// passes the freshness window check.
-	now := time.Now().UTC().Truncate(time.Second)
-	id := Identity{
-		Subject:        "svc-acct-1",
-		Issuer:         IssuerOIDC,
-		CredentialType: CredentialClientCredentials,
-		Tenant:         MustNewTenantID("bigcorp"),
-		IssuedAt:       now,
-	}
-	md := metadata.MD{}
-	IdentityToMetadata(md, id)
-	got, err := IdentityFromMetadata(md)
-	if err != nil {
-		t.Fatalf("expected ok on round-trip, got %v", err)
-	}
-	if got != id {
-		t.Fatalf("round-trip mismatch:\n  got %+v\n  want %+v", got, id)
-	}
-}
-
 func TestIdentityFromMetadata_NoHMAC(t *testing.T) {
 	// Documents that the parser does NOT require any HMAC/signature
 	// header. If a future commit adds HMAC enforcement (regressing

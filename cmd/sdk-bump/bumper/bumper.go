@@ -29,12 +29,8 @@ type Result struct {
 	Consumer string
 	// Branch is the branch created in the consumer repo.
 	Branch string
-	// PRNumber is the GitHub PR number opened (0 if dry-run or error).
-	PRNumber int
 	// PRURL is the URL of the opened PR.
 	PRURL string
-	// Diff is the output of `git diff HEAD` in dry-run mode.
-	Diff string
 	// Log collects stdout/stderr from all steps.
 	Log bytes.Buffer
 	// Err is non-nil if any step failed.
@@ -153,7 +149,6 @@ func Bump(ctx context.Context, spec ConsumerSpec, version string, opts Options, 
 	var diffOutput string
 	diffOut, _ := runner(ctx, repoDir, "git", "diff", "HEAD")
 	diffOutput = string(diffOut)
-	res.Diff = diffOutput
 
 	// 8. Commit.
 	commitMsg := "chore: bump SDK to " + version

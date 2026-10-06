@@ -49,42 +49,6 @@ func probeToken(t *testing.T) string {
 	return "bst" + "_" + "PROBE" + "_" + hex.EncodeToString(raw)
 }
 
-// TestSavedCredentialFilesAreNotWorldReadable is acceptance criterion 5. A
-// world-readable runtime credential is "the equivalent of the agent key" by
-// runtime.go's own comment, so the mode is the whole protection.
-func TestSavedCredentialFilesAreNotWorldReadable(t *testing.T) {
-	dir := t.TempDir()
-
-	key, err := GenerateHostKey()
-	if err != nil {
-		t.Fatalf("GenerateHostKey: %v", err)
-	}
-	keyPath := filepath.Join(dir, "host.jwk")
-	if err := SaveHostKey(key, keyPath); err != nil {
-		t.Fatalf("SaveHostKey: %v", err)
-	}
-
-	rc := RuntimeCredential{HostID: "h-1", AgentID: "a-1", ComponentScope: "tool:probe", AgentKeySeed: make([]byte, 32)}
-	rcPath := filepath.Join(dir, "runtime.json")
-	if err := SaveRuntimeCredential(rcPath, rc); err != nil {
-		t.Fatalf("SaveRuntimeCredential: %v", err)
-	}
-
-	for _, p := range []string{keyPath, rcPath} {
-		fi, err := os.Stat(p)
-		if err != nil {
-			t.Fatalf("stat %s: %v", p, err)
-		}
-		mode := fi.Mode().Perm()
-		if mode&0o077 != 0 {
-			t.Errorf("%s has mode %04o; group or other can read a private credential", filepath.Base(p), mode)
-		}
-		if mode != 0o600 {
-			t.Errorf("%s has mode %04o, want 0600", filepath.Base(p), mode)
-		}
-	}
-}
-
 // TestSaveHostKeyOverwriteStaysRestrictive: the atomic-rename path chmods a temp
 // file and renames over the target. If a pre-existing target were widened, or if
 // the rename preserved the old mode, a second save could leave a readable file.
@@ -115,57 +79,6 @@ func TestSaveHostKeyOverwriteStaysRestrictive(t *testing.T) {
 	}
 	if fi.Mode().Perm() != 0o600 {
 		t.Errorf("after overwriting a 0644 file the mode is %04o, want 0600", fi.Mode().Perm())
-	}
-}
-
-// TestTheBootstrapTokenNeverReachesAPersistedFile is acceptance criterion 4,
-// file half. The token is one-time and the credential files outlive the boot that
-// consumed it, so a token on disk is a credential that cannot be rotated by using
-// it.
-func TestTheBootstrapTokenNeverReachesAPersistedFile(t *testing.T) {
-	dir := t.TempDir()
-	probe := probeToken(t)
-
-	key, err := GenerateHostKey()
-	if err != nil {
-		t.Fatalf("GenerateHostKey: %v", err)
-	}
-	if err := SaveHostKey(key, filepath.Join(dir, "host.jwk")); err != nil {
-		t.Fatalf("SaveHostKey: %v", err)
-	}
-	// A runtime credential built in the shape the handshake produces, with the
-	// probe token present in the surrounding config rather than in the struct:
-	// the point is that nothing copies it across.
-	rc := RuntimeCredential{HostID: "h-1", AgentID: "a-1", ComponentScope: "tool:probe", AgentKeySeed: make([]byte, 32)}
-	if err := SaveRuntimeCredential(filepath.Join(dir, "runtime.json"), rc); err != nil {
-		t.Fatalf("SaveRuntimeCredential: %v", err)
-	}
-
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(entries) == 0 {
-		t.Fatal("no credential files were written, so this test would measure nothing")
-	}
-	for _, e := range entries {
-		// The path is a t.TempDir() entry this test wrote moments ago; no caller
-		// value reaches it.
-		//nolint:gosec // G304: path is from os.ReadDir of this test's own temp dir.
-		b, err := os.ReadFile(filepath.Join(dir, e.Name()))
-		if err != nil {
-			t.Fatalf("read %s: %v", e.Name(), err)
-		}
-		if strings.Contains(string(b), probe) {
-			t.Errorf("%s contains the bootstrap token", e.Name())
-		}
-		// And no field named like a bootstrap credential, which would invite a
-		// future writer to populate it.
-		for _, bad := range []string{"bootstrap_token", "bootstrapToken", "BootstrapToken"} {
-			if strings.Contains(string(b), bad) {
-				t.Errorf("%s has a %q field; a one-time token must have nowhere to be persisted", e.Name(), bad)
-			}
-		}
 	}
 }
 

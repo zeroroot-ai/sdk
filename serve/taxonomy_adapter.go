@@ -4,9 +4,6 @@
 package serve
 
 import (
-	"encoding/json"
-	"log"
-
 	harnesspb "github.com/zeroroot-ai/sdk/api/gen/gibson/harness/v1"
 	"github.com/zeroroot-ai/sdk/graphrag"
 )
@@ -31,32 +28,14 @@ type TaxonomyAdapter struct {
 
 // targetTypeInfo holds target type metadata (internal to adapter).
 type targetTypeInfo struct {
-	ID             string
-	Type           string
-	Name           string
-	Category       string
-	Description    string
-	RequiredFields []string
-	OptionalFields []string
 }
 
 // techniqueTypeInfo holds technique type metadata (internal to adapter).
 type techniqueTypeInfo struct {
-	ID              string
-	Type            string
-	Name            string
-	Category        string
-	Description     string
-	MITREIDs        []string
-	DefaultSeverity string
 }
 
 // capabilityInfo holds capability metadata (internal to adapter).
 type capabilityInfo struct {
-	ID             string
-	Name           string
-	Description    string
-	TechniqueTypes []string
 }
 
 // NewTaxonomyAdapter creates a TaxonomyAdapter from a proto GetTaxonomySchemaResponse.
@@ -133,38 +112,17 @@ func NewTaxonomyAdapter(resp *harnesspb.GetTaxonomySchemaResponse) *TaxonomyAdap
 
 	// Convert target types
 	for _, tt := range resp.TargetTypes {
-		a.targetTypes[tt.Type] = &targetTypeInfo{
-			ID:             tt.Id,
-			Type:           tt.Type,
-			Name:           tt.Name,
-			Category:       tt.Category,
-			Description:    tt.Description,
-			RequiredFields: tt.RequiredFields,
-			OptionalFields: tt.OptionalFields,
-		}
+		a.targetTypes[tt.Type] = &targetTypeInfo{}
 	}
 
 	// Convert technique types
 	for _, tt := range resp.TechniqueTypes {
-		a.techniqueTypes[tt.Type] = &techniqueTypeInfo{
-			ID:              tt.Id,
-			Type:            tt.Type,
-			Name:            tt.Name,
-			Category:        tt.Category,
-			Description:     tt.Description,
-			MITREIDs:        tt.MitreIds,
-			DefaultSeverity: tt.DefaultSeverity,
-		}
+		a.techniqueTypes[tt.Type] = &techniqueTypeInfo{}
 	}
 
 	// Convert capabilities
 	for _, c := range resp.Capabilities {
-		a.capabilities[c.Id] = &capabilityInfo{
-			ID:             c.Id,
-			Name:           c.Name,
-			Description:    c.Description,
-			TechniqueTypes: c.TechniqueTypes,
-		}
+		a.capabilities[c.Id] = &capabilityInfo{}
 	}
 
 	return a
@@ -177,13 +135,8 @@ func convertProtoProperties(props []*harnesspb.TaxonomyProperty) []graphrag.Prop
 	}
 
 	result := make([]graphrag.PropertyInfo, len(props))
-	for i, p := range props {
-		result[i] = graphrag.PropertyInfo{
-			Name:        p.Name,
-			Type:        p.Type,
-			Required:    p.Required,
-			Description: p.Description,
-		}
+	for i := range props {
+		result[i] = graphrag.PropertyInfo{}
 	}
 	return result
 }
@@ -195,38 +148,6 @@ func convertProtoProperties(props []*harnesspb.TaxonomyProperty) []graphrag.Prop
 // Version returns the taxonomy version string.
 func (a *TaxonomyAdapter) Version() string {
 	return a.version
-}
-
-// IsCanonicalNodeType checks if a node type is in the canonical taxonomy.
-func (a *TaxonomyAdapter) IsCanonicalNodeType(typeName string) bool {
-	_, ok := a.nodeTypes[typeName]
-	return ok
-}
-
-// IsCanonicalRelationType checks if a relationship type is in the canonical taxonomy.
-func (a *TaxonomyAdapter) IsCanonicalRelationType(typeName string) bool {
-	_, ok := a.relationshipTypes[typeName]
-	return ok
-}
-
-// ValidateNodeType checks if a node type string is valid.
-// Returns true if valid. Logs a warning if the type is not canonical but doesn't fail.
-func (a *TaxonomyAdapter) ValidateNodeType(typeName string) bool {
-	if !a.IsCanonicalNodeType(typeName) {
-		log.Printf("WARNING: Node type '%s' is not in the canonical taxonomy", typeName)
-		return false
-	}
-	return true
-}
-
-// ValidateRelationType checks if a relationship type string is valid.
-// Returns true if valid. Logs a warning if the type is not canonical but doesn't fail.
-func (a *TaxonomyAdapter) ValidateRelationType(typeName string) bool {
-	if !a.IsCanonicalRelationType(typeName) {
-		log.Printf("WARNING: Relationship type '%s' is not in the canonical taxonomy", typeName)
-		return false
-	}
-	return true
 }
 
 // ============================================================================
@@ -344,66 +265,6 @@ func (a *TaxonomyAdapter) TechniqueInfo(techniqueID string) *graphrag.TechniqueI
 // ============================================================================
 // Additional Methods (not part of interface)
 // ============================================================================
-
-// GetTargetType retrieves a target type by its type string.
-func (a *TaxonomyAdapter) GetTargetType(typeName string) (*targetTypeInfo, bool) {
-	info, ok := a.targetTypes[typeName]
-	return info, ok
-}
-
-// GetTechniqueType retrieves a technique type by its type string.
-func (a *TaxonomyAdapter) GetTechniqueType(typeName string) (*techniqueTypeInfo, bool) {
-	info, ok := a.techniqueTypes[typeName]
-	return info, ok
-}
-
-// GetCapability retrieves a capability by its ID.
-func (a *TaxonomyAdapter) GetCapability(id string) (*capabilityInfo, bool) {
-	info, ok := a.capabilities[id]
-	return info, ok
-}
-
-// ToJSON returns a JSON-serializable representation of the taxonomy.
-// This is useful for debugging or for including in agent prompts.
-func (a *TaxonomyAdapter) ToJSON() map[string]any {
-	return map[string]any{
-		"version":            a.version,
-		"node_types":         a.nodeTypesList,
-		"relationship_types": a.relationshipTypesList,
-		"technique_ids":      a.techniqueIDsList,
-	}
-}
-
-// ToJSONString returns the taxonomy as a JSON string.
-func (a *TaxonomyAdapter) ToJSONString() string {
-	data, err := json.MarshalIndent(a.ToJSON(), "", "  ")
-	if err != nil {
-		return "{}"
-	}
-	return string(data)
-}
-
-// ExtensionNames returns names of all registered extensions.
-// TaxonomyAdapter doesn't track extensions, so this returns an empty slice.
-func (a *TaxonomyAdapter) ExtensionNames() []string {
-	return []string{}
-}
-
-// ExtensionInfo returns full extension definition.
-// TaxonomyAdapter doesn't track extensions, so this always returns nil.
-func (a *TaxonomyAdapter) ExtensionInfo(name string) *graphrag.TaxonomyExtension {
-	return nil
-}
-
-// NodeTypeSource returns the source of a node type.
-// TaxonomyAdapter only has core types, so it returns "core" for recognized types
-// or "unknown" for unrecognized types.
-func (a *TaxonomyAdapter) NodeTypeSource(nodeType string) string {
-	if _, exists := a.nodeTypes[nodeType]; exists {
-		return "core"
-	}
-	return "unknown"
-}
 
 // Verify TaxonomyAdapter implements graphrag.TaxonomyIntrospector
 var _ graphrag.TaxonomyIntrospector = (*TaxonomyAdapter)(nil)

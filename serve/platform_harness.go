@@ -50,9 +50,6 @@ type PlatformHarness struct {
 
 	// tokenTracker accumulates token usage from Complete/CompleteWithTools calls.
 	tokenTracker *CallbackTokenTracker
-
-	// missionExecCtx holds run-history metadata populated from the work item context.
-	missionExecCtx types.MissionExecutionContext
 }
 
 // NewPlatformHarness constructs a PlatformHarness for a polling work item.
@@ -802,7 +799,6 @@ func (h *PlatformHarness) ReportStepHints(ctx context.Context, hints *planning.S
 // from the work item's "mission_execution_context_json" context key. This is
 // called by the platform serve loop after constructing the harness.
 func (h *PlatformHarness) SetMissionExecutionContext(ctx types.MissionExecutionContext) {
-	h.missionExecCtx = ctx
 }
 
 // ============================================================================

@@ -107,18 +107,3 @@ type Identity struct {
 func (i Identity) IsZero() bool {
 	return i.Subject == "" && i.Issuer == "" && i.Tenant.IsZero() && i.IssuedAt.IsZero()
 }
-
-// LogValue implements slog.LogValuer so structured log records embed an
-// Identity as a small object rather than the default reflection-based
-// rendering. The output excludes any field that could be considered
-// sensitive (none today, but future fields like token JTI would be
-// excluded here).
-func (i Identity) LogValue() interface{} {
-	return struct {
-		Subject        string
-		Issuer         Issuer
-		CredentialType CredentialType
-		Tenant         TenantID
-		IssuedAt       time.Time
-	}{i.Subject, i.Issuer, i.CredentialType, i.Tenant, i.IssuedAt}
-}

@@ -41,8 +41,7 @@ var ErrNoSecretsClient = errors.New("plugin: no secrets client in context; " +
 // the access, and the SDK keeps no allow-list. A plugin that needs a secret to
 // start calls ResolveSecret in its OnStart hook and returns the error, so
 // [Serve] fails at boot with the secret named. Resolved values are cached
-// in-process with a default 60s TTL; pass [secrets.WithCache](false) to force a
-// fresh fetch.
+// in-process with a default 60s TTL.
 //
 // ResolveSecret returns [ErrNoSecretsClient] when called outside a Serve
 // handler or lifecycle-hook context.
@@ -52,13 +51,4 @@ func ResolveSecret(ctx context.Context, name string, opts ...secrets.Option) ([]
 		return nil, ErrNoSecretsClient
 	}
 	return c.Resolve(ctx, name, opts...)
-}
-
-// SecretsFromContext returns the broker-backed secrets [secrets.Client] that
-// [Serve] injected into ctx. Most plugins should call [ResolveSecret] instead;
-// SecretsFromContext is for callers that need the client handle directly (for
-// example to invalidate a cache entry). The second return value is false when
-// ctx carries no client.
-func SecretsFromContext(ctx context.Context) (secrets.Client, bool) {
-	return secrets.FromContext(ctx)
 }
