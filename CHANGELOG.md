@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.201.0](https://github.com/zeroroot-ai/sdk/compare/v0.200.0...v0.201.0) (2026-10-06)
+
+
+### Features
+
+* **component:** an agent enrolls a component that it produced ([#259](https://github.com/zeroroot-ai/sdk/issues/259)) ([6237608](https://github.com/zeroroot-ai/sdk/commit/6237608c98c62414d9825cb8ecbb1c58f101d94b))
+
 ## [0.200.0](https://github.com/zeroroot-ai/sdk/compare/v0.199.0...v0.200.0) (2026-10-06)
 
 
