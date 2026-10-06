@@ -33,6 +33,7 @@ gibson.component.v1.ComponentService/CreateMission
 gibson.component.v1.ComponentService/DelegateToAgent
 gibson.component.v1.ComponentService/DisablePlugin
 gibson.component.v1.ComponentService/EnablePlugin
+gibson.component.v1.ComponentService/EnrollComponent
 gibson.component.v1.ComponentService/FindSimilarAttacks
 gibson.component.v1.ComponentService/FindSimilarFindings
 gibson.component.v1.ComponentService/GetAttackChains

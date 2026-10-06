@@ -263,6 +263,22 @@ service ComponentService {
       };
     }
 
+    // EnrollComponent enrolls a component that the calling agent produced
+    // (gibson#33). The new component gets its own identity in the tenant of
+    // the caller and a short-lived bootstrap token for that identity only.
+    // The person who owns the calling agent owns the new component. The
+    // platform assigns its trust: a produced component is never trusted, so
+    // a catalog name is refused. A quota for each tenant bounds how many
+    // components agents enroll. Each enrollment writes an audit record.
+    rpc EnrollComponent(EnrollComponentRequest) returns (EnrollComponentResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_execute"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
     // =========================================================================
     // Harness Proxy — LLM (extended)
     // =========================================================================
@@ -1035,6 +1051,37 @@ message ListTenantPluginsRequest {}
 message ListTenantPluginsResponse {
     // plugins is the ordered list of plugin access records for the calling tenant.
     repeated PluginAccessProto plugins = 1;
+}
+
+// EnrollComponentRequest describes a component that the calling agent
+// produced. The tenant comes from the identity of the caller, never from the
+// request.
+message EnrollComponentRequest {
+    // kind is "agent", "tool" or "plugin".
+    string kind = 1 [(buf.validate.field).string = { in: ["agent", "tool", "plugin"] }];
+    // name is the component name in the tenant: a lower-case letter, then
+    // lower-case letters, digits and dashes, 3 to 41 characters.
+    string name = 2 [(buf.validate.field).string = { pattern: "^[a-z][a-z0-9-]{2,40}$" }];
+    // version is the version of the artifact, for example "0.1.0".
+    string version = 3 [(buf.validate.field).string = { min_len: 1, max_len: 128 }];
+    // image is the OCI reference of the built artifact, pinned by digest.
+    string image = 4 [(buf.validate.field).string = { min_len: 1, max_len: 1024, pattern: "@sha256:[0-9a-f]{64}$" }];
+    // description says what the component does.
+    string description = 5 [(buf.validate.field).string = { max_len: 1024 }];
+}
+
+// EnrollComponentResponse holds the identity of the new component and its
+// one-time credential.
+message EnrollComponentResponse {
+    // principal_id is the identity of the new component, for example
+    // "tool_principal:<id>".
+    string principal_id = 1;
+    // bootstrap_token is the one-time credential that the new component
+    // exchanges for its host key. It is valid until expires_at and for this
+    // component only. It carries no session capability.
+    string bootstrap_token = 2;
+    // expires_at is the end of the bootstrap token.
+    google.protobuf.Timestamp expires_at = 3;
 }
 
 // PluginAccessProto represents the access record linking a tenant to a specific plugin.
