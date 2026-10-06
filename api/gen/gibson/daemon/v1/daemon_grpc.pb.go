@@ -124,10 +124,12 @@ type DaemonServiceClient interface {
 	DeleteTarget(ctx context.Context, in *DeleteTargetRequest, opts ...grpc.CallOption) (*DeleteTargetResponse, error)
 	// ListMissions returns all missions (past and active).
 	ListMissions(ctx context.Context, in *ListMissionsRequest, opts ...grpc.CallOption) (*ListMissionsResponse, error)
-	// PauseMission pauses a running mission at the next clean checkpoint boundary.
-	// If force is true, pauses immediately without waiting for a clean boundary.
+	// PauseMission pauses a running mission when the current node ends.
+	// If force is true, pauses immediately without waiting for the node to end.
 	PauseMission(ctx context.Context, in *PauseMissionRequest, opts ...grpc.CallOption) (*PauseMissionResponse, error)
-	// ResumeMission resumes a paused mission from its last checkpoint.
+	// ResumeMission resumes a paused mission. The resume continues the same
+	// run. It does not move the run back to a checkpoint: RewindMission does
+	// that, and it starts a new run (ADR-0170).
 	// Returns a stream of mission events as execution continues.
 	ResumeMission(ctx context.Context, in *ResumeMissionRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ResumeMissionResponse], error)
 	// GetMissionHistory returns all runs for a mission name, showing the
@@ -828,10 +830,12 @@ type DaemonServiceServer interface {
 	DeleteTarget(context.Context, *DeleteTargetRequest) (*DeleteTargetResponse, error)
 	// ListMissions returns all missions (past and active).
 	ListMissions(context.Context, *ListMissionsRequest) (*ListMissionsResponse, error)
-	// PauseMission pauses a running mission at the next clean checkpoint boundary.
-	// If force is true, pauses immediately without waiting for a clean boundary.
+	// PauseMission pauses a running mission when the current node ends.
+	// If force is true, pauses immediately without waiting for the node to end.
 	PauseMission(context.Context, *PauseMissionRequest) (*PauseMissionResponse, error)
-	// ResumeMission resumes a paused mission from its last checkpoint.
+	// ResumeMission resumes a paused mission. The resume continues the same
+	// run. It does not move the run back to a checkpoint: RewindMission does
+	// that, and it starts a new run (ADR-0170).
 	// Returns a stream of mission events as execution continues.
 	ResumeMission(*ResumeMissionRequest, grpc.ServerStreamingServer[ResumeMissionResponse]) error
 	// GetMissionHistory returns all runs for a mission name, showing the
