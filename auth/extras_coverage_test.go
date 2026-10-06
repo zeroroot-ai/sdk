@@ -14,6 +14,21 @@ func TestTenantScopedRedisKey(t *testing.T) {
 	assert.Equal(t, "tenant:acme:sessions", TenantScopedRedisKey("acme", "sessions"))
 }
 
+func TestActingUserContext(t *testing.T) {
+	ctx := context.Background()
+
+	_, ok := ActingUserFromContext(ctx)
+	assert.False(t, ok)
+
+	// Empty user ID is a no-op.
+	assert.Equal(t, ctx, ContextWithActingUser(ctx, ""))
+
+	ctx = ContextWithActingUser(ctx, "user-1")
+	got, ok := ActingUserFromContext(ctx)
+	assert.True(t, ok)
+	assert.Equal(t, "user-1", got)
+}
+
 func TestInitiatorUserContext(t *testing.T) {
 	ctx := context.Background()
 

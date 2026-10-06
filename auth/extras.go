@@ -85,6 +85,16 @@ func ActingUserFromContext(ctx context.Context) (string, bool) {
 	return "", false
 }
 
+// ContextWithActingUser stores the acting-user ID on ctx. The daemon sets
+// it from the verified identity of a human caller (gibson), and the
+// readers of ActingUserFromContext attribute work to that person.
+func ContextWithActingUser(ctx context.Context, userID string) context.Context {
+	if userID == "" {
+		return ctx
+	}
+	return context.WithValue(ctx, actingUserKey{}, userID)
+}
+
 // InitiatorUserFromContext returns the user who triggered the mission,
 // plus ok=true when set. Stable across the entire mission span tree
 // — sub-agent delegation, scheduled runs, checkpoint/resume.
