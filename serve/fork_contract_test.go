@@ -254,3 +254,64 @@ func TestCreateMission_ForkNeedsASandboxID(t *testing.T) {
 	require.Error(t, err)
 	require.Empty(t, s.create, "no call is sent")
 }
+
+func TestCallbackClient_ClaimForkErrors(t *testing.T) {
+	_, err := (&CallbackClient{}).ClaimFork(context.Background(), "sbx-fork-1")
+	require.Error(t, err, "a client that is not connected")
+
+	srv := grpc.NewServer()
+	harnesspb.RegisterHarnessCallbackServiceServer(srv, &harnesspb.UnimplementedHarnessCallbackServiceServer{})
+	conn := dialBufconn(t, srv)
+	c := &CallbackClient{conn: conn, client: harnesspb.NewHarnessCallbackServiceClient(conn), connected: true}
+	_, err = c.ClaimFork(context.Background(), "sbx-fork-1")
+	require.Equal(t, codes.Unimplemented, status.Code(errors.Unwrap(err)))
+}
+
+// TestCreateMission_AFailedClaimIsReported proves that a fork that cannot
+// claim its dispatch gets the error of the claim, not the result of the call.
+func TestCreateMission_AFailedClaimIsReported(t *testing.T) {
+	h := &forkHost{name: "sbx-parent"}
+	s := &forkServer{claimAnswer: forkDispatch()}
+	s.duringFork = func() { h.set("sbx-fork-1") }
+	harness := forkHarness(t, s, h)
+	harness.client.client = failingClaims{HarnessCallbackServiceClient: harness.client.client}
+
+	_, err := harness.CreateMission(context.Background(), map[string]any{"name": "m"}, "target-1",
+		&mission.CreateMissionOpts{StartsFromCallerState: true})
+	require.Equal(t, codes.AlreadyExists, status.Code(errors.Unwrap(errors.Unwrap(err))), "got %v", err)
+	var forked *fork.ErrForked
+	require.False(t, errors.As(err, &forked))
+}
+
+// failingClaims refuses each claim, as the daemon refuses a second claim.
+type failingClaims struct {
+	harnesspb.HarnessCallbackServiceClient
+}
+
+func (failingClaims) ClaimFork(context.Context, *harnesspb.ClaimForkRequest, ...grpc.CallOption) (*harnesspb.ClaimForkResponse, error) {
+	return nil, status.Error(codes.AlreadyExists, "claimed before")
+}
+
+// TestCreateMission_AClaimWithNoGrantIsRefused proves that the fork does not
+// go on with a dispatch that has no grant.
+func TestCreateMission_AClaimWithNoGrantIsRefused(t *testing.T) {
+	h := &forkHost{name: "sbx-parent"}
+	s := &forkServer{claimAnswer: &harnesspb.ClaimForkResponse{NodeId: "node-b"}}
+	s.duringFork = func() { h.set("sbx-fork-1") }
+	harness := forkHarness(t, s, h)
+
+	_, err := harness.CreateMission(context.Background(), map[string]any{"name": "m"}, "target-1",
+		&mission.CreateMissionOpts{StartsFromCallerState: true})
+	require.Error(t, err)
+	var forked *fork.ErrForked
+	require.False(t, errors.As(err, &forked))
+	require.Equal(t, "parent-grant", harness.client.token)
+}
+
+func TestWithCallbackForkWatcher(t *testing.T) {
+	w, err := fork.NewWatcherWith(func() (string, error) { return "sbx-parent", nil })
+	require.NoError(t, err)
+	h := &CallbackHarness{}
+	WithCallbackForkWatcher(w)(h)
+	require.Same(t, w, h.forkWatcher)
+}

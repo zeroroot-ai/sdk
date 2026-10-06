@@ -305,3 +305,52 @@ func TestTheInterceptorsSendTheCurrentSandboxID(t *testing.T) {
 		t.Fatalf("a process with no hostname sent %s, want no id", v)
 	}
 }
+
+// TestAnUnreadableHostname covers each path that reads the sandbox id when the
+// hostname cannot be read.
+func TestAnUnreadableHostname(t *testing.T) {
+	broken := &host{err: errors.New("no hostname")}
+	useHost(t, broken)
+
+	if _, err := SandboxID(); err == nil {
+		t.Error("SandboxID() with no hostname returned no error")
+	}
+	if _, err := NewWatcher(); err == nil {
+		t.Error("NewWatcher() with no hostname returned no error")
+	}
+
+	h := &host{name: "sbx-parent"}
+	w, err := NewWatcherWith(h.read)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h.mu.Lock()
+	h.err = errors.New("no hostname")
+	h.mu.Unlock()
+	if _, _, err := w.Forked(); err == nil {
+		t.Error("Forked() with no hostname returned no error")
+	}
+	if _, err := Point(context.Background(), w, &claimer{}); err == nil {
+		t.Error("Point() with no hostname returned no error")
+	}
+}
+
+// TestParkTakesTheDefaults proves that the zero ParkOptions take the default
+// timeout and poll interval: a fork found on the first check returns at once.
+func TestParkTakesTheDefaults(t *testing.T) {
+	h := &host{name: "sbx-parent"}
+	w, _ := NewWatcherWith(h.read)
+	h.set("sbx-fork-3")
+	claim, err := Park(context.Background(), w, &claimer{}, ParkOptions{})
+	if err != nil || claim == nil || claim.SandboxID != "sbx-fork-3" {
+		t.Fatalf("Park with the defaults = %+v, %v; want the claim of sbx-fork-3", claim, err)
+	}
+}
+
+func TestNewWatcherReadsTheHostname(t *testing.T) {
+	useHost(t, &host{name: "sbx-parent"})
+	w, err := NewWatcher()
+	if err != nil || w.Origin() != "sbx-parent" {
+		t.Fatalf("NewWatcher() = %v, %v; want the origin sbx-parent", w, err)
+	}
+}
