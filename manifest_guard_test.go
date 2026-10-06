@@ -110,12 +110,6 @@ var manifestExemptions = []manifestExemption{
 		target: "github.com/zeroroot-ai/sdk/cmd/taxonomy-gen/schema.Taxonomy",
 		reason: "taxonomy.yaml is a codegen input, like a .proto. Its kind is core or extension, and its names are the names of node types, not of a component.",
 	},
-	{
-		rule:   ruleComponentDecode,
-		pkg:    "github.com/zeroroot-ai/sdk/plugin/manifest",
-		target: "github.com/zeroroot-ai/sdk/plugin/manifest.Manifest",
-		reason: "sdk#129 deletes the plugin.yaml parser after dashboard#174 lets a tenant admin grant a plugin secret. Delete this entry in the same change.",
-	},
 }
 
 // manifestFinding is one breach of a rule.
