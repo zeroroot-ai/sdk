@@ -136,6 +136,9 @@ func TestRegistrationAuthReusesTheHostKey(t *testing.T) {
 	c := newFlowClient(t, srv.URL)
 	c.config.BootstrapToken = ""
 	t.Setenv("GIBSON_BOOTSTRAP_TOKEN", "")
+	// A host that checked in before signs a host JWT. A new host needs a
+	// bootstrap credential (TestAFirstCheckInNeedsABootstrapCredential).
+	c.hostKey.FirstCheckIn = false
 	c.SetHTTPClient(srv.Client())
 	if err := c.Discover(context.Background()); err != nil {
 		t.Fatal(err)

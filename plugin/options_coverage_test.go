@@ -26,4 +26,3 @@ func TestWithLifecycle(t *testing.T) {
 	require.NoError(t, c.hooks.OnStart(context.Background()))
 	assert.True(t, called)
 }
-

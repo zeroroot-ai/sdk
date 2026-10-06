@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 // HostKey holds a persistent Ed25519 keypair that identifies a host.
@@ -28,6 +29,12 @@ type HostKey struct {
 	// ID is the RFC 7638 JWK thumbprint computed over the public key.
 	// Use this value as the host identifier when communicating with the platform.
 	ID string
+
+	// FirstCheckIn is true when LoadOrGenerateHostKey generated the key in
+	// this call. Only a first check-in sends the one-time bootstrap token. A
+	// key loaded from disk belongs to a host that checked in before, so it
+	// registers with a host JWT.
+	FirstCheckIn bool
 }
 
 // hostKeyFile is the on-disk JSON representation of a host keypair.
@@ -109,6 +116,11 @@ func SaveHostKey(key *HostKey, path string) error {
 
 // LoadHostKey reads a keypair from a JWK JSON file at path.
 func LoadHostKey(path string) (*HostKey, error) {
+	// The key proves the identity of the host, so a file that the group or
+	// other users can read or write is refused.
+	if info, err := os.Stat(path); err == nil && runtime.GOOS != "windows" && info.Mode().Perm()&0o077 != 0 {
+		return nil, fmt.Errorf("capabilitygrant: the host key file %s has mode %04o; only its owner may read it. Run chmod 600 on it", path, info.Mode().Perm())
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("capabilitygrant: read host key file: %w", err)
@@ -168,6 +180,7 @@ func LoadOrGenerateHostKey(path string) (*HostKey, error) {
 		return nil, err
 	}
 
+	key.FirstCheckIn = true
 	return key, nil
 }
 

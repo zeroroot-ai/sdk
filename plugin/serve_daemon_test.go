@@ -38,6 +38,9 @@ import (
 // returns a minimal document for failure-path tests.
 func fakeCGPlatform(t *testing.T) *httptest.Server {
 	t.Helper()
+	// Each test host is new, and a new host enrolls only with an approved
+	// bootstrap credential.
+	t.Setenv("GIBSON_BOOTSTRAP_TOKEN", "test-bootstrap-token")
 	mux := http.NewServeMux()
 	var baseURL atomic.Value
 
@@ -346,4 +349,28 @@ func TestServe_UngrantedStartupSecret_FailsAtBootNamingTheSecret(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cred:vendor_token")
 	assert.Contains(t, err.Error(), "OnStart hook failed")
+}
+
+// TestServe_ANewHostWithNoBootstrapCredentialIsRefused proves that a plugin
+// on a new host does not enroll with a host-signed first check-in: it needs
+// an approved bootstrap credential.
+func TestServe_ANewHostWithNoBootstrapCredentialIsRefused(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	platform := fakeCGPlatform(t)
+	t.Setenv("GIBSON_BOOTSTRAP_TOKEN", "")
+	t.Setenv("GIBSON_URL", platform.URL)
+	startFakeDaemon(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err := Serve(ctx,
+		WithName("new-host-plugin"),
+		WithVersion("0.1.0"),
+		echoOption(),
+		testHTTPClient(platform.Client()),
+		testHealthAddr(":0"),
+	)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "never checked in")
 }

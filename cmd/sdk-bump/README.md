@@ -16,7 +16,6 @@ sdk-bump --to vX.Y.Z [--dry-run] [--repos repo1,repo2] [--workdir /tmp/sdk-bump]
 | `--workdir` | `/tmp/sdk-bump` | Parent directory for clones |
 | `--json` | false | Emit JSON summary to stdout |
 | `--ci-delay` | 30s | Wait after PR open before polling `gh pr checks`; `0` disables |
-| `--workspace` | `~/Code/zeroroot.ai` | Polyrepo root for local-path drift warnings |
 
 ## Prerequisites
 
