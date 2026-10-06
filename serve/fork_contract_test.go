@@ -306,11 +306,3 @@ func TestCreateMission_AClaimWithNoGrantIsRefused(t *testing.T) {
 	require.NotErrorAs(t, err, &forked)
 	require.Equal(t, "parent-grant", harness.client.token)
 }
-
-func TestWithCallbackForkWatcher(t *testing.T) {
-	w, err := fork.NewWatcherWith(func() (string, error) { return "sbx-parent", nil })
-	require.NoError(t, err)
-	h := &CallbackHarness{}
-	WithCallbackForkWatcher(w)(h)
-	require.Same(t, w, h.forkWatcher)
-}

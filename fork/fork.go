@@ -148,9 +148,6 @@ func NewWatcherWith(read func() (string, error)) (*Watcher, error) {
 	return &Watcher{origin: id, read: read}, nil
 }
 
-// Origin is the sandbox id at the time the watcher was made.
-func (w *Watcher) Origin() string { return w.origin }
-
 // Forked reports whether the process now runs in another sandbox than the one
 // the watcher was made in. It returns the current sandbox id.
 func (w *Watcher) Forked() (sandboxID string, forked bool, err error) {

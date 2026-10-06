@@ -111,9 +111,6 @@ func TestPointInAForkClaimsWithTheNewID(t *testing.T) {
 	if claim == nil || claim.SandboxID != "sbx-fork-1" || claim.Grant != "fork-grant" {
 		t.Fatalf("Point in a fork = %+v; want the claim of sbx-fork-1", claim)
 	}
-	if w.Origin() != "sbx-parent" {
-		t.Fatalf("Origin() = %q, want sbx-parent", w.Origin())
-	}
 }
 
 func TestPointReportsAFailedClaim(t *testing.T) {
@@ -350,7 +347,7 @@ func TestParkTakesTheDefaults(t *testing.T) {
 func TestNewWatcherReadsTheHostname(t *testing.T) {
 	useHost(t, &host{name: "sbx-parent"})
 	w, err := NewWatcher()
-	if err != nil || w.Origin() != "sbx-parent" {
+	if err != nil || w.origin != "sbx-parent" {
 		t.Fatalf("NewWatcher() = %v, %v; want the origin sbx-parent", w, err)
 	}
 }

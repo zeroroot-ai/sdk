@@ -105,13 +105,11 @@ func NewCallbackHarness(client *CallbackClient, opts ...CallbackHarnessOption) *
 		opt(h)
 	}
 
-	if h.forkWatcher == nil {
-		w, err := fork.NewWatcher()
-		if err != nil {
-			h.logger.Warn("cannot read the sandbox id; a mission that forks this process is refused", "error", err)
-		}
-		h.forkWatcher = w
+	w, err := fork.NewWatcher()
+	if err != nil {
+		h.logger.Warn("cannot read the sandbox id; a mission that forks this process is refused", "error", err)
 	}
+	h.forkWatcher = w
 
 	// Fetch taxonomy at startup (non-blocking, with graceful degradation)
 	h.initTaxonomy(context.Background())
