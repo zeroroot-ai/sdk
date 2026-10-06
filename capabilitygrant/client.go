@@ -335,9 +335,14 @@ func (c *Client) buildRegistrationAuth(ctx context.Context, registerURL string) 
 	first := c.hostKey.FirstCheckIn
 	c.mu.RUnlock()
 	if first {
-		if bootstrap, err := ResolveBootstrap(c.config.BootstrapToken); err == nil {
-			return "Bearer " + bootstrap.Token, nil
+		// A new host proves itself only with an approved bootstrap
+		// credential. A host-signed first check-in would trust whoever
+		// calls first.
+		bootstrap, err := ResolveBootstrap(c.config.BootstrapToken)
+		if err != nil {
+			return "", fmt.Errorf("this host has never checked in and has no bootstrap credential: %w", err)
 		}
+		return "Bearer " + bootstrap.Token, nil
 	}
 	hostJWT, err := SignHostJWT(c.hostKey, registerURL)
 	if err != nil {

@@ -88,6 +88,21 @@ func TestTheBootstrapTokenGoesOnlyWithTheFirstCheckIn(t *testing.T) {
 	}
 }
 
+// TestAFirstCheckInNeedsABootstrapCredential proves that a new host with no
+// bootstrap credential is refused before any request. A host-signed first
+// check-in would trust whoever calls first.
+func TestAFirstCheckInNeedsABootstrapCredential(t *testing.T) {
+	t.Setenv("GIBSON_BOOTSTRAP_TOKEN", "")
+	if _, err := ResolveBootstrap(""); err == nil {
+		t.Skip("this host has an in-cluster service account token")
+	}
+	srv, rec := serveRegistration(t)
+	c := registeringClient(t, srv, filepath.Join(t.TempDir(), "host_key.json"), "")
+	err := c.Register(context.Background())
+	require.ErrorContains(t, err, "never checked in")
+	require.Empty(t, rec.seen())
+}
+
 // TestAWideHostKeyFileIsRefused proves that a host key file that the group or
 // other users can read is refused on reuse.
 func TestAWideHostKeyFileIsRefused(t *testing.T) {
