@@ -43,8 +43,7 @@ import (
 // MethodHandler is the low-level, JSON-in/JSON-out dispatch adapter type,
 // aliased from [dispatch.MethodHandler]. Plugin authors do NOT implement it
 // directly — they register typed Go handlers with [WithHandler], which builds
-// the adapter and derives the method schema from the Go types. The alias is
-// exported for the dynamic-discovery path ([DiscoveredMethod.Handler]).
+// the adapter and derives the method schema from the Go types.
 //
 // Handlers MUST NOT include resolved secret values in any returned error string.
 type MethodHandler = dispatch.MethodHandler
@@ -116,13 +115,9 @@ func Serve(ctx context.Context, opts ...Option) error {
 	if err := validateMethods(m, cfg.handlers); err != nil {
 		return fmt.Errorf("plugin.Serve: method validation: %w", err)
 	}
-	if m.Spec.DynamicMethods && cfg.methodSource == nil {
-		return errors.New("plugin.Serve: manifest declares spec.dynamic_methods " +
-			"but no method source is registered; pass WithMethodSource")
-	}
-	if cfg.methodSource != nil && !m.Spec.DynamicMethods {
-		return errors.New("plugin.Serve: WithMethodSource requires " +
-			"spec.dynamic_methods: true in the manifest")
+	if m.Spec.DynamicMethods {
+		return errors.New("plugin.Serve: manifest declares spec.dynamic_methods, " +
+			"which the SDK does not support")
 	}
 
 	// -------------------------------------------------------------------------
@@ -238,45 +233,17 @@ func Serve(ctx context.Context, opts ...Option) error {
 	// Inject the secrets client into the context so that the method source,
 	// the OnStart hook, the method handlers (via the dispatch loop), and the
 	// OnStop hook can resolve declared secrets through plugin.ResolveSecret /
-	// secrets.FromContext. Every context derived from signalCtx below — the
-	// method source call, RunOnStart, the errgroup ctx that feeds disp.Run,
+	// secrets.FromContext. Every context derived from signalCtx below — RunOnStart, the errgroup ctx that feeds disp.Run,
 	// and the health/events goroutines — inherits this value.
 	signalCtx = pluginsecrets.NewContext(signalCtx, secretsClient)
-
-	// Validate and register handlers for any discovered methods.
-	var discovered []DiscoveredMethod
-	if cfg.methodSource != nil {
-		var err error
-		discovered, err = cfg.methodSource(signalCtx)
-		if err != nil {
-			return fmt.Errorf("plugin.Serve: method source: %w", err)
-		}
-		for _, dm := range discovered {
-			if dm.Name == "" {
-				return errors.New("plugin.Serve: method source returned a method with empty name")
-			}
-			if dm.Handler == nil {
-				return fmt.Errorf("plugin.Serve: method source returned method %q with nil handler", dm.Name)
-			}
-			if _, exists := cfg.handlers[dm.Name]; exists {
-				return fmt.Errorf("plugin.Serve: method source returned method %q "+
-					"which collides with an already-registered method", dm.Name)
-			}
-			cfg.handlers[dm.Name] = dm.Handler
-		}
-		slog.Info("plugin: methods discovered",
-			"plugin", m.Metadata.Name,
-			"count", len(discovered),
-		)
-	}
 
 	// Assemble the method set: names (back-compat, RegisterComponentRequest.methods)
 	// plus rich descriptors (method_descriptors) so the connector catalog and
 	// SearchTools can surface per-method descriptions to agents.
-	methodNames, methodDescriptors := buildMethodMetadata(m.Spec.Methods, discovered, cfg.methodSchemas, cfg.methodDescriptions)
+	methodNames, methodDescriptors := buildMethodMetadata(m.Spec.Methods, cfg.methodSchemas, cfg.methodDescriptions)
 	if len(methodNames) == 0 {
-		return errors.New("plugin.Serve: no methods to register; the method " +
-			"source returned an empty set and the manifest declares none")
+		return errors.New("plugin.Serve: no methods to register; " +
+			"the manifest declares none and no handler is registered")
 	}
 
 	// Register as a plugin component. The plugin:* metadata keys are the
@@ -499,12 +466,12 @@ func gracefulShutdown(
 }
 
 // buildMethodMetadata assembles, from the manifest-declared methods and the
-// methods returned by a method source, the parallel name list (back-compat,
+// registered handlers, the parallel name list (back-compat,
 // RegisterComponentRequest.methods) and the rich per-method descriptors
 // (method_descriptors). Descriptions flow through so the connector catalog and
-// SearchTools can surface them; declared methods come first, then discovered.
-func buildMethodMetadata(declared []manifest.MethodDecl, discovered []DiscoveredMethod, schemas map[string]methodSchema, descriptions map[string]string) ([]string, []*componentpb.ComponentMethod) {
-	n := len(declared) + len(discovered)
+// SearchTools can surface them; declared methods come first.
+func buildMethodMetadata(declared []manifest.MethodDecl, schemas map[string]methodSchema, descriptions map[string]string) ([]string, []*componentpb.ComponentMethod) {
+	n := len(declared) + len(descriptions)
 	names := make([]string, 0, n)
 	detailed := make([]*componentpb.ComponentMethod, 0, n)
 	for _, d := range declared {
@@ -545,10 +512,6 @@ func buildMethodMetadata(declared []manifest.MethodDecl, discovered []Discovered
 			cm.InputSchemaJson = s.input
 		}
 		detailed = append(detailed, cm)
-	}
-	for _, dm := range discovered {
-		names = append(names, dm.Name)
-		detailed = append(detailed, &componentpb.ComponentMethod{Name: dm.Name, Description: dm.Description})
 	}
 	return names, detailed
 }

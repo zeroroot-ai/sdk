@@ -45,7 +45,7 @@ func TestWithHandler_DescriptionReachesTheDescriptors(t *testing.T) {
 	}
 
 	// No manifest declarations at all: the registered handler is the only source.
-	names, detailed := buildMethodMetadata(nil, nil, c.methodSchemas, c.methodDescriptions)
+	names, detailed := buildMethodMetadata(nil, c.methodSchemas, c.methodDescriptions)
 	if len(names) != 1 || names[0] != "Echo" {
 		t.Fatalf("names = %v, want [Echo]", names)
 	}
@@ -66,7 +66,7 @@ func TestBuildMethodMetadata_HandlerDescriptionWinsOverManifest(t *testing.T) {
 	declared := []manifest.MethodDecl{{Name: "Echo", Description: "stale manifest text"}}
 	descriptions := map[string]string{"Echo": "the handler's text"}
 
-	_, detailed := buildMethodMetadata(declared, nil, nil, descriptions)
+	_, detailed := buildMethodMetadata(declared, nil, descriptions)
 	if len(detailed) != 1 {
 		t.Fatalf("descriptors = %d, want 1", len(detailed))
 	}
@@ -82,7 +82,7 @@ func TestBuildMethodMetadata_RegisteredOnlyOrderIsStable(t *testing.T) {
 
 	var first []string
 	for i := range 20 {
-		names, _ := buildMethodMetadata(nil, nil, nil, descriptions)
+		names, _ := buildMethodMetadata(nil, nil, descriptions)
 		if first == nil {
 			first = names
 			continue

@@ -265,21 +265,17 @@ spec:
 }
 
 // ----------------------------------------------------------------------------
-// Serve startup validation for method sources
+// Serve startup validation: dynamic methods are not supported
 // ----------------------------------------------------------------------------
 
-func TestServe_DynamicMethodsWithoutSource_ReturnsError(t *testing.T) {
+func TestServe_DynamicMethods_ReturnsError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
 	err := Serve(ctx, WithParsedManifest(dynamicManifest()))
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "WithMethodSource")
+	assert.Contains(t, err.Error(), "spec.dynamic_methods")
 }
-
-// ----------------------------------------------------------------------------
-// Full Serve: discovered methods are registered and invocable end-to-end
-// ----------------------------------------------------------------------------
 
 func TestManifestHashFromPath(t *testing.T) {
 	// Empty path → empty hash (in-memory parsed manifest case).
@@ -301,5 +297,25 @@ func TestManifestHashFromPath(t *testing.T) {
 	want := hex.EncodeToString(sum[:])
 	if got := manifestHashFromPath(p); got != want {
 		t.Errorf("hash mismatch: got %q, want %q", got, want)
+	}
+}
+
+func TestServe_SetecRequiredRefusesOtherRuntimes(t *testing.T) {
+	m := &manifest.Manifest{
+		APIVersion: manifest.APIVersionV1,
+		Kind:       manifest.KindPlugin,
+		Metadata:   manifest.ManifestMetadata{Name: "setec-plugin", Version: "0.1.0"},
+		Spec: manifest.ManifestSpec{
+			WorkloadClass: manifest.WorkloadClassPlugin,
+			Methods:       []manifest.MethodDecl{{Name: "Echo", Description: "echo"}},
+			Policy:        manifest.ManifestPolicy{SetecRequired: true},
+		},
+	}
+	echo := WithHandler("Echo", "echoes", func(_ context.Context, req string) (string, error) { return req, nil })
+	for _, runtime := range []string{"", "pod"} {
+		t.Setenv(envRuntimeKey, runtime)
+		err := Serve(context.Background(), WithParsedManifest(m), echo)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "setec_required")
 	}
 }

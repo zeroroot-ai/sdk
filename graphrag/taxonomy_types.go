@@ -3,10 +3,6 @@
 
 package graphrag
 
-import (
-	"sync"
-)
-
 // TaxonomyIntrospector provides runtime access to taxonomy metadata.
 // This interface allows agents to query the taxonomy schema dynamically.
 type TaxonomyIntrospector interface {
@@ -67,42 +63,6 @@ type TechniqueInfo struct {
 	Description string
 	Taxonomy    string // e.g., "gibson", "mitre"
 	Tactic      string
-}
-
-// Global taxonomy instance
-var (
-	globalTaxonomyMu sync.RWMutex
-	globalTaxonomy   TaxonomyIntrospector
-)
-
-// SetTaxonomy sets the global taxonomy instance.
-func SetTaxonomy(t TaxonomyIntrospector) {
-	globalTaxonomyMu.Lock()
-	defer globalTaxonomyMu.Unlock()
-	globalTaxonomy = t
-}
-
-// TaxonomyExtension contains custom taxonomy definitions contributed by an agent or plugin.
-type TaxonomyExtension struct {
-	NodeTypes     []NodeTypeDefinition
-	Relationships []RelationshipDefinition
-}
-
-// NodeTypeDefinition defines a custom node type.
-type NodeTypeDefinition struct {
-	Name        string
-	Category    string
-	Description string
-	Properties  []PropertyInfo
-}
-
-// RelationshipDefinition defines a custom relationship type.
-type RelationshipDefinition struct {
-	Name        string
-	Category    string
-	Description string
-	FromTypes   []string
-	ToTypes     []string
 }
 
 // ==================== CONCRETE IMPLEMENTATIONS ====================
@@ -216,17 +176,12 @@ func (t *SimpleTaxonomy) TechniqueInfo(techniqueID string) *TechniqueInfo {
 
 // DefaultTaxonomyRegistry is a concrete implementation of TaxonomyRegistry.
 type DefaultTaxonomyRegistry struct {
-	mu         sync.RWMutex
-	core       TaxonomyIntrospector
-	extensions map[string]TaxonomyExtension
+	core TaxonomyIntrospector
 }
 
 // NewTaxonomyRegistry creates a new DefaultTaxonomyRegistry with the given core taxonomy.
 func NewTaxonomyRegistry(core TaxonomyIntrospector) *DefaultTaxonomyRegistry {
-	return &DefaultTaxonomyRegistry{
-		core:       core,
-		extensions: make(map[string]TaxonomyExtension),
-	}
+	return &DefaultTaxonomyRegistry{core: core}
 }
 
 // Version delegates to the core taxonomy.
@@ -234,97 +189,24 @@ func (r *DefaultTaxonomyRegistry) Version() string {
 	return r.core.Version()
 }
 
-// NodeTypes returns all node types from both core and extensions.
+// NodeTypes delegates to the core taxonomy.
 func (r *DefaultTaxonomyRegistry) NodeTypes() []string {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	// Start with core types
-	types := r.core.NodeTypes()
-
-	// Add extension types
-	for _, ext := range r.extensions {
-		for _, nodeDef := range ext.NodeTypes {
-			types = append(types, nodeDef.Name)
-		}
-	}
-
-	return types
+	return r.core.NodeTypes()
 }
 
-// NodeTypeInfo returns metadata for a node type from core or extensions.
+// NodeTypeInfo delegates to the core taxonomy.
 func (r *DefaultTaxonomyRegistry) NodeTypeInfo(nodeType string) *NodeTypeInfo {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	// Check core first
-	if info := r.core.NodeTypeInfo(nodeType); info != nil {
-		return info
-	}
-
-	// Check extensions
-	for _, ext := range r.extensions {
-		for _, nodeDef := range ext.NodeTypes {
-			if nodeDef.Name == nodeType {
-				return &NodeTypeInfo{
-					Type:        nodeDef.Name,
-					Name:        nodeDef.Name,
-					Category:    nodeDef.Category,
-					Description: nodeDef.Description,
-					Properties:  nodeDef.Properties,
-				}
-			}
-		}
-	}
-
-	return nil
+	return r.core.NodeTypeInfo(nodeType)
 }
 
-// RelationshipTypes returns all relationship types from both core and extensions.
+// RelationshipTypes delegates to the core taxonomy.
 func (r *DefaultTaxonomyRegistry) RelationshipTypes() []string {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	// Start with core types
-	types := r.core.RelationshipTypes()
-
-	// Add extension types
-	for _, ext := range r.extensions {
-		for _, relDef := range ext.Relationships {
-			types = append(types, relDef.Name)
-		}
-	}
-
-	return types
+	return r.core.RelationshipTypes()
 }
 
-// RelationshipTypeInfo returns metadata for a relationship type from core or extensions.
+// RelationshipTypeInfo delegates to the core taxonomy.
 func (r *DefaultTaxonomyRegistry) RelationshipTypeInfo(relType string) *RelationshipTypeInfo {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	// Check core first
-	if info := r.core.RelationshipTypeInfo(relType); info != nil {
-		return info
-	}
-
-	// Check extensions
-	for _, ext := range r.extensions {
-		for _, relDef := range ext.Relationships {
-			if relDef.Name == relType {
-				return &RelationshipTypeInfo{
-					Type:        relDef.Name,
-					Name:        relDef.Name,
-					Category:    relDef.Category,
-					Description: relDef.Description,
-					FromTypes:   relDef.FromTypes,
-					ToTypes:     relDef.ToTypes,
-				}
-			}
-		}
-	}
-
-	return nil
+	return r.core.RelationshipTypeInfo(relType)
 }
 
 // TechniqueIDs delegates to the core taxonomy.

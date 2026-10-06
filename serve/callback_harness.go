@@ -32,7 +32,6 @@ import (
 	"github.com/zeroroot-ai/sdk/codegen/workspace"
 	"github.com/zeroroot-ai/sdk/finding"
 	"github.com/zeroroot-ai/sdk/fork"
-	"github.com/zeroroot-ai/sdk/graphrag"
 	harnessconst "github.com/zeroroot-ai/sdk/harness"
 	"github.com/zeroroot-ai/sdk/llm"
 	"github.com/zeroroot-ai/sdk/mission"
@@ -141,9 +140,6 @@ func (h *CallbackHarness) initTaxonomy(ctx context.Context) {
 
 		// Create adapter from proto response
 		h.taxonomy = NewTaxonomyAdapter(resp)
-
-		// Set global taxonomy in SDK
-		graphrag.SetTaxonomy(h.taxonomy)
 
 		h.logger.Info("taxonomy initialized successfully",
 			"version", h.taxonomy.Version(),

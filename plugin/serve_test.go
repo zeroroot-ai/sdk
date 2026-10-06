@@ -706,3 +706,139 @@ func TestDaemonTransportCredentials_TLSWhenEnabled(t *testing.T) {
 		}
 	}
 }
+
+func TestServe_DeclaredSecrets_RevocationMarksDegraded(t *testing.T) {
+	t.Setenv("HOME", t.TempDir()) // keep capability-grant host keys out of the real home
+	platform := fakeCGPlatform(t)
+	t.Setenv("GIBSON_URL", platform.URL)
+	daemon := startFakeDaemon(t)
+
+	fakeSecrets := newFakeSecretsClient(map[string][]byte{"cred:api_key": []byte("value")})
+	degraded := make(chan string, 1)
+	m := secretsManifest(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	serveErr := make(chan error, 1)
+	go func() {
+		serveErr <- Serve(ctx,
+			WithParsedManifest(m),
+			testSecretsClient(fakeSecrets),
+			WithLifecycle(lifecycle.LifecycleHooks{
+				OnDegraded: func(reason string) { degraded <- reason },
+			}),
+			WithHandler("Echo", "test handler for Echo", func(_ context.Context, req string) (string, error) {
+				return req, nil
+			}),
+			testHTTPClient(platform.Client()),
+			testHealthAddr(":0"),
+		)
+	}()
+
+	// A heartbeat first: the SDK must drop it without effect. Then the
+	// revocation for the declared secret.
+	daemon.eventCh <- &componentpb.ComponentEvent{Type: "heartbeat", OccurredAt: timestamppb.Now()}
+	daemon.eventCh <- revocationEvent("cred:api_key")
+
+	select {
+	case reason := <-degraded:
+		assert.Equal(t, "secret_revoked: cred:api_key", reason)
+	case err := <-serveErr:
+		t.Fatalf("Serve returned before the revocation was delivered: %v", err)
+	case <-ctx.Done():
+		t.Fatal("timeout waiting for OnDegraded")
+	}
+	assert.True(t, fakeSecrets.isRevoked("cred:api_key"), "MarkRevoked must have been called")
+	assert.Equal(t, int32(1), daemon.watchCount.Load(), "one subscription for one plugin")
+
+	cancel()
+	require.NoError(t, <-serveErr)
+}
+
+// TestServe_DeclaredSecrets_RevocationReachesHeartbeat proves sdk#60: the
+// heartbeat reports the lifecycle state. Before the revocation every
+// heartbeat reads "serving". After the daemon publishes
+// secret_access_revoked the plugin turns Degraded, and the next heartbeat
+// tick reads "degraded" with the recorded reason. The daemon maps that value
+// to PLUGIN_INSTALL_STATUS_DEGRADED (gibson#199), so a plugin that lost its
+// secret no longer reads SERVING forever.
+func TestServe_DeclaredSecrets_RevocationReachesHeartbeat(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	platform := fakeCGPlatform(t)
+	t.Setenv("GIBSON_URL", platform.URL)
+	daemon := startFakeDaemon(t)
+	const interval = 100 * time.Millisecond
+	daemon.heartbeatIntervalMs = int32(interval / time.Millisecond)
+
+	fakeSecrets := newFakeSecretsClient(map[string][]byte{"cred:api_key": []byte("value")})
+	degraded := make(chan string, 1)
+	m := secretsManifest(t)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	serveErr := make(chan error, 1)
+	go func() {
+		serveErr <- Serve(ctx,
+			WithParsedManifest(m),
+			testSecretsClient(fakeSecrets),
+			WithLifecycle(lifecycle.LifecycleHooks{
+				OnDegraded: func(reason string) { degraded <- reason },
+			}),
+			WithHandler("Echo", "test handler for Echo", func(_ context.Context, req string) (string, error) {
+				return req, nil
+			}),
+			testHTTPClient(platform.Client()),
+			testHealthAddr(":0"),
+		)
+	}()
+
+	// The plugin is Ready: the first heartbeat reads serving.
+	select {
+	case hb := <-daemon.heartbeatCh:
+		assert.Equal(t, "inst-test-1", hb.GetInstanceId())
+		assert.Equal(t, heartbeatHealthServing, hb.GetHealthStatus())
+		assert.Equal(t, "ok", hb.GetHealthMessage())
+	case err := <-serveErr:
+		t.Fatalf("Serve returned before the first heartbeat: %v", err)
+	case <-ctx.Done():
+		t.Fatal("timeout waiting for the first heartbeat")
+	}
+
+	daemon.eventCh <- revocationEvent("cred:api_key")
+	select {
+	case reason := <-degraded:
+		assert.Equal(t, "secret_revoked: cred:api_key", reason)
+	case <-ctx.Done():
+		t.Fatal("timeout waiting for OnDegraded")
+	}
+	degradedAt := time.Now()
+
+	// The tick that fires after the transition reports degraded. One
+	// heartbeat may already be in flight with the old state, so at most one
+	// serving heartbeat may arrive after the transition, and the degraded
+	// one must land within two intervals of it.
+	deadline := time.After(2 * interval)
+	servingAfter := 0
+	for {
+		select {
+		case hb := <-daemon.heartbeatCh:
+			if hb.GetHealthStatus() == heartbeatHealthServing {
+				servingAfter++
+				require.LessOrEqual(t, servingAfter, 1,
+					"a second serving heartbeat after the revocation: the heartbeat ignores the lifecycle state")
+				continue
+			}
+			assert.Equal(t, heartbeatHealthDegraded, hb.GetHealthStatus())
+			assert.Equal(t, "secret_revoked: cred:api_key", hb.GetHealthMessage())
+			assert.Less(t, time.Since(degradedAt), 2*interval,
+				"the degraded heartbeat must land within one interval plus the tick in flight")
+			cancel()
+			require.NoError(t, <-serveErr)
+			return
+		case <-deadline:
+			t.Fatal("no degraded heartbeat within two intervals of the revocation")
+		}
+	}
+}

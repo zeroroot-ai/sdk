@@ -18,35 +18,6 @@ import (
 	"github.com/zeroroot-ai/sdk/plugin/secrets"
 )
 
-// DiscoveredMethod describes a single method discovered at startup by a
-// [MethodSource]. Discovered methods are merged with the statically declared
-// [WithHandler] handlers and registered with the daemon as the plugin's method
-// set. A discovered method carries a raw JSON dispatch handler directly (its
-// schema, if any, comes from the runtime source, not Go reflection).
-type DiscoveredMethod struct {
-	// Name is the method identifier. Required, and must not collide with a
-	// statically registered method or another discovered method.
-	Name string
-
-	// Description is an optional human-readable explanation of the method,
-	// surfaced in the component catalog.
-	Description string
-
-	// Handler processes invocations of this method. Required.
-	Handler MethodHandler
-}
-
-// MethodSource discovers a plugin's method set at startup. [Serve] invokes it
-// once, after capability-grant registration and daemon connectivity are
-// established but before RegisterComponent, so the discovered set is part of
-// the component's declared methods. The supplied context carries the plugin
-// secrets client (recoverable via secrets.FromContext), allowing the source to
-// resolve declared credentials — e.g. to start a vendor subprocess — before
-// discovery.
-//
-// Using a MethodSource requires spec.dynamic_methods: true in the manifest.
-type MethodSource func(ctx context.Context) ([]DiscoveredMethod, error)
-
 // config holds the resolved configuration for a [Serve] call.
 // It is built by applying the supplied [Option] functions in order.
 type config struct {
@@ -58,9 +29,6 @@ type config struct {
 	// Used by wrappers that derive a plugin manifest from another declarative
 	// source.
 	parsedManifest *manifest.Manifest
-
-	// methodSource discovers additional methods at startup. Optional.
-	methodSource MethodSource
 
 	// handlers maps method name → low-level JSON dispatch adapter. Built by
 	// [WithHandler] calls (which wrap the author's typed handler).
