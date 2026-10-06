@@ -49,14 +49,6 @@ enum EvidenceType {
   EVIDENCE_TYPE_OTHER = 6;
 }
 
-// QueryScope represents the scope of a GraphRAG query.
-enum QueryScope {
-  QUERY_SCOPE_UNSPECIFIED = 0;
-  QUERY_SCOPE_MISSION_RUN = 1;
-  QUERY_SCOPE_MISSION = 2;
-  QUERY_SCOPE_GLOBAL = 3;
-}
-
 // Task represents a goal-oriented task with context and constraints.
 //
 // context is free-form: the daemon does not read it. Anything the daemon
@@ -134,23 +126,6 @@ message Finding {
   reserved "compliance_mappings";
 }
 
-// ComplianceMapping links a Finding to a compliance framework control.
-// See finding/compliance_mapping.go for the author-side Go type.
-message ComplianceMapping {
-  // Compliance framework identifier (e.g. SOC2, NIST_AI_RMF, MITRE_ATLAS,
-  // MITRE_ATTACK, PLATFORM).
-  string framework = 1;
-
-  // Control identifier within the framework.
-  string control_id = 2;
-
-  // Optional human-readable rationale.
-  string rationale = 3;
-
-  reserved 4;
-  reserved "evidence_ref";
-}
-
 // MitreMapping represents a mapping to MITRE ATT&CK or ATLAS framework.
 message MitreMapping {
   string matrix = 1;
@@ -175,25 +150,6 @@ message ReproStep {
   string description = 2;
   string input = 3;
   string output = 4;
-}
-
-// GraphQuery represents a query against the knowledge graph.
-message GraphQuery {
-  string text = 1;
-  repeated float embedding = 2;
-  int32 top_k = 3;
-  repeated string node_types = 4;
-  double min_score = 5;
-  string mission_id = 7;
-  string mission_run_id = 8;
-  QueryScope scope = 9;
-  map<string, string> filters = 10;
-  reserved 6;
-  reserved "max_score";
-  reserved 11;
-  reserved "vector_weight";
-  reserved 12;
-  reserved "graph_weight";
 }
 
 // MissionRunSummary describes one run of a mission.

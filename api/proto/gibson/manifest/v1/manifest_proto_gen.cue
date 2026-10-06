@@ -23,13 +23,6 @@ import "time"
 	signature?: bytes @protobuf(200,bytes)
 }
 
-// TenantContext surfaces the tenant identity and team memberships that
-// gate the manifest's scope.
-#TenantContext: {
-	tenantId?: string @protobuf(1,string,name=tenant_id)
-	isAdmin?:  bool   @protobuf(4,bool,name=is_admin)
-}
-
 // ComponentCapability is a single discoverable component (agent, tool, plugin)
 // enriched with the permissions the subject holds against it, plus a typed
 // contract describing how to invoke it.
@@ -52,81 +45,6 @@ import "time"
 	ownerTenant?:  string @protobuf(7,string,name=owner_tenant)
 	permissions?: [...string] @protobuf(10,string)
 	liveness?: #ComponentLiveness @protobuf(30,ComponentLiveness)
-}
-
-// AgentContract describes an agent's LLM slot surface and declared
-// tool/plugin dependencies. The daemon composes this from the agent's
-// descriptor RPC at registration time.
-#AgentContract: {}
-
-// ToolIdempotency declares the at-most-once / at-least-once / exactly-once
-// delivery semantics a tool guarantees. Read by the resume-from-checkpoint
-// logic: tools at AT_LEAST_ONCE are safely retried on resume; tools at
-// AT_MOST_ONCE are skipped if their pre-checkpoint invocation status is
-// ambiguous; tools at EXACTLY_ONCE require the orchestrator to consult the
-// idempotency journal before re-issuing. UNSPECIFIED is treated as
-// AT_LEAST_ONCE for backward compatibility.
-//
-// Spec: mission-checkpointing R6.
-#ToolIdempotency:
-	#TOOL_IDEMPOTENCY_UNSPECIFIED |
-	#TOOL_IDEMPOTENCY_AT_MOST_ONCE |
-	#TOOL_IDEMPOTENCY_AT_LEAST_ONCE |
-	#TOOL_IDEMPOTENCY_EXACTLY_ONCE
-
-#TOOL_IDEMPOTENCY_UNSPECIFIED:   0
-#TOOL_IDEMPOTENCY_AT_MOST_ONCE:  1
-#TOOL_IDEMPOTENCY_AT_LEAST_ONCE: 2
-#TOOL_IDEMPOTENCY_EXACTLY_ONCE:  3
-
-#ToolIdempotency_value: {
-	TOOL_IDEMPOTENCY_UNSPECIFIED:   0
-	TOOL_IDEMPOTENCY_AT_MOST_ONCE:  1
-	TOOL_IDEMPOTENCY_AT_LEAST_ONCE: 2
-	TOOL_IDEMPOTENCY_EXACTLY_ONCE:  3
-}
-
-// ToolContract describes the proto envelope a tool accepts and emits.
-// input_schema_json and output_schema_json are derived from the
-// FileDescriptor and rendered to JSON Schema for SDK/ADK consumption.
-#ToolContract: {
-	inputSchemaJson?: string @protobuf(3,string,name=input_schema_json)
-
-	// see ToolIdempotency enum; UNSPECIFIED is treated as AT_LEAST_ONCE
-	idempotency?: #ToolIdempotency @protobuf(5,ToolIdempotency)
-}
-
-// PluginContract enumerates a plugin's callable methods with per-method
-// schemas and per-method FGA-derived invocation permission.
-#PluginContract: {
-	methods?: [...#PluginMethod] @protobuf(1,PluginMethod)
-}
-
-#PluginMethod: {
-	name?: string @protobuf(1,string)
-}
-
-// CrossComponentRule expresses an explicit override on the default
-// can_execute evaluation for a (source_component, target_component) pair.
-// Only rules that override the default are emitted, keeping payload bounded.
-#CrossComponentRule: {
-	effect?: #Effect @protobuf(3,Effect)
-	reason?: string  @protobuf(4,string)
-
-	#Effect:
-		#EFFECT_UNSPECIFIED |
-		#EFFECT_ALLOW |
-		#EFFECT_DENY
-
-	#EFFECT_UNSPECIFIED: 0
-	#EFFECT_ALLOW:       1
-	#EFFECT_DENY:        2
-
-	#Effect_value: {
-		EFFECT_UNSPECIFIED: 0
-		EFFECT_ALLOW:       1
-		EFFECT_DENY:        2
-	}
 }
 
 // LimitsAndQuotas carries the tier-derived resource ceilings applied to

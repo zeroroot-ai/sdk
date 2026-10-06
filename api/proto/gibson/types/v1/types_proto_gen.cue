@@ -105,25 +105,6 @@ import (
 	EVIDENCE_TYPE_OTHER:       6
 }
 
-// QueryScope represents the scope of a GraphRAG query.
-#QueryScope:
-	#QUERY_SCOPE_UNSPECIFIED |
-	#QUERY_SCOPE_MISSION_RUN |
-	#QUERY_SCOPE_MISSION |
-	#QUERY_SCOPE_GLOBAL
-
-#QUERY_SCOPE_UNSPECIFIED: 0
-#QUERY_SCOPE_MISSION_RUN: 1
-#QUERY_SCOPE_MISSION:     2
-#QUERY_SCOPE_GLOBAL:      3
-
-#QueryScope_value: {
-	QUERY_SCOPE_UNSPECIFIED: 0
-	QUERY_SCOPE_MISSION_RUN: 1
-	QUERY_SCOPE_MISSION:     2
-	QUERY_SCOPE_GLOBAL:      3
-}
-
 // Task represents a goal-oriented task with context and constraints.
 //
 // context is free-form: the daemon does not read it. Anything the daemon
@@ -206,20 +187,6 @@ import (
 	updatedAt?: int64 @protobuf(24,int64,name=updated_at) // Unix timestamp in milliseconds
 }
 
-// ComplianceMapping links a Finding to a compliance framework control.
-// See finding/compliance_mapping.go for the author-side Go type.
-#ComplianceMapping: {
-	// Compliance framework identifier (e.g. SOC2, NIST_AI_RMF, MITRE_ATLAS,
-	// MITRE_ATTACK, PLATFORM).
-	framework?: string @protobuf(1,string)
-
-	// Control identifier within the framework.
-	controlId?: string @protobuf(2,string,name=control_id)
-
-	// Optional human-readable rationale.
-	rationale?: string @protobuf(3,string)
-}
-
 // MitreMapping represents a mapping to MITRE ATT&CK or ATLAS framework.
 #MitreMapping: {
 	matrix?:        string @protobuf(1,string)
@@ -246,21 +213,6 @@ import (
 	description?: string @protobuf(2,string)
 	input?:       string @protobuf(3,string)
 	output?:      string @protobuf(4,string)
-}
-
-// GraphQuery represents a query against the knowledge graph.
-#GraphQuery: {
-	text?: string @protobuf(1,string)
-	embedding?: [...float32] @protobuf(2,float)
-	topK?: int32 @protobuf(3,int32,name=top_k)
-	nodeTypes?: [...string] @protobuf(4,string,name=node_types)
-	minScore?:     float64     @protobuf(5,double,name=min_score)
-	missionId?:    string      @protobuf(7,string,name=mission_id)
-	missionRunId?: string      @protobuf(8,string,name=mission_run_id)
-	scope?:        #QueryScope @protobuf(9,QueryScope)
-	filters?: {
-		[string]: string
-	} @protobuf(10,map[string]string)
 }
 
 // MissionRunSummary describes one run of a mission.

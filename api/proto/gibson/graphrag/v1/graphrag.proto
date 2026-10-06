@@ -108,25 +108,6 @@ message MapValue {
   map<string, Value> fields = 1;
 }
 
-// Relationship represents a connection between two nodes.
-message Relationship {
-  string id = 1;
-  string type = 4;
-  map<string, Value> properties = 5;
-  double weight = 6;
-
-  // Scoping
-  string mission_id = 10;
-  string mission_run_id = 11;
-
-  // Timestamps
-  int64 created_at = 20;
-  reserved 2;
-  reserved "from_id";
-  reserved 3;
-  reserved "to_id";
-}
-
 // ==================== DISCOVERY RESULT ====================
 
 // DiscoveryResult is a standardized container for tool-discovered entities.

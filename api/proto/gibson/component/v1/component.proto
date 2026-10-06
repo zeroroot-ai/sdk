@@ -573,61 +573,6 @@ service ComponentService {
     }
 }
 
-// Resources declares the compute budget a sandboxed component requires per
-// call. Units mirror Kubernetes resource conventions (vcpu is whole CPUs;
-// memory is a quantity string like "256Mi" or "1Gi"). Only meaningful when
-// dispatch_mode == DISPATCH_MODE_SANDBOXED.
-message Resources {
-    string memory = 2;
-    reserved 1;
-    reserved "vcpu";
-}
-
-// ComponentDescriptor is the unified persisted description of a component
-// registered in the Gibson ComponentRegistry, regardless of how it is
-// dispatched. Consumers (orchestrator, dashboard, CLI, authz) look up a
-// descriptor by name and switch on dispatch_mode to choose the routing.
-//
-// Legacy fields (name, version, kind, tags, metadata) describe every
-// component. Sandboxed-dispatch fields (image, command, env, resources,
-// default_timeout_seconds, input_schema_json, output_proto_type,
-// default_parse_quality) are populated by the daemon's catalog refresher
-// for sandboxed tools. Plugin/agent entries leave those fields zero.
-message ComponentDescriptor {
-    // Common metadata — populated for every dispatch_mode.
-    string name = 1;
-    string version = 2;
-    string kind = 3;  // "tool" | "plugin" | "agent"
-    string description = 4;
-    repeated string tags = 5;
-    map<string, string> metadata = 6;
-
-    // Sandboxed-dispatch fields (DISPATCH_MODE_SANDBOXED only).
-    // image is an OCI reference pinned by digest for reproducibility.
-    string image = 10;
-    // command is the argv the runner executes inside the microVM.
-    repeated string command = 11;
-    // env is static environment variables prepended to every Launch call.
-    // The daemon adds GIBSON_TOOL_INPUT_B64 and tracing headers on top.
-    map<string, string> env = 12;
-    // resources is the vCPU + memory budget per sandbox.
-    Resources resources = 13;
-    // input_schema_json is the JSON Schema document describing the tool's
-    // typed arguments (fed to the orchestrator LLM for tool_use selection).
-    bytes input_schema_json = 15;
-
-    reserved 7;
-    reserved "dispatch_mode";
-    reserved 14;
-    reserved "default_timeout_seconds";
-    reserved 16;
-    reserved "output_proto_type";
-    reserved 17;
-    reserved "default_parse_quality";
-    reserved 18;
-    reserved "content_trust";
-}
-
 // RegisterComponentRequest is sent by a component on startup to announce
 // itself and declare its capabilities.
 message RegisterComponentRequest {

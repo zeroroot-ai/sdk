@@ -126,15 +126,6 @@ message PluginSecretBinding {
   bytes create_value = 4;
 }
 
-// PluginManifestValidationError carries one structured manifest error.
-message PluginManifestValidationError {
-  // field is the dotted JSONPath into the manifest.
-  string field = 1;
-  int32 line = 2;
-  string code = 3;
-  string message = 4;
-}
-
 // ---------------------------------------------------------------------------
 // PluginAdminService request/response messages
 // ---------------------------------------------------------------------------

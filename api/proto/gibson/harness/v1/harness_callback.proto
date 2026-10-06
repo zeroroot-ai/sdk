@@ -754,14 +754,6 @@ message HarnessError {
     bool retryable = 3;
 }
 
-// HealthStatus represents the health status of a service.
-message HarnessHealthStatus {
-    string state = 1;      // healthy, degraded, unhealthy
-    string message = 2;
-    reserved 3;
-    reserved "checked_at";
-}
-
 message ContextInfo {
     string task_id = 1;
     string agent_name = 2;
@@ -1454,143 +1446,21 @@ message GetMissionRunHistoryResponse {
 // Memory Operations
 // ============================================================================
 
-// MemoryTier specifies which memory tier to use for an operation.
-enum MemoryTier {
-    MEMORY_TIER_UNSPECIFIED = 0;  // Default to WORKING for backward compatibility
-    MEMORY_TIER_WORKING = 1;      // Ephemeral in-memory
-    MEMORY_TIER_MISSION = 2;      // Persistent per-mission with FTS
-    MEMORY_TIER_LONG_TERM = 3;    // Vector-based semantic storage
-}
-
 // ============================================================================
 // Mission Memory Operations
 // ============================================================================
-
-message MissionMemoryResult {
-    string key = 1;
-    gibson.common.v1.TypedValue value = 2;
-    map<string, gibson.common.v1.TypedValue> metadata = 3;
-    double score = 4;
-    string created_at = 5;
-    string updated_at = 6;
-}
-
-message MissionMemoryItem {
-    string key = 1;
-    gibson.common.v1.TypedValue value = 2;
-    map<string, gibson.common.v1.TypedValue> metadata = 3;
-    string created_at = 4;
-    string updated_at = 5;
-}
-
-message HistoricalValueItem {
-    gibson.common.v1.TypedValue value = 1;
-    int32 run_number = 2;
-    string mission_id = 3;
-    reserved 4;
-    reserved "stored_at";
-}
 
 // ============================================================================
 // Long-Term Memory Operations
 // ============================================================================
 
-message LongTermMemoryResult {
-    string id = 1;
-    string content = 2;
-    map<string, gibson.common.v1.TypedValue> metadata = 3;
-    double score = 4;
-    string created_at = 5;
-}
-
 // ============================================================================
 // GraphRAG Query Operations
 // ============================================================================
 
-message GraphRAGResult {
-    GraphNode node = 1;
-    double score = 2;
-    repeated string path = 5;
-    int32 distance = 6;
-    reserved 3;
-    reserved "vector_score";
-    reserved 4;
-    reserved "graph_score";
-}
-
-message GraphNode {
-    string id = 1;
-    string type = 2;
-    map<string, gibson.common.v1.TypedValue> properties = 3;
-    string content = 4;
-    string mission_id = 5;
-    string agent_name = 6;
-    int64 created_at = 7;  // Unix timestamp
-    int64 updated_at = 8;  // Unix timestamp
-}
-
-message AttackPattern {
-    string technique_id = 1;
-    string name = 2;
-    string description = 3;
-    double similarity = 6;
-    reserved 4;
-    reserved "tactics";
-    reserved 5;
-    reserved "platforms";
-}
-
-message FindingNode {
-    string id = 1;
-    string title = 2;
-    string description = 3;
-    string severity = 4;
-    string category = 5;
-    double confidence = 6;
-    double similarity = 7;
-}
-
-message AttackChain {
-    string id = 1;
-    string name = 2;
-    string severity = 3;
-    repeated AttackStep steps = 4;
-}
-
-message AttackStep {
-    int32 order = 1;
-    string technique_id = 2;
-    string node_id = 3;
-    string description = 4;
-    double confidence = 5;
-}
-
 // ============================================================================
 // GraphRAG Storage Operations
 // ============================================================================
-
-message Relationship {
-    string type = 3;
-    map<string, gibson.common.v1.TypedValue> properties = 4;
-    bool bidirectional = 5;
-    reserved 1;
-    reserved "from_id";
-    reserved 2;
-    reserved "to_id";
-}
-
-message TraversalOptions {
-    int32 max_depth = 1;
-    repeated string relationship_types = 2;
-    repeated string node_types = 3;
-    string direction = 4;  // outgoing, incoming, both
-}
-
-message TraversalResult {
-    GraphNode node = 1;
-    repeated string path = 2;
-    int32 distance = 3;
-}
 
 // ============================================================================
 // Proto-Canonical GraphRAG Operations (uses graphragpb types)
@@ -2070,14 +1940,6 @@ message GetPlanContextResponse {
     reserved "plan_context";
 }
 
-message PlanContext {
-    int32 current_step_index = 1;
-    int32 total_steps = 2;
-    repeated string remaining_steps = 3;
-    int32 step_budget = 4;
-    int32 mission_budget_remaining = 5;
-}
-
 message ReportStepHintsRequest {
     ContextInfo context = 1;
     StepHints hints = 2;
@@ -2411,13 +2273,6 @@ message ValidateRelationshipRequest {
     reserved "to_node_type";
 }
 
-message ValidationResponse {
-    bool valid = 1;
-    repeated ValidationError errors = 2;
-    repeated string warnings = 3;
-    HarnessError error = 4;
-}
-
 message ValidateFindingResponse {
     bool valid = 1;
     repeated ValidationError errors = 2;
@@ -2743,26 +2598,6 @@ message AuthorizeResponse {
 // ============================================================================
 // Mission Memory: Cross-Run History Operations (Spec 5 R6)
 // ============================================================================
-
-// MissionRunSummary is the proto wire type for types.MissionRunSummary,
-// used by GetMissionRunHistory to return chronological run records to
-// the SDK CallbackHarness.
-//
-// Spec: headline-feature-completion R6.1.
-message MissionRunSummary {
-    // mission_id uniquely identifies this run.
-    string mission_id = 1;
-    // run_number is the sequential run number for this mission name (1-based).
-    int32 run_number = 2;
-    // status is the final status string (`running`, `completed`, `failed`, `cancelled`, `paused`).
-    string status = 3;
-    // findings_count is the number of findings discovered in this run.
-    int32 findings_count = 4;
-    // created_at is when the run was created (Unix epoch seconds).
-    int64 created_at_unix = 5;
-    reserved 6;
-    reserved "completed_at_unix";
-}
 
 // ============================================================================
 // Workspace operations — request/response messages

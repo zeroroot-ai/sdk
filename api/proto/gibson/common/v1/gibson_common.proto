@@ -115,20 +115,6 @@ enum ErrorCode {
     ERROR_CODE_CONFIG_ERROR = 25;
 }
 
-// HealthState defines standard health states
-enum HealthState {
-    HEALTH_STATE_UNSPECIFIED = 0;
-    HEALTH_STATE_HEALTHY = 1;
-    HEALTH_STATE_DEGRADED = 2;
-    HEALTH_STATE_UNHEALTHY = 3;
-}
-
-// Metadata contains labels and annotations for resources
-message Metadata {
-    map<string, string> labels = 1;
-    map<string, string> annotations = 2;
-}
-
 // Principal names who acts: a person, the tenant, a component run, or a
 // platform service. Banks record their owner as a Principal. Jobs record who
 // opened them and who sent each input as a Principal.
