@@ -48,13 +48,6 @@ type FileDescriptorCache interface {
 
 	// Invalidate removes a specific entry from the cache.
 	Invalidate(toolName string)
-
-	// Stats returns current cache statistics.
-	Stats() CacheStats
-}
-
-// CacheStats provides metrics about cache performance.
-type CacheStats struct {
 }
 
 // cacheEntry represents a single entry in the LRU cache.
@@ -170,14 +163,6 @@ func (c *lruCache) Invalidate(toolName string) {
 		c.lruList.Remove(element)
 		delete(c.entries, toolName)
 	}
-}
-
-// Stats returns current cache statistics.
-func (c *lruCache) Stats() CacheStats {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	return CacheStats{}
 }
 
 // evictOldest removes the least recently used entry from the cache.

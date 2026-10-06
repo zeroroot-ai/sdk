@@ -76,24 +76,6 @@ func Example() {
 	// Result: 8
 }
 
-// ExampleTool_Health demonstrates checking tool health.
-func ExampleTool_Health() {
-	cfg := tool.NewConfig().SetName("health-check-example")
-
-	t, err := tool.New(cfg)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	status := t.Health(context.Background())
-	if status.IsHealthy() {
-		fmt.Println("Tool is operational")
-	}
-
-	// Output:
-	// Tool is operational
-}
-
 // ExampleNew demonstrates creating a tool with proto execution.
 func ExampleNew() {
 	// Create a tool with proto-based execution

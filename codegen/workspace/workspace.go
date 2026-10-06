@@ -5,9 +5,6 @@ package workspace
 
 import (
 	"context"
-
-	"github.com/zeroroot-ai/sdk/codegen/editor"
-	"github.com/zeroroot-ai/sdk/codegen/git"
 )
 
 // Workspace provides access to a Git repository clone with integrated editing and Git operations.
@@ -24,14 +21,6 @@ type Workspace interface {
 	// Path returns the absolute path to the workspace root directory.
 	// All file paths used with this workspace should be relative to this path.
 	Path() string
-
-	// Editor returns the code editor for this workspace.
-	// The editor provides SEARCH/REPLACE operations with LSP validation.
-	Editor() Editor
-
-	// Git returns the Git operations interface for this workspace.
-	// Provides branching, committing, pushing, and snapshot/rollback capabilities.
-	Git() GitOps
 
 	// ReadFile reads a file from the workspace.
 	// The path should be relative to the workspace root.
@@ -58,12 +47,6 @@ type Workspace interface {
 	// Push pushes committed changes to the remote repository.
 	// Returns an error if the remote is unreachable or if authentication fails.
 	Push(ctx context.Context) error
-
-	// Close releases resources associated with this workspace.
-	// This should be called when the workspace is no longer needed.
-	// For worktrees, this removes the worktree directory.
-	// Returns an error if cleanup fails.
-	Close() error
 }
 
 // WorkspaceManager manages the lifecycle of workspaces for a mission.
@@ -72,47 +55,13 @@ type Workspace interface {
 //
 // The manager is created by the daemon during mission setup and injected into the harness.
 type WorkspaceManager interface {
-	// Initialize clones all repositories defined in the workspace configuration.
-	// This is called by the daemon before any agents execute.
-	// Returns an error if any repository clone fails.
-	//
-	// The initialization process:
-	// 1. Validates all repository configurations
-	// 2. Retrieves required credentials from the credential store
-	// 3. Clones repositories in dependency order (respecting DependsOn)
-	// 4. Checks out the specified branch for each repository
-	// 5. Initializes LSP servers if LSPEnabled is true
-	Initialize(ctx context.Context, config WorkspaceConfig) error
 
 	// Primary returns the default workspace for single-repository missions.
 	// Returns the first repository defined in the configuration.
 	// Returns nil if no repositories are configured.
 	Primary() Workspace
 
-	// Get returns the workspace for the specified repository name.
-	// The name corresponds to RepositoryConfig.Name from the configuration.
-	// Returns nil and false if no workspace exists with that name.
-	Get(name string) (Workspace, bool)
-
 	// All returns a map of all workspaces keyed by repository name.
 	// Returns an empty map if no workspaces are initialized.
 	All() map[string]Workspace
-
-	// Cleanup removes all workspace directories and stops LSP servers.
-	// This is called by the daemon after mission completion if CleanupOnComplete is true.
-	// Returns an error if any cleanup operation fails.
-	Cleanup(ctx context.Context) error
 }
-
-// WorkspaceConfig defines the workspace configuration for a mission.
-// This is deserialized from the mission YAML configuration and passed to the manager.
-type WorkspaceConfig struct {
-}
-
-// Editor provides code editing operations with SEARCH/REPLACE blocks and LSP validation.
-// It is a type alias for the fully-defined interface in codegen/editor.
-type Editor = editor.Editor
-
-// GitOps provides Git operations for a workspace.
-// It is a type alias for the fully-defined interface in codegen/git.
-type GitOps = git.GitOps

@@ -10,45 +10,6 @@ import (
 	"github.com/zeroroot-ai/sdk/graphrag"
 )
 
-// TestSimpleTaxonomy_ExtensionMethods verifies that SimpleTaxonomy correctly
-// implements the new extension query methods.
-func TestSimpleTaxonomy_ExtensionMethods(t *testing.T) {
-	taxonomy := graphrag.NewSimpleTaxonomy()
-
-	t.Run("ExtensionNames returns empty slice", func(t *testing.T) {
-		names := taxonomy.ExtensionNames()
-		assert.NotNil(t, names)
-		assert.Empty(t, names)
-	})
-
-	t.Run("ExtensionInfo returns nil for any name", func(t *testing.T) {
-		info := taxonomy.ExtensionInfo("some-extension")
-		assert.Nil(t, info)
-
-		info = taxonomy.ExtensionInfo("")
-		assert.Nil(t, info)
-	})
-
-	t.Run("NodeTypeSource returns core for known types", func(t *testing.T) {
-		source := taxonomy.NodeTypeSource(graphrag.NodeTypeHost)
-		assert.Equal(t, "core", source)
-
-		source = taxonomy.NodeTypeSource(graphrag.NodeTypePort)
-		assert.Equal(t, "core", source)
-
-		source = taxonomy.NodeTypeSource(graphrag.NodeTypeFinding)
-		assert.Equal(t, "core", source)
-	})
-
-	t.Run("NodeTypeSource returns unknown for unknown types", func(t *testing.T) {
-		source := taxonomy.NodeTypeSource("custom_node_type")
-		assert.Equal(t, "unknown", source)
-
-		source = taxonomy.NodeTypeSource("nonexistent")
-		assert.Equal(t, "unknown", source)
-	})
-}
-
 // TestDefaultTaxonomyRegistry_TaxonomyIntrospector verifies that DefaultTaxonomyRegistry
 // implements the TaxonomyIntrospector interface correctly.
 func TestDefaultTaxonomyRegistry_TaxonomyIntrospector(t *testing.T) {

@@ -22,13 +22,6 @@ import (
 // and fall back to dynamic resolution using FileDescriptorSets when compiled types
 // are unavailable.
 type ProtoResolver interface {
-	// ResolveInputType resolves and creates a new proto.Message instance for the specified
-	// input type name. The metadata map may contain information such as "tool_name" or
-	// "file_descriptor_set" to aid in resolution.
-	//
-	// Returns an error if the type cannot be found or if the FileDescriptorSet is invalid.
-	// The returned message will be a zero-initialized instance ready for unmarshaling.
-	ResolveInputType(ctx context.Context, typeName string, metadata map[string]string) (proto.Message, error)
 
 	// ResolveOutputType resolves and creates a new proto.Message instance for the specified
 	// output type name. The metadata map may contain information such as "tool_name" or

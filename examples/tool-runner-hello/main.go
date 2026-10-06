@@ -15,18 +15,16 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	toolrunner "github.com/zeroroot-ai/sdk/toolrunner"
-	"github.com/zeroroot-ai/sdk/types"
 )
 
 type helloTool struct{}
 
-func (helloTool) Name() string                              { return "hello" }
-func (helloTool) Version() string                           { return "0.1.0" }
-func (helloTool) Description() string                       { return "Echoes input with a 'hello, ' prefix." }
-func (helloTool) Tags() []string                            { return []string{"example", "sandboxed"} }
-func (helloTool) InputMessageType() string                  { return "google.protobuf.StringValue" }
-func (helloTool) OutputMessageType() string                 { return "google.protobuf.StringValue" }
-func (helloTool) Health(context.Context) types.HealthStatus { return types.NewHealthyStatus("ok") }
+func (helloTool) Name() string              { return "hello" }
+func (helloTool) Version() string           { return "0.1.0" }
+func (helloTool) Description() string       { return "Echoes input with a 'hello, ' prefix." }
+func (helloTool) Tags() []string            { return []string{"example", "sandboxed"} }
+func (helloTool) InputMessageType() string  { return "google.protobuf.StringValue" }
+func (helloTool) OutputMessageType() string { return "google.protobuf.StringValue" }
 
 func (helloTool) ExecuteProto(_ context.Context, in proto.Message) (proto.Message, error) {
 	s, _ := in.(*wrapperspb.StringValue)

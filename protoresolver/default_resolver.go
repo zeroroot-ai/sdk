@@ -235,20 +235,3 @@ func (d *DefaultProtoResolver) UnmarshalProtoJSON(ctx context.Context, typeName 
 
 	return msg, nil
 }
-
-// InvalidateCache removes all cached FileDescriptorSets and type information
-// for the specified tool. Use "*" to invalidate the entire cache.
-func (d *DefaultProtoResolver) InvalidateCache(toolName string) {
-	if toolName == "*" {
-		// Invalidate all cache entries
-		// Since our cache interface doesn't have a Clear() method,
-		// we can't invalidate all at once. This would need to be enhanced
-		// in the cache implementation if needed.
-		// For now, just log a warning
-		d.logger.Warn("cache invalidation for all tools not implemented, use specific tool names")
-		return
-	}
-
-	d.cache.Invalidate(toolName)
-	d.logger.Debug("cache invalidated", "tool", toolName)
-}

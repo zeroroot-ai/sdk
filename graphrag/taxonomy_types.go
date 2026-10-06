@@ -4,7 +4,6 @@
 package graphrag
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -35,18 +34,6 @@ type TaxonomyIntrospector interface {
 	// TechniqueInfo returns metadata for a specific technique.
 	// Returns nil if the technique is not found.
 	TechniqueInfo(techniqueID string) *TechniqueInfo
-
-	// ExtensionNames returns names of all registered extensions.
-	ExtensionNames() []string
-
-	// ExtensionInfo returns full extension definition.
-	// Returns nil if extension is not found.
-	ExtensionInfo(name string) *TaxonomyExtension
-
-	// NodeTypeSource returns the source of a node type.
-	// Returns "core" for core types, extension name for extension types,
-	// or "unknown" for unrecognized types.
-	NodeTypeSource(nodeType string) string
 }
 
 // NodeTypeInfo contains metadata about a node type.
@@ -225,28 +212,6 @@ func (t *SimpleTaxonomy) TechniqueInfo(techniqueID string) *TechniqueInfo {
 	return t.techniqueInfo[techniqueID]
 }
 
-// ExtensionNames returns names of all registered extensions.
-// SimpleTaxonomy has no extensions, so this always returns an empty slice.
-func (t *SimpleTaxonomy) ExtensionNames() []string {
-	return []string{}
-}
-
-// ExtensionInfo returns full extension definition.
-// SimpleTaxonomy has no extensions, so this always returns nil.
-func (t *SimpleTaxonomy) ExtensionInfo(name string) *TaxonomyExtension {
-	return nil
-}
-
-// NodeTypeSource returns the source of a node type.
-// SimpleTaxonomy only has core types, so it returns "core" for recognized types
-// or "unknown" for unrecognized types.
-func (t *SimpleTaxonomy) NodeTypeSource(nodeType string) string {
-	if _, exists := t.nodeTypeInfo[nodeType]; exists {
-		return "core"
-	}
-	return "unknown"
-}
-
 // ==================== DEFAULT TAXONOMY REGISTRY ====================
 
 // DefaultTaxonomyRegistry is a concrete implementation of TaxonomyRegistry.
@@ -262,51 +227,6 @@ func NewTaxonomyRegistry(core TaxonomyIntrospector) *DefaultTaxonomyRegistry {
 		core:       core,
 		extensions: make(map[string]TaxonomyExtension),
 	}
-}
-
-// RegisterExtension adds custom taxonomy definitions from an agent or plugin.
-func (r *DefaultTaxonomyRegistry) RegisterExtension(name string, ext TaxonomyExtension) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	if _, exists := r.extensions[name]; exists {
-		return fmt.Errorf("taxonomy extension already registered: %s", name)
-	}
-	r.extensions[name] = ext
-	return nil
-}
-
-// UnregisterExtension removes taxonomy definitions from an agent or plugin.
-func (r *DefaultTaxonomyRegistry) UnregisterExtension(name string) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	if _, exists := r.extensions[name]; !exists {
-		return fmt.Errorf("taxonomy extension not registered: %s", name)
-	}
-	delete(r.extensions, name)
-	return nil
-}
-
-// GetExtension returns the taxonomy extension for a registered name.
-func (r *DefaultTaxonomyRegistry) GetExtension(name string) (TaxonomyExtension, bool) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	ext, ok := r.extensions[name]
-	return ext, ok
-}
-
-// AllExtensions returns all registered taxonomy extensions.
-func (r *DefaultTaxonomyRegistry) AllExtensions() map[string]TaxonomyExtension {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	result := make(map[string]TaxonomyExtension, len(r.extensions))
-	for k, v := range r.extensions {
-		result[k] = v
-	}
-	return result
 }
 
 // Version delegates to the core taxonomy.
@@ -415,54 +335,4 @@ func (r *DefaultTaxonomyRegistry) TechniqueIDs(taxonomy string) []string {
 // TechniqueInfo delegates to the core taxonomy.
 func (r *DefaultTaxonomyRegistry) TechniqueInfo(techniqueID string) *TechniqueInfo {
 	return r.core.TechniqueInfo(techniqueID)
-}
-
-// ExtensionNames returns names of all registered extensions.
-func (r *DefaultTaxonomyRegistry) ExtensionNames() []string {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	names := make([]string, 0, len(r.extensions))
-	for name := range r.extensions {
-		names = append(names, name)
-	}
-	return names
-}
-
-// ExtensionInfo returns full extension definition.
-// Returns nil if extension is not found.
-func (r *DefaultTaxonomyRegistry) ExtensionInfo(name string) *TaxonomyExtension {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	if ext, ok := r.extensions[name]; ok {
-		// Return a copy to prevent external modifications
-		extCopy := ext
-		return &extCopy
-	}
-	return nil
-}
-
-// NodeTypeSource returns the source of a node type.
-// Returns "core" for core types, extension name for extension types,
-// or "unknown" for unrecognized types.
-func (r *DefaultTaxonomyRegistry) NodeTypeSource(nodeType string) string {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	// Check if it's a core type
-	if r.core.NodeTypeInfo(nodeType) != nil {
-		return "core"
-	}
-
-	// Check extensions
-	for name, ext := range r.extensions {
-		for _, nodeDef := range ext.NodeTypes {
-			if nodeDef.Name == nodeType {
-				return name
-			}
-		}
-	}
-
-	return "unknown"
 }

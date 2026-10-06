@@ -266,27 +266,5 @@ func (a *TaxonomyAdapter) TechniqueInfo(techniqueID string) *graphrag.TechniqueI
 // Additional Methods (not part of interface)
 // ============================================================================
 
-// ExtensionNames returns names of all registered extensions.
-// TaxonomyAdapter doesn't track extensions, so this returns an empty slice.
-func (a *TaxonomyAdapter) ExtensionNames() []string {
-	return []string{}
-}
-
-// ExtensionInfo returns full extension definition.
-// TaxonomyAdapter doesn't track extensions, so this always returns nil.
-func (a *TaxonomyAdapter) ExtensionInfo(name string) *graphrag.TaxonomyExtension {
-	return nil
-}
-
-// NodeTypeSource returns the source of a node type.
-// TaxonomyAdapter only has core types, so it returns "core" for recognized types
-// or "unknown" for unrecognized types.
-func (a *TaxonomyAdapter) NodeTypeSource(nodeType string) string {
-	if _, exists := a.nodeTypes[nodeType]; exists {
-		return "core"
-	}
-	return "unknown"
-}
-
 // Verify TaxonomyAdapter implements graphrag.TaxonomyIntrospector
 var _ graphrag.TaxonomyIntrospector = (*TaxonomyAdapter)(nil)

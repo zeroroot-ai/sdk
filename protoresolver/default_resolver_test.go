@@ -306,23 +306,6 @@ func TestUnmarshalJSON_GlobalType(t *testing.T) {
 	}
 }
 
-// TestInvalidateCache_AllTools tests cache invalidation for all tools.
-func TestInvalidateCache_AllTools(t *testing.T) {
-	resolver := NewDefaultProtoResolver(DefaultConfig())
-
-	// Just verify it doesn't panic - the implementation logs a warning
-	// since the cache interface doesn't support clearing all entries
-	resolver.InvalidateCache("*")
-}
-
-// TestInvalidateCache_NonexistentTool tests invalidating a non-existent tool.
-func TestInvalidateCache_NonexistentTool(t *testing.T) {
-	resolver := NewDefaultProtoResolver(DefaultConfig())
-
-	// Should not panic
-	resolver.InvalidateCache("nonexistent-tool")
-}
-
 // TestResolveInputType_DefaultToolName tests behavior when tool_name is missing.
 func TestResolveInputType_DefaultToolName(t *testing.T) {
 	resolver := NewDefaultProtoResolver(DefaultConfig())

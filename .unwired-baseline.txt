@@ -6,7 +6,7 @@
 # This file only shrinks. Adding an entry means accepting a declaration
 # nothing reads, so put the reason on a # line above it.
 #
-# measured 2026-10-06: 484 of 1650 declarations across 141 packages and 315 files
+# measured 2026-10-06: 448 of 1594 declarations across 134 packages and 300 files
 
 const auth.CredentialCapabilityGrant	# auth/identity.go:52
 const auth.CredentialClientCredentials	# auth/identity.go:46
@@ -178,7 +178,7 @@ func auth.TenantStringFromContext	# auth/extras.go:156
 func auth.UnaryServerInterceptor	# auth/interceptor.go:37
 func capabilitygrant.Verify	# capabilitygrant/verify.go:73
 func graphrag.ExtractDiscovery	# graphrag/extract.go:24
-func graphrag.NewTaxonomyRegistry	# graphrag/taxonomy_types.go:260
+func graphrag.NewTaxonomyRegistry	# graphrag/taxonomy_types.go:225
 func graphrag.OntologyExtensionFromProto	# graphrag/ontology_proto.go:54
 func http.RedisPingFunc	# health/http/checks.go:20
 func manifest.IsValidationError	# plugin/manifest/manifest.go:487
@@ -224,9 +224,7 @@ method agent.ResultError.UnmarshalJSON	# agent/errors.go:94
 method agent.ResultError.Unwrap	# agent/errors.go:80
 method agent.ResultStatus.String	# agent/types.go:111
 method agent.RunScope.String	# agent/knowledge.go:60
-method agent.sdkAgent.Initialize	# agent/builder.go:234
-method agent.sdkAgent.Shutdown	# agent/builder.go:239
-method agent.sdkAgent.TargetSchemas	# agent/builder.go:209
+method agent.sdkAgent.Shutdown	# agent/builder.go:170
 method auth.Identity.IsZero	# auth/identity.go:107
 method auth.TenantID.MarshalText	# auth/tenantid.go:171
 method auth.serverStreamWithContext.Context	# auth/interceptor.go:94
@@ -239,28 +237,16 @@ method capabilitygrant.runtimeCredentials.RequireTransportSecurity	# capabilityg
 method finding.EvidenceType.String	# finding/evidence.go:52
 method finding.Severity.String	# finding/severity.go:32
 method finding.Status.String	# finding/export.go:24
-method graphrag.DefaultTaxonomyRegistry.AllExtensions	# graphrag/taxonomy_types.go:301
-method graphrag.DefaultTaxonomyRegistry.ExtensionInfo	# graphrag/taxonomy_types.go:434
-method graphrag.DefaultTaxonomyRegistry.ExtensionNames	# graphrag/taxonomy_types.go:421
-method graphrag.DefaultTaxonomyRegistry.GetExtension	# graphrag/taxonomy_types.go:292
-method graphrag.DefaultTaxonomyRegistry.NodeTypeSource	# graphrag/taxonomy_types.go:449
-method graphrag.DefaultTaxonomyRegistry.RegisterExtension	# graphrag/taxonomy_types.go:268
-method graphrag.DefaultTaxonomyRegistry.UnregisterExtension	# graphrag/taxonomy_types.go:280
-method graphrag.SimpleTaxonomy.ExtensionInfo	# graphrag/taxonomy_types.go:236
-method graphrag.SimpleTaxonomy.ExtensionNames	# graphrag/taxonomy_types.go:230
-method graphrag.SimpleTaxonomy.NodeTypeSource	# graphrag/taxonomy_types.go:243
 method lifecycle.TransitionError.Error	# plugin/lifecycle/lifecycle.go:138
 method llm.Role.String	# llm/message.go:39
 method manifest.ValidationError.Error	# plugin/manifest/manifest.go:268
 method manifest.parsedDuration.MarshalYAML	# plugin/manifest/manifest.go:251
 method manifest.parsedDuration.UnmarshalYAML	# plugin/manifest/manifest.go:233
 method parser.ParseError.Error	# cmd/taxonomy-gen/parser/parser.go:55
-method protoresolver.DefaultProtoResolver.InvalidateCache	# protoresolver/default_resolver.go:241
 method protoresolver.DefaultProtoResolver.ResolveOutputType	# protoresolver/default_resolver.go:72
 method protoresolver.DefaultProtoResolver.UnmarshalProtoJSON	# protoresolver/default_resolver.go:220
-method protoresolver.SchemaNotFoundError.Error	# protoresolver/resolver.go:100
-method protoresolver.SchemaNotFoundError.Unwrap	# protoresolver/resolver.go:116
-method protoresolver.lruCache.Stats	# protoresolver/cache.go:176
+method protoresolver.SchemaNotFoundError.Error	# protoresolver/resolver.go:93
+method protoresolver.SchemaNotFoundError.Unwrap	# protoresolver/resolver.go:109
 method schema.Schema.MarshalJSON	# plugin/schema/schema.go:100
 method schema.ValidationError.Error	# cmd/taxonomy-gen/schema/types.go:209
 method serve.CallbackClient.GetCredential	# serve/callback_client.go:575
@@ -316,27 +302,11 @@ method serve.PlatformHarness.ToolResults	# serve/platform_harness.go:545
 method serve.PlatformHarness.WaitForMission	# serve/platform_harness.go:914
 method serve.PlatformHarness.Workspace	# serve/platform_harness.go:1027
 method serve.PlatformHarness.Workspaces	# serve/platform_harness.go:1033
-method serve.TaxonomyAdapter.ExtensionInfo	# serve/taxonomy_adapter.go:277
-method serve.TaxonomyAdapter.ExtensionNames	# serve/taxonomy_adapter.go:271
-method serve.TaxonomyAdapter.NodeTypeSource	# serve/taxonomy_adapter.go:284
-method serve.callbackWorkspace.Close	# serve/workspace_proxy.go:172
-method serve.callbackWorkspace.Editor	# serve/workspace_proxy.go:89
-method serve.callbackWorkspace.Git	# serve/workspace_proxy.go:94
-method serve.callbackWorkspace.ListFiles	# serve/workspace_proxy.go:131
-method serve.callbackWorkspace.Name	# serve/workspace_proxy.go:79
-method serve.callbackWorkspace.Path	# serve/workspace_proxy.go:84
-method serve.callbackWorkspace.ReadFile	# serve/workspace_proxy.go:99
-method serve.callbackWorkspace.WriteFile	# serve/workspace_proxy.go:111
-method serve.errEditor.Apply	# serve/workspace_proxy.go:201
-method serve.errEditor.ApplyBatch	# serve/workspace_proxy.go:205
-method serve.errEditor.SetFuzzyThreshold	# serve/workspace_proxy.go:213
-method serve.errEditor.SetValidationTimeout	# serve/workspace_proxy.go:214
-method serve.errEditor.Validate	# serve/workspace_proxy.go:209
-method serve.partialGitOps.Checkout	# serve/workspace_proxy.go:242
-method serve.partialGitOps.CreateBranch	# serve/workspace_proxy.go:238
-method serve.partialGitOps.CurrentBranch	# serve/workspace_proxy.go:230
-method serve.partialGitOps.Pull	# serve/workspace_proxy.go:250
-method serve.partialGitOps.Status	# serve/workspace_proxy.go:234
+method serve.callbackWorkspace.ListFiles	# serve/workspace_proxy.go:107
+method serve.callbackWorkspace.Name	# serve/workspace_proxy.go:67
+method serve.callbackWorkspace.Path	# serve/workspace_proxy.go:72
+method serve.callbackWorkspace.ReadFile	# serve/workspace_proxy.go:75
+method serve.callbackWorkspace.WriteFile	# serve/workspace_proxy.go:87
 method taxonomy.Ontology.Validate	# taxonomy/ontology_validator.go:27
 method types.MissionContext.UnmarshalJSON	# types/mission.go:69
 method types.TargetInfo.URL	# types/target.go:50
@@ -373,9 +343,6 @@ field schema.Taxonomy.NestedTypes	# cmd/taxonomy-gen/schema/types.go:24
 # Interface methods. An implementation must satisfy its interface, so these stay
 # (lane 11, D77 rule 5). The counter sees no call because each call goes through
 # the interface.
-method agent.sdkAgent.Health	# agent/builder.go:244
-method agent.sdkAgent.LLMSlots	# agent/builder.go:224
-method main.helloTool.Health	# examples/tool-runner-hello/main.go:29
 method serve.CallbackHarness.CallToolProto	# serve/callback_harness.go:487
 method serve.CallbackHarness.Complete	# serve/callback_harness.go:190
 method serve.CallbackHarness.CompleteWithTools	# serve/callback_harness.go:275
@@ -416,12 +383,9 @@ method serve.PlatformHarness.Target	# serve/platform_harness.go:94
 method serve.PlatformHarness.TokenUsage	# serve/platform_harness.go:84
 method serve.PlatformHarness.Tracer	# serve/platform_harness.go:81
 method serve.PlatformHarness.WorldView	# serve/worldview.go:89
-method serve.partialGitOps.Add	# serve/workspace_proxy.go:246
-method serve.partialGitOps.Commit	# serve/workspace_proxy.go:222
-method serve.partialGitOps.Push	# serve/workspace_proxy.go:226
-method serve.partialGitOps.Rollback	# serve/workspace_proxy.go:258
-method serve.partialGitOps.Snapshot	# serve/workspace_proxy.go:254
-method tool.sdkTool.Health	# tool/builder.go:148
+method protoresolver.lruCache.Invalidate	# protoresolver/cache.go:158
+method serve.callbackWorkspace.Commit	# serve/workspace_proxy.go:123
+method serve.callbackWorkspace.Push	# serve/workspace_proxy.go:135
 
 # Read by a first-party repo outside this module (gibson, adk, gibson-executor or
 # cve-triage). Lane 11 measured each read with a type-aware scan of those repos.
@@ -448,7 +412,7 @@ field types.Capabilities.HasSudo	# types/capabilities.go:15
 field types.MissionContext.Name	# types/mission.go:28
 func capabilitygrant.ListInstalls	# capabilitygrant/runtimeinstall.go:81
 func capabilitygrant.ResolveRuntimeInstall	# capabilitygrant/runtimeinstall.go:111
-func graphrag.NewSimpleTaxonomy	# graphrag/taxonomy_types.go:134
+func graphrag.NewSimpleTaxonomy	# graphrag/taxonomy_types.go:121
 func llm.WithMaxTokens	# llm/completion.go:67
 func llm.WithTemperature	# llm/completion.go:60
 func serve.NewCallbackHarness	# serve/callback_harness.go:95
@@ -460,7 +424,7 @@ type protoresolver.ProtoResolver	# protoresolver/resolver.go:24
 type security.CVSSScore	# finding/security/security.go:40
 type security.MitreMapping	# finding/security/security.go:19
 type types.Capabilities	# types/capabilities.go:9
-type workspace.WorkspaceManager	# codegen/workspace/workspace.go:74
+type workspace.WorkspaceManager	# codegen/workspace/workspace.go:57
 var cueschemas.Schemas	# cueschemas/cueschemas.go:44
 
 # Encoded by encoding/json or yaml.v3, which reads each field through reflection.

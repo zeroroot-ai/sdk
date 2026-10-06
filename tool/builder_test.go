@@ -10,8 +10,6 @@ import (
 
 	protolib "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
-
-	"github.com/zeroroot-ai/sdk/types"
 )
 
 func TestNewConfig(t *testing.T) {
@@ -376,25 +374,6 @@ func TestSdkTool_ExecuteProto_ContextCancellation(t *testing.T) {
 	_, err = tool.ExecuteProto(ctx, &structpb.Struct{})
 	if !errors.Is(err, context.Canceled) {
 		t.Errorf("ExecuteProto() with canceled context error = %v, want %v", err, context.Canceled)
-	}
-}
-
-func TestSdkTool_Health(t *testing.T) {
-	cfg := NewConfig().SetName("test-tool")
-
-	tool, err := New(cfg)
-	if err != nil {
-		t.Fatalf("New() error = %v", err)
-	}
-
-	status := tool.Health(context.Background())
-
-	if status.Status != types.StatusHealthy {
-		t.Errorf("Health() status = %v, want %v", status.Status, types.StatusHealthy)
-	}
-
-	if status.Message != "tool is operational" {
-		t.Errorf("Health() message = %v, want %v", status.Message, "tool is operational")
 	}
 }
 

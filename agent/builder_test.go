@@ -9,26 +9,6 @@ import (
 	"github.com/zeroroot-ai/sdk/llm"
 )
 
-func TestNewConfig(t *testing.T) {
-	cfg := NewConfig()
-
-	if cfg == nil {
-		t.Fatal("NewConfig() returned nil")
-	}
-	if cfg.capabilities == nil {
-		t.Error("capabilities should be initialized")
-	}
-	if cfg.targetTypes == nil {
-		t.Error("targetTypes should be initialized")
-	}
-	if cfg.techniqueTypes == nil {
-		t.Error("techniqueTypes should be initialized")
-	}
-	if cfg.llmSlots == nil {
-		t.Error("llmSlots should be initialized")
-	}
-}
-
 func TestConfig_SetTargetTypes(t *testing.T) {
 	targets := []string{"llm_chat", "rag"}
 	cfg := NewConfig().SetTargetTypes(targets)

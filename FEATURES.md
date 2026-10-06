@@ -57,7 +57,7 @@ go get github.com/zeroroot-ai/sdk@latest
 | `enum` | A registry that normalizes shorthand enum values to their protobuf names |
 | `toolerr` | Structured, typed tool errors |
 | `protoresolver` | An LRU cache for parsed protobuf `FileDescriptorSet`s |
-| `codegen` | Primitives for generating, editing and validating code inside a workspace |
+| `codegen/workspace` | The workspace interfaces an agent reaches through the harness: read, write, list, commit and push |
 
 ## What this module does not contain
 

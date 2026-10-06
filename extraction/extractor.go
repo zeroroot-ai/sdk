@@ -35,12 +35,6 @@ import (
 // DiscoveryResult for GraphRAG storage. Each tool implements this interface
 // for its own response type.
 type EntityExtractor interface {
-	// ToolName returns the name of the tool this extractor handles.
-	// Must match the tool's Name() return value (e.g., "mytool").
-	ToolName() string
-
-	// CanExtract returns true if this extractor can process the given message.
-	CanExtract(msg proto.Message) bool
 
 	// Extract converts a tool response into a DiscoveryResult containing
 	// graph entities (hosts, ports, services, findings, etc.).
