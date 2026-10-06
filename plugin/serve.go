@@ -310,12 +310,11 @@ func Serve(ctx context.Context, opts ...Option) error {
 	// Graceful shutdown watcher.
 	eg.Go(func() error {
 		<-egCtx.Done()
-		// Use a fresh background context for shutdown operations because
-		// egCtx is already cancelled here. Re-inject the secrets client so the
-		// OnStop hook can still resolve declared secrets during drain.
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.drainTimeout+5*time.Second)
+		// egCtx is already cancelled here, so the shutdown context drops its
+		// cancellation and keeps its values. The secrets client in those
+		// values lets the OnStop hook resolve secrets during drain.
+		shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(egCtx), cfg.drainTimeout+5*time.Second)
 		defer cancel()
-		shutdownCtx = pluginsecrets.NewContext(shutdownCtx, secretsClient)
 		return gracefulShutdown(shutdownCtx, sm, disp, cfg.drainTimeout, cfg.name)
 	})
 
