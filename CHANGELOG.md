@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.200.0](https://github.com/zeroroot-ai/sdk/compare/v0.199.0...v0.200.0) (2026-10-06)
+
+
+### Features
+
+* **fork:** ClaimFork proves the fork with the identity token only ([a9685c2](https://github.com/zeroroot-ai/sdk/commit/a9685c2ed1c7138bd8fa0cd77f732a8380f5e705))
+* **fork:** the fork claim carries the identity token and no grant ([#257](https://github.com/zeroroot-ai/sdk/issues/257)) ([a9685c2](https://github.com/zeroroot-ai/sdk/commit/a9685c2ed1c7138bd8fa0cd77f732a8380f5e705))
+
 ## [0.199.0](https://github.com/zeroroot-ai/sdk/compare/v0.198.0...v0.199.0) (2026-10-06)
 
 
