@@ -155,8 +155,8 @@ func TestCallbackClient_SendsTheSandboxIDOnEachCall(t *testing.T) {
 	require.Len(t, s.claimMD, 1)
 	require.Equal(t, []string{want}, s.claimMD[0].Get(fork.MetadataSandboxID))
 	require.Equal(t, []string{"gen0-req1"}, s.claimMD[0].Get(fork.MetadataSandboxIdentity))
-	require.Equal(t, []string{"Bearer parent-grant"}, s.claimMD[0].Get("authorization"),
-		"a fork claims with the grant of its parent")
+	require.Empty(t, s.claimMD[0].Get("authorization"),
+		"the identity token is the only proof of a claim (D80)")
 	require.Equal(t, "sbx-fork-1", s.claims[0].GetSandboxId())
 }
 
@@ -392,5 +392,41 @@ func TestCallbackClient_ClaimForkNeedsTheIdentity(t *testing.T) {
 	_, err := client.ClaimFork(context.Background(), "sbx-fork-1")
 	require.ErrorIs(t, err, fork.ErrNoSandboxIdentity)
 	require.ErrorContains(t, err, fork.EnvIdentitySocket)
+	require.Empty(t, s.claims, "no call is sent")
+}
+
+// TestCallbackClient_ClaimForkSendsNoGrant proves that a claim carries the
+// identity token and no grant, even when the caller put one on the context,
+// and that the grant of the claim replaces the old grant for each later call
+// (D80).
+func TestCallbackClient_ClaimForkSendsNoGrant(t *testing.T) {
+	serveIdentity(t)
+	s := &forkServer{claimAnswer: forkDispatch()}
+	client := serveForkTCP(t, s)
+
+	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization", "Bearer expired-source-grant", "x-other", "kept")
+	claim, err := client.ClaimFork(ctx, "sbx-fork-1")
+	require.NoError(t, err)
+	require.Empty(t, s.claimMD[0].Get("authorization"))
+	require.Equal(t, []string{"kept"}, s.claimMD[0].Get("x-other"), "only the grant is removed")
+	require.NotEmpty(t, s.claimMD[0].Get(fork.MetadataSandboxIdentity))
+
+	require.NoError(t, client.ApplyClaim(claim))
+	_, err = client.CreateMission(context.Background(), &harnesspb.CreateMissionRequest{TargetId: "t"})
+	require.NoError(t, err)
+	require.Equal(t, []string{"Bearer fork-grant"}, s.createMD[0].Get("authorization"), "the grant of the claim replaces the old one")
+}
+
+// TestCallbackClient_ClaimForkRefusesPerRPCCredentials proves that a client
+// whose credentials put a grant on each call cannot claim.
+func TestCallbackClient_ClaimForkRefusesPerRPCCredentials(t *testing.T) {
+	serveIdentity(t)
+	s := &forkServer{claimAnswer: forkDispatch()}
+	srv := grpc.NewServer()
+	harnesspb.RegisterHarnessCallbackServiceServer(srv, s)
+	conn := dialBufconn(t, srv)
+	c := &CallbackClient{conn: conn, client: harnesspb.NewHarnessCallbackServiceClient(conn), connected: true, perRPCCreds: staticPerRPC{}}
+	_, err := c.ClaimFork(context.Background(), "sbx-fork-1")
+	require.ErrorContains(t, err, "per-RPC credentials")
 	require.Empty(t, s.claims, "no call is sent")
 }
