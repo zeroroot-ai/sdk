@@ -1583,7 +1583,7 @@ func (h *CallbackHarness) ValidateGraphNode(ctx context.Context, nodeType string
 }
 
 // ValidateRelationship validates a relationship against the taxonomy schema.
-func (h *CallbackHarness) ValidateRelationship(ctx context.Context, relType string, _ string, _ string, properties map[string]any) (*ValidationResult, error) {
+func (h *CallbackHarness) ValidateRelationship(ctx context.Context, relType, _, _ string, properties map[string]any) (*ValidationResult, error) {
 	req := &harnesspb.ValidateRelationshipRequest{
 		RelationshipType: relType,
 		Properties:       ToTypedMap(properties),
