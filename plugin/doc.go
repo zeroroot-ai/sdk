@@ -10,8 +10,8 @@
 // with the Gibson daemon, expose one or more typed RPC methods, and are invoked
 // by tools via the daemon's PluginInvoke RPC (gibson.plugin.v1.PluginInvokeService).
 //
-// Plugin authors write business logic, declare a manifest, and call [Serve]
-// from main. The SDK handles registration, secret resolution, method dispatch,
+// Plugin authors write business logic, declare the plugin in code, and call
+// [Serve] from main. The SDK handles registration, secret resolution, method dispatch,
 // lifecycle management, health probes, SIGTERM drain, and rotation events.
 //
 // # The Serve Entry Point
@@ -20,8 +20,10 @@
 //
 //	func main() {
 //	    if err := plugin.Serve(context.Background(),
-//	        plugin.WithManifest("./plugin.yaml"),
+//	        plugin.WithName("my-plugin"),
+//	        plugin.WithVersion("0.1.0"),
 //	        plugin.WithHandler("Echo", "echoes the request back unchanged", echoHandler),
+//	        plugin.WithLifecycle(lifecycle.LifecycleHooks{OnStart: requireAPIKey}),
 //	    ); err != nil {
 //	        log.Fatal(err)
 //	    }
@@ -30,36 +32,18 @@
 // [Serve] does not return until the plugin has shut down cleanly or the context
 // is cancelled. It returns the first fatal error, or nil on clean shutdown.
 //
-// # The Manifest Contract
+// # The Declaration in Code
 //
-// Every plugin declares a YAML manifest (plugin.yaml) at the root of its source
-// directory. The manifest is validated at startup by the SDK, by
-// `gibson component validate`, and by the daemon at registration time — the
-// same [manifest.Validate] function backs all three call-sites.
+// A plugin declares itself in code and reports the declaration at start, over
+// the RegisterComponent RPC (ADR-0097). No manifest file exists.
 //
-// Minimal manifest example:
+//   - [WithName] and [WithVersion] name the plugin. Both are required.
+//   - Each [WithHandler] adds one method with its description. The handlers
+//     are the method set; at least one is required.
 //
-//	apiVersion: plugin.gibson.zeroroot.ai/v1
-//	kind: Plugin
-//	metadata:
-//	  name: my-plugin
-//	  version: 0.1.0
-//	  description: My first plugin
-//	spec:
-//	  workload_class: plugin
-//	  methods:
-//	    - name: Echo
-//	      description: Echo the request back to the caller
-//	  secrets:
-//	    - name: cred:api_key
-//	      scope: startup
-//	      rotation: live
-//	      required: true
-//	  runtime: process
-//
-// The manifest schema version is "plugin.gibson.zeroroot.ai/v1". Future
-// versions are gated via the apiVersion field so parsing remains backward
-// compatible.
+// The plugin declares no secrets. A tenant admin grants the plugin access to
+// named secrets in the deploy wizard, and the daemon checks that grant on each
+// resolve.
 //
 // # Secret Consumption Model
 //
@@ -78,28 +62,22 @@
 //	    return EchoResponse{Echoed: req.Message}, nil
 //	}
 //
+// A plugin that cannot start without a secret resolves it in its OnStart hook
+// and returns the error. [Serve] then fails at boot with the secret named:
+//
+//	func requireAPIKey(ctx context.Context) error {
+//	    if _, err := plugin.ResolveSecret(ctx, "cred:api_key"); err != nil {
+//	        return fmt.Errorf("resolve startup secret %q: %w", "cred:api_key", err)
+//	    }
+//	    return nil
+//	}
+//
 // Rules:
 //   - NEVER log a resolved value, write it to stdout/stderr, include it in OTel
 //     span attributes, or include it in any error message returned to a caller.
-//   - Only names declared in spec.secrets may be resolved; the SDK rejects
-//     undeclared names before any RPC.
+//   - The daemon decides each resolve with the FGA relation can_resolve. The
+//     SDK keeps no allow-list.
 //   - Resolved values are cached in-process with a default TTL of 60 seconds.
-//
-// # Three Runtime Modes
-//
-// Plugin author code is the same across all three modes. The SDK selects mode
-// behaviour based on the GIBSON_PLUGIN_RUNTIME environment variable:
-//
-//   - process (default): laptop and CI. Network egress is informational only;
-//     no enforcement occurs. Use `gibson component run` locally.
-//
-//   - pod: Kubernetes deployment. The daemon emits a NetworkPolicy at
-//     registration time matching spec.egress[]. The SDK itself is a no-op in
-//     the egress path; the cluster enforces.
-//
-//   - setec: Setec microVM. The SDK registers spec.egress[] with the Setec
-//     orchestrator at startup; outbound traffic to undeclared targets is dropped
-//     at the microVM boundary.
 //
 // # Lifecycle States
 //
@@ -116,7 +94,7 @@
 //   - /livez:   returns 200 when Ready or Degraded AND daemon heartbeat is fresh;
 //     503 otherwise.
 //
-// # SIGTERM and Rotation-Restart Contracts
+// # SIGTERM, Revocation and Rotation
 //
 // On SIGTERM or SIGINT [Serve]:
 //  1. Stops accepting new work from PollWork.
@@ -132,30 +110,22 @@
 // revocation learns it on its next credential resolve, which the daemon
 // denies.
 //
-// When a manifest secret is revoked by the operator:
+// When the operator revokes a secret grant of the plugin:
 //  1. The events subscriber receives the secret_access_revoked event.
 //  2. The secrets client marks the name revoked and drops it from the cache.
 //  3. The lifecycle state machine moves to Degraded and calls OnDegraded.
 //  4. The next heartbeat reports health_status "degraded" with the reason,
 //     so the daemon marks the install DEGRADED within one heartbeat interval.
 //
-// When a manifest secret with rotation=restart is rotated by the operator:
-//  1. The events subscriber receives the secret_rotated event.
-//  2. In-flight handlers are drained.
-//  3. The process exits with code 75 — the rotation-restart sentinel.
-//  4. The orchestrator (systemd, Kubernetes, Setec) restarts the plugin; the
-//     new process resolves the rotated secret value at scope=startup.
-//
-// Exit code 75 is the canonical rotation-restart sentinel. Operators and
-// orchestrators MUST restart the plugin when this code is observed.
+// When the operator rotates a secret, the events subscriber receives the
+// secret_rotated event and drops the cached value. The next resolve fetches
+// the new value.
 //
 // # See Also
 //
-//   - [manifest.Manifest] — manifest schema and loader.
 //   - [lifecycle.StateMachine] — lifecycle state machine.
 //   - [health.Server] — health probe endpoints.
 //   - [pluginsecrets.Client] — credential resolution with caching.
 //   - [events.Subscriber] — rotation and revocation event handling.
 //   - [dispatch.Dispatcher] — PollWork → handler → SubmitResult dispatch loop.
-//   - [egress.Enforcer] — runtime-mode-specific egress enforcement.
 package plugin

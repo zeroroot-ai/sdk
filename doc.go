@@ -88,7 +88,8 @@
 //
 //	func main() {
 //	    if err := plugin.Serve(ctx,
-//	        plugin.WithManifest("plugin.yaml"),
+//	        plugin.WithName("my-plugin"),
+//	        plugin.WithVersion("0.1.0"),
 //	        plugin.WithHandler("Echo", "echoes the request back unchanged", echoHandler),
 //	    ); err != nil {
 //	        log.Fatal(err)

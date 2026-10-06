@@ -8,8 +8,7 @@
 // via the existing ComponentService PollWork RPC, routes each item to the
 // matching [MethodHandler] registered by the plugin author, and submits the
 // result via SubmitResult. Concurrency is bounded by a semaphore channel;
-// graceful shutdown is provided via [Dispatcher.Drain] and
-// [Dispatcher.DrainThenExit].
+// graceful shutdown is provided via [Dispatcher.Drain].
 //
 // # Wire format (Go-first, ADR-0065 R4)
 //
@@ -33,7 +32,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"runtime/debug"
 	"sync"
 	"sync/atomic"
@@ -55,27 +53,6 @@ const DefaultConcurrency = 10
 // when [Config.PollTimeout] is zero or unset.
 const DefaultPollTimeout = 20 * time.Second
 
-// defaultDrainTimeout is the timeout used by [Dispatcher.DrainThenExit].
-const defaultDrainTimeout = 30 * time.Second
-
-// exitCode75 is the rotation-restart sentinel exit code per Spec 2 Requirement 10.3.
-const exitCode75 = 75
-
-// exiter is the function called by [Dispatcher.DrainThenExit] after draining.
-// It defaults to os.Exit. Tests replace this package-level variable to capture
-// the call rather than actually exiting.
-var exiter = os.Exit
-
-// SetExiterForTest replaces the package-level exiter function used by
-// [Dispatcher.DrainThenExit] and returns the previous value so callers can
-// restore it with defer. This function is intended for use in tests only;
-// it is not safe for concurrent use.
-func SetExiterForTest(fn func(int)) func(int) {
-	prev := exiter
-	exiter = fn
-	return prev
-}
-
 // MethodHandler is the low-level, JSON-in/JSON-out dispatch function for one
 // method. The dispatcher passes the raw JSON request payload from
 // PluginInvokeRequest.request.value and submits the returned raw JSON bytes as
@@ -84,8 +61,8 @@ func SetExiterForTest(fn func(int)) func(int) {
 // Plugin authors do NOT implement this directly. They register typed Go
 // handlers with plugin.WithHandler; the SDK wraps each in an adapter of this
 // type that unmarshals the JSON into the author's request struct and marshals
-// the response struct back to JSON. This raw type is exported only so Serve and
-// the discovery path can carry handlers.
+// the response struct back to JSON. This raw type is exported only so Serve can
+// carry handlers.
 //
 // Handlers must not include resolved secret values in returned errors; the error
 // message is forwarded verbatim to the tool caller.
@@ -445,26 +422,6 @@ func (d *Dispatcher) Drain(ctx context.Context, timeout time.Duration) error {
 		case <-time.After(10 * time.Millisecond):
 		}
 	}
-}
-
-// DrainThenExit drains in-flight handlers with a 30-second timeout and then
-// calls os.Exit(75). The exit code 75 is the rotation-restart sentinel per
-// Spec 2 Requirement 10.3; the orchestrator restarts the plugin to pick up
-// rotated credentials.
-//
-// reason is logged at Info level before draining so operators can identify the
-// cause of the restart.
-func (d *Dispatcher) DrainThenExit(reason string) {
-	slog.Info("dispatch: initiating rotation-restart",
-		"reason", reason,
-		"exit_code", exitCode75,
-	)
-	ctx, cancel := context.WithTimeout(context.Background(), defaultDrainTimeout)
-	defer cancel()
-	if err := d.Drain(ctx, defaultDrainTimeout); err != nil {
-		slog.Warn("dispatch: drain completed with error before exit", "err", err)
-	}
-	exiter(exitCode75)
 }
 
 // truncate returns at most n bytes of s, appending "…" if truncated.

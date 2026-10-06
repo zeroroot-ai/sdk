@@ -7,14 +7,11 @@ import (
 	"context"
 	"strings"
 	"testing"
-
-	"github.com/zeroroot-ai/sdk/plugin/manifest"
 )
 
-// A method's description used to live only in the plugin manifest's `methods:`
-// list. It is what an agent reads to choose between tools in the catalog
-// (RegisterComponent.method_descriptors -> SearchTools), so it has to survive
-// the manifest's deletion (sdk#127, ADR-0097).
+// A method's description is what an agent reads to choose between tools in the
+// catalog (RegisterComponent.method_descriptors -> SearchTools). It lives
+// beside the handler (sdk#127, ADR-0097).
 
 func TestWithHandler_DescriptionIsRequired(t *testing.T) {
 	for _, desc := range []string{"", "   ", "\t\n"} {
@@ -44,8 +41,8 @@ func TestWithHandler_DescriptionReachesTheDescriptors(t *testing.T) {
 		t.Fatalf("unexpected option errors: %v", c.optionErrs)
 	}
 
-	// No manifest declarations at all: the registered handler is the only source.
-	names, detailed := buildMethodMetadata(nil, nil, c.methodSchemas, c.methodDescriptions)
+	// The registered handler is the only source of the method set.
+	names, detailed := buildMethodMetadata(c.methodSchemas, c.methodDescriptions)
 	if len(names) != 1 || names[0] != "Echo" {
 		t.Fatalf("names = %v, want [Echo]", names)
 	}
@@ -60,29 +57,14 @@ func TestWithHandler_DescriptionReachesTheDescriptors(t *testing.T) {
 	}
 }
 
-// The handler wins where the two disagree, so a stale manifest cannot override
-// the description sitting beside the code.
-func TestBuildMethodMetadata_HandlerDescriptionWinsOverManifest(t *testing.T) {
-	declared := []manifest.MethodDecl{{Name: "Echo", Description: "stale manifest text"}}
-	descriptions := map[string]string{"Echo": "the handler's text"}
-
-	_, detailed := buildMethodMetadata(declared, nil, nil, descriptions)
-	if len(detailed) != 1 {
-		t.Fatalf("descriptors = %d, want 1", len(detailed))
-	}
-	if got := detailed[0].GetDescription(); got != "the handler's text" {
-		t.Errorf("description = %q, want the handler's", got)
-	}
-}
-
-// Registered-only methods are emitted in a stable order. Ranging the map would
+// Methods are emitted in a stable order. Ranging the map would
 // put Go's randomised iteration order into the RegisterComponent payload.
-func TestBuildMethodMetadata_RegisteredOnlyOrderIsStable(t *testing.T) {
+func TestBuildMethodMetadata_OrderIsStable(t *testing.T) {
 	descriptions := map[string]string{"Zeta": "z", "Alpha": "a", "Mid": "m"}
 
 	var first []string
 	for i := range 20 {
-		names, _ := buildMethodMetadata(nil, nil, nil, descriptions)
+		names, _ := buildMethodMetadata(nil, descriptions)
 		if first == nil {
 			first = names
 			continue

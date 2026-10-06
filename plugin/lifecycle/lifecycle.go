@@ -42,8 +42,8 @@ const (
 	// component registration with the daemon.
 	Registering
 
-	// ResolvingSecrets indicates the plugin is pre-resolving all
-	// scope=startup, required=true secrets declared in its manifest.
+	// ResolvingSecrets indicates the plugin's secrets client is ready. A plugin
+	// that needs a secret to start resolves it in its OnStart hook.
 	ResolvingSecrets
 
 	// Starting indicates the plugin has resolved its startup secrets and is
