@@ -91,8 +91,8 @@ type MissionManager interface {
 	//   missionDef := BuildReconMission()
 	//   opts := &mission.CreateMissionOpts{
 	//       Name: "Subdomain Enumeration",
-	//       Constraints: &mission.MissionConstraints{
-	//           MaxDuration: 30 * time.Minute,
+	//       Constraints: &missionpb.MissionConstraints{
+	//           MaxDuration: durationpb.New(30 * time.Minute),
 	//           MaxTokens:   100000,
 	//       },
 	//   }

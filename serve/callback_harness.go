@@ -1120,14 +1120,9 @@ func buildCreateMissionRequest(
 		req.CatalogMission = opts.CatalogMission
 		req.CatalogParams = opts.CatalogParams
 
-		if opts.Constraints != nil {
-			req.Constraints = &harnesspb.MissionConstraints{
-				MaxDurationMs: opts.Constraints.MaxDuration.Milliseconds(),
-				MaxTokens:     opts.Constraints.MaxTokens,
-				MaxCost:       opts.Constraints.MaxCost,
-				MaxFindings:   int32(opts.Constraints.MaxFindings),
-			}
-		}
+		// The canonical constraint type carries every constraint field.
+		// Field 5 (constraints) is deprecated and is not written (ADR-0004).
+		req.CanonicalConstraints = opts.Constraints
 
 		if opts.Metadata != nil {
 			req.Metadata = ToTypedMap(opts.Metadata)
