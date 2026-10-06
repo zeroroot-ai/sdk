@@ -290,7 +290,15 @@ func (c *Client) Register(ctx context.Context) error {
 			resp.StatusCode, strings.TrimSpace(string(respBody)))
 	}
 
-	return c.applyRegistrationResponse(respBody)
+	if err := c.applyRegistrationResponse(respBody); err != nil {
+		return err
+	}
+	// The host is registered now, so a later registration in this process
+	// signs a host JWT and never sends the spent bootstrap token again.
+	c.mu.Lock()
+	c.hostKey.FirstCheckIn = false
+	c.mu.Unlock()
+	return nil
 }
 
 // buildRegistrationAuth returns the Authorization header value for registration.
@@ -319,28 +327,23 @@ func (c *Client) buildRegistrationAuth(ctx context.Context, registerURL string) 
 			"register_url", registerURL, "error", err)
 	}
 
-	// Try host+jwt next — works whenever the key file already existed before
-	// NewClient was called (i.e., the host has registered before).
-	hostJWT, err := SignHostJWT(c.hostKey, registerURL)
-	if err == nil {
-		// Determine whether this key was freshly generated or loaded from an
-		// existing file. We do this by checking whether BootstrapToken is set
-		// or whether the K8s SA token file exists.
-		bootstrap, _ := ResolveBootstrap(c.config.BootstrapToken)
-		if bootstrap != nil {
-			// We have a bootstrap credential — use it for first-time registration.
+	// The one-time bootstrap credential goes only with the first check-in of
+	// a new host key. A key loaded from disk belongs to a host that checked in
+	// before: the bootstrap token is spent, so the host signs a host JWT and
+	// never sends the token again.
+	c.mu.RLock()
+	first := c.hostKey.FirstCheckIn
+	c.mu.RUnlock()
+	if first {
+		if bootstrap, err := ResolveBootstrap(c.config.BootstrapToken); err == nil {
 			return "Bearer " + bootstrap.Token, nil
 		}
-		// No bootstrap credential — fall through to host+jwt (re-registration).
-		return "Bearer " + hostJWT, nil
 	}
-
-	// If signing failed, fall back to bootstrap.
-	bootstrap, bErr := ResolveBootstrap(c.config.BootstrapToken)
-	if bErr != nil {
-		return "", fmt.Errorf("sign host JWT failed (%w) and no bootstrap credential available: %w", err, bErr)
+	hostJWT, err := SignHostJWT(c.hostKey, registerURL)
+	if err != nil {
+		return "", fmt.Errorf("sign host JWT: %w", err)
 	}
-	return "Bearer " + bootstrap.Token, nil
+	return "Bearer " + hostJWT, nil
 }
 
 // registrationRequest is the JSON body sent to the register endpoint.

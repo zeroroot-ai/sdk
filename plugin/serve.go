@@ -355,11 +355,6 @@ func Serve(ctx context.Context, opts ...Option) error {
 			"plugin:setec_required": strconv.FormatBool(m.Spec.Policy.SetecRequired),
 			"plugin:host_id":        cgClient.HostID(),
 			"plugin:manifest_hash":  manifestHashFromPath(cfg.manifestPath),
-			// plugin:content_trust travels the manifest's trust classification to
-			// the daemon, which records it on the ComponentInstall and gates
-			// untrusted plugin invocation through the dispatch policy
-			// (ADR-0110). Normalised so an unset value is "trusted".
-			"plugin:content_trust": normalizeContentTrust(m.Spec.Policy.ContentTrust),
 			// plugin:secrets is the comma-joined list of declared secret refs.
 			// A declaration, not a grant: the daemon decides what it authorizes
 			// from it. See the block above RegisterComponent.
@@ -1020,17 +1015,6 @@ func componentEventToEvent(msg *componentpb.ComponentEvent) events.Event {
 		ev.OccurredAt = ts.AsTime()
 	}
 	return ev
-}
-
-// normalizeContentTrust maps a manifest content_trust value to the canonical
-// "trusted"/"untrusted" the daemon expects, defaulting any empty or unrecognised
-// value to "trusted" (fail-safe: only an explicit "untrusted" opts a plugin into
-// dispatch-policy gating). See gibson#997.
-func normalizeContentTrust(v string) string {
-	if v == manifest.ContentTrustUntrusted {
-		return manifest.ContentTrustUntrusted
-	}
-	return manifest.ContentTrustTrusted
 }
 
 // manifestHashFromPath returns the SHA-256 hex digest of the manifest YAML at

@@ -397,7 +397,8 @@ func TestServe_MethodSource_RegistersAndRoundTrips(t *testing.T) {
 	md := daemon.registeredMetadata(t)
 	assert.Equal(t, "process", md["plugin:runtime_mode"], "runtime mode forwarded")
 	assert.Equal(t, "false", md["plugin:setec_required"], "setec_required forwarded")
-	assert.Equal(t, "trusted", md["plugin:content_trust"], "content_trust forwarded")
+	_, reported := md["plugin:content_trust"]
+	assert.False(t, reported, "the daemon takes trust from the signed catalog, so the plugin reports none")
 	assert.NotEmpty(t, md["plugin:host_id"], "host_id thumbprint forwarded (keys per-host install uniqueness)")
 
 	cancel()

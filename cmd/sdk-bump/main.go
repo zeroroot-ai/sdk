@@ -59,7 +59,6 @@ func run() int {
 		workdir    = flag.String("workdir", "/tmp/sdk-bump", "directory under which repos are cloned")
 		jsonOutput = flag.Bool("json", false, "emit JSON summary instead of text table")
 		ciDelay    = flag.Duration("ci-delay", pr.DefaultCheckDelay, "time to wait after PR open before polling gh pr checks; 0 disables CI check")
-		workspace  = flag.String("workspace", defaultWorkspace(), "path to the polyrepo workspace root (used for local-path validation warnings)")
 	)
 	flag.Parse()
 
@@ -91,9 +90,6 @@ func run() int {
 		fmt.Fprintf(os.Stderr, "sdk-bump: %v\n", err)
 		return 2
 	}
-
-	// Emit startup warnings for any consumer whose local checkout is absent.
-	validateLocalPaths(*workspace, consumers)
 
 	// Context: cancel on SIGINT/SIGTERM.
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -220,13 +216,4 @@ func validateVersion(v string) error {
 		return fmt.Errorf("character %q is not allowed in version strings", c)
 	}
 	return nil
-}
-
-// defaultWorkspace returns the expected polyrepo root on this workstation.
-func defaultWorkspace() string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return ""
-	}
-	return home + "/Code/zeroroot.ai"
 }

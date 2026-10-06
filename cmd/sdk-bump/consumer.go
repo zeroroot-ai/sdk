@@ -6,8 +6,6 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -69,36 +67,6 @@ var CONSUMERS = []Consumer{
 			"pnpm typecheck",
 		},
 	},
-}
-
-// validateLocalPaths checks each consumer's local checkout (if present at workspaceRoot).
-// Missing dirs produce warnings but are not fatal — the clone step will handle it.
-func validateLocalPaths(workspaceRoot string, consumers []Consumer) {
-	for _, c := range consumers {
-		// Map from GitRepo "zeroroot-ai/gibson" → local path.
-		// Known mappings based on the polyrepo workspace layout.
-		localPath := localCheckoutPath(workspaceRoot, c)
-		if localPath == "" {
-			continue
-		}
-		if _, err := os.Stat(localPath); os.IsNotExist(err) {
-			fmt.Fprintf(os.Stderr, "[sdk-bump] WARNING: consumer %q local checkout not found at %s — CONSUMERS list may be stale\n",
-				c.Name, localPath)
-		}
-	}
-}
-
-// localCheckoutPath returns the expected local path for a consumer given the workspace root,
-// or "" if the mapping is unknown.
-func localCheckoutPath(workspaceRoot string, c Consumer) string {
-	// Mapping derived from CLAUDE.md workspace layout.
-	repoToLocal := map[string]string{
-		"zeroroot-ai/gibson":          filepath.Join(workspaceRoot, "enterprise", "platform", "gibson"),
-		"zeroroot-ai/adk":             filepath.Join(workspaceRoot, "opensource", "adk"),
-		"zeroroot-ai/gibson-executor": filepath.Join(workspaceRoot, "opensource", "gibson-executor"),
-		"zeroroot-ai/dashboard":       filepath.Join(workspaceRoot, "enterprise", "platform", "dashboard"),
-	}
-	return repoToLocal[c.GitRepo]
 }
 
 // filterConsumers returns the subset of CONSUMERS whose Name is in names.

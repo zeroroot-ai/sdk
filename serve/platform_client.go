@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"strings"
 	"sync"
 	"time"
@@ -426,17 +427,36 @@ func (pc *PlatformClient) grpcTarget() string {
 	return target
 }
 
+// isLoopbackTarget reports whether a "host:port" or "host" target names a
+// loopback host: localhost, an address in 127.0.0.0/8, or ::1.
+func isLoopbackTarget(target string) bool {
+	host := target
+	if h, _, err := net.SplitHostPort(target); err == nil {
+		host = h
+	}
+	host = strings.TrimSuffix(strings.TrimPrefix(host, "["), "]")
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
+
 // buildDialOptions constructs the grpc.DialOption slice based on the platform URL.
 // When an capabilitygrant.Client is present, a per-RPC credential that signs a fresh
 // Capability Grant JWT for every call is appended.
 func (pc *PlatformClient) buildDialOptions() ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
 
-	// Transport credentials: TLS for https, insecure for http/localhost.
+	// Transport credentials: TLS for https. Plaintext only to a loopback
+	// host, because each call carries a capability grant.
 	if strings.HasPrefix(pc.platformURL, "https://") {
 		creds := credentials.NewClientTLSFromCert(nil, "")
 		opts = append(opts, grpc.WithTransportCredentials(creds))
 	} else {
+		if !isLoopbackTarget(pc.grpcTarget()) {
+			return nil, fmt.Errorf("platform URL %q: plaintext gRPC is allowed only to a loopback host; use https", pc.platformURL)
+		}
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
