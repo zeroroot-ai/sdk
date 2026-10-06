@@ -50,8 +50,7 @@ func TestEveryConstraintSetsEachField(t *testing.T) {
 
 // TestBuildCreateMissionRequest_CarriesEveryConstraint proves sdk#180: a
 // mission that an agent creates through the callback carries each field of
-// the platform constraint type on the wire, in canonical_constraints. The
-// deprecated field 5 is not written.
+// the platform constraint type on the wire, in canonical_constraints.
 func TestBuildCreateMissionRequest_CarriesEveryConstraint(t *testing.T) {
 	want := everyConstraint()
 	req, err := buildCreateMissionRequest(nil, map[string]any{"name": "m"}, "target-1", &mission.CreateMissionOpts{
@@ -73,13 +72,10 @@ func TestBuildCreateMissionRequest_CarriesEveryConstraint(t *testing.T) {
 	if !proto.Equal(got.GetCanonicalConstraints(), want) {
 		t.Errorf("canonical_constraints on the wire = %v, want %v", got.GetCanonicalConstraints(), want)
 	}
-	if got.GetConstraints() != nil { //nolint:staticcheck // SA1019: the test proves the deprecated field stays empty.
-		t.Errorf("the deprecated constraints field (5) is set: %v", got.GetConstraints()) //nolint:staticcheck // SA1019: see above.
-	}
 }
 
 // TestBuildCreateMissionRequest_NoConstraintsSendsNone proves that options
-// with no constraints leave both constraint fields empty.
+// with no constraints leave the constraint field empty.
 func TestBuildCreateMissionRequest_NoConstraintsSendsNone(t *testing.T) {
 	req, err := buildCreateMissionRequest(nil, map[string]any{"name": "m"}, "target-1", &mission.CreateMissionOpts{Name: "n"})
 	if err != nil {
@@ -87,8 +83,5 @@ func TestBuildCreateMissionRequest_NoConstraintsSendsNone(t *testing.T) {
 	}
 	if req.GetCanonicalConstraints() != nil {
 		t.Errorf("canonical_constraints is set: %v", req.GetCanonicalConstraints())
-	}
-	if req.GetConstraints() != nil { //nolint:staticcheck // SA1019: the test proves the deprecated field stays empty.
-		t.Errorf("the deprecated constraints field (5) is set")
 	}
 }
