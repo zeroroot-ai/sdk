@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.202.0](https://github.com/zeroroot-ai/sdk/compare/v0.201.0...v0.202.0) (2026-10-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* **sdk:** taxonomy.v1 is gone from the published protos (D77). buf breaking (FILE) reports the deleted file. This is an intended break.
+
+### Features
+
+* **sdk:** end-phase integration of sdk ([#261](https://github.com/zeroroot-ai/sdk/issues/261)) ([d0f3563](https://github.com/zeroroot-ai/sdk/commit/d0f3563fcfe190d3c0f10ccaa632d8b059383fbb))
+
 ## [0.201.0](https://github.com/zeroroot-ai/sdk/compare/v0.200.0...v0.201.0) (2026-10-06)
 
 
