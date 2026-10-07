@@ -21,16 +21,14 @@ type BootstrapCredential struct {
 // ResolveBootstrap determines the bootstrap credential to use for initial host
 // registration. Resolution priority:
 //
-//  1. explicitToken — if non-empty, used as-is with type "api_key".
-//  2. The GIBSON_BOOTSTRAP_TOKEN environment variable, type "api_key". This is
+//  1. explicitToken — if non-empty, used as-is.
+//  2. The GIBSON_BOOTSTRAP_TOKEN environment variable. This is
 //     the path a developer running their own component takes (sdk#128: two
 //     environment variables and a binary, no CLI and no file), and it is what
 //     the process-mode bridge runner relies on.
 //  3. Error — no bootstrap credential found.
 //
-// The function never reads the Kubernetes service account token. That token
-// is valid against the cluster API, so the client must not send it to a
-// platform endpoint.
+// The function reads no other credential source.
 //
 // Bootstrap credentials are consumed once. Callers must not store or log the
 // Token value.

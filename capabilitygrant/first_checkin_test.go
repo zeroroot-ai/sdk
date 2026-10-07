@@ -144,3 +144,18 @@ func TestRegisterRefusesAnUntrustedRegisterURL(t *testing.T) {
 	require.Empty(t, rec.seen())
 	require.Empty(t, otherRec.seen())
 }
+
+// TestRegisterDoesNotFollowARedirect proves that a redirect from the register
+// URL does not carry the credential to the target.
+func TestRegisterDoesNotFollowARedirect(t *testing.T) {
+	t.Setenv("GIBSON_BOOTSTRAP_TOKEN", "")
+	target, targetRec := serveRegistration(t)
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, target.URL+"/agent-auth/register", http.StatusTemporaryRedirect)
+	}))
+	t.Cleanup(srv.Close)
+	c := registeringClient(t, srv, filepath.Join(t.TempDir(), "host_key.json"), "one-time-token")
+	c.discovery.Endpoints.Register = srv.URL + "/agent-auth/register"
+	require.Error(t, c.Register(context.Background()))
+	require.Empty(t, targetRec.seen())
+}

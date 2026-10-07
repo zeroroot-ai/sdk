@@ -263,7 +263,11 @@ func (c *Client) Register(ctx context.Context) error {
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", authHeader)
 
-	resp, err := c.httpClient.Do(req)
+	// A redirect would carry the credential to a URL that the origin check did
+	// not see, so the register request never follows one.
+	noRedirect := *c.httpClient
+	noRedirect.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	resp, err := noRedirect.Do(req)
 	if err != nil {
 		return fmt.Errorf("capabilitygrant: registration request failed: %w", err)
 	}
