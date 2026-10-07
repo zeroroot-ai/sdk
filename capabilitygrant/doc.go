@@ -22,8 +22,7 @@
 // Agent Key — An ephemeral Ed25519 keypair generated fresh on each agent process
 // start. Used to sign short-lived agent+jwt tokens for per-call authentication.
 //
-// Bootstrap Credential — A one-time credential (API key or Kubernetes service
-// account token) used to authenticate the first-time host registration. After
+// Bootstrap Credential — A one-time credential (a registration token) used to authenticate the first-time host registration. After
 // registration succeeds the host key is used for all subsequent authentications.
 //
 // Discovery Document — A JSON document served at
