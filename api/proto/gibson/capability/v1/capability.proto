@@ -75,9 +75,6 @@ message CapabilityGrantInfo {
   // empty or the grant is mission-wide.
   string task_id = 7;
 
-  // issued_at_unix is the iat claim, Unix seconds.
-  int64 issued_at_unix = 8;
-
   // expires_at_unix is the exp claim, Unix seconds.
   int64 expires_at_unix = 9;
 
@@ -89,4 +86,6 @@ message CapabilityGrantInfo {
   // (ADR-0110).
   reserved 11;
   reserved "isolation";
+  reserved 8;
+  reserved "issued_at_unix";
 }

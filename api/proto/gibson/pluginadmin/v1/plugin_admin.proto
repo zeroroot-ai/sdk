@@ -37,18 +37,6 @@ service PluginAdminService {
       allowed_identities: 1  // USER
     };
   }
-  // RegisterPlugin atomically registers a plugin per Spec 2 R3.1: validates
-  // manifest, creates the Zitadel plugin_principal SA, writes per-binding
-  // FGA can_resolve tuples (creating any inline secrets in the broker),
-  // returns the bootstrap token. Any partial failure rolls back all created state.
-  rpc RegisterPlugin(RegisterPluginRequest) returns (RegisterPluginResponse) {
-    option (gibson.auth.v1.authz) = {
-      relation: "admin"
-      object_type: "tenant"
-      object_deriver: "tenant_from_identity"
-      allowed_identities: 1  // USER
-    };
-  }
   // EditPluginSecretBinding modifies an existing binding (rebind to a different
   // existing secret). Used by the plugin detail page's bindings table.
   rpc EditPluginSecretBinding(EditPluginSecretBindingRequest) returns (EditPluginSecretBindingResponse) {
@@ -100,39 +88,14 @@ message PluginInstallSummary {
   string name = 2;
   string version = 3;
   repeated string declared_methods = 4;
-  string runtime_mode = 5;
-  bool setec_required = 6;
+  reserved 5, 6;
+  reserved "runtime_mode", "setec_required";
   string host_id = 7;
   PluginInstallStatus status = 8;
   string address = 9;
   int64 last_heartbeat_at_unix = 10;
   int64 created_at_unix = 11;
   repeated string bound_secret_refs = 12;
-}
-
-// PluginSecretBinding describes one secret binding in a RegisterPlugin request.
-message PluginSecretBinding {
-  // declared_name is the name as declared in the plugin manifest's
-  // spec.secrets[] entry.
-  string declared_name = 1;
-  // mode is one of: "existing" (bind to existing secret) or "create" (create
-  // new secret inline).
-  string mode = 2;
-  // existing_ref is the broker-namespaced name of an already-stored secret
-  // to bind to. Set when mode = "existing".
-  string existing_ref = 3;
-  // create_value is the plaintext bytes to store under declared_name when
-  // mode = "create". TLS in transit; never logged.
-  bytes create_value = 4;
-}
-
-// PluginManifestValidationError carries one structured manifest error.
-message PluginManifestValidationError {
-  // field is the dotted JSONPath into the manifest.
-  string field = 1;
-  int32 line = 2;
-  string code = 3;
-  string message = 4;
 }
 
 // ---------------------------------------------------------------------------
@@ -172,27 +135,6 @@ message GetPluginInstallRequest {
 
 message GetPluginInstallResponse {
   PluginInstallSummary install = 1;
-}
-
-message RegisterPluginRequest {
-  // manifest_yaml is the plugin manifest YAML bytes.
-  bytes manifest_yaml = 1;
-  repeated PluginSecretBinding bindings = 2;
-  // dry_run, when true, validates manifest + bindings without creating any state.
-  bool dry_run = 3;
-  // Field 4 (remote) is reserved. No daemon code read it, so a client that
-  // set it got the same result as a client that did not (sdk#181).
-  reserved 4;
-  reserved "remote";
-}
-
-message RegisterPluginResponse {
-  string install_id = 1;
-  string plugin_principal_id = 2;
-  // bootstrap_token is the single-use enrollment token. Empty when dry_run.
-  string bootstrap_token = 3;
-  int64 bootstrap_token_expires_at_unix = 4;
-  repeated PluginManifestValidationError validation_errors = 5;
 }
 
 message EditPluginSecretBindingRequest {

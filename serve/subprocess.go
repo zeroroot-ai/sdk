@@ -30,7 +30,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/zeroroot-ai/sdk/enum"
 	"github.com/zeroroot-ai/sdk/tool"
 )
 
@@ -65,12 +64,6 @@ func OutputSchema(t tool.Tool) error {
 		"tags":                t.Tags(),
 		"input_message_type":  t.InputMessageType(),
 		"output_message_type": t.OutputMessageType(),
-	}
-
-	// Add enum mappings if registered for this tool
-	enumMappings := enum.GetMappings(t.Name())
-	if enumMappings != nil && len(enumMappings) > 0 {
-		schema["enum_mappings"] = enumMappings
 	}
 
 	// Marshal schema to JSON

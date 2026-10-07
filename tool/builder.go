@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/zeroroot-ai/sdk/types"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -141,10 +140,4 @@ func (t *sdkTool) ExecuteProto(ctx context.Context, input proto.Message) (proto.
 		return nil, errors.New("proto execution not configured for this tool")
 	}
 	return t.executeProtoFunc(ctx, input)
-}
-
-// Health returns the health status of the tool.
-// By default, tools are always healthy unless they implement custom health checks.
-func (t *sdkTool) Health(ctx context.Context) types.HealthStatus {
-	return types.NewHealthyStatus("tool is operational")
 }

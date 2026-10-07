@@ -63,56 +63,6 @@ func TestNewTaxonomyAdapter_FullResponse(t *testing.T) {
 	}
 }
 
-func TestTaxonomyAdapter_IsCanonicalNodeType(t *testing.T) {
-	resp := createTestTaxonomyResponse()
-	adapter := NewTaxonomyAdapter(resp)
-
-	tests := []struct {
-		name     string
-		typeName string
-		expected bool
-	}{
-		{"existing type", "host", true},
-		{"existing type 2", "domain", true},
-		{"non-existent type", "unknown", false},
-		{"empty type", "", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := adapter.IsCanonicalNodeType(tt.typeName)
-			if got != tt.expected {
-				t.Errorf("IsCanonicalNodeType(%q) = %v, want %v", tt.typeName, got, tt.expected)
-			}
-		})
-	}
-}
-
-func TestTaxonomyAdapter_IsCanonicalRelationType(t *testing.T) {
-	resp := createTestTaxonomyResponse()
-	adapter := NewTaxonomyAdapter(resp)
-
-	tests := []struct {
-		name     string
-		typeName string
-		expected bool
-	}{
-		{"existing type", "HAS_PORT", true},
-		{"existing type 2", "RESOLVES_TO", true},
-		{"non-existent type", "UNKNOWN_REL", false},
-		{"empty type", "", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := adapter.IsCanonicalRelationType(tt.typeName)
-			if got != tt.expected {
-				t.Errorf("IsCanonicalRelationType(%q) = %v, want %v", tt.typeName, got, tt.expected)
-			}
-		})
-	}
-}
-
 func TestTaxonomyAdapter_NodeTypeInfo(t *testing.T) {
 	resp := createTestTaxonomyResponse()
 	adapter := NewTaxonomyAdapter(resp)
@@ -230,154 +180,28 @@ func TestTaxonomyAdapter_TechniqueInfo(t *testing.T) {
 	})
 }
 
-func TestTaxonomyAdapter_ValidateNodeType(t *testing.T) {
-	resp := createTestTaxonomyResponse()
-	adapter := NewTaxonomyAdapter(resp)
-
-	// Valid type should return true
-	if !adapter.ValidateNodeType("host") {
-		t.Error("expected ValidateNodeType('host') to return true")
-	}
-
-	// Invalid type should return false (and log warning)
-	if adapter.ValidateNodeType("unknown") {
-		t.Error("expected ValidateNodeType('unknown') to return false")
-	}
-}
-
-func TestTaxonomyAdapter_ValidateRelationType(t *testing.T) {
-	resp := createTestTaxonomyResponse()
-	adapter := NewTaxonomyAdapter(resp)
-
-	// Valid type should return true
-	if !adapter.ValidateRelationType("HAS_PORT") {
-		t.Error("expected ValidateRelationType('HAS_PORT') to return true")
-	}
-
-	// Invalid type should return false (and log warning)
-	if adapter.ValidateRelationType("UNKNOWN_REL") {
-		t.Error("expected ValidateRelationType('UNKNOWN_REL') to return false")
-	}
-}
-
-func TestTaxonomyAdapter_ToJSON(t *testing.T) {
-	resp := createTestTaxonomyResponse()
-	adapter := NewTaxonomyAdapter(resp)
-
-	json := adapter.ToJSON()
-	if json == nil {
-		t.Fatal("expected non-nil JSON")
-	}
-
-	if version, ok := json["version"].(string); !ok || version != "1.2.3" {
-		t.Errorf("expected version '1.2.3', got %v", json["version"])
-	}
-
-	if nodeTypes, ok := json["node_types"].([]string); !ok || len(nodeTypes) != 2 {
-		t.Errorf("expected 2 node types in JSON, got %v", json["node_types"])
-	}
-}
-
-func TestTaxonomyAdapter_ToJSONString(t *testing.T) {
-	resp := createTestTaxonomyResponse()
-	adapter := NewTaxonomyAdapter(resp)
-
-	jsonStr := adapter.ToJSONString()
-	if jsonStr == "" || jsonStr == "{}" {
-		t.Error("expected non-empty JSON string")
-	}
-}
-
-func TestTaxonomyAdapter_GetTargetType(t *testing.T) {
-	resp := createTestTaxonomyResponse()
-	adapter := NewTaxonomyAdapter(resp)
-
-	t.Run("existing target type", func(t *testing.T) {
-		info, ok := adapter.GetTargetType("http_api")
-		if !ok {
-			t.Fatal("expected to find target type 'http_api'")
-		}
-		if info.Name != "HTTP API" {
-			t.Errorf("expected name 'HTTP API', got %q", info.Name)
-		}
-	})
-
-	t.Run("non-existent target type", func(t *testing.T) {
-		_, ok := adapter.GetTargetType("unknown")
-		if ok {
-			t.Error("expected not to find target type 'unknown'")
-		}
-	})
-}
-
-func TestTaxonomyAdapter_GetTechniqueType(t *testing.T) {
-	resp := createTestTaxonomyResponse()
-	adapter := NewTaxonomyAdapter(resp)
-
-	t.Run("existing technique type", func(t *testing.T) {
-		info, ok := adapter.GetTechniqueType("ssrf")
-		if !ok {
-			t.Fatal("expected to find technique type 'ssrf'")
-		}
-		if info.Name != "Server-Side Request Forgery" {
-			t.Errorf("expected name 'Server-Side Request Forgery', got %q", info.Name)
-		}
-	})
-
-	t.Run("non-existent technique type", func(t *testing.T) {
-		_, ok := adapter.GetTechniqueType("unknown")
-		if ok {
-			t.Error("expected not to find technique type 'unknown'")
-		}
-	})
-}
-
-func TestTaxonomyAdapter_GetCapability(t *testing.T) {
-	resp := createTestTaxonomyResponse()
-	adapter := NewTaxonomyAdapter(resp)
-
-	t.Run("existing capability", func(t *testing.T) {
-		info, ok := adapter.GetCapability("capability.web_scanning")
-		if !ok {
-			t.Fatal("expected to find capability 'capability.web_scanning'")
-		}
-		if info.Name != "Web Scanning" {
-			t.Errorf("expected name 'Web Scanning', got %q", info.Name)
-		}
-	})
-
-	t.Run("non-existent capability", func(t *testing.T) {
-		_, ok := adapter.GetCapability("unknown")
-		if ok {
-			t.Error("expected not to find capability 'unknown'")
-		}
-	})
-}
-
 // createTestTaxonomyResponse creates a test taxonomy response with sample data.
 func createTestTaxonomyResponse() *harnesspb.GetTaxonomySchemaResponse {
 	return &harnesspb.GetTaxonomySchemaResponse{
 		Version: "1.2.3",
 		NodeTypes: []*harnesspb.TaxonomyNodeType{
 			{
-				Id:                    "node.asset.host",
-				Name:                  "Host",
-				Type:                  "host",
-				Category:              "asset",
-				Description:           "A host system",
-				IdentifyingProperties: []string{"ip"},
+				Id:          "node.asset.host",
+				Name:        "Host",
+				Type:        "host",
+				Category:    "asset",
+				Description: "A host system",
 				Properties: []*harnesspb.TaxonomyProperty{
 					{Name: "ip", Type: "string", Required: true, Description: "IP address"},
 					{Name: "hostname", Type: "string", Required: false, Description: "Hostname"},
 				},
 			},
 			{
-				Id:                    "node.asset.domain",
-				Name:                  "Domain",
-				Type:                  "domain",
-				Category:              "asset",
-				Description:           "A domain name",
-				IdentifyingProperties: []string{"name"},
+				Id:          "node.asset.domain",
+				Name:        "Domain",
+				Type:        "domain",
+				Category:    "asset",
+				Description: "A domain name",
 				Properties: []*harnesspb.TaxonomyProperty{
 					{Name: "name", Type: "string", Required: true, Description: "Domain name"},
 				},

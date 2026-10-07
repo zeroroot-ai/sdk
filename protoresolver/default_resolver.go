@@ -55,7 +55,6 @@ func DefaultConfig() ProtoResolverConfig {
 	return ProtoResolverConfig{
 		CacheMaxEntries: 100,
 		CacheTTL:        time.Hour,
-		StrictMode:      true,
 		LogFallbacks:    true,
 	}
 }
@@ -235,33 +234,4 @@ func (d *DefaultProtoResolver) UnmarshalProtoJSON(ctx context.Context, typeName 
 		"json_size", len(jsonData))
 
 	return msg, nil
-}
-
-// InvalidateCache removes all cached FileDescriptorSets and type information
-// for the specified tool. Use "*" to invalidate the entire cache.
-func (d *DefaultProtoResolver) InvalidateCache(toolName string) {
-	if toolName == "*" {
-		// Invalidate all cache entries
-		// Since our cache interface doesn't have a Clear() method,
-		// we can't invalidate all at once. This would need to be enhanced
-		// in the cache implementation if needed.
-		// For now, just log a warning
-		d.logger.Warn("cache invalidation for all tools not implemented, use specific tool names")
-		return
-	}
-
-	d.cache.Invalidate(toolName)
-	d.logger.Debug("cache invalidated", "tool", toolName)
-}
-
-// Metrics returns the current metrics statistics for the resolver.
-// This provides visibility into resolution performance and cache efficiency.
-//
-// Example:
-//
-//	stats := resolver.Metrics()
-//	hitRate := float64(stats.CacheHits) / float64(stats.CacheHits + stats.CacheMisses)
-//	fmt.Printf("Cache hit rate: %.2f%%\n", hitRate * 100)
-func (d *DefaultProtoResolver) Metrics() ProtoMetricsStats {
-	return d.metrics.Stats()
 }

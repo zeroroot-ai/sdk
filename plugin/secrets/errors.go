@@ -22,11 +22,6 @@ package secrets
 
 import "errors"
 
-// ErrNotFound is returned when the daemon's secrets backend has no secret
-// with the requested name for this tenant. Maps to gRPC codes.NotFound on
-// the daemon side; surfaced through GetCredentialFn errors here.
-var ErrNotFound = errors.New("secrets: not found")
-
 // ErrPermissionDenied is returned when the plugin's access to a secret has
 // been revoked (via Client.MarkRevoked, typically driven by a
 // secret_access_revoked event). It is also returned by Resolve immediately
@@ -34,8 +29,6 @@ var ErrNotFound = errors.New("secrets: not found")
 // callback RPC.
 var ErrPermissionDenied = errors.New("secrets: permission denied")
 
-// ErrInvalidArgument is returned by Resolve when the requested name is not
-// declared in the plugin's manifest spec.secrets. The plugin author must
-// declare every secret it consumes; this sentinel signals a manifest
-// authoring error rather than a runtime data error.
+// ErrInvalidArgument is returned by Resolve when the requested name is empty.
+// It signals a plugin authoring error rather than a runtime data error.
 var ErrInvalidArgument = errors.New("secrets: invalid argument")

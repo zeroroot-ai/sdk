@@ -22,8 +22,6 @@ type CheckResult struct {
 	PRNumber string
 	// Output is the raw output from gh pr checks.
 	Output string
-	// Success is true if gh pr checks exited 0.
-	Success bool
 	// Err is non-nil if the command failed.
 	Err error
 }
@@ -47,7 +45,6 @@ func CheckPR(ctx context.Context, runner CommandRunner, repoDir string, prRef st
 	return CheckResult{
 		PRNumber: prRef,
 		Output:   string(out),
-		Success:  err == nil,
 		Err:      err,
 	}
 }

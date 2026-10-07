@@ -69,47 +69,6 @@ func RuntimeInstallPath(kind, name string) (string, error) {
 	return filepath.Join(dir, kind, installFilename(name, ".runtime.json")), nil
 }
 
-// SaveRuntimeInstall writes the install record atomically with 0600 permissions.
-func SaveRuntimeInstall(kind, name string, install RuntimeInstall) (string, error) {
-	if err := install.Credential.Valid(); err != nil {
-		return "", err
-	}
-	path, err := RuntimeInstallPath(kind, name)
-	if err != nil {
-		return "", err
-	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-		return "", fmt.Errorf("capabilitygrant: create runtime-install dir: %w", err)
-	}
-	data, err := json.MarshalIndent(install, "", "  ")
-	if err != nil {
-		return "", fmt.Errorf("capabilitygrant: marshal runtime install: %w", err)
-	}
-	tmp, err := os.CreateTemp(filepath.Dir(path), ".runtime-*.tmp")
-	if err != nil {
-		return "", fmt.Errorf("capabilitygrant: temp runtime install: %w", err)
-	}
-	tmpName := tmp.Name()
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		os.Remove(tmpName)
-		return "", fmt.Errorf("capabilitygrant: write runtime install: %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		os.Remove(tmpName)
-		return "", err
-	}
-	if err := os.Chmod(tmpName, 0o600); err != nil {
-		os.Remove(tmpName)
-		return "", err
-	}
-	if err := os.Rename(tmpName, path); err != nil {
-		os.Remove(tmpName)
-		return "", fmt.Errorf("capabilitygrant: rename runtime install: %w", err)
-	}
-	return path, nil
-}
-
 // InstallRef identifies a registered component install on this host.
 type InstallRef struct {
 	Kind string

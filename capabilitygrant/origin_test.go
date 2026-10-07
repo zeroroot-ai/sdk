@@ -167,38 +167,3 @@ func TestDiscoverRejectsForeignEndpoints(t *testing.T) {
 		})
 	}
 }
-
-// TestRegisterNeverReachesForeignEndpoint shows that a foreign register
-// endpoint never receives the registration credential, through Discover or
-// through PatchDiscoveryRegisterURL.
-func TestRegisterNeverReachesForeignEndpoint(t *testing.T) {
-	var foreignHits atomic.Int32
-	foreign := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		foreignHits.Add(1)
-		assert.Empty(t, r.Header.Get("Authorization"), "credential reached a foreign host")
-		w.WriteHeader(http.StatusCreated)
-	}))
-	t.Cleanup(foreign.Close)
-
-	// The platform's discovery document points registration at the foreign host.
-	platform := discoveryServer(t, func(_ string) map[string]string {
-		return map[string]string{"register": foreign.URL + "/register"}
-	})
-
-	client, err := NewClient(ClientConfig{
-		PlatformURL:    platform.URL,
-		BootstrapToken: "one-time-token",
-		HostKeyPath:    filepath.Join(t.TempDir(), "host_key.json"),
-		AgentName:      "test-agent",
-	})
-	require.NoError(t, err)
-	client.SetHTTPClient(platform.Client())
-
-	require.ErrorIs(t, client.Discover(context.Background()), ErrEndpointOrigin)
-	require.Error(t, client.Register(context.Background()), "Register must fail without a discovery document")
-
-	// The test seam cannot redirect registration off the platform origin either.
-	require.ErrorIs(t, client.PatchDiscoveryRegisterURL(foreign.URL+"/register"), ErrEndpointOrigin)
-
-	assert.Equal(t, int32(0), foreignHits.Load())
-}

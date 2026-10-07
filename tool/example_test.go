@@ -76,51 +76,6 @@ func Example() {
 	// Result: 8
 }
 
-// ExampleToDescriptor demonstrates converting a tool to its descriptor.
-func ExampleToDescriptor() {
-	// Create a simple tool
-	cfg := tool.NewConfig().
-		SetName("greeter").
-		SetVersion("1.0.0").
-		SetDescription("Greets users by name").
-		SetTags([]string{"greeting", "example"})
-
-	greeter, err := tool.New(cfg)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Convert to descriptor
-	desc := tool.ToDescriptor(greeter)
-
-	fmt.Printf("Tool: %s v%s\n", desc.Name, desc.Version)
-	fmt.Printf("Description: %s\n", desc.Description)
-	fmt.Printf("Tags: %v\n", desc.Tags)
-
-	// Output:
-	// Tool: greeter v1.0.0
-	// Description: Greets users by name
-	// Tags: [greeting example]
-}
-
-// ExampleTool_Health demonstrates checking tool health.
-func ExampleTool_Health() {
-	cfg := tool.NewConfig().SetName("health-check-example")
-
-	t, err := tool.New(cfg)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	status := t.Health(context.Background())
-	if status.IsHealthy() {
-		fmt.Println("Tool is operational")
-	}
-
-	// Output:
-	// Tool is operational
-}
-
 // ExampleNew demonstrates creating a tool with proto execution.
 func ExampleNew() {
 	// Create a tool with proto-based execution

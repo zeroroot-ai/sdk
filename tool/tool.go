@@ -6,7 +6,6 @@ package tool
 import (
 	"context"
 
-	"github.com/zeroroot-ai/sdk/types"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -41,8 +40,4 @@ type Tool interface {
 	// Returns a pointer to the proto message type specified by OutputMessageType.
 	// Context is used for cancellation, deadlines, and request-scoped values.
 	ExecuteProto(ctx context.Context, input proto.Message) (proto.Message, error)
-
-	// Health checks the operational status of the tool.
-	// This can be used to verify dependencies, resources, and readiness.
-	Health(ctx context.Context) types.HealthStatus
 }

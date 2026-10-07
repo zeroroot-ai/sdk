@@ -22,9 +22,6 @@ type CompletionRequest struct {
 
 	// Stop contains sequences that will stop generation when encountered.
 	Stop []string
-
-	// Tools contains tool definitions available for the model to use.
-	Tools []ToolDef
 }
 
 // CompletionResponse represents a response from an LLM completion.
@@ -73,28 +70,6 @@ func WithMaxTokens(n int) CompletionOption {
 	}
 }
 
-// WithTopP sets the nucleus sampling parameter.
-// TopP controls diversity via nucleus sampling (0.0 to 1.0).
-func WithTopP(p float64) CompletionOption {
-	return func(r *CompletionRequest) {
-		r.TopP = &p
-	}
-}
-
-// WithStopSequences sets sequences that will stop generation.
-func WithStopSequences(stops ...string) CompletionOption {
-	return func(r *CompletionRequest) {
-		r.Stop = stops
-	}
-}
-
-// WithTools sets the available tools for the completion request.
-func WithTools(tools ...ToolDef) CompletionOption {
-	return func(r *CompletionRequest) {
-		r.Tools = tools
-	}
-}
-
 // ApplyOptions applies a set of options to the completion request.
 func (r *CompletionRequest) ApplyOptions(opts ...CompletionOption) {
 	for _, opt := range opts {
@@ -111,21 +86,6 @@ func NewCompletionRequest(messages []Message, opts ...CompletionOption) *Complet
 	}
 	req.ApplyOptions(opts...)
 	return req
-}
-
-// HasContent returns true if the response contains text content.
-func (r *CompletionResponse) HasContent() bool {
-	return r.Content != ""
-}
-
-// HasToolCalls returns true if the response contains tool calls.
-func (r *CompletionResponse) HasToolCalls() bool {
-	return len(r.ToolCalls) > 0
-}
-
-// IsComplete returns true if generation finished normally (not truncated).
-func (r *CompletionResponse) IsComplete() bool {
-	return r.FinishReason == "stop" || r.FinishReason == "tool_calls"
 }
 
 // Add combines two TokenUsage instances.

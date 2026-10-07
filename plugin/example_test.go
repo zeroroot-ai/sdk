@@ -27,8 +27,8 @@ func echo(_ context.Context, req EchoRequest) (EchoResponse, error) {
 	return EchoResponse{Echoed: "echoed: " + req.Message}, nil
 }
 
-// ExampleServe demonstrates the minimal Go-first plugin main.go. The manifest
-// path and method name match the plugin's plugin.yaml.
+// ExampleServe demonstrates the minimal Go-first plugin main.go. The plugin
+// declares its name, version and methods in code (ADR-0097).
 //
 // This example is compiled but not executed (no Output: comment) because
 // plugin.Serve connects to a real daemon and blocks until shutdown.
@@ -36,8 +36,9 @@ func ExampleServe() {
 	ctx := context.Background()
 
 	err := plugin.Serve(ctx,
-		plugin.WithManifest("./plugin.yaml"),
-		plugin.WithHandler("Echo", "test handler for Echo", echo),
+		plugin.WithName("echo"),
+		plugin.WithVersion("0.1.0"),
+		plugin.WithHandler("Echo", "echoes the message back", echo),
 	)
 	if err != nil {
 		log.Fatal(err)

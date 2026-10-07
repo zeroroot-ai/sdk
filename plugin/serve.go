@@ -5,21 +5,15 @@ package plugin
 
 import (
 	"context"
-	"crypto/sha256"
 	"crypto/tls"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net"
 	"os"
 	"os/signal"
-	"slices"
 	"sort"
-	"strconv"
 	"strings"
-	"sync"
-	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -35,20 +29,16 @@ import (
 	pluginpb "github.com/zeroroot-ai/sdk/api/gen/gibson/plugin/v1"
 	"github.com/zeroroot-ai/sdk/capabilitygrant"
 	"github.com/zeroroot-ai/sdk/plugin/dispatch"
-	"github.com/zeroroot-ai/sdk/plugin/egress"
 	"github.com/zeroroot-ai/sdk/plugin/events"
 	"github.com/zeroroot-ai/sdk/plugin/health"
 	"github.com/zeroroot-ai/sdk/plugin/lifecycle"
-	"github.com/zeroroot-ai/sdk/plugin/manifest"
-	"github.com/zeroroot-ai/sdk/plugin/metrics"
 	pluginsecrets "github.com/zeroroot-ai/sdk/plugin/secrets"
 )
 
 // MethodHandler is the low-level, JSON-in/JSON-out dispatch adapter type,
 // aliased from [dispatch.MethodHandler]. Plugin authors do NOT implement it
 // directly — they register typed Go handlers with [WithHandler], which builds
-// the adapter and derives the method schema from the Go types. The alias is
-// exported for the dynamic-discovery path ([DiscoveredMethod.Handler]).
+// the adapter and derives the method schema from the Go types.
 //
 // Handlers MUST NOT include resolved secret values in any returned error string.
 type MethodHandler = dispatch.MethodHandler
@@ -56,28 +46,23 @@ type MethodHandler = dispatch.MethodHandler
 // Serve is the single entry point a plugin author calls from main(). It
 // orchestrates all plugin SDK components:
 //
-//  1. Loads and validates the manifest from the path given by [WithManifest].
-//  2. Cross-checks registered method handlers against manifest declarations.
-//  3. Acquires a daemon connection via capabilitygrant (Bootstrap → Discover → Register).
+//  1. Checks the declaration in code: [WithName], [WithVersion] and at least
+//     one [WithHandler]. No manifest file exists (ADR-0097).
+//  2. Acquires a daemon connection via capabilitygrant (Bootstrap → Discover → Register).
+//  3. Registers the handlers as the plugin's method set.
 //  4. Constructs the secrets client wrapping GetCredential.
-//  5. Starts the egress enforcer (per GIBSON_PLUGIN_RUNTIME).
-//  6. Pre-resolves all manifest secrets with scope=startup, required=true.
-//  7. Starts the lifecycle state machine, invokes OnStart, transitions to Ready.
+//  5. Starts the lifecycle state machine and invokes OnStart. A plugin that
+//     needs a secret to start resolves it there; an error fails Serve.
+//  6. Transitions to Ready.
 //  8. Starts the health server on the configured port.
 //  9. Starts the events subscriber on the WatchComponentEvents stream.
 //  10. Starts the dispatch loop (PollWork → handler → SubmitResult).
 //  11. Blocks until ctx is cancelled or a fatal error occurs.
 //  12. On SIGTERM/SIGINT: stops new work, drains in-flight handlers up to
 //     drainTimeout, runs OnStop, exits cleanly.
-//  13. On rotation=restart event: drains then exits with code 75.
 //
 // Serve returns the first fatal error encountered, or nil on clean shutdown.
 func Serve(ctx context.Context, opts ...Option) error {
-	// t0 anchors the gibson_plugin_startup_seconds histogram. It is observed
-	// by the lifecycle observer below the first time the state machine
-	// transitions into Ready.
-	t0 := time.Now()
-
 	cfg := &config{}
 	for _, o := range opts {
 		o(cfg)
@@ -91,59 +76,18 @@ func Serve(ctx context.Context, opts ...Option) error {
 	}
 
 	// -------------------------------------------------------------------------
-	// Step 1: Load and validate manifest.
+	// Step 1: Check the declaration in code (ADR-0097).
 	// -------------------------------------------------------------------------
-	var m *manifest.Manifest
-	switch {
-	case cfg.parsedManifest != nil:
-		m = cfg.parsedManifest
-		manifest.ApplyDefaults(m)
-		if err := manifest.Validate(m); err != nil {
-			return fmt.Errorf("plugin.Serve: validate manifest: %w", err)
-		}
-	case cfg.manifestPath != "":
-		var err error
-		m, err = manifest.Load(cfg.manifestPath)
-		if err != nil {
-			return fmt.Errorf("plugin.Serve: load manifest: %w", err)
-		}
-	default:
-		return errors.New("plugin.Serve: WithManifest is required")
+	if cfg.name == "" {
+		return errors.New("plugin.Serve: WithName is required")
 	}
-	slog.Info("plugin: manifest loaded",
-		"name", m.Metadata.Name,
-		"version", m.Metadata.Version,
-		"runtime", m.Spec.Runtime,
-	)
-
-	// -------------------------------------------------------------------------
-	// Step 2: Validate method handler registration vs manifest declarations.
-	// -------------------------------------------------------------------------
-	if err := validateMethods(m, cfg.handlers); err != nil {
-		return fmt.Errorf("plugin.Serve: method validation: %w", err)
+	if cfg.version == "" {
+		return errors.New("plugin.Serve: WithVersion is required")
 	}
-	if m.Spec.DynamicMethods && cfg.methodSource == nil {
-		return errors.New("plugin.Serve: manifest declares spec.dynamic_methods " +
-			"but no method source is registered; pass WithMethodSource")
+	if len(cfg.handlers) == 0 {
+		return errors.New("plugin.Serve: no methods to register; pass at least one WithHandler")
 	}
-	if cfg.methodSource != nil && !m.Spec.DynamicMethods {
-		return errors.New("plugin.Serve: WithMethodSource requires " +
-			"spec.dynamic_methods: true in the manifest")
-	}
-
-	// -------------------------------------------------------------------------
-	// Step 3: Check setec_required policy.
-	// -------------------------------------------------------------------------
-	if m.Spec.Policy.SetecRequired {
-		runtime := os.Getenv(egress.EnvRuntimeKey)
-		if runtime == "" {
-			runtime = egress.RuntimeProcess
-		}
-		if runtime != egress.RuntimeSetec {
-			return fmt.Errorf("plugin.Serve: manifest requires setec runtime "+
-				"(spec.policy.setec_required=true) but GIBSON_PLUGIN_RUNTIME=%q", runtime)
-		}
-	}
+	slog.Info("plugin: declared", "name", cfg.name, "version", cfg.version, "methods", len(cfg.handlers))
 
 	// -------------------------------------------------------------------------
 	// Step 4: Build a signal-aware context wrapping the caller's ctx.
@@ -157,33 +101,10 @@ func Serve(ctx context.Context, opts ...Option) error {
 	sm := lifecycle.New(cfg.hooks)
 	sm.OnTransition(func(from, to lifecycle.State) {
 		slog.Info("plugin: lifecycle transition",
-			"plugin", m.Metadata.Name,
+			"plugin", cfg.name,
 			"from", from.String(),
 			"to", to.String(),
 		)
-	})
-
-	// Metrics observer: bumps gibson_plugin_lifecycle_transition_total and
-	// updates gibson_plugin_state. The install_id label is empty until
-	// RegisterComponent assigns one; the gauge is backfilled below via
-	// metrics.Default.SetState(plugin, instanceID, Current()) once known.
-	//
-	// Startup observation: on the first transition into Ready, observe
-	// gibson_plugin_startup_seconds(plugin) using the t0 captured above.
-	var (
-		startupOnce        sync.Once
-		instanceIDForGauge atomic.Pointer[string]
-	)
-	emptyInstance := ""
-	instanceIDForGauge.Store(&emptyInstance)
-	sm.OnTransition(func(from, to lifecycle.State) {
-		iid := *instanceIDForGauge.Load()
-		metrics.Default.RecordTransition(m.Metadata.Name, iid, from, to)
-		if to == lifecycle.Ready {
-			startupOnce.Do(func() {
-				metrics.Default.ObserveStartup(m.Metadata.Name, t0)
-			})
-		}
 	})
 
 	// -------------------------------------------------------------------------
@@ -199,10 +120,10 @@ func Serve(ctx context.Context, opts ...Option) error {
 	}
 	if platformURL == "" {
 		return errors.New("plugin.Serve: platform URL is required; " +
-			"set GIBSON_URL or pass WithPlatformURL")
+			"set GIBSON_URL")
 	}
 
-	hostKeyPath, err := pluginHostKeyPath(m.Metadata.Name)
+	hostKeyPath, err := pluginHostKeyPath(cfg.name)
 	if err != nil {
 		return fmt.Errorf("plugin.Serve: resolve host key path: %w", err)
 	}
@@ -211,7 +132,7 @@ func Serve(ctx context.Context, opts ...Option) error {
 		PlatformURL:    platformURL,
 		BootstrapToken: cfg.bootstrapToken,
 		HostKeyPath:    hostKeyPath,
-		AgentName:      m.Metadata.Name,
+		AgentName:      cfg.name,
 		AgentMode:      "autonomous",
 	})
 	if err != nil {
@@ -227,7 +148,7 @@ func Serve(ctx context.Context, opts ...Option) error {
 		return fmt.Errorf("plugin.Serve: capabilitygrant.Register: %w", err)
 	}
 	slog.Info("plugin: registered with daemon",
-		"plugin", m.Metadata.Name,
+		"plugin", cfg.name,
 		"agent_id", cgClient.AgentID(),
 	)
 
@@ -256,114 +177,36 @@ func Serve(ctx context.Context, opts ...Option) error {
 	componentSvcClient := componentpb.NewComponentServiceClient(conn)
 	harnessCallbackSvcClient := harnesspb.NewHarnessCallbackServiceClient(conn)
 
-	// Construct the secrets client before RegisterComponent so a method
-	// source can resolve declared credentials during discovery (e.g. to start
-	// a vendor subprocess that needs an API token in its environment).
+	// The secrets client wraps GetCredential.
 	secretsClient := cfg.secretsClient
 	if secretsClient == nil {
-		secretsClient = buildSecretsClient(m, harnessCallbackSvcClient)
+		secretsClient = buildSecretsClient(harnessCallbackSvcClient)
 	}
 
-	// Inject the secrets client into the context so that the method source,
-	// the OnStart hook, the method handlers (via the dispatch loop), and the
-	// OnStop hook can resolve declared secrets through plugin.ResolveSecret /
-	// secrets.FromContext. Every context derived from signalCtx below — the
-	// method source call, RunOnStart, the errgroup ctx that feeds disp.Run,
-	// and the health/events goroutines — inherits this value.
+	// Inject the secrets client into the context so that the OnStart hook,
+	// the method handlers (via the dispatch loop), and the OnStop hook can
+	// resolve secrets through plugin.ResolveSecret / secrets.FromContext. Every
+	// context derived from signalCtx below — RunOnStart, the errgroup ctx that
+	// feeds disp.Run, and the health/events goroutines — inherits this value.
 	signalCtx = pluginsecrets.NewContext(signalCtx, secretsClient)
 
-	// Validate and register handlers for any discovered methods.
-	var discovered []DiscoveredMethod
-	if cfg.methodSource != nil {
-		var err error
-		discovered, err = cfg.methodSource(signalCtx)
-		if err != nil {
-			return fmt.Errorf("plugin.Serve: method source: %w", err)
-		}
-		for _, dm := range discovered {
-			if dm.Name == "" {
-				return errors.New("plugin.Serve: method source returned a method with empty name")
-			}
-			if dm.Handler == nil {
-				return fmt.Errorf("plugin.Serve: method source returned method %q with nil handler", dm.Name)
-			}
-			if _, exists := cfg.handlers[dm.Name]; exists {
-				return fmt.Errorf("plugin.Serve: method source returned method %q "+
-					"which collides with an already-registered method", dm.Name)
-			}
-			cfg.handlers[dm.Name] = dm.Handler
-		}
-		slog.Info("plugin: methods discovered",
-			"plugin", m.Metadata.Name,
-			"count", len(discovered),
-		)
-	}
-
-	// Assemble the method set: names (back-compat, RegisterComponentRequest.methods)
+	// The registered handlers are the method set: names (RegisterComponentRequest.methods)
 	// plus rich descriptors (method_descriptors) so the connector catalog and
 	// SearchTools can surface per-method descriptions to agents.
-	methodNames, methodDescriptors := buildMethodMetadata(m.Spec.Methods, discovered, cfg.methodSchemas, cfg.methodDescriptions)
-	if len(methodNames) == 0 {
-		return errors.New("plugin.Serve: no methods to register; the method " +
-			"source returned an empty set and the manifest declares none")
-	}
+	methodNames, methodDescriptors := buildMethodMetadata(cfg.methodSchemas, cfg.methodDescriptions)
 
-	// Register as a plugin component. The plugin:* metadata keys are the
-	// contract the daemon reads to populate the ComponentInstall record
-	// (internal/platform/component/service.go) — runtime mode, setec_required,
-	// host id (the RFC-7638 thumbprint that keys per-host install uniqueness),
-	// manifest hash, and content-trust classification. gibson#997.
-	// Declared secrets this plugin resolves at runtime. From the SDK's side the
-	// list is a DECLARATION, not a grant: it travels as metadata so the platform
-	// knows what this plugin will ask for, and every authorization decision is
-	// made server-side.
-	//
-	// This comment used to justify the daemon's handling of it here, with "a
-	// first-party plugin's manifest is operator-approved via GitOps". There is no
-	// such review step, so the sentence argued for a safety property out of
-	// something that does not happen. Naming the daemon's current rule instead
-	// would be the same mistake one layer along: this repo cannot see that code,
-	// the rule is being narrowed, and a copy of it here goes stale without
-	// anything failing. The daemon's RegisterComponent is the single place that
-	// decides, and it is where a reader has to look.
-	//
-	// What the SDK does guarantee is fail-fast, in step 10: a secret declared
-	// `scope: startup, required: true` that cannot be resolved fails Serve with
-	// the secret named, rather than at the first call that needs it. That holds
-	// whatever the daemon grants, and it is the behaviour that must survive the
-	// manifest's deletion (sdk#129).
-	//
-	// Comma-joined because a secret ref (e.g. "cred:github_token") contains a
-	// colon but never a comma.
-	declaredSecrets := make([]string, 0, len(m.Spec.Secrets))
-	for _, s := range m.Spec.Secrets {
-		if s.Name != "" {
-			declaredSecrets = append(declaredSecrets, s.Name)
-		}
-	}
-
+	// Register as a plugin component. plugin:host_id is the RFC-7638
+	// thumbprint that keys per-host install uniqueness in the daemon. The
+	// daemon decides every authorization itself: a tenant admin grants a
+	// plugin its secrets, and no metadata key declares one (sdk#129).
 	regResp, err := componentSvcClient.RegisterComponent(signalCtx, &componentpb.RegisterComponentRequest{
 		Kind:              "plugin",
-		Name:              m.Metadata.Name,
-		Version:           m.Metadata.Version,
+		Name:              cfg.name,
+		Version:           cfg.version,
 		Methods:           methodNames,
 		MethodDescriptors: methodDescriptors,
 		Metadata: map[string]string{
-			"manifest_version":      m.Metadata.Version,
-			"runtime":               m.Spec.Runtime,
-			"plugin:runtime_mode":   m.Spec.Runtime,
-			"plugin:setec_required": strconv.FormatBool(m.Spec.Policy.SetecRequired),
-			"plugin:host_id":        cgClient.HostID(),
-			"plugin:manifest_hash":  manifestHashFromPath(cfg.manifestPath),
-			// plugin:content_trust travels the manifest's trust classification to
-			// the daemon, which records it on the ComponentInstall and gates
-			// untrusted plugin invocation through the dispatch policy
-			// (ADR-0110). Normalised so an unset value is "trusted".
-			"plugin:content_trust": normalizeContentTrust(m.Spec.Policy.ContentTrust),
-			// plugin:secrets is the comma-joined list of declared secret refs.
-			// A declaration, not a grant: the daemon decides what it authorizes
-			// from it. See the block above RegisterComponent.
-			"plugin:secrets": strings.Join(declaredSecrets, ","),
+			"plugin:host_id": cgClient.HostID(),
 		},
 	})
 	if err != nil {
@@ -371,46 +214,19 @@ func Serve(ctx context.Context, opts ...Option) error {
 	}
 	instanceID := regResp.GetInstanceId()
 	slog.Info("plugin: component registered",
-		"plugin", m.Metadata.Name,
+		"plugin", cfg.name,
 		"instance_id", instanceID,
 	)
 
-	// Now that an install_id exists, backfill the per-install gauge to the
-	// state machine's current state. Subsequent transitions update the gauge
-	// via the observer registered above.
-	instanceIDForGauge.Store(&instanceID)
-	metrics.Default.SetState(m.Metadata.Name, instanceID, sm.Current())
-
 	// -------------------------------------------------------------------------
-	// Step 8: Transition to ResolvingSecrets. The secrets client itself was
-	// constructed before RegisterComponent (above) so the method source could
-	// use it during discovery.
+	// Step 8: Transition to ResolvingSecrets. The secrets client is ready; a
+	// plugin that needs a secret to start resolves it in OnStart below.
 	// -------------------------------------------------------------------------
 	if err := sm.Transition(lifecycle.ResolvingSecrets); err != nil {
 		return fmt.Errorf("plugin.Serve: lifecycle transition to ResolvingSecrets: %w", err)
 	}
 
 	// -------------------------------------------------------------------------
-	// Step 9: Apply egress enforcer.
-	// -------------------------------------------------------------------------
-	egressEnforcer := egress.New(nil) // nil SetecClient; concrete impl is Setec SDK scope.
-	if err := egressEnforcer.Apply(signalCtx, m.Spec.Egress); err != nil {
-		return fmt.Errorf("plugin.Serve: egress enforcer: %w", err)
-	}
-
-	// -------------------------------------------------------------------------
-	// Step 10: Pre-resolve all scope=startup, required=true secrets.
-	// -------------------------------------------------------------------------
-	for _, s := range m.Spec.Secrets {
-		if s.Scope == "startup" && s.Required {
-			if _, err := secretsClient.Resolve(signalCtx, s.Name); err != nil {
-				return fmt.Errorf("plugin.Serve: required startup secret %q is unavailable: %w",
-					s.Name, err)
-			}
-			slog.Info("plugin: startup secret resolved", "name", s.Name)
-		}
-	}
-
 	// -------------------------------------------------------------------------
 	// Step 11: Transition to Starting, run OnStart, transition to Ready.
 	// -------------------------------------------------------------------------
@@ -418,15 +234,17 @@ func Serve(ctx context.Context, opts ...Option) error {
 		return fmt.Errorf("plugin.Serve: lifecycle transition to Starting: %w", err)
 	}
 
+	// A plugin that needs a secret resolves it here and returns the error, so
+	// a missing grant fails the start with the secret named.
 	if err := sm.RunOnStart(signalCtx); err != nil {
 		return fmt.Errorf("plugin.Serve: OnStart hook failed: %w", err)
 	}
 	// sm is now in Ready state (transitioned by RunOnStart).
 
 	// -------------------------------------------------------------------------
-	// Step 12: Start health server.
+	// Step 10: Start health server.
 	// -------------------------------------------------------------------------
-	healthSrv := health.New(sm, cfg.healthAddr, m.Spec.Health.EffectiveLivenessInterval())
+	healthSrv := health.New(sm, cfg.healthAddr, health.DefaultLivenessInterval)
 	boundAddr, err := healthSrv.Start(signalCtx)
 	if err != nil {
 		return fmt.Errorf("plugin.Serve: start health server: %w", err)
@@ -434,7 +252,7 @@ func Serve(ctx context.Context, opts ...Option) error {
 	slog.Info("plugin: health server started", "addr", boundAddr)
 
 	// -------------------------------------------------------------------------
-	// Step 13: Build the dispatcher.
+	// Step 11: Build the dispatcher.
 	// -------------------------------------------------------------------------
 	pollTimeout := time.Duration(regResp.GetPollTimeoutMs()) * time.Millisecond
 	if pollTimeout <= 0 {
@@ -449,28 +267,17 @@ func Serve(ctx context.Context, opts ...Option) error {
 	disp := dispatch.New(compAdapter, dispatch.Config{
 		Handlers:    cfg.handlers,
 		PollTimeout: pollTimeout,
-		OnInvocationComplete: func(method string, dur time.Duration, res dispatch.InvocationResult) {
-			// dispatch.InvocationResult and metrics.Result share string
-			// values; the cast is exact and bounded by the two enums.
-			metrics.Default.ObserveInvocation(
-				m.Metadata.Name, method, metrics.Result(res), dur,
-			)
-		},
 	})
 
 	// -------------------------------------------------------------------------
-	// Step 14: Build the events subscriber and wire the Drainer.
+	// Step 12: Build the events subscriber.
 	// -------------------------------------------------------------------------
-	eventStream := newComponentEventStream(componentSvcClient, m.Metadata.Name)
+	eventStream := newComponentEventStream(componentSvcClient, cfg.name)
 
-	sub := events.NewWithDrainer(eventStream, secretsClient, sm, disp, m)
-	pluginName := m.Metadata.Name
-	sub.SetOnRotation(func(_ string, lag time.Duration) {
-		metrics.Default.ObserveRotationPropagation(pluginName, lag)
-	})
+	sub := events.New(eventStream, secretsClient, sm)
 
 	// -------------------------------------------------------------------------
-	// Step 15: Run background goroutines.
+	// Step 13: Run background goroutines.
 	// -------------------------------------------------------------------------
 	heartbeatInterval := time.Duration(regResp.GetHeartbeatIntervalMs()) * time.Millisecond
 	if heartbeatInterval <= 0 {
@@ -503,13 +310,12 @@ func Serve(ctx context.Context, opts ...Option) error {
 	// Graceful shutdown watcher.
 	eg.Go(func() error {
 		<-egCtx.Done()
-		// Use a fresh background context for shutdown operations because
-		// egCtx is already cancelled here. Re-inject the secrets client so the
-		// OnStop hook can still resolve declared secrets during drain.
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.drainTimeout+5*time.Second)
+		// egCtx is already cancelled here, so the shutdown context drops its
+		// cancellation and keeps its values. The secrets client in those
+		// values lets the OnStop hook resolve secrets during drain.
+		shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(egCtx), cfg.drainTimeout+5*time.Second)
 		defer cancel()
-		shutdownCtx = pluginsecrets.NewContext(shutdownCtx, secretsClient)
-		return gracefulShutdown(shutdownCtx, sm, disp, cfg.drainTimeout, m.Metadata.Name)
+		return gracefulShutdown(shutdownCtx, sm, disp, cfg.drainTimeout, cfg.name)
 	})
 
 	if err := eg.Wait(); err != nil {
@@ -552,106 +358,30 @@ func gracefulShutdown(
 	return nil
 }
 
-// buildMethodMetadata assembles, from the manifest-declared methods and the
-// methods returned by a method source, the parallel name list (back-compat,
-// RegisterComponentRequest.methods) and the rich per-method descriptors
-// (method_descriptors). Descriptions flow through so the connector catalog and
-// SearchTools can surface them; declared methods come first, then discovered.
-func buildMethodMetadata(declared []manifest.MethodDecl, discovered []DiscoveredMethod, schemas map[string]methodSchema, descriptions map[string]string) ([]string, []*componentpb.ComponentMethod) {
-	n := len(declared) + len(discovered)
-	names := make([]string, 0, n)
-	detailed := make([]*componentpb.ComponentMethod, 0, n)
-	for _, d := range declared {
-		names = append(names, d.Name)
-		// The handler's description wins over the manifest's. WithHandler
-		// requires one, so for any method with a registered handler this is
-		// always the Go-side value; the manifest's `methods:` description is a
-		// fallback that exists only until the manifest is deleted (sdk#127,
-		// sdk#129, ADR-0097).
-		desc := d.Description
-		if h, ok := descriptions[d.Name]; ok {
-			desc = h
-		}
-		cm := &componentpb.ComponentMethod{Name: d.Name, Description: desc}
+// buildMethodMetadata assembles, from the registered handlers, the parallel
+// name list (RegisterComponentRequest.methods) and the rich per-method
+// descriptors (method_descriptors). Descriptions flow through so the connector
+// catalog and SearchTools can surface them. Sorted, because ranging a map
+// would let Go's randomised iteration order into the RegisterComponent payload
+// and make the registered method list differ between two runs of the same
+// plugin.
+func buildMethodMetadata(schemas map[string]methodSchema, descriptions map[string]string) ([]string, []*componentpb.ComponentMethod) {
+	names := make([]string, 0, len(descriptions))
+	for name := range descriptions {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	detailed := make([]*componentpb.ComponentMethod, 0, len(names))
+	for _, name := range names {
+		cm := &componentpb.ComponentMethod{Name: name, Description: descriptions[name]}
 		// The Go-first request schema derived from the handler's typed struct
 		// travels to the daemon as the method's tool-input contract.
-		if s, ok := schemas[d.Name]; ok {
-			cm.InputSchemaJson = s.input
-		}
-		detailed = append(detailed, cm)
-	}
-	// Methods with a handler but no manifest declaration: once the manifest is
-	// gone this is every method, so the registered set is already the source.
-	// Sorted, because ranging a map would let Go's randomised iteration order
-	// into the RegisterComponent payload and make the registered method list
-	// differ between two runs of the same plugin.
-	extra := make([]string, 0, len(descriptions))
-	for name := range descriptions {
-		if !hasMethod(names, name) {
-			extra = append(extra, name)
-		}
-	}
-	sort.Strings(extra)
-	for _, name := range extra {
-		names = append(names, name)
-		cm := &componentpb.ComponentMethod{Name: name, Description: descriptions[name]}
 		if s, ok := schemas[name]; ok {
 			cm.InputSchemaJson = s.input
 		}
 		detailed = append(detailed, cm)
 	}
-	for _, dm := range discovered {
-		names = append(names, dm.Name)
-		detailed = append(detailed, &componentpb.ComponentMethod{Name: dm.Name, Description: dm.Description})
-	}
 	return names, detailed
-}
-
-// hasMethod reports whether name is already in the accumulated method list.
-func hasMethod(names []string, name string) bool {
-	return slices.Contains(names, name)
-}
-
-// validateMethods cross-checks the handler map against the manifest's method
-// declarations. Returns a descriptive error listing any mismatches.
-func validateMethods(m *manifest.Manifest, handlers map[string]MethodHandler) error {
-	declared := make(map[string]struct{}, len(m.Spec.Methods))
-	for _, meth := range m.Spec.Methods {
-		declared[meth.Name] = struct{}{}
-	}
-
-	var undeclared, unregistered []string
-	for name := range handlers {
-		if _, ok := declared[name]; !ok {
-			undeclared = append(undeclared, name)
-		}
-	}
-	for _, meth := range m.Spec.Methods {
-		if _, ok := handlers[meth.Name]; !ok {
-			unregistered = append(unregistered, meth.Name)
-		}
-	}
-
-	sort.Strings(undeclared)
-	sort.Strings(unregistered)
-
-	var msgs []string
-	if len(undeclared) > 0 {
-		msgs = append(msgs, fmt.Sprintf(
-			"handlers registered for undeclared methods: [%s]",
-			strings.Join(undeclared, ", "),
-		))
-	}
-	if len(unregistered) > 0 {
-		msgs = append(msgs, fmt.Sprintf(
-			"manifest methods without registered handlers: [%s]",
-			strings.Join(unregistered, ", "),
-		))
-	}
-	if len(msgs) > 0 {
-		return fmt.Errorf("method mismatch: %s", strings.Join(msgs, "; "))
-	}
-	return nil
 }
 
 // pluginHostKeyPath returns the host key path for a plugin install.
@@ -726,8 +456,8 @@ func resolveDaemonAddr(platformURL string) string {
 // The Credential proto is a oneof (ApiKey | BearerToken | Basic | OAuth |
 // CustomSecret). The plugin secrets client works with raw []byte, so we
 // extract the raw credential value from whichever field is populated.
-func buildSecretsClient(m *manifest.Manifest, hc harnesspb.HarnessCallbackServiceClient) pluginsecrets.Client {
-	return pluginsecrets.New(m, func(ctx context.Context, name string) ([]byte, error) {
+func buildSecretsClient(hc harnesspb.HarnessCallbackServiceClient) pluginsecrets.Client {
+	return pluginsecrets.New(func(ctx context.Context, name string) ([]byte, error) {
 		resp, err := hc.GetCredential(ctx, &harnesspb.GetCredentialRequest{
 			Name: name,
 		})
@@ -1020,33 +750,4 @@ func componentEventToEvent(msg *componentpb.ComponentEvent) events.Event {
 		ev.OccurredAt = ts.AsTime()
 	}
 	return ev
-}
-
-// normalizeContentTrust maps a manifest content_trust value to the canonical
-// "trusted"/"untrusted" the daemon expects, defaulting any empty or unrecognised
-// value to "trusted" (fail-safe: only an explicit "untrusted" opts a plugin into
-// dispatch-policy gating). See gibson#997.
-func normalizeContentTrust(v string) string {
-	if v == manifest.ContentTrustUntrusted {
-		return manifest.ContentTrustUntrusted
-	}
-	return manifest.ContentTrustTrusted
-}
-
-// manifestHashFromPath returns the SHA-256 hex digest of the manifest YAML at
-// path, forwarded as plugin:manifest_hash. Returns "" when path is empty (an
-// in-memory parsed manifest) or unreadable — the daemon treats a missing hash
-// as "not provided", matching the prior behaviour. See gibson#997.
-func manifestHashFromPath(path string) string {
-	if path == "" {
-		return ""
-	}
-	// path is the operator-supplied manifest path (WithManifest / the same path
-	// manifest.Load already read above), not untrusted input.
-	raw, err := os.ReadFile(path) //nolint:gosec // G304: operator-provided manifest path, not user input
-	if err != nil {
-		return ""
-	}
-	sum := sha256.Sum256(raw)
-	return hex.EncodeToString(sum[:])
 }

@@ -5,6 +5,7 @@ package secrets
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -12,65 +13,43 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/zeroroot-ai/sdk/plugin/manifest"
 )
 
-// minimalManifest builds a valid Manifest containing the listed secret names.
-func minimalManifest(secretNames ...string) *manifest.Manifest {
-	decls := make([]manifest.SecretDecl, len(secretNames))
-	for i, n := range secretNames {
-		decls[i] = manifest.SecretDecl{
-			Name:     n,
-			Scope:    "startup",
-			Rotation: "live",
-			Required: true,
-		}
-	}
-	return &manifest.Manifest{
-		APIVersion: manifest.APIVersionV1,
-		Kind:       manifest.KindPlugin,
-		Metadata: manifest.ManifestMetadata{
-			Name:    "test-plugin",
-			Version: "0.1.0",
-		},
-		Spec: manifest.ManifestSpec{
-			WorkloadClass: manifest.WorkloadClassPlugin,
-			Secrets:       decls,
-			Methods: []manifest.MethodDecl{
-				{
-					Name: "DoStuff",
-				},
-			},
-			Runtime: "process",
-		},
-	}
-}
-
-func TestClient_ManifestValidation_NotDeclared(t *testing.T) {
-	m := minimalManifest("cred:db_password")
+func TestClient_EmptyName_IsInvalid(t *testing.T) {
 	calls := 0
 	fn := func(_ context.Context, _ string) ([]byte, error) {
 		calls++
 		return []byte("val"), nil
 	}
-	cl := New(m, fn, CacheConfig{})
+	cl := New(fn, CacheConfig{})
 
-	_, err := cl.Resolve(context.Background(), "cred:undeclared")
-	require.Error(t, err)
-	require.ErrorIs(t, err, ErrInvalidArgument,
-		"expected ErrInvalidArgument, got %v", err)
-	assert.Equal(t, 0, calls, "RPC must not be called for undeclared name")
+	_, err := cl.Resolve(context.Background(), "")
+	require.ErrorIs(t, err, ErrInvalidArgument)
+	assert.Equal(t, 0, calls, "RPC must not be called for an empty name")
+}
+
+// TestClient_AnyName_ReachesTheDaemon proves the SDK keeps no allow-list: a
+// name reaches the daemon, which decides with the FGA relation can_resolve.
+func TestClient_AnyName_ReachesTheDaemon(t *testing.T) {
+	var asked []string
+	fn := func(_ context.Context, name string) ([]byte, error) {
+		asked = append(asked, name)
+		return []byte("val"), nil
+	}
+	cl := New(fn, CacheConfig{})
+
+	_, err := cl.Resolve(context.Background(), "cred:never_declared")
+	require.NoError(t, err)
+	assert.Equal(t, []string{"cred:never_declared"}, asked)
 }
 
 func TestClient_CacheMiss_CallsRPC(t *testing.T) {
-	m := minimalManifest("cred:api_key")
 	calls := 0
 	fn := func(_ context.Context, _ string) ([]byte, error) {
 		calls++
 		return []byte("secret-value"), nil
 	}
-	cl := New(m, fn, CacheConfig{})
+	cl := New(fn, CacheConfig{})
 
 	v, err := cl.Resolve(context.Background(), "cred:api_key")
 	require.NoError(t, err)
@@ -79,13 +58,12 @@ func TestClient_CacheMiss_CallsRPC(t *testing.T) {
 }
 
 func TestClient_CacheHit_NoRPC(t *testing.T) {
-	m := minimalManifest("cred:api_key")
 	calls := 0
 	fn := func(_ context.Context, _ string) ([]byte, error) {
 		calls++
 		return []byte("secret-value"), nil
 	}
-	cl := New(m, fn, CacheConfig{})
+	cl := New(fn, CacheConfig{})
 
 	_, err := cl.Resolve(context.Background(), "cred:api_key")
 	require.NoError(t, err)
@@ -96,7 +74,6 @@ func TestClient_CacheHit_NoRPC(t *testing.T) {
 }
 
 func TestClient_TTLExpiry_RefetchesAfterExpiry(t *testing.T) {
-	m := minimalManifest("cred:token")
 	calls := 0
 	fn := func(_ context.Context, _ string) ([]byte, error) {
 		calls++
@@ -104,7 +81,7 @@ func TestClient_TTLExpiry_RefetchesAfterExpiry(t *testing.T) {
 	}
 
 	ttl := 50 * time.Millisecond
-	cl := New(m, fn, CacheConfig{TTL: ttl})
+	cl := New(fn, CacheConfig{TTL: ttl})
 
 	_, err := cl.Resolve(context.Background(), "cred:token")
 	require.NoError(t, err)
@@ -118,7 +95,6 @@ func TestClient_TTLExpiry_RefetchesAfterExpiry(t *testing.T) {
 }
 
 func TestClient_SingleFlight_ConcurrentMiss(t *testing.T) {
-	m := minimalManifest("cred:api_key")
 
 	var callCount int64
 	gate := make(chan struct{})
@@ -128,7 +104,7 @@ func TestClient_SingleFlight_ConcurrentMiss(t *testing.T) {
 		return []byte("value"), nil
 	}
 
-	cl := New(m, fn, CacheConfig{})
+	cl := New(fn, CacheConfig{})
 
 	const n = 1000
 	var wg sync.WaitGroup
@@ -156,7 +132,6 @@ func TestClient_SingleFlight_ConcurrentMiss(t *testing.T) {
 // TestClient_SingleFlight_ConcurrentMiss in the merge queue, which that test
 // reaches only when the scheduler parks a goroutine at exactly this point.
 func TestClient_SingleFlight_LateCallerAfterTheFlightEnded(t *testing.T) {
-	m := minimalManifest("cred:api_key")
 
 	var callCount int64
 	gate := make(chan struct{})
@@ -165,7 +140,7 @@ func TestClient_SingleFlight_LateCallerAfterTheFlightEnded(t *testing.T) {
 		atomic.AddInt64(&callCount, 1)
 		return []byte("value"), nil
 	}
-	cl := New(m, fn, CacheConfig{})
+	cl := New(fn, CacheConfig{})
 
 	// The first caller passes the hook. The second one is held in it.
 	var hookCalls int64
@@ -204,13 +179,12 @@ func TestClient_SingleFlight_LateCallerAfterTheFlightEnded(t *testing.T) {
 }
 
 func TestClient_Invalidate_DropsCache(t *testing.T) {
-	m := minimalManifest("cred:key")
 	var calls int
 	fn := func(_ context.Context, _ string) ([]byte, error) {
 		calls++
 		return []byte("v"), nil
 	}
-	cl := New(m, fn, CacheConfig{})
+	cl := New(fn, CacheConfig{})
 
 	_, err := cl.Resolve(context.Background(), "cred:key")
 	require.NoError(t, err)
@@ -224,13 +198,12 @@ func TestClient_Invalidate_DropsCache(t *testing.T) {
 }
 
 func TestClient_MarkRevoked_ReturnsPermissionDenied(t *testing.T) {
-	m := minimalManifest("cred:key")
 	calls := 0
 	fn := func(_ context.Context, _ string) ([]byte, error) {
 		calls++
 		return []byte("v"), nil
 	}
-	cl := New(m, fn, CacheConfig{})
+	cl := New(fn, CacheConfig{})
 
 	// Prime the cache.
 	_, err := cl.Resolve(context.Background(), "cred:key")
@@ -245,11 +218,10 @@ func TestClient_MarkRevoked_ReturnsPermissionDenied(t *testing.T) {
 }
 
 func TestClient_MarkRevoked_PersistsAcrossInvalidate(t *testing.T) {
-	m := minimalManifest("cred:key")
 	fn := func(_ context.Context, _ string) ([]byte, error) {
 		return []byte("v"), nil
 	}
-	cl := New(m, fn, CacheConfig{})
+	cl := New(fn, CacheConfig{})
 
 	cl.MarkRevoked("cred:key")
 	cl.Invalidate("cred:key") // even after Invalidate, revoked flag must persist
@@ -260,36 +232,22 @@ func TestClient_MarkRevoked_PersistsAcrossInvalidate(t *testing.T) {
 		"revoked flag must persist after Invalidate")
 }
 
-func TestClient_WithCacheFalse_AlwaysCallsRPC(t *testing.T) {
-	m := minimalManifest("cred:key")
-	calls := 0
-	fn := func(_ context.Context, _ string) ([]byte, error) {
-		calls++
-		return []byte("v"), nil
-	}
-	cl := New(m, fn, CacheConfig{})
-
-	for range 3 {
-		_, err := cl.Resolve(context.Background(), "cred:key", WithCache(false))
-		require.NoError(t, err)
-	}
-	assert.Equal(t, 3, calls, "WithCache(false) must invoke RPC every time")
-}
+// errUnavailable stands in for any error the GetCredential RPC returns.
+var errUnavailable = errors.New("credential unavailable")
 
 func TestClient_RPCError_NotCached(t *testing.T) {
-	m := minimalManifest("cred:key")
 	callCount := 0
 	fn := func(_ context.Context, _ string) ([]byte, error) {
 		callCount++
 		if callCount == 1 {
-			return nil, ErrNotFound
+			return nil, errUnavailable
 		}
 		return []byte("found"), nil
 	}
-	cl := New(m, fn, CacheConfig{})
+	cl := New(fn, CacheConfig{})
 
 	_, err := cl.Resolve(context.Background(), "cred:key")
-	require.ErrorIs(t, err, ErrNotFound)
+	require.ErrorIs(t, err, errUnavailable)
 
 	// Second call must not get a cached negative; should call RPC again.
 	v, err := cl.Resolve(context.Background(), "cred:key")
@@ -299,11 +257,10 @@ func TestClient_RPCError_NotCached(t *testing.T) {
 }
 
 func TestClient_DefensiveCopyOnReturn(t *testing.T) {
-	m := minimalManifest("cred:key")
 	fn := func(_ context.Context, _ string) ([]byte, error) {
 		return []byte("secret"), nil
 	}
-	cl := New(m, fn, CacheConfig{})
+	cl := New(fn, CacheConfig{})
 
 	v1, err := cl.Resolve(context.Background(), "cred:key")
 	require.NoError(t, err)

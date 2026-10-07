@@ -6,9 +6,7 @@ package protoresolver
 import (
 	"context"
 	"encoding/base64"
-	"errors"
 	"testing"
-	"time"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -60,24 +58,6 @@ func createTestFileDescriptorSet() string {
 	}
 
 	return base64.StdEncoding.EncodeToString(fdsBytes)
-}
-
-// TestDefaultConfig tests the default configuration.
-func TestDefaultConfig(t *testing.T) {
-	config := DefaultConfig()
-
-	if config.CacheMaxEntries != 100 {
-		t.Errorf("CacheMaxEntries = %d, want 100", config.CacheMaxEntries)
-	}
-	if config.CacheTTL != time.Hour {
-		t.Errorf("CacheTTL = %v, want %v", config.CacheTTL, time.Hour)
-	}
-	if !config.StrictMode {
-		t.Error("StrictMode = false, want true")
-	}
-	if !config.LogFallbacks {
-		t.Error("LogFallbacks = false, want true")
-	}
 }
 
 // TestNewDefaultProtoResolver tests resolver creation.
@@ -177,36 +157,6 @@ func TestResolveInputType_FileDescriptorSetFallback(t *testing.T) {
 	}
 }
 
-// TestResolveInputType_MissingFileDescriptorSet tests error when FDS is missing.
-func TestResolveInputType_MissingFileDescriptorSet(t *testing.T) {
-	resolver := NewDefaultProtoResolver(DefaultConfig())
-	ctx := context.Background()
-
-	// Metadata without file_descriptor_set
-	metadata := map[string]string{
-		"tool_name": "test-tool",
-	}
-
-	// Try to resolve a type that doesn't exist in GlobalTypes
-	_, err := resolver.ResolveInputType(ctx, "nonexistent.Type", metadata)
-	if err == nil {
-		t.Fatal("Expected error for missing FileDescriptorSet, got nil")
-	}
-
-	// Verify it's a SchemaNotFoundError
-	var schemaErr *SchemaNotFoundError
-	if !isErrorType(err, &schemaErr) {
-		t.Errorf("Expected SchemaNotFoundError, got %T: %v", err, err)
-	} else {
-		if schemaErr.ToolName != "test-tool" {
-			t.Errorf("ToolName = %s, want test-tool", schemaErr.ToolName)
-		}
-		if schemaErr.TypeName != "nonexistent.Type" {
-			t.Errorf("TypeName = %s, want nonexistent.Type", schemaErr.TypeName)
-		}
-	}
-}
-
 // TestResolveInputType_InvalidBase64 tests error handling for invalid base64.
 func TestResolveInputType_InvalidBase64(t *testing.T) {
 	resolver := NewDefaultProtoResolver(DefaultConfig())
@@ -256,79 +206,6 @@ func TestResolveInputType_TypeNotFound(t *testing.T) {
 	_, err := resolver.ResolveInputType(ctx, "test.NonexistentType", metadata)
 	if err == nil {
 		t.Fatal("Expected error for type not found, got nil")
-	}
-}
-
-// TestResolveInputType_CacheBehavior tests that caching works correctly.
-func TestResolveInputType_CacheBehavior(t *testing.T) {
-	resolver := NewDefaultProtoResolver(DefaultConfig())
-	ctx := context.Background()
-
-	fdsBase64 := createTestFileDescriptorSet()
-	metadata := map[string]string{
-		"file_descriptor_set": fdsBase64,
-		"tool_name":           "test-tool",
-	}
-
-	// First call - should cache the FDS
-	msg1, err := resolver.ResolveInputType(ctx, "test.TestMessage", metadata)
-	if err != nil {
-		t.Fatalf("First ResolveInputType failed: %v", err)
-	}
-
-	// Second call - should use cache (verify by checking cache stats)
-	msg2, err := resolver.ResolveInputType(ctx, "test.TestMessage", metadata)
-	if err != nil {
-		t.Fatalf("Second ResolveInputType failed: %v", err)
-	}
-
-	// Both messages should be valid and of the same type
-	if msg1 == nil || msg2 == nil {
-		t.Fatal("One or both messages are nil")
-	}
-
-	if msg1.ProtoReflect().Descriptor().FullName() != msg2.ProtoReflect().Descriptor().FullName() {
-		t.Error("Messages have different types")
-	}
-
-	// Check cache stats
-	stats := resolver.cache.Stats()
-	if stats.Hits < 1 {
-		t.Errorf("Expected at least 1 cache hit, got %d", stats.Hits)
-	}
-}
-
-// TestResolveInputType_DifferentToolsSeparateCache tests cache isolation.
-func TestResolveInputType_DifferentToolsSeparateCache(t *testing.T) {
-	resolver := NewDefaultProtoResolver(DefaultConfig())
-	ctx := context.Background()
-
-	fdsBase64 := createTestFileDescriptorSet()
-
-	// Resolve for tool1
-	metadata1 := map[string]string{
-		"file_descriptor_set": fdsBase64,
-		"tool_name":           "tool1",
-	}
-	_, err := resolver.ResolveInputType(ctx, "test.TestMessage", metadata1)
-	if err != nil {
-		t.Fatalf("ResolveInputType for tool1 failed: %v", err)
-	}
-
-	// Resolve for tool2 with same FDS
-	metadata2 := map[string]string{
-		"file_descriptor_set": fdsBase64,
-		"tool_name":           "tool2",
-	}
-	_, err = resolver.ResolveInputType(ctx, "test.TestMessage", metadata2)
-	if err != nil {
-		t.Fatalf("ResolveInputType for tool2 failed: %v", err)
-	}
-
-	// Check that we have 2 separate cache entries
-	stats := resolver.cache.Stats()
-	if stats.Entries < 2 {
-		t.Errorf("Expected at least 2 cache entries, got %d", stats.Entries)
 	}
 }
 
@@ -427,80 +304,6 @@ func TestUnmarshalJSON_GlobalType(t *testing.T) {
 	if _, ok := msg.(*emptypb.Empty); !ok {
 		t.Errorf("Expected *emptypb.Empty, got %T", msg)
 	}
-}
-
-// TestInvalidateCache_SpecificTool tests cache invalidation for a specific tool.
-func TestInvalidateCache_SpecificTool(t *testing.T) {
-	resolver := NewDefaultProtoResolver(DefaultConfig())
-	ctx := context.Background()
-
-	fdsBase64 := createTestFileDescriptorSet()
-
-	// Resolve for tool1
-	metadata1 := map[string]string{
-		"file_descriptor_set": fdsBase64,
-		"tool_name":           "tool1",
-	}
-	_, err := resolver.ResolveInputType(ctx, "test.TestMessage", metadata1)
-	if err != nil {
-		t.Fatalf("ResolveInputType for tool1 failed: %v", err)
-	}
-
-	// Resolve for tool2
-	metadata2 := map[string]string{
-		"file_descriptor_set": fdsBase64,
-		"tool_name":           "tool2",
-	}
-	_, err = resolver.ResolveInputType(ctx, "test.TestMessage", metadata2)
-	if err != nil {
-		t.Fatalf("ResolveInputType for tool2 failed: %v", err)
-	}
-
-	// Verify both are cached
-	stats := resolver.cache.Stats()
-	initialEntries := stats.Entries
-	if initialEntries < 2 {
-		t.Fatalf("Expected at least 2 cache entries, got %d", initialEntries)
-	}
-
-	// Invalidate tool1
-	resolver.InvalidateCache("tool1")
-
-	// Verify only tool1 was removed
-	stats = resolver.cache.Stats()
-	if stats.Entries != initialEntries-1 {
-		t.Errorf("Expected %d cache entries after invalidation, got %d", initialEntries-1, stats.Entries)
-	}
-
-	// Resolve tool1 again - should not be a cache hit
-	beforeHits := resolver.cache.Stats().Hits
-	_, err = resolver.ResolveInputType(ctx, "test.TestMessage", metadata1)
-	if err != nil {
-		t.Fatalf("ResolveInputType for tool1 after invalidation failed: %v", err)
-	}
-	afterHits := resolver.cache.Stats().Hits
-
-	// Hits should not increase (cache miss)
-	if afterHits > beforeHits {
-		t.Error("Expected cache miss after invalidation, got cache hit")
-	}
-}
-
-// TestInvalidateCache_AllTools tests cache invalidation for all tools.
-func TestInvalidateCache_AllTools(t *testing.T) {
-	resolver := NewDefaultProtoResolver(DefaultConfig())
-
-	// Just verify it doesn't panic - the implementation logs a warning
-	// since the cache interface doesn't support clearing all entries
-	resolver.InvalidateCache("*")
-}
-
-// TestInvalidateCache_NonexistentTool tests invalidating a non-existent tool.
-func TestInvalidateCache_NonexistentTool(t *testing.T) {
-	resolver := NewDefaultProtoResolver(DefaultConfig())
-
-	// Should not panic
-	resolver.InvalidateCache("nonexistent-tool")
 }
 
 // TestResolveInputType_DefaultToolName tests behavior when tool_name is missing.
@@ -705,23 +508,4 @@ func BenchmarkUnmarshalJSON(b *testing.B) {
 			b.Fatal(err)
 		}
 	}
-}
-
-// isErrorType is a helper to check if an error is of a specific type using errors.As.
-func isErrorType(err error, target interface{}) bool {
-	switch t := target.(type) {
-	case **SchemaNotFoundError:
-		var e *SchemaNotFoundError
-		if errors.As(err, &e) {
-			*t = e
-			return true
-		}
-	case **TypeNotFoundError:
-		var e *TypeNotFoundError
-		if errors.As(err, &e) {
-			*t = e
-			return true
-		}
-	}
-	return false
 }

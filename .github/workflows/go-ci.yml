@@ -169,7 +169,7 @@ jobs:
         run: make check-no-gibson
 
       # ADR-0028: the sdk wire contract is append-only, and the buf breaking
-      # rule is WIRE. This ran only in a local `make check` (sdk#177), so a
+      # rule is WIRE_JSON. This ran only in a local `make check` (sdk#177), so a
       # pull request could renumber a field and every required check stayed
       # green. The base branch is fetched because the checkout is shallow.
       - name: Fetch the base branch for the wire contract check
@@ -201,9 +201,9 @@ jobs:
       - name: proto bindings drift gate
         run: |
           make generate
-          git diff --exit-code api/gen/ graphrag/ api/proto/taxonomy/ || {
+          git diff --exit-code api/gen/ graphrag/ || {
             echo "ERROR: generated bindings drifted from sources, or new generated files were not committed." >&2
-            echo "Run 'make generate' locally and commit api/gen/, graphrag/ and api/proto/taxonomy/." >&2
+            echo "Run 'make generate' locally and commit api/gen/ and graphrag/." >&2
             exit 1
           }
 

@@ -1,9 +1,8 @@
 package commonpb
 
 #HealthStatus: {
-	status?:    string @protobuf(1,string) // healthy, degraded, unhealthy
-	message?:   string @protobuf(2,string)
-	checkedAt?: int64  @protobuf(3,int64,name=checked_at) // Unix timestamp in milliseconds
+	status?:  string @protobuf(1,string) // healthy, degraded, unhealthy
+	message?: string @protobuf(2,string)
 }
 
 #JSONSchema: {
@@ -173,35 +172,6 @@ package commonpb
 	ERROR_CODE_DELEGATION_FAILED:    23
 	ERROR_CODE_CHILD_AGENT_FAILED:   24
 	ERROR_CODE_CONFIG_ERROR:         25
-}
-
-// HealthState defines standard health states
-#HealthState:
-	#HEALTH_STATE_UNSPECIFIED |
-	#HEALTH_STATE_HEALTHY |
-	#HEALTH_STATE_DEGRADED |
-	#HEALTH_STATE_UNHEALTHY
-
-#HEALTH_STATE_UNSPECIFIED: 0
-#HEALTH_STATE_HEALTHY:     1
-#HEALTH_STATE_DEGRADED:    2
-#HEALTH_STATE_UNHEALTHY:   3
-
-#HealthState_value: {
-	HEALTH_STATE_UNSPECIFIED: 0
-	HEALTH_STATE_HEALTHY:     1
-	HEALTH_STATE_DEGRADED:    2
-	HEALTH_STATE_UNHEALTHY:   3
-}
-
-// Metadata contains labels and annotations for resources
-#Metadata: {
-	labels?: {
-		[string]: string
-	} @protobuf(1,map[string]string)
-	annotations?: {
-		[string]: string
-	} @protobuf(2,map[string]string)
 }
 
 // Principal names who acts: a person, the tenant, a component run, or a

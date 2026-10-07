@@ -189,20 +189,6 @@ func IdentityFromMetadata(md metadata.MD) (Identity, error) {
 	}, nil
 }
 
-// IdentityToMetadata writes the identity into a metadata.MD for use by
-// callers that synthesize identity for testing or for in-process
-// dispatch (e.g. the daemon's own internal calls that need to assert
-// identity for subsystems that read it from context). Production code
-// paths NEVER call this — identity headers come from ext-authz, not
-// from the daemon.
-func IdentityToMetadata(md metadata.MD, id Identity) {
-	md.Set(HeaderSubject, id.Subject)
-	md.Set(HeaderIssuer, string(id.Issuer))
-	md.Set(HeaderCredentialType, string(id.CredentialType))
-	md.Set(HeaderTenant, id.Tenant.String())
-	md.Set(HeaderIssuedAt, strconv.FormatInt(id.IssuedAt.Unix(), 10))
-}
-
 // first returns the first value of the named metadata key, or "".
 // gRPC metadata is a map[string][]string; identity headers are
 // single-valued, so the first value is canonical.

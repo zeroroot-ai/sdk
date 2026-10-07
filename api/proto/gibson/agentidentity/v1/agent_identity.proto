@@ -148,10 +148,11 @@ message AgentIdentity {
   string name = 3;
   string description = 4;
   google.protobuf.Timestamp created_at = 5;
-  // last_authenticated_at is null if never authenticated or unsupported by the
-  // IdP.
-  google.protobuf.Timestamp last_authenticated_at = 6;
   bool revoked = 7;
+  reserved 6;
+  reserved "last_authenticated_at";
+  // created_by_subject is the bare subject of the person who created the
+  // identity. hosted test/demo/exit-test-enrollment.sh reads it.
   string created_by_subject = 8;
 }
 

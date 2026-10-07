@@ -238,3 +238,23 @@ func TestClaims_Validate_Independent(t *testing.T) {
 		t.Fatal("expected error: missing tenant")
 	}
 }
+
+// TestVerify_RefusesAnEmptyIssuerOrAudience proves that both options are
+// required. A missing one would skip its check and accept a grant minted
+// for another issuer or audience.
+func TestVerify_RefusesAnEmptyIssuerOrAudience(t *testing.T) {
+	pub, priv := mustGenKey(t)
+	tok := mintWithMap(t, priv, "k1", validClaimsMap(time.Now().UTC()))
+	fetcher := fakeFetcher{"k1": pub}
+
+	noIssuer := defaultOpts()
+	noIssuer.ExpectedIssuer = ""
+	if _, err := Verify(context.Background(), fetcher, tok, noIssuer); !errors.Is(err, ErrClaimsInvalid) {
+		t.Fatalf("an empty ExpectedIssuer: got %v, want ErrClaimsInvalid", err)
+	}
+	noAudience := defaultOpts()
+	noAudience.ExpectedAudience = ""
+	if _, err := Verify(context.Background(), fetcher, tok, noAudience); !errors.Is(err, ErrClaimsInvalid) {
+		t.Fatalf("an empty ExpectedAudience: got %v, want ErrClaimsInvalid", err)
+	}
+}

@@ -1,7 +1,7 @@
 # Gibson SDK Makefile
 # The SDK is a library - no binary to compile, but we build examples and run tests
 
-.PHONY: all bootstrap build examples image test test-race test-coverage test-integration test-integration-all lint lint-deadcode fmt vet tidy clean deps check check-no-gibson check-coverage check-buf-pinned proto proto-deps proto-clean proto-breaking taxonomy-gen taxonomy-proto generate verify-idempotent release-prep help tool-runner-image tool-runner-load sdk-bump mission-jsonschema mission-docs mission-authoring-bundle cue-defs ensure-cue
+.PHONY: all bootstrap build examples image test test-race test-coverage lint lint-deadcode fmt vet tidy clean deps check check-no-gibson check-coverage check-buf-pinned proto proto-deps proto-clean proto-breaking taxonomy-gen generate verify-idempotent release-prep help tool-runner-image tool-runner-load sdk-bump mission-jsonschema mission-docs mission-authoring-bundle cue-defs ensure-cue
 
 # Protoc plugin versions (single source of truth for deterministic generation)
 # buf CLI version is pinned as a go.mod tool dependency (github.com/bufbuild/buf)
@@ -37,18 +37,10 @@ GOMOD=$(GOCMD) mod
 # Directories
 BIN_DIR=bin
 EXAMPLES_DIR=examples
-PROTO_DIR=api/proto
 PROTO_OUT=api/gen
-COMMONPB_OUT=$(PROTO_OUT)/commonpb
-GRAPHRAGPB_OUT=$(PROTO_OUT)/graphragpb
-TAXONOMYPB_OUT=$(PROTO_OUT)/taxonomypb
-TOOLSPB_OUT=$(PROTO_OUT)/toolspb
-COMPONENTPB_OUT=$(PROTO_OUT)/componentpb
 
 # Taxonomy generation
 TAXONOMY_YAML=taxonomy/core.yaml
-# Taxonomy generation uses the gibson taxonomy-gen command from the module cache
-TAXONOMY_GEN_CMD=go run github.com/zeroroot-ai/gibson/cmd/taxonomy-gen
 
 # Buf code generation (uses local buf.yaml + buf.gen.yaml in this directory).
 # buf is a go.mod `tool` dependency, so `go tool buf` is hermetic: plain
@@ -102,23 +94,6 @@ test-coverage:
 	$(GOTEST) -coverprofile=coverage.out -covermode=atomic ./...
 	@echo "Coverage report:"
 	@$(GOCMD) tool cover -func=coverage.out
-
-# Run integration tests (requires git, optionally gopls/pyright/tsserver)
-test-integration:
-	@echo "Running integration tests (Git only)..."
-	@echo "Note: LSP tests will be skipped if language servers are not installed"
-	@cd codegen && $(GOTEST) -v -tags=integration -timeout=10m -run 'Test(FullWorkflow|MultiRepo|Worktree|Cleanup|EdgeCases)'
-	@echo "Integration tests complete"
-
-# Run all integration tests including LSP
-test-integration-all:
-	@echo "Running all integration tests (including LSP)..."
-	@echo "Installing language servers if needed..."
-	@command -v gopls > /dev/null || echo "  gopls not found - Go LSP tests will be skipped"
-	@command -v pyright-langserver > /dev/null || echo "  pyright-langserver not found - Python LSP tests will be skipped"
-	@command -v typescript-language-server > /dev/null || echo "  typescript-language-server not found - TypeScript LSP tests will be skipped"
-	@cd codegen && $(GOTEST) -v -tags=integration -timeout=15m
-	@echo "All integration tests complete"
 
 # Generate coverage HTML report
 coverage-html: test-coverage
@@ -177,12 +152,12 @@ fmt:
 # Vet code
 # Note: protoresolver is excluded because it intentionally defines an UnmarshalJSON method
 # with a custom signature (not implementing json.Unmarshaler) which go vet stdmethods flags
-# as a false positive. The graphrag, serve, and eval packages are excluded because their test
+# as a false positive. The graphrag and serve packages are excluded because their test
 # files import api/gen/toolspb which is only generated when tool protos are present (external
 # tooling from core/tools/). These exclusions are tracked in pre-existing issue #toolspb.
 vet:
 	@echo "Vetting code..."
-	$(GOCMD) vet $(shell go list ./... | grep -v 'github.com/zeroroot-ai/sdk/protoresolver' | grep -v 'github.com/zeroroot-ai/sdk/graphrag$$' | grep -v 'github.com/zeroroot-ai/sdk/eval' | grep -v 'github.com/zeroroot-ai/sdk/serve')
+	$(GOCMD) vet $(shell go list ./... | grep -v 'github.com/zeroroot-ai/sdk/protoresolver' | grep -v 'github.com/zeroroot-ai/sdk/graphrag$$' | grep -v 'github.com/zeroroot-ai/sdk/serve')
 
 # Tidy modules
 tidy:
@@ -587,8 +562,9 @@ mission-authoring-bundle: mission-jsonschema mission-docs
 # origin/<branch> is used when it exists and the bare name is the fallback, so a
 # detached CI checkout without remote refs still works.
 #
-# The rule is FILE (buf.yaml, ADR-0028 rule 5). The selftest runs first: a
-# renamed field must fail, which WIRE would permit (sdk#208).
+# The rule is WIRE_JSON (buf.yaml, ADR-0028 rule 5). The selftest runs first:
+# a renamed field must fail, because its JSON name changes, and a deleted field
+# with a reserved number and name must pass.
 #
 # There is no override. The target used to pass when the pull request body held
 # the text "buf:breaking:ignore": a marker that proves itself by existing, which
@@ -611,52 +587,15 @@ proto-breaking:
 		exit 1; \
 	fi
 
-# Taxonomy generation from YAML
+# Taxonomy generation from YAML: the graphrag node and relationship type constants.
 taxonomy-gen:
-	@echo "Generating taxonomy from YAML..."
-	@mkdir -p $(TAXONOMYPB_OUT) $(PROTO_DIR)/taxonomy/v1 graphrag/domain graphrag/validation graphrag/query graphrag/taxonomy
-	@rm -f $(PROTO_DIR)/taxonomy.proto
-	@echo "  Generating proto and domain/validators (package: domain)..."
-	@go run ./cmd/taxonomy-gen \
-		--base $(TAXONOMY_YAML) \
-		--output-proto $(PROTO_DIR)/taxonomy/v1/taxonomy.proto \
-		--output-domain graphrag/domain/domain_generated.go \
-		--output-validators graphrag/validation/validators_generated.go \
-		--package domain
-	@echo "  Generating constants (package: graphrag)..."
+	@echo "Generating taxonomy constants from YAML..."
 	@go run ./cmd/taxonomy-gen \
 		--base $(TAXONOMY_YAML) \
 		--output-constants graphrag/constants_generated.go \
 		--package graphrag
-	@echo "  Generating query builders (package: query)..."
-	@go run ./cmd/taxonomy-gen \
-		--base $(TAXONOMY_YAML) \
-		--output-query graphrag/query/query_generated.go \
-		--package query
-	@echo "  Generating SDK helpers (package: graphrag)..."
-	@go run ./cmd/taxonomy-gen \
-		--base $(TAXONOMY_YAML) \
-		--output-helpers graphrag/helpers_generated.go \
-		--package graphrag
-	@echo "  Generating relationships mapping (package: taxonomy)..."
-	@go run ./cmd/taxonomy-gen \
-		--base $(TAXONOMY_YAML) \
-		--output-relationships graphrag/taxonomy/relationships_generated.go \
-		--package taxonomy
-	@echo "Formatting generated files..."
-	@gofmt -w graphrag/domain/domain_generated.go \
-		graphrag/validation/validators_generated.go \
-		graphrag/constants_generated.go \
-		graphrag/query/query_generated.go \
-		graphrag/helpers_generated.go \
-		graphrag/taxonomy/relationships_generated.go
+	@gofmt -w graphrag/constants_generated.go
 	@echo "Taxonomy generation complete"
-
-# Generate taxonomy proto
-taxonomy-proto: taxonomy-gen proto-deps
-	@echo "Generating Go code from taxonomy.proto via Buf..."
-	@$(BUF_GENERATE)
-	@echo "Taxonomy proto generation complete"
 
 # Full generate: YAML -> Proto -> Go code
 # Always starts with a clean api/gen/ to prevent orphan files from renamed/deleted protos
@@ -704,8 +643,6 @@ help:
 	@echo "  make test-race          - Run tests with race detection"
 	@echo "  make test-coverage      - Run tests with coverage"
 	@echo "  make coverage-html      - Generate HTML coverage report"
-	@echo "  make test-integration   - Run integration tests (Git only)"
-	@echo "  make test-integration-all - Run all integration tests (requires LSP servers)"
 	@echo "  make lint          - Run golangci-lint"
 	@echo "  make fmt           - Format Go code"
 	@echo "  make vet           - Run go vet"
@@ -718,8 +655,7 @@ help:
 	@echo "  make proto-deps    - Install protoc plugins"
 	@echo "  make proto-clean   - Remove generated proto files"
 	@echo "  make proto-breaking - Check for breaking proto changes against target branch"
-	@echo "  make taxonomy-gen  - Generate taxonomy from YAML (proto, domain, validators, helpers)"
-	@echo "  make taxonomy-proto- Generate Go code from taxonomy.proto"
+	@echo "  make taxonomy-gen  - Generate the graphrag type constants from taxonomy YAML"
 	@echo "  make generate      - Full generation: YAML -> Proto -> Go"
 	@echo "  make verify-idempotent - Verify generation is idempotent (periodic CI check)"
 	@echo "  make release-prep   - Stage generated files for a release tag"

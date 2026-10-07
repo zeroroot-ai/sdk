@@ -19,7 +19,6 @@ import (
 	jobpb "github.com/zeroroot-ai/sdk/api/gen/gibson/job/v1"
 	typespb "github.com/zeroroot-ai/sdk/api/gen/gibson/types/v1"
 	"github.com/zeroroot-ai/sdk/finding"
-	"github.com/zeroroot-ai/sdk/types"
 )
 
 // sanitizeUTF8 ensures a string contains only valid UTF-8 characters.
@@ -768,89 +767,6 @@ func StringToProtoErrorCode(code string) commonpb.ErrorCode {
 	}
 }
 
-// ProtoToMissionContext converts proto TypedMap to types.MissionContext.
-func ProtoToMissionContext(tm *commonpb.TypedMap) types.MissionContext {
-	if tm == nil {
-		return types.MissionContext{}
-	}
-
-	m := FromTypedMap(tm.Entries)
-	if m == nil {
-		return types.MissionContext{}
-	}
-
-	// Extract fields from the map
-	ctx := types.MissionContext{}
-	if id, ok := m["id"].(string); ok {
-		ctx.ID = id
-	}
-	if name, ok := m["name"].(string); ok {
-		ctx.Name = name
-	}
-	// Add other fields as needed
-	return ctx
-}
-
-// MissionContextToProto converts types.MissionContext to proto TypedMap.
-func MissionContextToProto(mc types.MissionContext) *commonpb.TypedMap {
-	m := map[string]any{
-		"id":   mc.ID,
-		"name": mc.Name,
-	}
-	return &commonpb.TypedMap{
-		Entries: ToTypedMap(m),
-	}
-}
-
-// ProtoToTargetInfo converts proto TypedMap to types.TargetInfo.
-func ProtoToTargetInfo(tm *commonpb.TypedMap) types.TargetInfo {
-	if tm == nil {
-		return types.TargetInfo{}
-	}
-
-	m := FromTypedMap(tm.Entries)
-	if m == nil {
-		return types.TargetInfo{}
-	}
-
-	// Extract fields from the map
-	info := types.TargetInfo{}
-	if id, ok := m["id"].(string); ok {
-		info.ID = id
-	}
-	if name, ok := m["name"].(string); ok {
-		info.Name = name
-	}
-	if typ, ok := m["type"].(string); ok {
-		info.Type = typ
-	}
-	if provider, ok := m["provider"].(string); ok {
-		info.Provider = provider
-	}
-	if connection, ok := m["connection"].(map[string]any); ok {
-		info.Connection = connection
-	}
-	if metadata, ok := m["metadata"].(map[string]any); ok {
-		info.Metadata = metadata
-	}
-	return info
-}
-
-// TargetInfoToProto converts types.TargetInfo to proto TypedMap.
-func TargetInfoToProto(ti types.TargetInfo) *commonpb.TypedMap {
-	m := map[string]any{
-		"id":         ti.ID,
-		"name":       ti.Name,
-		"type":       ti.Type,
-		"provider":   ti.Provider,
-		"connection": ti.Connection,
-		"metadata":   ti.Metadata,
-	}
-	return &commonpb.TypedMap{
-		Entries: ToTypedMap(m),
-	}
-}
-
 // JSONSchemaToProtoNode converts a JSON schema map to proto JSONSchemaNode.
 // This is a simplified conversion that handles basic JSON Schema structures.
 func JSONSchemaToProtoNode(schema map[string]any) *harnesspb.JSONSchemaNode {
@@ -921,11 +837,6 @@ func JSONSchemaToProtoNode(schema map[string]any) *harnesspb.JSONSchemaNode {
 		node.DefaultValue = &defaultStr
 	}
 
-	// Nullable
-	if nullable, ok := schema["nullable"].(bool); ok {
-		node.Nullable = nullable
-	}
-
 	// Numeric constraints
 	if min, ok := schema["minimum"].(float64); ok {
 		node.Minimum = &min
@@ -942,16 +853,6 @@ func JSONSchemaToProtoNode(schema map[string]any) *harnesspb.JSONSchemaNode {
 	if maxLen, ok := schema["maxLength"].(float64); ok {
 		maxLenInt := int32(maxLen)
 		node.MaxLength = &maxLenInt
-	}
-
-	// Array constraints
-	if minItems, ok := schema["minItems"].(float64); ok {
-		minItemsInt := int32(minItems)
-		node.MinItems = &minItemsInt
-	}
-	if maxItems, ok := schema["maxItems"].(float64); ok {
-		maxItemsInt := int32(maxItems)
-		node.MaxItems = &maxItemsInt
 	}
 
 	return node

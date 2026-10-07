@@ -9,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/zeroroot-ai/sdk/plugin/manifest"
 	"github.com/zeroroot-ai/sdk/plugin/secrets"
 )
 
@@ -20,8 +19,7 @@ func TestContext_RoundTrip(t *testing.T) {
 	_, ok := secrets.FromContext(context.Background())
 	assert.False(t, ok, "bare context must report no client")
 
-	m := &manifest.Manifest{}
-	client := secrets.New(m, func(context.Context, string) ([]byte, error) {
+	client := secrets.New(func(context.Context, string) ([]byte, error) {
 		return nil, nil
 	}, secrets.CacheConfig{})
 
@@ -35,8 +33,7 @@ func TestContext_RoundTrip(t *testing.T) {
 // with a sibling value stored under a different key on the same context.
 func TestContext_Isolation(t *testing.T) {
 	type otherKey struct{}
-	m := &manifest.Manifest{}
-	client := secrets.New(m, func(context.Context, string) ([]byte, error) {
+	client := secrets.New(func(context.Context, string) ([]byte, error) {
 		return nil, nil
 	}, secrets.CacheConfig{})
 

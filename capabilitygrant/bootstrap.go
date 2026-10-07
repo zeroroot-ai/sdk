@@ -6,7 +6,6 @@ package capabilitygrant
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -17,9 +16,6 @@ const k8sSATokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 // registration. After registration succeeds, the host key takes over and
 // the bootstrap credential is discarded — it is never stored.
 type BootstrapCredential struct {
-	// Type describes the kind of credential.
-	// Possible values: "api_key", "k8s_sa".
-	Type string
 
 	// Token is the raw credential value (Bearer token, SA JWT, etc.).
 	Token string
@@ -45,7 +41,6 @@ type BootstrapCredential struct {
 func ResolveBootstrap(explicitToken string) (*BootstrapCredential, error) {
 	if explicitToken = strings.TrimSpace(explicitToken); explicitToken != "" {
 		return &BootstrapCredential{
-			Type:  "api_key",
 			Token: explicitToken,
 		}, nil
 	}
@@ -56,7 +51,6 @@ func ResolveBootstrap(explicitToken string) (*BootstrapCredential, error) {
 	// in-cluster Kubernetes service-account token.
 	if envToken := strings.TrimSpace(os.Getenv("GIBSON_BOOTSTRAP_TOKEN")); envToken != "" {
 		return &BootstrapCredential{
-			Type:  "api_key",
 			Token: envToken,
 		}, nil
 	}
@@ -66,7 +60,6 @@ func ResolveBootstrap(explicitToken string) (*BootstrapCredential, error) {
 		token := strings.TrimSpace(string(data))
 		if token != "" {
 			return &BootstrapCredential{
-				Type:  "k8s_sa",
 				Token: token,
 			}, nil
 		}
@@ -84,56 +77,4 @@ func ResolveBootstrap(explicitToken string) (*BootstrapCredential, error) {
 		"Set GIBSON_BOOTSTRAP_TOKEN to a one-time registration token from the dashboard, "+
 		"or run in a pod with a service account. A bootstrap token is consumed once, so a "+
 		"restart after a successful enrolment needs no token at all", k8sSATokenPath)
-}
-
-// ResolveBootstrapFromSecret reads a bootstrap token from a Kubernetes
-// Secret mounted as a volume. In Kubernetes, Secrets mounted via
-// `secretKeyRef` or a `volumes.secret` entry appear as files under the
-// mount directory, one file per data key.
-//
-// This is the preferred on-prem K8s pattern for customers running Gibson
-// agents via the `gibson-tenant-operator`'s AgentEnrollment CRD:
-//
-//	Pod spec:
-//	  volumes:
-//	  - name: bootstrap
-//	    secret:
-//	      secretName: scanner-01-bootstrap
-//	  containers:
-//	  - name: agent
-//	    volumeMounts:
-//	    - name: bootstrap
-//	      mountPath: /etc/gibson/bootstrap
-//	      readOnly: true
-//
-//	Go code:
-//	  cred := capabilitygrant.MustResolveBootstrapFromSecret("/etc/gibson/bootstrap", "token")
-//
-// No Kubernetes API access or RBAC is required — just volume mount
-// permissions, which are namespace-scoped and far less privileged.
-func ResolveBootstrapFromSecret(mountPath, dataKey string) (*BootstrapCredential, error) {
-	path := filepath.Join(mountPath, dataKey)
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("capabilitygrant: read bootstrap secret %q: %w", path, err)
-	}
-	token := strings.TrimSpace(string(data))
-	if token == "" {
-		return nil, fmt.Errorf("capabilitygrant: bootstrap secret %q is empty", path)
-	}
-	return &BootstrapCredential{
-		Type:  "api_key",
-		Token: token,
-	}, nil
-}
-
-// MustResolveBootstrapFromSecret is like ResolveBootstrapFromSecret but
-// panics on failure. Convenience wrapper for binaries that cannot sensibly
-// continue without a bootstrap credential.
-func MustResolveBootstrapFromSecret(mountPath, dataKey string) *BootstrapCredential {
-	cred, err := ResolveBootstrapFromSecret(mountPath, dataKey)
-	if err != nil {
-		panic(err)
-	}
-	return cred
 }

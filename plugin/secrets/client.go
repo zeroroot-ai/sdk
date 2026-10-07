@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zeroroot-ai/sdk/plugin/manifest"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -21,11 +20,12 @@ import (
 //
 // Spec: plugin-runtime Requirement 3.
 type Client interface {
-	// Resolve fetches a secret value by name. It validates that name is
-	// declared in the plugin's manifest spec.secrets before any RPC.
+	// Resolve fetches a secret value by name. The daemon decides whether this
+	// plugin may read it: the FGA relation can_resolve that a tenant admin
+	// grants is the only gate. The SDK keeps no allow-list of its own.
 	//
 	// Error semantics:
-	//   - ErrInvalidArgument: name is not in the manifest.
+	//   - ErrInvalidArgument: name is empty.
 	//   - ErrPermissionDenied: the secret has been revoked via
 	//     MarkRevoked; no RPC is attempted.
 	//   - Any error from GetCredentialFn is returned unwrapped.
@@ -54,14 +54,6 @@ type resolveOpts struct {
 	useCache *bool // nil means "use the client default (true)"
 }
 
-// WithCache overrides the client-level caching behaviour for this single
-// Resolve call. Pass false to force an RPC even when a cached value exists.
-func WithCache(enabled bool) Option {
-	return func(o *resolveOpts) {
-		o.useCache = &enabled
-	}
-}
-
 // GetCredentialFn is the function the secrets client calls to fetch a raw
 // credential value when the cache is empty.
 //
@@ -84,25 +76,20 @@ type CacheConfig struct {
 
 // client is the production implementation of Client.
 type client struct {
-	manifest *manifest.Manifest
-	callRPC  GetCredentialFn
-	c        *cache
-	sfg      singleflight.Group
+	callRPC GetCredentialFn
+	c       *cache
+	sfg     singleflight.Group
 
 	// revokedMu protects the revoked set.
 	revokedMu sync.RWMutex
 	revoked   map[string]struct{}
-
-	// allowedNames is built once from the manifest for O(1) lookup.
-	allowedNames map[string]struct{}
 }
 
-// New constructs a Client that validates names against the plugin's manifest
-// and fetches values via callRPC when not cached.
+// New constructs a Client that fetches values via callRPC when not cached.
 //
 // cacheConf configures the in-process LRU cache; the zero value applies all
 // defaults.
-func New(m *manifest.Manifest, callRPC GetCredentialFn, cacheConf CacheConfig) Client {
+func New(callRPC GetCredentialFn, cacheConf CacheConfig) Client {
 	ttl := cacheConf.TTL
 	if ttl <= 0 {
 		ttl = DefaultCacheTTL
@@ -115,17 +102,10 @@ func New(m *manifest.Manifest, callRPC GetCredentialFn, cacheConf CacheConfig) C
 		size = DefaultCacheSize
 	}
 
-	allowed := make(map[string]struct{}, len(m.Spec.Secrets))
-	for _, s := range m.Spec.Secrets {
-		allowed[s.Name] = struct{}{}
-	}
-
 	return &client{
-		manifest:     m,
-		callRPC:      callRPC,
-		c:            newCache(size, ttl),
-		revoked:      make(map[string]struct{}),
-		allowedNames: allowed,
+		callRPC: callRPC,
+		c:       newCache(size, ttl),
+		revoked: make(map[string]struct{}),
 	}
 }
 
@@ -136,10 +116,9 @@ var testHookAfterCacheMiss func()
 
 // Resolve implements Client.
 func (cl *client) Resolve(ctx context.Context, name string, opts ...Option) ([]byte, error) {
-	// Step 1: validate name against manifest.
-	if _, ok := cl.allowedNames[name]; !ok {
-		return nil, fmt.Errorf("secret %q is not declared in this plugin's manifest "+
-			"spec.secrets — declare it before consuming: %w", name, ErrInvalidArgument)
+	// Step 1: a name is required.
+	if name == "" {
+		return nil, fmt.Errorf("secret name is empty: %w", ErrInvalidArgument)
 	}
 
 	// Step 2: check revoked flag.

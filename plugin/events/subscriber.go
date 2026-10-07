@@ -8,7 +8,7 @@
 // events to the secrets client and lifecycle state machine.
 //
 // Event types handled:
-//   - "secret_rotated":        cache invalidation (live) or process restart (restart).
+//   - "secret_rotated":        cache invalidation, so the next Resolve fetches the new value.
 //   - "secret_access_revoked": cache revocation + lifecycle degradation.
 //   - all other types:         logged at debug level and silently dropped.
 //
@@ -23,8 +23,6 @@ import (
 	"fmt"
 	"log/slog"
 	"time"
-
-	"github.com/zeroroot-ai/sdk/plugin/manifest"
 )
 
 // EventTypeSecretRotated is the event type string for secret rotation events.
@@ -91,23 +89,6 @@ type LifecycleHook interface {
 	MarkDegraded(reason string) error
 }
 
-// Drainer is implemented by the dispatcher (Phase 8 Task 10) and is called by
-// the Subscriber when a secret_rotated event with rotation=restart arrives.
-//
-// The implementation is expected to:
-//  1. Stop polling for new work items.
-//  2. Wait for all in-flight method handlers to complete (or for a timeout).
-//  3. Call os.Exit(75) — the rotation-restart sentinel.
-//
-// When the Drainer is nil (Phase 3/4 wiring before the dispatcher exists) the
-// Subscriber logs the restart-needed condition and continues without exiting.
-// Phase 8 wires the real Drainer.
-type Drainer interface {
-	// DrainThenExit stops accepting new work, drains in-flight handlers,
-	// and exits the process with code 75.
-	DrainThenExit(reason string)
-}
-
 // dedupeKey is the comparable key used for idempotency checking.
 type dedupeKey struct {
 	eventType  string
@@ -116,80 +97,24 @@ type dedupeKey struct {
 	occurredAt time.Time
 }
 
-// RotationCallback is the optional callback invoked after a secret_rotated
-// event has been processed (cache invalidated for rotation=live, or drain
-// initiated for rotation=restart). The metrics package wires this to record
-// gibson_plugin_rotation_propagation_seconds.
-//
-// name is the secret name from the event. lag is the wall-clock time
-// between event.OccurredAt (server-side timestamp) and the moment the
-// subscriber finished processing it. lag may be negative under clock skew;
-// the metric recorder clamps to zero in that case.
-type RotationCallback func(name string, lag time.Duration)
-
 // Subscriber consumes the component callback stream and dispatches
 // rotation/revocation events to the secrets client and lifecycle hook.
 type Subscriber struct {
-	stream     EventStream
-	secrets    SecretsHook
-	lifecycle  LifecycleHook
-	drainer    Drainer // may be nil in pre-Phase-8 wiring
-	manifest   *manifest.Manifest
-	onRotation RotationCallback // may be nil
-
-	// secretAttrs is built once from the manifest for O(1) lookup of
-	// a secret's rotation policy.
-	secretAttrs map[string]manifest.SecretDecl
+	stream    EventStream
+	secrets   SecretsHook
+	lifecycle LifecycleHook
 
 	// dedupeRing holds the last dedupeRingSize event keys for idempotency.
 	dedupeRing [dedupeRingSize]dedupeKey
 	ringHead   int // index of the slot to overwrite next (circular)
 }
 
-// SetOnRotation registers cb as the rotation observation callback.
-// Subsequent secret_rotated events fire cb after Invalidate or
-// drainer.DrainThenExit has returned. SetOnRotation is not safe for
-// concurrent use with Run; call it before Run is invoked.
-//
-// Passing nil clears any previously set callback.
-func (s *Subscriber) SetOnRotation(cb RotationCallback) {
-	s.onRotation = cb
-}
-
-// New constructs a Subscriber without a Drainer. The Drainer is nil, meaning
-// a restart-rotation event will be logged but will not exit the process.
-//
-// This constructor is appropriate for Phases 3-7 before the dispatcher
-// (Task 10) is available. Phase 8 uses NewWithDrainer.
-func New(
-	stream EventStream,
-	secretsHook SecretsHook,
-	lifecycleHook LifecycleHook,
-	m *manifest.Manifest,
-) *Subscriber {
-	return NewWithDrainer(stream, secretsHook, lifecycleHook, nil, m)
-}
-
-// NewWithDrainer constructs a Subscriber wired to a Drainer for the
-// rotation=restart exit path. drainer may be nil (see New).
-func NewWithDrainer(
-	stream EventStream,
-	secretsHook SecretsHook,
-	lifecycleHook LifecycleHook,
-	drainer Drainer,
-	m *manifest.Manifest,
-) *Subscriber {
-	attrs := make(map[string]manifest.SecretDecl, len(m.Spec.Secrets))
-	for _, s := range m.Spec.Secrets {
-		attrs[s.Name] = s
-	}
+// New constructs a Subscriber.
+func New(stream EventStream, secretsHook SecretsHook, lifecycleHook LifecycleHook) *Subscriber {
 	return &Subscriber{
-		stream:      stream,
-		secrets:     secretsHook,
-		lifecycle:   lifecycleHook,
-		drainer:     drainer,
-		manifest:    m,
-		secretAttrs: attrs,
+		stream:    stream,
+		secrets:   secretsHook,
+		lifecycle: lifecycleHook,
 	}
 }
 
@@ -243,69 +168,19 @@ func (s *Subscriber) dispatch(ev Event) {
 	}
 }
 
-// handleRotated handles secret_rotated events. After invalidating the cache
-// (rotation=live) or initiating drain-then-exit (rotation=restart) it fires
-// the OnRotation callback when one is configured so the metrics recorder
-// can observe end-to-end propagation lag.
+// handleRotated handles secret_rotated events. It invalidates the cached
+// value, so the next Resolve fetches the new version. A secret this plugin
+// never resolved has no cache entry, and the invalidation is a no-op.
 func (s *Subscriber) handleRotated(ev Event) {
-	decl, ok := s.secretAttrs[ev.Name]
-	if !ok {
-		// Not in this plugin's manifest; ignore.
-		slog.Debug("events: secret_rotated for undeclared secret, ignoring",
-			"name", ev.Name)
-		return
-	}
-
-	switch decl.Rotation {
-	case "live":
-		s.secrets.Invalidate(ev.Name)
-		slog.Info("events: secret rotated (live), cache invalidated",
-			"name", ev.Name, "version", ev.Version)
-		s.fireOnRotation(ev)
-
-	case "restart":
-		reason := fmt.Sprintf("secret_rotated_restart: %s v%d", ev.Name, ev.Version)
-		slog.Info("events: secret rotated (restart), initiating drain-then-exit",
-			"name", ev.Name, "version", ev.Version)
-		// Fire the callback BEFORE DrainThenExit because that path may not
-		// return (it calls os.Exit(75) in production).
-		s.fireOnRotation(ev)
-		if s.drainer != nil {
-			s.drainer.DrainThenExit(reason)
-		} else {
-			// Drainer not wired yet (pre-Phase-8). Log and continue.
-			// Phase 8 will wire the real Drainer.
-			slog.Warn("events: rotation=restart event received but Drainer is nil — "+
-				"process cannot self-restart in this configuration; "+
-				"operator must restart manually",
-				"name", ev.Name, "version", ev.Version)
-		}
-	}
+	s.secrets.Invalidate(ev.Name)
+	slog.Info("events: secret rotated, cache invalidated",
+		"name", ev.Name, "version", ev.Version)
 }
 
-// fireOnRotation invokes the OnRotation callback with the propagation lag
-// when one is configured. lag is zero (rather than negative) when
-// ev.OccurredAt is unset.
-func (s *Subscriber) fireOnRotation(ev Event) {
-	if s.onRotation == nil {
-		return
-	}
-	var lag time.Duration
-	if !ev.OccurredAt.IsZero() {
-		lag = time.Since(ev.OccurredAt)
-	}
-	s.onRotation(ev.Name, lag)
-}
-
-// handleRevoked handles secret_access_revoked events.
+// handleRevoked handles secret_access_revoked events. The daemon sends one
+// only for a grant this plugin held, so each one marks the secret revoked and
+// degrades the plugin.
 func (s *Subscriber) handleRevoked(ev Event) {
-	_, ok := s.secretAttrs[ev.Name]
-	if !ok {
-		slog.Debug("events: secret_access_revoked for undeclared secret, ignoring",
-			"name", ev.Name)
-		return
-	}
-
 	s.secrets.MarkRevoked(ev.Name)
 	slog.Info("events: secret access revoked, cache invalidated and flag set",
 		"name", ev.Name, "reason", ev.Reason)

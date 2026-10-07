@@ -85,7 +85,9 @@ func ActingUserFromContext(ctx context.Context) (string, bool) {
 	return "", false
 }
 
-// ContextWithActingUser stores the acting-user ID on ctx.
+// ContextWithActingUser stores the acting-user ID on ctx. The daemon sets
+// it from the verified identity of a human caller (gibson), and the
+// readers of ActingUserFromContext attribute work to that person.
 func ContextWithActingUser(ctx context.Context, userID string) context.Context {
 	if userID == "" {
 		return ctx
@@ -113,16 +115,6 @@ func ContextWithInitiatorUser(ctx context.Context, userID string) context.Contex
 	return context.WithValue(ctx, initiatorUserKey{}, userID)
 }
 
-// ExecutorUserFromContext returns the owner of the currently-
-// executing agent, plus ok=true when set. May differ from
-// InitiatorUser under cross-user delegation.
-func ExecutorUserFromContext(ctx context.Context) (string, bool) {
-	if v, ok := ctx.Value(executorUserKey{}).(string); ok && v != "" {
-		return v, true
-	}
-	return "", false
-}
-
 // ContextWithExecutorUser stores the executing-agent owner user ID
 // on ctx. Set at sub-agent dispatch time so attribution follows the
 // code path through delegation.
@@ -143,14 +135,6 @@ func ComponentScopeFromContext(ctx context.Context) string {
 		return v
 	}
 	return ""
-}
-
-// ContextWithComponentScope stores the component scope on ctx.
-func ContextWithComponentScope(ctx context.Context, scope string) context.Context {
-	if scope == "" {
-		return ctx
-	}
-	return context.WithValue(ctx, componentScopeKey{}, scope)
 }
 
 // ---------------------------------------------------------------------

@@ -4,8 +4,6 @@
 syntax = "proto3";
 package gibson.graphrag.v1;
 
-import "taxonomy/v1/taxonomy.proto";
-
 option go_package = "github.com/zeroroot-ai/sdk/api/gen/gibson/graphrag/v1;graphragpb";
 option java_multiple_files = true;
 option csharp_namespace = "Gibson.Graphrag";
@@ -17,13 +15,10 @@ message GraphQuery {
   int32 top_k = 3;
   repeated string node_types = 4;
   double min_score = 5;
-  double max_score = 6;
   string mission_id = 7;
   string mission_run_id = 8;
   QueryScope scope = 9;
   map<string, string> filters = 10;
-  double vector_weight = 11;
-  double graph_weight = 12;
   // from_node_id anchors a relationship traversal: with relationship_type,
   // restrict results to nodes reachable from this node by that relationship
   // (sdk#72, the SDK search primitive). Optional; a query with neither this
@@ -33,6 +28,12 @@ message GraphQuery {
   // e.g. "RESOLVES_TO" (sdk#72). Optional; requires from_node_id to have any
   // effect.
   string relationship_type = 14;
+  reserved 6;
+  reserved "max_score";
+  reserved 11;
+  reserved "vector_weight";
+  reserved 12;
+  reserved "graph_weight";
 }
 
 // QueryScope defines the scope of a graph query.
@@ -47,10 +48,12 @@ enum QueryScope {
 message QueryResult {
   GraphNode node = 1;
   double score = 2;
-  double vector_score = 3;
-  double graph_score = 4;
   repeated string path = 5;
   int32 distance = 6;
+  reserved 3;
+  reserved "vector_score";
+  reserved 4;
+  reserved "graph_score";
 }
 
 // GraphNode represents a node in the knowledge graph.
@@ -67,17 +70,20 @@ message GraphNode {
   string mission_id = 10;
   string mission_run_id = 11;
   string agent_run_id = 12;
-  string discovered_by = 13;
   int64 discovered_at = 14;
 
   // Timestamps
   int64 created_at = 20;
   int64 updated_at = 21;
 
-  // Parent reference
-  optional string parent_id = 30;
-  optional string parent_type = 31;
-  optional string parent_relationship = 32;
+  reserved 13;
+  reserved "discovered_by";
+  reserved 30;
+  reserved "parent_id";
+  reserved 31;
+  reserved "parent_type";
+  reserved 32;
+  reserved "parent_relationship";
 }
 
 // Value represents a dynamic property value.
@@ -100,23 +106,6 @@ message ListValue {
 
 message MapValue {
   map<string, Value> fields = 1;
-}
-
-// Relationship represents a connection between two nodes.
-message Relationship {
-  string id = 1;
-  string from_id = 2;
-  string to_id = 3;
-  string type = 4;
-  map<string, Value> properties = 5;
-  double weight = 6;
-
-  // Scoping
-  string mission_id = 10;
-  string mission_run_id = 11;
-
-  // Timestamps
-  int64 created_at = 20;
 }
 
 // ==================== DISCOVERY RESULT ====================
@@ -160,8 +149,9 @@ message Host {
   optional string hostname = 3;
   optional string state = 4;
   optional string os = 5;
-  optional string os_version = 6;
   optional string mac_address = 7;
+  reserved 6;
+  reserved "os_version";
 }
 
 // Port discovered on a host.
@@ -181,9 +171,11 @@ message Service {
   string name = 3;
   optional string product = 4;
   optional string version = 5;
-  optional string extra_info = 6;
   optional string banner = 7;
-  optional string cpe = 8;
+  reserved 6;
+  reserved "extra_info";
+  reserved 8;
+  reserved "cpe";
 }
 
 // Endpoint (URL) on a service.
@@ -194,17 +186,21 @@ message Endpoint {
   optional string method = 4;
   optional int32 status_code = 5;
   optional string content_type = 6;
-  optional int64 content_length = 7;
   optional string title = 8;
+  reserved 7;
+  reserved "content_length";
 }
 
 // Domain discovered.
 message Domain {
   optional string id = 1;  // Agent-generated UUID for this domain
   string name = 2;
-  optional string registrar = 3;
-  optional int64 created_date = 4;
-  optional int64 expiry_date = 5;
+  reserved 3;
+  reserved "registrar";
+  reserved 4;
+  reserved "created_date";
+  reserved 5;
+  reserved "expiry_date";
 }
 
 // Subdomain under a domain.
@@ -222,11 +218,13 @@ message Technology {
   optional string version = 3;
   optional string category = 4;
   optional int32 confidence = 5;
-  optional string cpe = 6;
 
   // Parent entity reference (optional - tech can be associated with various entities)
   optional string parent_id = 10;
-  optional string parent_type = 11;  // e.g., "service", "endpoint", "host"
+  reserved 6;
+  reserved "cpe";
+  reserved 11;
+  reserved "parent_type";
 }
 
 // Certificate discovered.
@@ -234,15 +232,19 @@ message Certificate {
   optional string id = 1;  // Agent-generated UUID for this certificate
   optional string subject = 2;
   optional string issuer = 3;
-  optional string serial_number = 4;
-  optional int64 not_before = 5;
   optional int64 not_after = 6;
   optional string fingerprint_sha256 = 7;
-  optional string san = 8;
 
   // Parent entity reference (optional - cert can be associated with various entities)
   optional string parent_id = 10;
-  optional string parent_type = 11;  // e.g., "service", "endpoint", "host"
+  reserved 4;
+  reserved "serial_number";
+  reserved 5;
+  reserved "not_before";
+  reserved 8;
+  reserved "san";
+  reserved 11;
+  reserved "parent_type";
 }
 
 // Finding (vulnerability or security issue).
@@ -254,12 +256,14 @@ message Finding {
   optional double confidence = 5;
   optional string category = 6;
   optional string remediation = 7;
-  optional double cvss_score = 8;
   optional string cve_ids = 9;
 
   // Parent entity reference (optional - finding can be associated with various entities)
   optional string parent_id = 10;
-  optional string parent_type = 11;  // e.g., "service", "endpoint", "host", "technology"
+  reserved 8;
+  reserved "cvss_score";
+  reserved 11;
+  reserved "parent_type";
 }
 
 // Evidence for a finding.
@@ -371,14 +375,15 @@ message AttackPattern {
   string technique_id = 2;
   string name = 3;
   string description = 4;
-  // tactics, e.g. ["Initial Access", "Execution"].
-  repeated string tactics = 5;
-  // platforms, e.g. ["Windows", "Linux"].
-  repeated string platforms = 6;
-  repeated string data_sources = 7;
   repeated string references = 8;
   int64 created_at = 20;
   int64 updated_at = 21;
+  reserved 5;
+  reserved "tactics";
+  reserved 6;
+  reserved "platforms";
+  reserved 7;
+  reserved "data_sources";
 }
 
 // AttackStep is one hop in an AttackChain.

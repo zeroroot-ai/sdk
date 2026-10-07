@@ -512,45 +512,6 @@ func TestDrainCtxCancelForcesExit(t *testing.T) {
 	close(blockCh)
 }
 
-// TestDrainThenExitCallsExiter verifies that DrainThenExit calls the injected
-// exiter with exit code 75 after draining.
-func TestDrainThenExitCallsExiter(t *testing.T) {
-	var exitCode int
-	var exitCalled atomic.Bool
-
-	original := exiter
-	exiter = func(code int) {
-		exitCode = code
-		exitCalled.Store(true)
-	}
-	t.Cleanup(func() { exiter = original })
-
-	client := &fakeClient{}
-	d := New(client, Config{
-		Handlers: map[string]MethodHandler{},
-	})
-
-	// No in-flight work; DrainThenExit should drain immediately and exit.
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		d.DrainThenExit("test rotation reason")
-	}()
-
-	select {
-	case <-done:
-	case <-time.After(5 * time.Second):
-		t.Fatal("DrainThenExit did not return in time")
-	}
-
-	if !exitCalled.Load() {
-		t.Fatal("exiter was not called")
-	}
-	if exitCode != exitCode75 {
-		t.Fatalf("expected exit code %d, got %d", exitCode75, exitCode)
-	}
-}
-
 // TestMultipleHandlers exercises two distinct methods in a single dispatcher.
 func TestMultipleHandlers(t *testing.T) {
 	client := &fakeClient{}

@@ -71,6 +71,14 @@ var ErrMalformed = errors.New("capabilitygrant: malformed token")
 //
 // Each error is wrapped with errors.Is for caller matching.
 func Verify(ctx context.Context, fetcher JWKSFetcher, token string, opts VerifyOptions) (Claims, error) {
+	// Both are required. An empty value would skip its check and accept a
+	// grant minted for another issuer or audience.
+	if opts.ExpectedIssuer == "" {
+		return Claims{}, fmt.Errorf("%w: VerifyOptions.ExpectedIssuer is empty", ErrClaimsInvalid)
+	}
+	if opts.ExpectedAudience == "" {
+		return Claims{}, fmt.Errorf("%w: VerifyOptions.ExpectedAudience is empty", ErrClaimsInvalid)
+	}
 	if opts.Now.IsZero() {
 		opts.Now = time.Now()
 	}

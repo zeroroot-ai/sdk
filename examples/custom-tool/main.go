@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"log"
 
-	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	"google.golang.org/protobuf/proto"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 
 	sdk "github.com/zeroroot-ai/sdk"
 	"github.com/zeroroot-ai/sdk/serve"
@@ -45,10 +45,12 @@ import (
 // `gibson component init --kind tool` does all of step 1 for you.
 type EchoTool struct{}
 
-func (t *EchoTool) Name() string        { return "echo-tool" }
-func (t *EchoTool) Version() string     { return "0.1.0" }
-func (t *EchoTool) Description() string { return "minimal example tool — see gibson component init --kind tool for the canonical scaffold" }
-func (t *EchoTool) Tags() []string      { return []string{"example", "echo"} }
+func (t *EchoTool) Name() string    { return "echo-tool" }
+func (t *EchoTool) Version() string { return "0.1.0" }
+func (t *EchoTool) Description() string {
+	return "minimal example tool — see gibson component init --kind tool for the canonical scaffold"
+}
+func (t *EchoTool) Tags() []string { return []string{"example", "echo"} }
 
 // InputMessageType / OutputMessageType return the fully-qualified proto
 // message names. Gibson uses these to dispatch agent calls to the

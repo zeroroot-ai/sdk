@@ -26,15 +26,3 @@ func TestWithLifecycle(t *testing.T) {
 	require.NoError(t, c.hooks.OnStart(context.Background()))
 	assert.True(t, called)
 }
-
-func TestWithPlatformURL(t *testing.T) {
-	c := &config{}
-	WithPlatformURL("https://gibson.example")(c)
-	assert.Equal(t, "https://gibson.example", c.platformURL)
-}
-
-func TestWithBootstrapToken(t *testing.T) {
-	c := &config{}
-	WithBootstrapToken("boot-token")(c)
-	assert.Equal(t, "boot-token", c.bootstrapToken)
-}
