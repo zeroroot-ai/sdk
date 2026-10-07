@@ -34,8 +34,8 @@ type ClientConfig struct {
 	PlatformURL string
 
 	// BootstrapToken is an optional one-time credential for first-time host
-	// registration. If empty, ResolveBootstrap will fall back to the Kubernetes
-	// service account token. After registration the token is not stored.
+	// registration. If empty, ResolveBootstrap reads GIBSON_BOOTSTRAP_TOKEN.
+	// After registration the token is not stored.
 	BootstrapToken string
 
 	// HostKeyPath is the path to the on-disk host keypair (JWK JSON, 0600).
@@ -208,8 +208,8 @@ func (c *Client) Discover(ctx context.Context) error {
 // Register registers the host and agent with the platform.
 //
 // On first use (no prior registration), it requires a bootstrap credential —
-// either ClientConfig.BootstrapToken or a Kubernetes service account token
-// found at the well-known path. The bootstrap credential is used only for this
+// either ClientConfig.BootstrapToken or the GIBSON_BOOTSTRAP_TOKEN environment
+// variable. The bootstrap credential is used only for this
 // request and is never stored.
 //
 // On subsequent calls (host key already on disk from a previous run), the client
@@ -229,6 +229,16 @@ func (c *Client) Register(ctx context.Context) error {
 	registerURL := doc.Endpoints.Register
 	if registerURL == "" {
 		return errors.New("capabilitygrant: discovery document has no register endpoint")
+	}
+
+	// No credential leaves this process until the register URL is https and
+	// on the origin of the configured platform URL.
+	base, err := ParsePlatformURL(c.config.PlatformURL)
+	if err != nil {
+		return err
+	}
+	if err := checkEndpointOrigin(base, "register", registerURL); err != nil {
+		return err
 	}
 
 	// Build the Authorization header value. Prefer a SPIFFE JWT-SVID when a

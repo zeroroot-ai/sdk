@@ -93,9 +93,6 @@ func TestTheBootstrapTokenGoesOnlyWithTheFirstCheckIn(t *testing.T) {
 // check-in would trust whoever calls first.
 func TestAFirstCheckInNeedsABootstrapCredential(t *testing.T) {
 	t.Setenv("GIBSON_BOOTSTRAP_TOKEN", "")
-	if _, err := ResolveBootstrap(""); err == nil {
-		t.Skip("this host has an in-cluster service account token")
-	}
 	srv, rec := serveRegistration(t)
 	c := registeringClient(t, srv, filepath.Join(t.TempDir(), "host_key.json"), "")
 	err := c.Register(context.Background())
@@ -118,4 +115,32 @@ func TestAWideHostKeyFileIsRefused(t *testing.T) {
 	key, err := LoadOrGenerateHostKey(path)
 	require.NoError(t, err)
 	require.False(t, key.FirstCheckIn)
+}
+
+// TestRegisterRefusesAnUntrustedRegisterURL proves that no credential goes to a
+// register URL on another host or to a plain HTTP URL.
+func TestRegisterRefusesAnUntrustedRegisterURL(t *testing.T) {
+	t.Setenv("GIBSON_BOOTSTRAP_TOKEN", "")
+	srv, rec := serveRegistration(t)
+	other, otherRec := serveRegistration(t)
+	plain := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		t.Error("the client sent a request to a plain HTTP URL")
+	}))
+	t.Cleanup(plain.Close)
+
+	cases := map[string]string{
+		"wrong host": strings.Replace(other.URL, "127.0.0.1", "localhost", 1) + "/agent-auth/register",
+		"other port": other.URL + "/agent-auth/register",
+		"plain http": plain.URL + "/agent-auth/register",
+	}
+	for name, registerURL := range cases {
+		t.Run(name, func(t *testing.T) {
+			c := registeringClient(t, srv, filepath.Join(t.TempDir(), "host_key.json"), "one-time-token")
+			c.discovery.Endpoints.Register = registerURL
+			err := c.Register(context.Background())
+			require.ErrorIs(t, err, ErrEndpointOrigin)
+		})
+	}
+	require.Empty(t, rec.seen())
+	require.Empty(t, otherRec.seen())
 }
