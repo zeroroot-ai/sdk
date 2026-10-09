@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.202.1](https://github.com/zeroroot-ai/sdk/compare/v0.202.0...v0.202.1) (2026-10-09)
+
+
+### Bug Fixes
+
+* **capabilitygrant:** send registration credentials only to the platform origin ([#264](https://github.com/zeroroot-ai/sdk/issues/264)) ([f6bafb1](https://github.com/zeroroot-ai/sdk/commit/f6bafb1ecc0935ec63e24f0cc9afdd7eece249f2))
+
 ## [0.202.0](https://github.com/zeroroot-ai/sdk/compare/v0.201.0...v0.202.0) (2026-10-07)
 
 
