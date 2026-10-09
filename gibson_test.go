@@ -8,9 +8,6 @@ import (
 	"reflect"
 	"testing"
 
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/emptypb"
-
 	"github.com/zeroroot-ai/sdk/agent"
 	"github.com/zeroroot-ai/sdk/llm"
 )
@@ -41,41 +38,6 @@ func TestNewAgent(t *testing.T) {
 func TestNewAgentNeedsAName(t *testing.T) {
 	if _, err := NewAgent(WithVersion("1")); err == nil {
 		t.Fatal("NewAgent without a name must fail")
-	}
-}
-
-func TestNewTool(t *testing.T) {
-	handler := func(_ context.Context, in proto.Message) (proto.Message, error) { return in, nil }
-	tl, err := NewTool(
-		WithToolName("echo"),
-		WithToolVersion("0.1.0"),
-		WithToolDescription("echoes"),
-		WithToolTags("a", "b"),
-		WithInputMessageType("google.protobuf.Empty"),
-		WithOutputMessageType("google.protobuf.Empty"),
-		WithExecuteProtoHandler(handler),
-	)
-	if err != nil {
-		t.Fatalf("NewTool: %v", err)
-	}
-	if tl.Name() != "echo" || tl.Version() != "0.1.0" || tl.Description() != "echoes" {
-		t.Fatalf("identity = %q %q %q", tl.Name(), tl.Version(), tl.Description())
-	}
-	if !reflect.DeepEqual(tl.Tags(), []string{"a", "b"}) {
-		t.Fatalf("Tags = %v", tl.Tags())
-	}
-	if tl.InputMessageType() != "google.protobuf.Empty" || tl.OutputMessageType() != "google.protobuf.Empty" {
-		t.Fatalf("message types = %q %q", tl.InputMessageType(), tl.OutputMessageType())
-	}
-	out, err := tl.ExecuteProto(context.Background(), &emptypb.Empty{})
-	if err != nil || out == nil {
-		t.Fatalf("ExecuteProto = %v, %v", out, err)
-	}
-}
-
-func TestNewToolNeedsAName(t *testing.T) {
-	if _, err := NewTool(); err == nil {
-		t.Fatal("NewTool without a name must fail")
 	}
 }
 

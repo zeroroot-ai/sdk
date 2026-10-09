@@ -8,7 +8,6 @@ import (
 
 	"github.com/zeroroot-ai/sdk/agent"
 	"github.com/zeroroot-ai/sdk/serve"
-	"github.com/zeroroot-ai/sdk/tool"
 )
 
 // NewAgent creates a new agent with the provided options.
@@ -33,32 +32,6 @@ func NewAgent(opts ...AgentOption) (agent.Agent, error) {
 	}
 
 	return agent.New(cfg)
-}
-
-// NewTool creates a new tool with the provided options.
-// The tool must have at minimum a name and execute handler.
-//
-// Example:
-//
-//	tool, err := sdk.NewTool(
-//	    sdk.WithToolName("http-request"),
-//	    sdk.WithToolDescription("Makes HTTP requests"),
-//	    sdk.WithToolTags("http", "network"),
-//	    sdk.WithInputSchema(schema.Object(map[string]schema.JSON{
-//	        "url": schema.String(),
-//	    })),
-//	    sdk.WithExecuteHandler(func(ctx context.Context, input map[string]any) (map[string]any, error) {
-//	        // Tool implementation
-//	        return map[string]any{"status": 200}, nil
-//	    }),
-//	)
-func NewTool(opts ...ToolOption) (tool.Tool, error) {
-	cfg := tool.NewConfig()
-	for _, opt := range opts {
-		opt(cfg)
-	}
-
-	return tool.New(cfg)
 }
 
 // ServeAgent connects the agent to the Gibson platform with the default serve
