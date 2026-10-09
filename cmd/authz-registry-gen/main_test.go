@@ -9,6 +9,8 @@ import (
 	"go/format"
 	"go/parser"
 	"go/token"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -730,5 +732,42 @@ func TestEmitGo_EntryCarriesOnlyFieldsWithAReader(t *testing.T) {
 	}
 	if strings.Contains(src, "Method:") {
 		t.Errorf("an entry literal still sets Method")
+	}
+}
+
+// runImage reads a FileDescriptorSet and writes the three artifacts into the
+// output directory. An unreadable input and an unannotated RPC are errors.
+func TestRunImage_WritesTheThreeArtifacts(t *testing.T) {
+	req := fixtureRequest(t, true)
+	raw, err := proto.Marshal(&descriptorpb.FileDescriptorSet{File: req.GetProtoFile()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	in := filepath.Join(dir, "in.binpb")
+	if err := os.WriteFile(in, raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	out := filepath.Join(dir, "out")
+	if err := runImage(in, out); err != nil {
+		t.Fatalf("runImage: %v", err)
+	}
+	entries, err := os.ReadDir(out)
+	if err != nil || len(entries) != 3 {
+		t.Fatalf("output = %v (%v), want three artifacts", entries, err)
+	}
+
+	if err := runImage(filepath.Join(dir, "missing.binpb"), out); err == nil {
+		t.Error("a missing input was accepted")
+	}
+	bare, err := proto.Marshal(&descriptorpb.FileDescriptorSet{File: fixtureRequest(t, false).GetProtoFile()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(in, bare, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := runImage(in, out); err == nil || !strings.Contains(err.Error(), "missing the (gibson.auth.v1.authz) annotation") {
+		t.Errorf("err = %v, want the missing-annotation refusal", err)
 	}
 }

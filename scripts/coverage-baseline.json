@@ -1,5 +1,5 @@
 {
-  "_comment": "Packages below the 80% coverage floor when the gate landed (sdk#356). Burndown: sdk#388. Each entry is held at its recorded level (no regression) and removed once it reaches 80%. Regenerate with `make coverage-baseline`. These numbers are toolchain-dependent: `go test -cover` counts statements, and the count changes between Go releases. Re-recorded under go1.27.1, the floor in go.mod. Moving the floor toolchain moves these numbers in both directions on an unchanged tree, so re-record this file in the same PR that moves the floor.",
+  "_comment": "Packages below the 80% coverage floor when the gate landed (sdk#356). Burndown: sdk#388. Each entry is held at its recorded level (no regression) and removed once it reaches 80%. Regenerate with `make coverage-baseline`. These numbers are toolchain-dependent: `go test -cover` counts statements, and the count changes between Go releases. Re-recorded under go1.27.2, the floor in go.mod. Moving the floor toolchain moves these numbers in both directions on an unchanged tree, so re-record this file in the same PR that moves the floor.",
   "floor": 80,
   "packages": {
     "github.com/zeroroot-ai/sdk/cmd/mission-docs-gen": 0,
@@ -7,12 +7,8 @@
     "github.com/zeroroot-ai/sdk/cmd/sdk-bump": 0,
     "github.com/zeroroot-ai/sdk/cmd/sdk-bump/pr": 0,
     "github.com/zeroroot-ai/sdk/cmd/sdk-bump/report": 0,
-    "github.com/zeroroot-ai/sdk/cmd/taxonomy-gen/parser": 73.3,
-    "github.com/zeroroot-ai/sdk/codegen/workspace": 29.3,
-    "github.com/zeroroot-ai/sdk/finding/classifier": 0,
-    "github.com/zeroroot-ai/sdk/graphrag/id": 75.4,
-    "github.com/zeroroot-ai/sdk/health": 0,
-    "github.com/zeroroot-ai/sdk/health/http": 24.9,
-    "github.com/zeroroot-ai/sdk/serve": 26.3
+    "github.com/zeroroot-ai/sdk/cmd/taxonomy-gen/parser": 69.2,
+    "github.com/zeroroot-ai/sdk/health/http": 23.5,
+    "github.com/zeroroot-ai/sdk/serve": 29.6
   }
 }

@@ -16,7 +16,7 @@
 # names; the org toolchain guard (reusable-go-ci) fails the PR when they drift,
 # and GOTOOLCHAIN=local makes a mismatch fail the build instead of downloading
 # a toolchain. Re-resolve digests with `crane digest <ref>`.
-FROM ghcr.io/zeroroot-ai/mirror/golang:1.27.1-alpine@sha256:8a5910f31396cd4d89662f56c68b3ae31d374308270a1c3bd96672ee5ed43414 AS build
+FROM ghcr.io/zeroroot-ai/mirror/golang:1.27.2-alpine@sha256:85dc1069ac644ea3c527b177303a406eb3358192816cd7f9e5848eb658851673 AS build
 ARG GOTOOLCHAIN=local
 ENV GOTOOLCHAIN=${GOTOOLCHAIN}
 WORKDIR /src
