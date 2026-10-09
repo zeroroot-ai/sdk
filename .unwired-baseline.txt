@@ -6,40 +6,21 @@
 # This file only shrinks. Adding an entry means accepting a declaration
 # nothing reads, so put the reason on a # line above it.
 #
-# measured 2026-10-06: 441 of 1523 declarations across 132 packages and 302 files
+# measured 2026-10-09: 139 of 1497 declarations across 131 packages and 300 files
 
-const auth.CredentialCapabilityGrant	# auth/identity.go:52
-const auth.CredentialClientCredentials	# auth/identity.go:46
-const auth.CredentialOIDCUser	# auth/identity.go:41
-const auth.SystemTenantString	# auth/extras.go:42
-const capabilitygrant.MetadataHeaderCapabilityGrant	# capabilitygrant/client.go:440
-# Read by a first-party repo outside this module (gibson, adk, gibson-executor or
-# cve-triage). Lane 11 measured each read with a type-aware scan of those repos.
-const llm.RoleSystem	# llm/message.go:11
-const llm.RoleUser	# llm/message.go:14
-const security.MetaKeyCVSS	# finding/security/security.go:14
-const security.MetaKeyCWE	# finding/security/security.go:15
-const security.MetaKeyMitreAtlas	# finding/security/security.go:13
-const security.MetaKeyMitreAttack	# finding/security/security.go:12
-const toolerr.ErrCodeBinaryNotFound	# toolerr/error.go:14
-const toolerr.ErrCodeDependencyMissing	# toolerr/error.go:23
-const toolerr.ErrCodePermissionDenied	# toolerr/error.go:26
-const toolerr.StrategyModifyParams	# toolerr/classification.go:18
-const toolerr.StrategySkip	# toolerr/classification.go:24
-const toolerr.StrategyUseAlternative	# toolerr/classification.go:21
+# The agent authoring API: agent.Harness and its serve implementations, the
+# callback client, the result types and options they return or take, and the
+# fork claim of D80. No first-party Go agent calls them today (measured with
+# the consumers of scripts/unwired-consumers.sh). Deleting the agent API is an
+# owner call, asked on sdk#112.
 field agent.ApplicationFinding.DeploymentKey	# agent/knowledge.go:174
-field agent.ApplicationFinding.Exposed	# agent/knowledge.go:171
-field agent.ApplicationFinding.FindingID	# agent/knowledge.go:151
 field agent.ApplicationFinding.ImageKey	# agent/knowledge.go:175
 field agent.ApplicationFinding.PlaceKey	# agent/knowledge.go:164
 field agent.ApplicationFinding.PlaceLabel	# agent/knowledge.go:163
 field agent.ApplicationFinding.Priority	# agent/knowledge.go:192
 field agent.ApplicationFinding.PriorityReason	# agent/knowledge.go:194
 field agent.ApplicationFinding.PriorityRule	# agent/knowledge.go:193
-field agent.ApplicationFinding.Reachable	# agent/knowledge.go:168
-field agent.ApplicationFinding.Severity	# agent/knowledge.go:155
 field agent.ApplicationFinding.Status	# agent/knowledge.go:153
-field agent.ApplicationFinding.VulnerabilityID	# agent/knowledge.go:160
 field agent.Descriptor.Capabilities	# agent/harness.go:584
 field agent.Descriptor.Description	# agent/harness.go:581
 field agent.Descriptor.Name	# agent/harness.go:575
@@ -52,51 +33,13 @@ field agent.QueuedToolResult.Output	# agent/harness.go:28
 # Fields of the harness contract types (agent, llm, types, finding). The harness
 # hands them to agent code. Lane 11 keeps them while the interface methods stay.
 field agent.Result.Error	# agent/types.go:81
-field agent.ResultError.Stack	# agent/errors.go:38
 field agent.WorldEntity.Attributes	# agent/worldview.go:56
 field agent.WorldEntity.Handle	# agent/worldview.go:46
 field agent.WorldEntity.Kind	# agent/worldview.go:48
 field agent.WorldEntity.Label	# agent/worldview.go:52
 field agent.WorldView.Truncated	# agent/worldview.go:66
-field auth.Identity.CredentialType	# auth/identity.go:85
-field capabilitygrant.DiscoveryDocument.DefaultLocation	# capabilitygrant/discovery.go:52
-field capabilitygrant.DiscoveryDocument.Issuer	# capabilitygrant/discovery.go:49
-field capabilitygrant.DiscoveryDocument.ProviderName	# capabilitygrant/discovery.go:45
-field capabilitygrant.DiscoveryDocument.SupportedModes	# capabilitygrant/discovery.go:56
-field capabilitygrant.InstallRef.Kind	# capabilitygrant/runtimeinstall.go:74
-field capabilitygrant.InstallRef.Name	# capabilitygrant/runtimeinstall.go:75
-field capabilitygrant.RuntimeInstall.GibsonURL	# capabilitygrant/runtimeinstall.go:39
-field capabilitygrant.registrationRequest.AgentKeyJWK	# capabilitygrant/client.go:339
-field capabilitygrant.registrationRequest.AgentMode	# capabilitygrant/client.go:337
-field capabilitygrant.registrationRequest.AgentName	# capabilitygrant/client.go:336
-field capabilitygrant.registrationRequest.HostID	# capabilitygrant/client.go:335
-field capabilitygrant.registrationRequest.HostKeyJWK	# capabilitygrant/client.go:338
-# Encoded by encoding/json or yaml.v3, which reads each field through reflection.
-field finding.ComplianceMapping.ControlID	# finding/compliance_mapping.go:31
-field finding.ComplianceMapping.EvidenceRef	# finding/compliance_mapping.go:40
-field finding.ComplianceMapping.Framework	# finding/compliance_mapping.go:25
-field finding.ComplianceMapping.Rationale	# finding/compliance_mapping.go:36
-field finding.Evidence.Timestamp	# finding/evidence.go:22
-field finding.Finding.ComplianceMappings	# finding/finding.go:92
-field finding.Finding.Metadata	# finding/finding.go:76
 # The runtime fork contract (D74, sdk#248) for a oneshot driver. No Go oneshot driver is in this module: the zerocool-plugins drivers and the daemon tests of gibson#802 and gibson#803 use it.
 field fork.Claim.Model	# fork/fork.go:114
-field graphrag.GraphNode.AgentName	# graphrag/node.go:26
-field graphrag.GraphNode.Content	# graphrag/node.go:20
-field graphrag.GraphNode.CreatedAt	# graphrag/node.go:29
-field graphrag.GraphNode.ID	# graphrag/node.go:14
-field graphrag.GraphNode.MissionID	# graphrag/node.go:23
-field graphrag.GraphNode.Properties	# graphrag/node.go:17
-field graphrag.GraphNode.UpdatedAt	# graphrag/node.go:32
-field health.probeResponse.Reason	# plugin/health/server.go:52
-field health.probeResponse.State	# plugin/health/server.go:48
-field health.probeResponse.Timestamp	# plugin/health/server.go:50
-field http.CheckResult.Details	# health/http/types.go:106
-field http.CheckResult.Message	# health/http/types.go:102
-field http.CheckResult.Status	# health/http/types.go:99
-field http.Response.Message	# health/http/types.go:88
-field http.Response.Status	# health/http/types.go:81
-field http.Response.Timestamp	# health/http/types.go:84
 field llm.CompletionRequest.Messages	# llm/completion.go:9
 field llm.SlotDefinition.MinContextWindow	# llm/slot.go:16
 field llm.SlotDefinition.Name	# llm/slot.go:10
@@ -105,252 +48,54 @@ field llm.SlotDefinition.Required	# llm/slot.go:13
 field llm.SlotDefinition.RequiredFeatures	# llm/slot.go:20
 field llm.StreamChunk.Delta	# llm/stream.go:10
 field llm.StreamChunk.ToolCalls	# llm/stream.go:14
-field mission.MissionInfo.CreatedAt	# mission/types.go:96
-field mission.MissionInfo.Name	# mission/types.go:83
-field mission.MissionInfo.ParentMissionID	# mission/types.go:93
-field mission.MissionInfo.Status	# mission/types.go:86
-field mission.MissionInfo.Tags	# mission/types.go:99
-field mission.MissionInfo.TargetID	# mission/types.go:89
-field mission.MissionMetrics.AgentCalls	# mission/types.go:187
-field mission.MissionMetrics.Duration	# mission/types.go:178
-field mission.MissionMetrics.FindingsCount	# mission/types.go:190
-field mission.MissionMetrics.TokensUsed	# mission/types.go:181
-field mission.MissionMetrics.ToolCalls	# mission/types.go:184
-field mission.MissionResult.CompletedAt	# mission/types.go:172
-field mission.MissionResult.Error	# mission/types.go:169
-field mission.MissionResult.Findings	# mission/types.go:159
-field mission.MissionResult.Metrics	# mission/types.go:166
-field mission.MissionResult.MissionID	# mission/types.go:153
-field mission.MissionResult.Output	# mission/types.go:163
-field mission.MissionResult.Status	# mission/types.go:156
-field mission.MissionStatusInfo.Duration	# mission/types.go:144
-field mission.MissionStatusInfo.Error	# mission/types.go:147
-field mission.MissionStatusInfo.FindingCounts	# mission/types.go:138
-field mission.MissionStatusInfo.Phase	# mission/types.go:134
-field mission.MissionStatusInfo.Progress	# mission/types.go:131
-field mission.MissionStatusInfo.Status	# mission/types.go:128
-field mission.MissionStatusInfo.TokenUsage	# mission/types.go:141
-field plugin.Descriptor.Description	# plugin/plugin.go:51
-field plugin.Descriptor.Methods	# plugin/plugin.go:53
-field plugin.Descriptor.Name	# plugin/plugin.go:47
-field plugin.Descriptor.Version	# plugin/plugin.go:49
-field plugin.MethodDescriptor.Capabilities	# plugin/plugin.go:77
-field plugin.MethodDescriptor.Description	# plugin/plugin.go:66
-field plugin.MethodDescriptor.InputSchema	# plugin/plugin.go:70
-field plugin.MethodDescriptor.Name	# plugin/plugin.go:64
-field plugin.MethodDescriptor.OutputSchema	# plugin/plugin.go:74
-field schema.JSON.Default	# schema/schema.go:15
-field schema.JSON.Description	# schema/schema.go:10
-field schema.JSON.Enum	# schema/schema.go:14
-field schema.JSON.Format	# schema/schema.go:21
-field schema.JSON.Items	# schema/schema.go:13
-field schema.JSON.MaxLength	# schema/schema.go:19
-field schema.JSON.Maximum	# schema/schema.go:17
-field schema.JSON.MinLength	# schema/schema.go:18
-field schema.JSON.Minimum	# schema/schema.go:16
-field schema.JSON.Pattern	# schema/schema.go:20
-field schema.JSON.Properties	# schema/schema.go:11
-field schema.JSON.Ref	# schema/schema.go:22
-field schema.JSON.Required	# schema/schema.go:12
-field schema.JSON.Type	# schema/schema.go:9
-field schema.NestedType.Fields	# cmd/taxonomy-gen/schema/types.go:30
-field schema.NestedTypeField.Description	# cmd/taxonomy-gen/schema/types.go:38
-field schema.NestedTypeField.Name	# cmd/taxonomy-gen/schema/types.go:35
-field schema.NestedTypeField.Required	# cmd/taxonomy-gen/schema/types.go:37
-# taxonomy-gen decodes these from taxonomy/core.yaml. The constants template reads
-# NodeType.Parent and ParentConfig.Type and .Required through text/template
-# reflection, which the scanner cannot see. The other keys lost their Go reader
-# with the proto, domain and validator generators (lane 11, S1). They stay as
-# schema data for the planned ark-component codegen of ADR-0102. The owner decides
-# whether core.yaml keeps them.
-field schema.NestedTypeField.Type	# cmd/taxonomy-gen/schema/types.go:36
-field schema.NodeType.Category	# cmd/taxonomy-gen/schema/types.go:62
-field schema.NodeType.Description	# cmd/taxonomy-gen/schema/types.go:63
-field schema.NodeType.IdentifyingProperties	# cmd/taxonomy-gen/schema/types.go:66
-field schema.NodeType.Parent	# cmd/taxonomy-gen/schema/types.go:65
-field schema.NodeType.Validations	# cmd/taxonomy-gen/schema/types.go:67
-field schema.ParentConfig.RefField	# cmd/taxonomy-gen/schema/types.go:103
-field schema.ParentConfig.Relationship	# cmd/taxonomy-gen/schema/types.go:104
-field schema.ParentConfig.Required	# cmd/taxonomy-gen/schema/types.go:105
-field schema.ParentConfig.Type	# cmd/taxonomy-gen/schema/types.go:102
-field schema.Property.Description	# cmd/taxonomy-gen/schema/types.go:76
-field schema.Property.Enum	# cmd/taxonomy-gen/schema/types.go:75
-field schema.Property.Required	# cmd/taxonomy-gen/schema/types.go:74
-field schema.Property.ReservedKeys	# cmd/taxonomy-gen/schema/types.go:87
-field schema.Property.Volatile	# cmd/taxonomy-gen/schema/types.go:82
-field schema.RelationshipType.Cardinality	# cmd/taxonomy-gen/schema/types.go:127
-field schema.RelationshipType.Description	# cmd/taxonomy-gen/schema/types.go:124
-field schema.RelationshipType.Properties	# cmd/taxonomy-gen/schema/types.go:128
-field schema.ReservedKeyDef.ClosedVocabulary	# cmd/taxonomy-gen/schema/types.go:95
-field schema.ReservedKeyDef.Description	# cmd/taxonomy-gen/schema/types.go:97
-field schema.Taxonomy.NestedTypes	# cmd/taxonomy-gen/schema/types.go:24
-field schema.ValidationRule.Message	# cmd/taxonomy-gen/schema/types.go:111
-field schema.ValidationRule.Rule	# cmd/taxonomy-gen/schema/types.go:110
-field security.CVSSScore.Score	# finding/security/security.go:48
-field security.CVSSScore.Vector	# finding/security/security.go:45
-field security.CVSSScore.Version	# finding/security/security.go:42
-field security.MitreMapping.Matrix	# finding/security/security.go:21
-field security.MitreMapping.SubTechniques	# finding/security/security.go:36
-field security.MitreMapping.TacticID	# finding/security/security.go:24
-field security.MitreMapping.TacticName	# finding/security/security.go:27
-field security.MitreMapping.TechniqueID	# finding/security/security.go:30
-field security.MitreMapping.TechniqueName	# finding/security/security.go:33
-field tool.Descriptor.Description	# tool/types.go:16
-field tool.Descriptor.InputMessageType	# tool/types.go:22
-field tool.Descriptor.Name	# tool/types.go:10
-field tool.Descriptor.OutputMessageType	# tool/types.go:25
-field tool.Descriptor.Tags	# tool/types.go:19
-field tool.Descriptor.Version	# tool/types.go:13
-field toolerr.RecoveryHint.Alternative	# toolerr/classification.go:34
-field toolerr.RecoveryHint.Confidence	# toolerr/classification.go:43
-field toolerr.RecoveryHint.Params	# toolerr/classification.go:37
-field toolerr.RecoveryHint.Priority	# toolerr/classification.go:46
-field toolerr.RecoveryHint.Reason	# toolerr/classification.go:40
-field toolerr.RecoveryHint.Strategy	# toolerr/classification.go:31
-field types.Capabilities.ArgAlternatives	# types/capabilities.go:34
-field types.Capabilities.BlockedArgs	# types/capabilities.go:29
-field types.Capabilities.CanRawSocket	# types/capabilities.go:19
-field types.Capabilities.Features	# types/capabilities.go:24
-field types.Capabilities.HasRoot	# types/capabilities.go:11
-field types.Capabilities.HasSudo	# types/capabilities.go:15
-field types.MissionConstraints.MaxDuration	# types/mission.go:49
-field types.MissionConstraints.MaxFindings	# types/mission.go:53
-field types.MissionConstraints.RequireEvidence	# types/mission.go:60
-field types.MissionConstraints.SeverityThreshold	# types/mission.go:57
-field types.MissionContext.Constraints	# types/mission.go:37
-field types.MissionContext.CurrentAgent	# types/mission.go:31
-field types.MissionContext.ID	# types/mission.go:25
-field types.MissionContext.Metadata	# types/mission.go:41
-field types.MissionContext.Name	# types/mission.go:28
-field types.MissionContext.Phase	# types/mission.go:34
-field types.MissionExecutionContext.Constraints	# types/mission.go:131
-field types.MissionExecutionContext.IsResumed	# types/mission.go:117
-field types.MissionExecutionContext.MemoryContinuity	# types/mission.go:128
-field types.MissionExecutionContext.MissionID	# types/mission.go:112
-field types.MissionExecutionContext.MissionName	# types/mission.go:113
-field types.MissionExecutionContext.PreviousRunID	# types/mission.go:121
-field types.MissionExecutionContext.PreviousRunStatus	# types/mission.go:122
-field types.MissionExecutionContext.ResumedFromNode	# types/mission.go:118
-field types.MissionExecutionContext.RunNumber	# types/mission.go:114
-field types.MissionExecutionContext.TotalFindingsAllRuns	# types/mission.go:125
-field types.MissionRunSummary.CompletedAt	# types/mission.go:142
-field types.MissionRunSummary.CreatedAt	# types/mission.go:141
-field types.MissionRunSummary.FindingsCount	# types/mission.go:140
-field types.MissionRunSummary.MissionID	# types/mission.go:137
-field types.MissionRunSummary.RunNumber	# types/mission.go:138
-field types.MissionRunSummary.Status	# types/mission.go:139
-field types.TargetInfo.ID	# types/target.go:25
-field types.TargetInfo.Metadata	# types/target.go:45
-field types.TargetInfo.Name	# types/target.go:28
-field types.TargetInfo.Provider	# types/target.go:35
-field types.TargetInfo.Type	# types/target.go:32
-field types.TargetSchema.Schema	# types/target_schema.go:54
-func auth.ActingUserFromContext	# auth/extras.go:81
-func auth.ComponentScopeFromContext	# auth/extras.go:133
-# read by gibson (the daemon sets the acting user of a human caller), kept by coordinator decision (sdk 820cf19)
-func auth.ContextWithActingUser	# auth/extras.go:91
-func auth.ContextWithExecutorUser	# auth/extras.go:121
-func auth.ContextWithInitiatorUser	# auth/extras.go:111
-func auth.ContextWithTenantString	# auth/extras.go:180
-func auth.InitiatorUserFromContext	# auth/extras.go:101
-func auth.MustNewTenantID	# auth/tenantid.go:126
-func auth.StreamServerInterceptor	# auth/interceptor.go:51
-func auth.TenantScopedRedisKey	# auth/extras.go:56
-func auth.TenantStringFromContext	# auth/extras.go:166
-func auth.UnaryServerInterceptor	# auth/interceptor.go:37
-func capabilitygrant.ListInstalls	# capabilitygrant/runtimeinstall.go:81
-func capabilitygrant.ResolveRuntimeInstall	# capabilitygrant/runtimeinstall.go:111
-func capabilitygrant.Verify	# capabilitygrant/verify.go:73
+# The agent authoring API: agent.Harness and its serve implementations, the
+# callback client, the result types and options they return or take, and the
+# fork claim of D80. No first-party Go agent calls them today (measured with
+# the consumers of scripts/unwired-consumers.sh). Deleting the agent API is an
+# owner call, asked on sdk#112.
 func fork.Forkable	# fork/fork.go:240
 func fork.IsForkUnclaimed	# fork/fork.go:262
 func fork.Park	# fork/fork.go:212
 func fork.ParkTimeout	# fork/fork.go:245
-func graphrag.ExtractDiscovery	# graphrag/extract.go:24
-func graphrag.NewSimpleTaxonomy	# graphrag/taxonomy_types.go:81
-func graphrag.NewTaxonomyRegistry	# graphrag/taxonomy_types.go:183
-func graphrag.OntologyExtensionFromProto	# graphrag/ontology_proto.go:54
-func http.RedisPingFunc	# health/http/checks.go:20
+# The agent authoring API: agent.Harness and its serve implementations, the
+# callback client, the result types and options they return or take, and the
+# fork claim of D80. No first-party Go agent calls them today (measured with
+# the consumers of scripts/unwired-consumers.sh). Deleting the agent API is an
+# owner call, asked on sdk#112.
 func llm.WithMaxTokens	# llm/completion.go:67
 func llm.WithTemperature	# llm/completion.go:60
-func plugin.ResolveSecret	# plugin/secret.go:48
-func plugin.Serve	# plugin/serve.go:65
-func plugin.WithHandler	# plugin/options.go:125
-func plugin.WithLifecycle	# plugin/options.go:189
-# plugin authoring API (sdk#129): read by each plugin main, for example gibson plugins/github/handler.go
-func plugin.WithName	# plugin/options.go:88
-# plugin authoring API (sdk#129): read by each plugin main, for example gibson plugins/github/handler.go
-func plugin.WithVersion	# plugin/options.go:96
-func protoresolver.DefaultConfig	# protoresolver/default_resolver.go:54
-func protoresolver.NewDefaultProtoResolver	# protoresolver/default_resolver.go:33
-func schema.Any	# schema/schema.go:27
-func schema.Array	# schema/schema.go:45
-func schema.Int	# schema/schema.go:40
-func schema.Object	# schema/schema.go:53
-func schema.StringWithDesc	# schema/schema.go:32
-func sdk.NewAgent	# gibson.go:29
-func sdk.NewTool	# gibson.go:55
-func sdk.ServeAgent	# gibson.go:71
-func sdk.WithDescription	# options.go:36
-func sdk.WithExecuteFunc	# options.go:67
-func sdk.WithExecuteProtoHandler	# options.go:128
-func sdk.WithInputMessageType	# options.go:111
-func sdk.WithLLMSlot	# options.go:59
-func sdk.WithName	# options.go:20
-func sdk.WithOutputMessageType	# options.go:120
-func sdk.WithTargetTypes	# options.go:44
-func sdk.WithToolDescription	# options.go:94
-func sdk.WithToolName	# options.go:78
-func sdk.WithToolTags	# options.go:102
-func sdk.WithToolVersion	# options.go:86
-func sdk.WithVersion	# options.go:28
-# secretenv.Lookup is read by the components the daemon dispatches, not by the
-# SDK: gibson writes GIBSON_SECRET_* at dispatch and gibson-executor's parsers
-# read it back. The rule lives here so the two sides cannot disagree, which is
-# why it has no in-module consumer.
-func secretenv.Lookup	# secretenv/secretenv.go:65
-func serve.NewCallbackClient	# serve/callback_client.go:58
-func serve.NewCallbackHarness	# serve/callback_harness.go:94
+# Generated by the adk scaffold templates (cmd/gibson/internal/scaffold of
+# adk). The scaffold goldens are not modules (their go.mod has no version),
+# so the scan cannot load them as consumers.
+func sdk.NewAgent	# gibson.go:28
+func sdk.ServeAgent	# gibson.go:44
+func sdk.WithDescription	# options.go:32
+func sdk.WithExecuteFunc	# options.go:63
+func sdk.WithLLMSlot	# options.go:55
+func sdk.WithName	# options.go:16
+# Agent API with no first-party reader (only examples/minimal-agent, pinned
+# to v0.190.0, calls it). Part of the owner call on sdk#112.
+func sdk.WithTargetTypes	# options.go:40
+# Generated by the adk scaffold templates.
+func sdk.WithVersion	# options.go:24
+# Generated by the adk scaffold templates (cmd/gibson/internal/scaffold of
+# adk). The scaffold goldens are not modules (their go.mod has no version),
+# so the scan cannot load them as consumers.
 func serve.Tool	# serve/tool.go:31
+# The agent authoring API: agent.Harness and its serve implementations, the
+# callback client, the result types and options they return or take, and the
+# fork claim of D80. No first-party Go agent calls them today (measured with
+# the consumers of scripts/unwired-consumers.sh). Deleting the agent API is an
+# owner call, asked on sdk#112.
 func serve.WithCallbackCredentials	# serve/callback_client.go:96
-func serve.WithCallbackMission	# serve/callback_options.go:17
 func serve.WithCallbackTLS	# serve/callback_client.go:79
-# In files that the open branch feat/sandbox-identity-token changes. Lane 11 left
-# them for that branch.
-func serve.WithCallbackToken	# serve/callback_client.go:86
 func serve.WithCallbackTransportCredentials	# serve/callback_client.go:105
-func taxonomy.EmbeddedOntology	# taxonomy/embed.go:33
-func taxonomy.Parse	# taxonomy/ontology_schema.go:95
-method agent.ResultError.MarshalJSON	# agent/errors.go:88
-method agent.ResultError.UnmarshalJSON	# agent/errors.go:94
-method agent.ResultError.Unwrap	# agent/errors.go:80
-method agent.ResultStatus.String	# agent/types.go:111
-method agent.RunScope.String	# agent/knowledge.go:60
+# The agent authoring API: agent.Harness and its serve implementations, the
+# callback client, the result types and options they return or take, and the
+# fork claim of D80. No first-party Go agent calls them today (measured with
+# the consumers of scripts/unwired-consumers.sh). Deleting the agent API is an
+# owner call, asked on sdk#112.
 method agent.sdkAgent.Shutdown	# agent/builder.go:170
-method auth.Identity.IsZero	# auth/identity.go:107
-method auth.TenantID.MarshalText	# auth/tenantid.go:171
-method auth.serverStreamWithContext.Context	# auth/interceptor.go:94
-method capabilitygrant.Claims.AllowsMethod	# capabilitygrant/claims.go:89
-method capabilitygrant.Client.Close	# capabilitygrant/client.go:179
-method capabilitygrant.RuntimeCredential.PerRPCCredentials	# capabilitygrant/runtime.go:80
-method capabilitygrant.capabilityGrantCredentials.GetRequestMetadata	# capabilitygrant/client.go:470
-method capabilitygrant.capabilityGrantCredentials.RequireTransportSecurity	# capabilitygrant/client.go:488
-method capabilitygrant.runtimeCredentials.GetRequestMetadata	# capabilitygrant/runtime.go:105
-method capabilitygrant.runtimeCredentials.RequireTransportSecurity	# capabilitygrant/runtime.go:116
-method finding.EvidenceType.String	# finding/evidence.go:52
-method finding.Severity.String	# finding/severity.go:32
-method finding.Status.String	# finding/export.go:24
-method fork.ErrForked.Error	# fork/fork.go:132
-method lifecycle.TransitionError.Error	# plugin/lifecycle/lifecycle.go:138
-method llm.Role.String	# llm/message.go:39
-method parser.ParseError.Error	# cmd/taxonomy-gen/parser/parser.go:55
-method protoresolver.DefaultProtoResolver.ResolveOutputType	# protoresolver/default_resolver.go:72
-method protoresolver.DefaultProtoResolver.UnmarshalProtoJSON	# protoresolver/default_resolver.go:220
-method protoresolver.SchemaNotFoundError.Error	# protoresolver/resolver.go:93
-method protoresolver.SchemaNotFoundError.Unwrap	# protoresolver/resolver.go:109
-method protoresolver.lruCache.Invalidate	# protoresolver/cache.go:158
-method schema.Schema.MarshalJSON	# plugin/schema/schema.go:100
-method schema.ValidationError.Error	# cmd/taxonomy-gen/schema/types.go:209
-method serve.CallbackClient.Close	# serve/callback_client.go:269
 method serve.CallbackClient.GenerateNodeID	# serve/callback_client.go:621
 method serve.CallbackClient.GetCredential	# serve/callback_client.go:587
 method serve.CallbackClient.GetPlanContext	# serve/callback_client.go:534
@@ -359,7 +104,6 @@ method serve.CallbackClient.SetFullContext	# serve/callback_client.go:208
 method serve.CallbackClient.ValidateFinding	# serve/callback_client.go:636
 method serve.CallbackClient.ValidateGraphNode	# serve/callback_client.go:651
 method serve.CallbackClient.ValidateRelationship	# serve/callback_client.go:666
-method serve.CallbackHarness.ApplicationFindings	# serve/callback_harness.go:1994
 method serve.CallbackHarness.Authorize	# serve/callback_harness.go:1789
 # Interface methods. An implementation must satisfy its interface, so these stay
 # (lane 11, D77 rule 5). The counter sees no call because each call goes through
@@ -367,7 +111,6 @@ method serve.CallbackHarness.Authorize	# serve/callback_harness.go:1789
 method serve.CallbackHarness.CallToolProto	# serve/callback_harness.go:483
 method serve.CallbackHarness.CallToolProtoStream	# serve/callback_harness.go:551
 method serve.CallbackHarness.CancelMission	# serve/callback_harness.go:1312
-method serve.CallbackHarness.Complete	# serve/callback_harness.go:186
 method serve.CallbackHarness.CompleteStructuredAny	# serve/callback_harness.go:384
 method serve.CallbackHarness.CompleteWithTools	# serve/callback_harness.go:271
 method serve.CallbackHarness.CreateMission	# serve/callback_harness.go:1041
@@ -387,7 +130,6 @@ method serve.CallbackHarness.ListPlugins	# serve/callback_harness.go:723
 method serve.CallbackHarness.ListTools	# serve/callback_harness.go:655
 method serve.CallbackHarness.Logger	# serve/callback_harness.go:157
 method serve.CallbackHarness.Mission	# serve/callback_harness.go:172
-method serve.CallbackHarness.Observe	# serve/observe.go:177
 method serve.CallbackHarness.PlaceBet	# serve/bet.go:35
 method serve.CallbackHarness.PlanContext	# serve/callback_harness.go:914
 method serve.CallbackHarness.QueryNodes	# serve/callback_harness.go:1883
@@ -402,20 +144,14 @@ method serve.CallbackHarness.TokenUsage	# serve/callback_harness.go:167
 method serve.CallbackHarness.ToolResults	# serve/callback_harness.go:1581
 method serve.CallbackHarness.Tracer	# serve/callback_harness.go:162
 method serve.CallbackHarness.WaitForMission	# serve/callback_harness.go:1215
-method serve.CallbackHarness.Workspace	# serve/callback_harness.go:1736
-method serve.CallbackHarness.Workspaces	# serve/callback_harness.go:1757
 method serve.CallbackHarness.WorldView	# serve/worldview.go:64
 method serve.CallbackTokenTracker.BySlot	# serve/callback_token_tracker.go:52
-method serve.CallbackTokenTracker.Reset	# serve/callback_token_tracker.go:60
 method serve.CallbackTokenTracker.Slots	# serve/callback_token_tracker.go:70
 method serve.CallbackTokenTracker.Total	# serve/callback_token_tracker.go:43
-method serve.PlatformClient.GetCredential	# serve/platform_client.go:1145
-method serve.PlatformHarness.ApplicationFindings	# serve/platform_harness.go:1105
 method serve.PlatformHarness.Authorize	# serve/platform_harness.go:1049
 method serve.PlatformHarness.CallToolProto	# serve/platform_harness.go:341
 method serve.PlatformHarness.CallToolProtoStream	# serve/platform_harness.go:381
 method serve.PlatformHarness.CancelMission	# serve/platform_harness.go:978
-method serve.PlatformHarness.Complete	# serve/platform_harness.go:102
 method serve.PlatformHarness.CompleteStructuredAny	# serve/platform_harness.go:329
 method serve.PlatformHarness.CompleteWithTools	# serve/platform_harness.go:153
 method serve.PlatformHarness.CreateMission	# serve/platform_harness.go:810
@@ -435,7 +171,6 @@ method serve.PlatformHarness.ListPlugins	# serve/platform_harness.go:629
 method serve.PlatformHarness.ListTools	# serve/platform_harness.go:478
 method serve.PlatformHarness.Logger	# serve/platform_harness.go:78
 method serve.PlatformHarness.Mission	# serve/platform_harness.go:91
-method serve.PlatformHarness.Observe	# serve/observe.go:207
 method serve.PlatformHarness.PlaceBet	# serve/bet.go:58
 method serve.PlatformHarness.PlanContext	# serve/platform_harness.go:749
 method serve.PlatformHarness.QueryNodes	# serve/platform_harness.go:1070
@@ -450,26 +185,5 @@ method serve.PlatformHarness.TokenUsage	# serve/platform_harness.go:84
 method serve.PlatformHarness.ToolResults	# serve/platform_harness.go:545
 method serve.PlatformHarness.Tracer	# serve/platform_harness.go:81
 method serve.PlatformHarness.WaitForMission	# serve/platform_harness.go:914
-method serve.PlatformHarness.Workspace	# serve/platform_harness.go:1027
-method serve.PlatformHarness.Workspaces	# serve/platform_harness.go:1033
 method serve.PlatformHarness.WorldView	# serve/worldview.go:89
-method serve.callbackWorkspace.Commit	# serve/workspace_proxy.go:123
-method serve.callbackWorkspace.ListFiles	# serve/workspace_proxy.go:107
-method serve.callbackWorkspace.Name	# serve/workspace_proxy.go:67
-method serve.callbackWorkspace.Path	# serve/workspace_proxy.go:72
-method serve.callbackWorkspace.Push	# serve/workspace_proxy.go:135
-method serve.callbackWorkspace.ReadFile	# serve/workspace_proxy.go:75
-method serve.callbackWorkspace.WriteFile	# serve/workspace_proxy.go:87
-method taxonomy.Ontology.Validate	# taxonomy/ontology_validator.go:27
-method types.MissionContext.UnmarshalJSON	# types/mission.go:69
 method types.TargetInfo.URL	# types/target.go:50
-method types.TargetSchema.String	# types/target_schema.go:63
-type graphrag.GraphNode	# graphrag/node.go:12
-type graphrag.Reasoner	# graphrag/reasoner.go:18
-type protoresolver.ProtoResolver	# protoresolver/resolver.go:24
-type security.CVSSScore	# finding/security/security.go:40
-type security.MitreMapping	# finding/security/security.go:19
-type types.Capabilities	# types/capabilities.go:9
-type workspace.WorkspaceManager	# codegen/workspace/workspace.go:57
-var auth.SystemTenant	# auth/tenantid.go:143
-var cueschemas.Schemas	# cueschemas/cueschemas.go:44

@@ -688,13 +688,19 @@ unwired-version:
 	  *) echo "::error::no ast-checks version in go.mod, so the unwired baseline has no pinned measurer" >&2; exit 1 ;; \
 	esac
 
+# D77: a declaration that no first-party repo reads is dead. The readers live
+# in other repos, so scripts/unwired-consumers.sh clones the public consumer
+# modules (gibson and its plugins, adk, gibson-executor, cve-triage) at main
+# and the scan counts their production files. A consumer that does not
+# type-check against this tree fails the scan: the change breaks a
+# first-party user.
 .PHONY: lint-unwired
 lint-unwired: unwired-version ## Fail if a declaration nothing reads is added (#112). Baseline only shrinks.
-	@go run github.com/zeroroot-ai/ast-checks/cmd/unwired@$(UNWIRED_VERSION) -dir . -baseline .unwired-baseline.txt
+	@go run github.com/zeroroot-ai/ast-checks/cmd/unwired@$(UNWIRED_VERSION) -dir . -consumers "$$(bash scripts/unwired-consumers.sh)" -baseline .unwired-baseline.txt
 
 .PHONY: lint-unwired-write
 lint-unwired-write: unwired-version ## Re-measure #112 and rewrite the baseline.
-	@go run github.com/zeroroot-ai/ast-checks/cmd/unwired@$(UNWIRED_VERSION) -dir . -baseline .unwired-baseline.txt -write
+	@go run github.com/zeroroot-ai/ast-checks/cmd/unwired@$(UNWIRED_VERSION) -dir . -consumers "$$(bash scripts/unwired-consumers.sh)" -baseline .unwired-baseline.txt -write
 
 .PHONY: check-taxonomy-numbers
 check-taxonomy-numbers: ## Fail if a CoreNodeType/CoreRelationType number changed meaning since origin/main (sdk#132).

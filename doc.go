@@ -60,26 +60,6 @@
 //		log.Fatal(err)
 //	}
 //
-// # Tool Development
-//
-// Create custom tools using the builder pattern:
-//
-//	tool, err := sdk.NewTool(
-//		sdk.WithToolName("http-request"),
-//		sdk.WithToolDescription("Makes HTTP requests"),
-//		sdk.WithToolTags("http", "network"),
-//		sdk.WithInputMessageType("zero_day.tools.http.HttpRequest"),
-//		sdk.WithOutputMessageType("zero_day.tools.http.HttpResponse"),
-//		sdk.WithExecuteProtoHandler(func(ctx context.Context, input proto.Message) (proto.Message, error) {
-//			// Tool logic here
-//			resp := &HttpResponse{Status: 200}
-//			return resp, nil
-//		}),
-//	)
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//
 // # Plugin Development
 //
 // Build plugins Go-first: write typed request/response structs and a
