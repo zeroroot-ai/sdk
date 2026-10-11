@@ -166,6 +166,13 @@ func (a *sdkAgent) Execute(ctx context.Context, harness Harness, task Task) (Res
 	return a.executeFunc(ctx, harness, task)
 }
 
+// LLMSlots returns the LLM slots that the agent declared with AddLLMSlot. A
+// caller reaches it through an interface check, because agent.Agent does not
+// list it.
+func (a *sdkAgent) LLMSlots() []llm.SlotDefinition {
+	return a.llmSlots
+}
+
 // Shutdown has nothing to release for an agent built with New.
 func (a *sdkAgent) Shutdown(_ context.Context) error {
 	return nil
