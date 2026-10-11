@@ -328,10 +328,9 @@ func TestCallbackHarness_EveryCallReachesTheDaemon(t *testing.T) {
 // TestCallbackHarness_AuthorizeFailsClosed proves that Authorize allows only on
 // an explicit allow from the daemon, and that it refuses every other case.
 func TestCallbackHarness_AuthorizeFailsClosed(t *testing.T) {
-	ctx := context.Background()
-	newHarness := func(t *testing.T, d *callbackDaemon, addr string, serveTask bool) agent.Harness {
+	newHarness := func(t *testing.T, addr string, serveTask bool) agent.Harness {
 		t.Helper()
-		client, h, err := Dial(ctx, CallbackOptions{Endpoint: addr})
+		client, h, err := Dial(context.Background(), CallbackOptions{Endpoint: addr})
 		require.NoError(t, err)
 		t.Cleanup(func() { _ = client.Close() })
 		if serveTask {
@@ -342,31 +341,31 @@ func TestCallbackHarness_AuthorizeFailsClosed(t *testing.T) {
 
 	t.Run("a task is served and the daemon allows", func(t *testing.T) {
 		d, addr := startCallbackDaemon(t)
-		h := newHarness(t, d, addr, true)
-		require.NoError(t, h.Authorize(ctx, "scan", "target:web"))
+		h := newHarness(t, addr, true)
+		require.NoError(t, h.Authorize(context.Background(), "scan", "target:web"))
 		assert.Equal(t, "run-1", only[*harnesspb.AuthorizeRequest](t, &d.recorder, "Authorize").GetRunId())
 	})
 	t.Run("no mission run is refused and nothing is sent", func(t *testing.T) {
 		d, addr := startCallbackDaemon(t)
-		h := newHarness(t, d, addr, false)
-		require.ErrorIs(t, h.Authorize(ctx, "scan", "target:web"), harness.ErrNoRunContext)
+		h := newHarness(t, addr, false)
+		require.ErrorIs(t, h.Authorize(context.Background(), "scan", "target:web"), harness.ErrNoRunContext)
 		assert.Empty(t, d.named("Authorize"))
 	})
 	t.Run("a denial is refused", func(t *testing.T) {
 		d, addr := startCallbackDaemon(t)
-		h := newHarness(t, d, addr, true)
-		require.ErrorIs(t, h.Authorize(ctx, "scan", "target:deny"), harness.ErrUnauthorized)
+		h := newHarness(t, addr, true)
+		require.ErrorIs(t, h.Authorize(context.Background(), "scan", "target:deny"), harness.ErrUnauthorized)
 	})
 	t.Run("a daemon with no Authorize RPC is refused", func(t *testing.T) {
 		d, addr := startCallbackDaemon(t)
 		d.noAuthorize = true
-		h := newHarness(t, d, addr, true)
-		require.ErrorIs(t, h.Authorize(ctx, "scan", "target:web"), harness.ErrAuthzServiceUnavailable)
+		h := newHarness(t, addr, true)
+		require.ErrorIs(t, h.Authorize(context.Background(), "scan", "target:web"), harness.ErrAuthzServiceUnavailable)
 	})
 	t.Run("an empty action is refused", func(t *testing.T) {
 		d, addr := startCallbackDaemon(t)
-		h := newHarness(t, d, addr, true)
-		require.ErrorIs(t, h.Authorize(ctx, "", "target:web"), harness.ErrInvalidAction)
+		h := newHarness(t, addr, true)
+		require.ErrorIs(t, h.Authorize(context.Background(), "", "target:web"), harness.ErrInvalidAction)
 		assert.Empty(t, d.named("Authorize"))
 	})
 }
