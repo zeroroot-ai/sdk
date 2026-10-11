@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.204.0](https://github.com/zeroroot-ai/sdk/compare/v0.203.0...v0.204.0) (2026-10-11)
+
+
+### Features
+
+* **examples:** a first-party Go agent calls each Harness method (D86) ([#269](https://github.com/zeroroot-ai/sdk/issues/269)) ([b6189b3](https://github.com/zeroroot-ai/sdk/commit/b6189b34aefbe82fc299275f3cf1e1b0e82260df))
+
 ## [0.203.0](https://github.com/zeroroot-ai/sdk/compare/v0.202.0...v0.203.0) (2026-10-11)
 
 
