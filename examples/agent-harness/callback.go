@@ -69,10 +69,10 @@ func Dial(ctx context.Context, o CallbackOptions) (*serve.CallbackClient, *serve
 	if err := client.Connect(ctx); err != nil {
 		return nil, nil, fmt.Errorf("connect the callback client: %w", err)
 	}
-	//nolint:contextcheck // NewCallbackHarness reads the taxonomy under its own timeout
 	if o.MissionRunID != "" {
 		client.SetFullContext(serve.TaskContextParams{MissionID: o.Mission.ID, MissionRunID: o.MissionRunID})
 	}
+	//nolint:contextcheck // NewCallbackHarness reads the taxonomy under its own timeout
 	return client, serve.NewCallbackHarness(client, serve.WithCallbackMission(o.Mission)), nil
 }
 
