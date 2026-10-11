@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.204.1](https://github.com/zeroroot-ai/sdk/compare/v0.204.0...v0.204.1) (2026-10-11)
+
+
+### Bug Fixes
+
+* **fan-out:** regenerate the gibson authz registry with buf and fail the shard when it fails ([#273](https://github.com/zeroroot-ai/sdk/issues/273)) ([8d546e2](https://github.com/zeroroot-ai/sdk/commit/8d546e23cb541afaa16e8ad614975cb01ca76f7f))
+
 ## [0.204.0](https://github.com/zeroroot-ai/sdk/compare/v0.203.0...v0.204.0) (2026-10-11)
 
 
