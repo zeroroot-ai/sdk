@@ -168,6 +168,15 @@ jobs:
       - name: Check no gibson dependency
         run: make check-no-gibson
 
+      # sdk#268: each example module pins an sdk release, so a plain build
+      # never sees an API deletion of this tree. The check builds each example
+      # against this tree in a Go workspace in a temp directory. The second
+      # step proves that the check fails on a call to a deleted symbol.
+      - name: Each example builds against this sdk tree
+        run: bash scripts/check-examples-build.sh
+      - name: Mutation-test the example build check
+        run: bash scripts/__tests__/check-examples-build.test.sh
+
       # ADR-0028: the sdk wire contract is append-only, and the buf breaking
       # rule is WIRE_JSON. This ran only in a local `make check` (sdk#177), so a
       # pull request could renumber a field and every required check stayed

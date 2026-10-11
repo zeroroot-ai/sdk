@@ -23,7 +23,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 
-	sdk "github.com/zeroroot-ai/sdk"
 	"github.com/zeroroot-ai/sdk/serve"
 	"github.com/zeroroot-ai/sdk/tool"
 	"github.com/zeroroot-ai/sdk/types"
@@ -77,27 +76,13 @@ func (t *EchoTool) Health(ctx context.Context) types.HealthStatus {
 	return types.HealthStatus{Status: types.StatusHealthy}
 }
 
+// The compile-time check that EchoTool satisfies tool.Tool.
+var _ tool.Tool = (*EchoTool)(nil)
+
 func main() {
-	t := &EchoTool{}
-
-	// You can construct via the SDK builder…
-	if _, err := sdk.NewTool(
-		sdk.WithToolName(t.Name()),
-		sdk.WithToolVersion(t.Version()),
-		sdk.WithToolDescription(t.Description()),
-		sdk.WithToolTags(t.Tags()...),
-		sdk.WithInputMessageType(t.InputMessageType()),
-		sdk.WithOutputMessageType(t.OutputMessageType()),
-		sdk.WithExecuteProtoHandler(t.ExecuteProto),
-	); err != nil {
-		log.Fatalf("build tool: %v", err)
-	}
-	_ = (tool.Tool)(t) // compile-time assertion that EchoTool satisfies tool.Tool
-
-	// …or implement the interface directly (as EchoTool does above) and
-	// hand the value to serve.Tool. Both work.
+	// serve.Tool takes any value that implements tool.Tool.
 	fmt.Println("Starting echo tool on :50051 …")
-	if err := serve.Tool(t); err != nil {
+	if err := serve.Tool(&EchoTool{}); err != nil {
 		log.Fatalf("serve tool: %v", err)
 	}
 }
