@@ -204,7 +204,7 @@ func (h *CallbackHarness) Complete(ctx context.Context, slot string, messages []
 	// Convert to proto request
 	protoReq := &harnesspb.LLMCompleteRequest{
 		Slot:     slot,
-		Messages: h.messagesToProto(messages),
+		Messages: h.messagesToProto(req.Messages),
 	}
 
 	// Apply options
