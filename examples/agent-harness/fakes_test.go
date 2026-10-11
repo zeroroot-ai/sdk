@@ -45,7 +45,11 @@ type call struct {
 type recorder struct {
 	mu    sync.Mutex
 	calls []call
+	srv   *grpc.Server
 }
+
+// stop stops the server, so a later dial is refused.
+func (r *recorder) stop() { r.srv.Stop() }
 
 func (r *recorder) add(ctx context.Context, full string, req proto.Message) {
 	md, _ := metadata.FromIncomingContext(ctx)
@@ -120,6 +124,7 @@ func (r *recorder) serve(t *testing.T, register func(*grpc.Server), extra ...grp
 	opts := append([]grpc.ServerOption{grpc.UnaryInterceptor(r.unary), grpc.StreamInterceptor(r.stream)}, extra...)
 	srv := grpc.NewServer(opts...)
 	register(srv)
+	r.srv = srv
 	go func() { _ = srv.Serve(lis) }()
 	t.Cleanup(srv.Stop)
 	return lis.Addr().String()
@@ -487,6 +492,8 @@ func forkUnclaimed() (*harnesspb.ClaimForkResponse, error) {
 type componentDaemon struct {
 	componentpb.UnimplementedComponentServiceServer
 	recorder
+
+	noAuthorize bool
 }
 
 func startComponentDaemon(t *testing.T) (d *componentDaemon, addr string) {
@@ -592,6 +599,25 @@ func (d *componentDaemon) ListAgents(context.Context, *componentpb.ListAgentsReq
 
 func (d *componentDaemon) SubmitFinding(context.Context, *componentpb.SubmitFindingRequest) (*componentpb.SubmitFindingResponse, error) {
 	return &componentpb.SubmitFindingResponse{FindingId: "f-new"}, nil
+}
+
+// Authorize allows an action, except on a resource that ends in ":deny". A daemon
+// with noAuthorize set answers Unimplemented, as an old daemon does.
+func (d *componentDaemon) Authorize(_ context.Context, req *componentpb.AuthorizeRequest) (*componentpb.AuthorizeResponse, error) {
+	if d.noAuthorize {
+		return nil, fmt.Errorf("authorize: %w", status.Error(codes.Unimplemented, "no Authorize"))
+	}
+	switch {
+	case strings.HasSuffix(req.GetResource(), ":norun"):
+		return nil, fmt.Errorf("authorize: %w", status.Error(codes.FailedPrecondition, "work item has no mission run"))
+	case strings.HasSuffix(req.GetResource(), ":invalid"):
+		return nil, fmt.Errorf("authorize: %w", status.Error(codes.InvalidArgument, "resource is not kind-qualified"))
+	case strings.HasSuffix(req.GetResource(), ":forbidden"):
+		return nil, fmt.Errorf("authorize: %w", status.Error(codes.PermissionDenied, "not your work item"))
+	case strings.HasSuffix(req.GetResource(), ":deny"):
+		return &componentpb.AuthorizeResponse{Allowed: false, Reason: "not_authorized"}, nil
+	}
+	return &componentpb.AuthorizeResponse{Allowed: true, Reason: "fga_allow"}, nil
 }
 
 func (d *componentDaemon) ReportStepHints(context.Context, *componentpb.ReportStepHintsRequest) (*componentpb.ReportStepHintsResponse, error) {

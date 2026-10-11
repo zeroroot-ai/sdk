@@ -1174,6 +1174,26 @@ func (pc *PlatformClient) ReportStepHints(ctx context.Context, workID string, hi
 	return nil
 }
 
+// Authorize asks the daemon whether the work item workID may do action on
+// resource. It returns allowed only on an explicit allow. The daemon takes the
+// mission run, the user and the tenant from the work item, never from the
+// request. The error of the RPC is returned as is, so the caller can map its
+// gRPC code.
+func (pc *PlatformClient) Authorize(ctx context.Context, workID, action, resource string) (allowed bool, reason string, err error) {
+	if err := pc.ensureConnected("Authorize"); err != nil {
+		return false, "", err
+	}
+	resp, rpcErr := pc.service.Authorize(ctx, &componentpb.AuthorizeRequest{
+		WorkId:   workID,
+		Action:   action,
+		Resource: resource,
+	})
+	if rpcErr != nil {
+		return false, "", fmt.Errorf("PlatformClient.Authorize: %w", rpcErr)
+	}
+	return resp.GetAllowed(), resp.GetReason(), nil
+}
+
 // Close closes the underlying gRPC connection and marks the client as closed.
 // Subsequent RPC calls will return errors. Close is idempotent.
 func (pc *PlatformClient) Close() error {
