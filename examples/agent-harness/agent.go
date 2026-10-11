@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -217,7 +218,7 @@ func drainStream(ch <-chan llm.StreamChunk) streamed {
 }
 
 func describeCompletion(c *llm.CompletionResponse) string {
-	var calls []string
+	calls := make([]string, 0, len(c.ToolCalls))
 	for _, tc := range c.ToolCalls {
 		calls = append(calls, tc.ID+":"+tc.Name+":"+tc.Arguments)
 	}
@@ -321,7 +322,7 @@ func describeResult(r agent.Result) string {
 }
 
 func describeAgents(ds []agent.Descriptor) string {
-	var out []string
+	out := make([]string, 0, len(ds))
 	for _, d := range ds {
 		out = append(out, fmt.Sprintf("%s %s %q caps=%v targets=%v techniques=%v",
 			d.Name, d.Version, d.Description, d.Capabilities, d.TargetTypes, d.TechniqueTypes))
@@ -348,7 +349,7 @@ func callWorld(ctx context.Context, h agent.Harness, rep *Report) {
 }
 
 func describeWorld(v agent.WorldView) string {
-	var out []string
+	out := make([]string, 0, len(v.Entities))
 	for _, e := range v.Entities {
 		out = append(out, fmt.Sprintf("%s %s %q %v", e.Handle, e.Kind, e.Label, e.Attributes))
 	}
@@ -376,24 +377,24 @@ func callWorkspace(ctx context.Context, h agent.Harness, rep *Report) {
 		})
 	}
 	all := h.Workspaces()
-	rep.add(Step{Call: "Workspaces", Value: all, Summary: fmt.Sprintf("%d", len(all))})
+	rep.add(Step{Call: "Workspaces", Value: all, Summary: strconv.Itoa(len(all))})
 }
 
 func callKnowledge(ctx context.Context, h agent.Harness, rep *Report) {
 	nodes, err := h.QueryNodes(ctx, &graphragpb.GraphQuery{})
-	record(rep, "QueryNodes", nodes, err, func(v []*graphragpb.QueryResult) string { return fmt.Sprintf("%d", len(v)) })
+	record(rep, "QueryNodes", nodes, err, func(v []*graphragpb.QueryResult) string { return strconv.Itoa(len(v)) })
 
 	attacks, err := h.FindSimilarAttacks(ctx, "sql injection", 3)
-	record(rep, "FindSimilarAttacks", attacks, err, func(v []*graphragpb.AttackPattern) string { return fmt.Sprintf("%d", len(v)) })
+	record(rep, "FindSimilarAttacks", attacks, err, func(v []*graphragpb.AttackPattern) string { return strconv.Itoa(len(v)) })
 
 	chains, err := h.GetAttackChains(ctx, "T1190", 2)
-	record(rep, "GetAttackChains", chains, err, func(v []*graphragpb.AttackChain) string { return fmt.Sprintf("%d", len(v)) })
+	record(rep, "GetAttackChains", chains, err, func(v []*graphragpb.AttackChain) string { return strconv.Itoa(len(v)) })
 
 	similar, err := h.FindSimilarFindings(ctx, "f-1", 4)
-	record(rep, "FindSimilarFindings", similar, err, func(v []*graphragpb.FindingNode) string { return fmt.Sprintf("%d", len(v)) })
+	record(rep, "FindSimilarFindings", similar, err, func(v []*graphragpb.FindingNode) string { return strconv.Itoa(len(v)) })
 
 	related, err := h.GetRelatedFindings(ctx, "f-1")
-	record(rep, "GetRelatedFindings", related, err, func(v []*graphragpb.FindingNode) string { return fmt.Sprintf("%d", len(v)) })
+	record(rep, "GetRelatedFindings", related, err, func(v []*graphragpb.FindingNode) string { return strconv.Itoa(len(v)) })
 
 	callFindings(ctx, h, rep)
 }
@@ -413,7 +414,7 @@ func callFindings(ctx context.Context, h agent.Harness, rep *Report) {
 }
 
 func describeFindings(fs []*finding.Finding) string {
-	var out []string
+	out := make([]string, 0, len(fs))
 	for _, f := range fs {
 		out = append(out, f.Title+":"+f.Severity.String())
 	}
@@ -421,7 +422,7 @@ func describeFindings(fs []*finding.Finding) string {
 }
 
 func describeApplicationFindings(fs []agent.ApplicationFinding) string {
-	var out []string
+	out := make([]string, 0, len(fs))
 	for _, f := range fs {
 		out = append(out, fmt.Sprintf("%s %s %s %s place=%s/%s reach=%t exposed=%t deploy=%s image=%s prio=%s/%s/%s",
 			f.FindingID, f.Status, f.Severity, f.VulnerabilityID, f.PlaceLabel, f.PlaceKey,
@@ -452,7 +453,7 @@ func callMissions(ctx context.Context, h agent.Harness, rep *Report) {
 	pending := mission.MissionStatusRunning
 	list, err := h.ListMissions(ctx, &mission.MissionFilter{Status: &pending, Tags: []string{"d86"}, Limit: 5})
 	record(rep, "ListMissions", list, err, func(ms []*mission.MissionInfo) string {
-		var out []string
+		out := make([]string, 0, len(ms))
 		for _, m := range ms {
 			out = append(out, describeMission(m))
 		}
@@ -490,7 +491,7 @@ func (s Step) Unavailable() bool {
 }
 
 func describeTools(ts []tool.Descriptor) string {
-	var out []string
+	out := make([]string, 0, len(ts))
 	for _, t := range ts {
 		out = append(out, fmt.Sprintf("%s %s %q tags=%v in=%s out=%s",
 			t.Name, t.Version, t.Description, t.Tags, t.InputMessageType, t.OutputMessageType))
@@ -499,7 +500,7 @@ func describeTools(ts []tool.Descriptor) string {
 }
 
 func describePlugins(ps []plugin.Descriptor) string {
-	var out []string
+	out := make([]string, 0, len(ps))
 	for _, p := range ps {
 		var methods []string
 		for _, m := range p.Methods {
@@ -511,7 +512,7 @@ func describePlugins(ps []plugin.Descriptor) string {
 }
 
 func describeRuns(rs []types.MissionRunSummary) string {
-	var out []string
+	out := make([]string, 0, len(rs))
 	for _, r := range rs {
 		done := "open"
 		if r.CompletedAt != nil {

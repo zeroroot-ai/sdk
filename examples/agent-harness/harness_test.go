@@ -299,7 +299,7 @@ func TestCallbackHarness_EveryCallReachesTheDaemon(t *testing.T) {
 		assert.Len(t, d.named("GetTaxonomySchema"), 1, "the harness reads the taxonomy at start")
 		// The callback harness sends no Authorize call unless it has a run id, and no option sets one.
 		assert.Empty(t, d.named("Authorize"))
-		assert.NoError(t, mustStep(t, rep, "Authorize").Err)
+		require.NoError(t, mustStep(t, rep, "Authorize").Err)
 
 		total := value[llm.TokenUsage](t, rep, "TokenUsage")
 		assert.Positive(t, total.TotalTokens)

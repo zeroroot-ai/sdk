@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -65,6 +66,7 @@ func Dial(ctx context.Context, o CallbackOptions) (*serve.CallbackClient, *serve
 	if err := client.Connect(ctx); err != nil {
 		return nil, nil, fmt.Errorf("connect the callback client: %w", err)
 	}
+	//nolint:contextcheck // NewCallbackHarness reads the taxonomy under its own timeout
 	return client, serve.NewCallbackHarness(client, serve.WithCallbackMission(o.Mission)), nil
 }
 
@@ -228,7 +230,7 @@ func RunFork(ctx context.Context, a agent.Agent, o CallbackOptions, fo ForkOptio
 		return "", errors.New("the agent returned no report")
 	}
 	extras := Extras(ctx, client)
-	out := ClaimSummary(claim) + " steps=" + fmt.Sprint(len(rep.Steps)+len(extras.Steps))
+	out := ClaimSummary(claim) + " steps=" + strconv.Itoa(len(rep.Steps)+len(extras.Steps))
 	if s, found := rep.Step("TokenUsage"); found {
 		out += " usage=" + s.Summary
 	}

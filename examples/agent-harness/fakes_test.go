@@ -71,11 +71,13 @@ type recordingStream struct {
 }
 
 func (s *recordingStream) RecvMsg(m any) error {
-	err := s.ServerStream.RecvMsg(m)
-	if pm, ok := m.(proto.Message); ok && err == nil {
+	if err := s.ServerStream.RecvMsg(m); err != nil {
+		return fmt.Errorf("recv: %w", err)
+	}
+	if pm, ok := m.(proto.Message); ok {
 		s.once.Do(func() { s.rec.add(s.Context(), s.full, pm) })
 	}
-	return err
+	return nil
 }
 
 func (r *recorder) stream(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, next grpc.StreamHandler) error {
@@ -136,10 +138,10 @@ type callbackDaemon struct {
 	claims  []func() (*harnesspb.ClaimForkResponse, error)
 }
 
-func startCallbackDaemon(t *testing.T, extra ...grpc.ServerOption) (*callbackDaemon, string) {
+func startCallbackDaemon(t *testing.T, extra ...grpc.ServerOption) (d *callbackDaemon, addr string) {
 	t.Helper()
-	d := &callbackDaemon{}
-	addr := d.serve(t, func(s *grpc.Server) { harnesspb.RegisterHarnessCallbackServiceServer(s, d) }, extra...)
+	d = &callbackDaemon{}
+	addr = d.serve(t, func(s *grpc.Server) { harnesspb.RegisterHarnessCallbackServiceServer(s, d) }, extra...)
 	return d, addr
 }
 
@@ -433,7 +435,7 @@ func (d *callbackDaemon) ClaimFork(context.Context, *harnesspb.ClaimForkRequest)
 	d.claimMu.Lock()
 	defer d.claimMu.Unlock()
 	if len(d.claims) == 0 {
-		return nil, status.Error(codes.Unimplemented, "no claim set")
+		return nil, fmt.Errorf("claim: %w", status.Error(codes.Unimplemented, "no claim set"))
 	}
 	next := d.claims[0]
 	if len(d.claims) > 1 {
@@ -457,7 +459,7 @@ func forkUnclaimed() (*harnesspb.ClaimForkResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("details: %w", err)
 	}
-	return nil, st.Err()
+	return nil, fmt.Errorf("unclaimed: %w", st.Err())
 }
 
 // ---------------------------------------------------------------------------
@@ -469,10 +471,10 @@ type componentDaemon struct {
 	recorder
 }
 
-func startComponentDaemon(t *testing.T) (*componentDaemon, string) {
+func startComponentDaemon(t *testing.T) (d *componentDaemon, addr string) {
 	t.Helper()
-	d := &componentDaemon{}
-	addr := d.serve(t, func(s *grpc.Server) { componentpb.RegisterComponentServiceServer(s, d) })
+	d = &componentDaemon{}
+	addr = d.serve(t, func(s *grpc.Server) { componentpb.RegisterComponentServiceServer(s, d) })
 	return d, addr
 }
 
