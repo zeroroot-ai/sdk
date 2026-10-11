@@ -1486,11 +1486,11 @@ message ReportStepHintsResponse {}
 // AuthorizeRequest asks whether a work item may do an action on a resource.
 message AuthorizeRequest {
     // work_id is the work item the caller claimed with PollWork.
-    string work_id = 1;
+    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
     // action is a verb such as "execute", "read" or "write".
-    string action = 2;
+    string action = 2 [(buf.validate.field).string = { max_len: 1024 }];
     // resource is a kind-qualified reference such as "tool:nmap".
-    string resource = 3;
+    string resource = 3 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // AuthorizeResponse is the decision. allowed is true only on an explicit allow.
