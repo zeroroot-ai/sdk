@@ -98,7 +98,7 @@ func TestPlatformHarness_Authorize(t *testing.T) {
 			case tc.other:
 				require.Error(t, err)
 				for _, sentinel := range []error{harnessconst.ErrUnauthorized, harnessconst.ErrInvalidAction, harnessconst.ErrAuthzServiceUnavailable} {
-					assert.NotErrorIs(t, err, sentinel, "must not read as a sentinel")
+					require.NotErrorIs(t, err, sentinel, "must not read as a sentinel")
 				}
 			default:
 				require.NoError(t, err)
