@@ -58,12 +58,43 @@ expect 1 "MUTATION the fan-out job is renamed -> fail, not silently pass" "$work
 # 5. A missing file must fail, not pass by vacuum.
 expect 1 "a workflow file that does not exist -> fail" "$work/absent.yml"
 
+echo "--- required red: the registry regeneration cannot work or cannot fail ---"
+
+# 6. The regeneration swallows its failure again.
+sed 's|make authz-registry BUF=buf|make authz-registry BUF=buf \|\| echo "::warning::regen failed"|' "$REAL" > "$work/swallow.yml"
+expect 1 "MUTATION the regenerate step swallows a failure -> fail" "$work/swallow.yml"
+
+# 7. buf is no longer installed, which is the failure the runner showed.
+grep -v 'bufbuild/buf-setup-action' "$REAL" > "$work/nobuf.yml"
+expect 1 "MUTATION buf is not installed -> fail" "$work/nobuf.yml"
+
+# 8. The step runs make without BUF=buf, so it looks for buf in node_modules.
+sed 's|make authz-registry BUF=buf|make authz-registry|' "$REAL" > "$work/nobufarg.yml"
+expect 1 "MUTATION make authz-registry without BUF=buf -> fail" "$work/nobufarg.yml"
+
+# 9. The regenerate step is removed.
+awk '
+  /^      - name: Regenerate authz registry/ { skip = 1; next }
+  skip && /^      - name:/ { skip = 0 }
+  !skip { print }
+' "$REAL" > "$work/noregen.yml"
+expect 1 "MUTATION the regenerate step is removed -> fail" "$work/noregen.yml"
+
+# 10. The regenerate step itself gets continue-on-error: true, so a failed
+#     regeneration passes. (Another step may carry the flag; this one may not.)
+awk '
+  /^      - name: Regenerate authz registry/ { print; print "        continue-on-error: true"; next }
+  { print }
+' "$REAL" > "$work/regencoe.yml"
+expect 1 "MUTATION continue-on-error: true on the regenerate step -> fail" "$work/regencoe.yml"
+
 echo "--- pass: a step-level continue-on-error is a different decision ---"
-# Deeper indentation, under steps:. It does not affect needs.<job>.result, so
+# Deeper indentation, under steps:, on a step other than the regenerate step.
+# It does not affect needs.<job>.result, so
 # the checker must not flag it — otherwise it would forbid a legitimate
 # best-effort step and get switched off.
 awk '
-  /^      - name: Commit$/ { print "        continue-on-error: true"; print; next }
+  /^      - name: Create branch$/ { print; print "        continue-on-error: true"; next }
   { print }
 ' "$REAL" > "$work/steplevel.yml"
 expect 0 "a step-level continue-on-error is not flagged" "$work/steplevel.yml"

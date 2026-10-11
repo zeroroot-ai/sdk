@@ -72,7 +72,43 @@ if ! grep -qE "needs\.fan-out\.result" "$wf"; then
   rc=1
 fi
 
+# The gibson shard must regenerate the authz registry for real. A bump that
+# changes the registry fails the drift gate of gibson unless the bump PR carries
+# the regenerated files. The step used to run without buf on the PATH and to
+# turn its own failure into a warning, so every such bump arrived red
+# (gibson#1071, gibson#1072).
+regen="$(printf '%s\n' "$job" | awk '
+  /^      - name: Regenerate authz registry/ { inside = 1; print; next }
+  inside && /^      - name:/ { exit }
+  inside { print }
+')"
+if [ -z "$regen" ]; then
+  echo "::error::the fan-out job has no 'Regenerate authz registry' step. Without it a" >&2
+  echo "bump that changes the registry reaches gibson with a red drift gate." >&2
+  rc=1
+else
+  if ! printf '%s\n' "$regen" | grep -qE 'make authz-registry BUF=buf'; then
+    echo "::error::the regenerate step does not run 'make authz-registry BUF=buf'." >&2
+    rc=1
+  fi
+  if printf '%s\n' "$regen" | grep -qE '\|\|'; then
+    echo "::error::the regenerate step swallows a failure with '||'. A failed regeneration" >&2
+    echo "must fail the shard, so the summary job reports it." >&2
+    rc=1
+  fi
+  if printf '%s\n' "$regen" | grep -qE '^[[:space:]]+continue-on-error:[[:space:]]*true'; then
+    echo "::error::the regenerate step sets continue-on-error: true, which lets a failed" >&2
+    echo "regeneration pass. It must fail the shard." >&2
+    rc=1
+  fi
+  if ! printf '%s\n' "$job" | grep -qE 'uses: bufbuild/buf-setup-action@'; then
+    echo "::error::the fan-out job does not install buf, so 'make authz-registry' fails" >&2
+    echo "with 'buf: not found' on the runner." >&2
+    rc=1
+  fi
+fi
+
 if [ "$rc" -eq 0 ]; then
-  echo "fan-out: a failed shard reaches the run status (no job-level continue-on-error, gate present)"
+  echo "fan-out: a failed shard reaches the run status (no job-level continue-on-error, gate present); the registry is regenerated with buf and a failure is not swallowed"
 fi
 exit "$rc"
