@@ -80,6 +80,14 @@ awk '
 ' "$REAL" > "$work/noregen.yml"
 expect 1 "MUTATION the regenerate step is removed -> fail" "$work/noregen.yml"
 
+# 10. The regenerate step itself gets continue-on-error: true, so a failed
+#     regeneration passes. (Another step may carry the flag; this one may not.)
+awk '
+  /^      - name: Regenerate authz registry/ { print; print "        continue-on-error: true"; next }
+  { print }
+' "$REAL" > "$work/regencoe.yml"
+expect 1 "MUTATION continue-on-error: true on the regenerate step -> fail" "$work/regencoe.yml"
+
 echo "--- pass: a step-level continue-on-error is a different decision ---"
 # Deeper indentation, under steps:. It does not affect needs.<job>.result, so
 # the checker must not flag it — otherwise it would forbid a legitimate

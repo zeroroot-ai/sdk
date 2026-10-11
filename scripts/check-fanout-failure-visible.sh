@@ -96,6 +96,11 @@ else
     echo "must fail the shard, so the summary job reports it." >&2
     rc=1
   fi
+  if printf '%s\n' "$regen" | grep -qE '^[[:space:]]+continue-on-error:[[:space:]]*true'; then
+    echo "::error::the regenerate step sets continue-on-error: true, which lets a failed" >&2
+    echo "regeneration pass. It must fail the shard." >&2
+    rc=1
+  fi
   if ! printf '%s\n' "$job" | grep -qE 'uses: bufbuild/buf-setup-action@'; then
     echo "::error::the fan-out job does not install buf, so 'make authz-registry' fails" >&2
     echo "with 'buf: not found' on the runner." >&2
