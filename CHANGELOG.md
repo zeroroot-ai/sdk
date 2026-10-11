@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.205.0](https://github.com/zeroroot-ai/sdk/compare/v0.204.1...v0.205.0) (2026-10-11)
+
+
+### Features
+
+* **serve:** platform harness authorize asks the daemon and fails closed (D86) ([#275](https://github.com/zeroroot-ai/sdk/issues/275)) ([d6061bc](https://github.com/zeroroot-ai/sdk/commit/d6061bcd963828778d3f1f24c326f4e9610ea668))
+
 ## [0.204.1](https://github.com/zeroroot-ai/sdk/compare/v0.204.0...v0.204.1) (2026-10-11)
 
 
