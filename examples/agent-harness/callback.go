@@ -38,6 +38,9 @@ type CallbackOptions struct {
 	PerRPC credentials.PerRPCCredentials
 	// Mission is the mission context that the harness reports.
 	Mission types.MissionContext
+	// MissionRunID is the mission run that the daemon gave the sandbox. The
+	// client sends it on each call, and Authorize needs it.
+	MissionRunID string
 }
 
 func (o CallbackOptions) clientOptions() []serve.CallbackClientOption {
@@ -67,6 +70,9 @@ func Dial(ctx context.Context, o CallbackOptions) (*serve.CallbackClient, *serve
 		return nil, nil, fmt.Errorf("connect the callback client: %w", err)
 	}
 	//nolint:contextcheck // NewCallbackHarness reads the taxonomy under its own timeout
+	if o.MissionRunID != "" {
+		client.SetFullContext(serve.TaskContextParams{MissionID: o.Mission.ID, MissionRunID: o.MissionRunID})
+	}
 	return client, serve.NewCallbackHarness(client, serve.WithCallbackMission(o.Mission)), nil
 }
 

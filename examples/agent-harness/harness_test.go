@@ -11,6 +11,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/pem"
 	"log/slog"
 	"math/big"
 	"net"
@@ -361,6 +362,13 @@ func TestCallbackHarness_AuthorizeFailsClosed(t *testing.T) {
 		d.noAuthorize = true
 		h := newHarness(t, addr, true)
 		require.ErrorIs(t, h.Authorize(context.Background(), "scan", "target:web"), harness.ErrAuthzServiceUnavailable)
+	})
+	t.Run("the daemon refusal codes keep their sentinels", func(t *testing.T) {
+		_, addr := startCallbackDaemon(t)
+		h := newHarness(t, addr, true)
+		require.ErrorIs(t, h.Authorize(context.Background(), "scan", "tool:invalid"), harness.ErrInvalidAction)
+		require.ErrorIs(t, h.Authorize(context.Background(), "scan", "tool:forbidden"), harness.ErrUnauthorized)
+		require.ErrorIs(t, h.Authorize(context.Background(), "scan", "tool:anon"), harness.ErrUnauthorized)
 	})
 	t.Run("an empty action is refused", func(t *testing.T) {
 		d, addr := startCallbackDaemon(t)
@@ -727,6 +735,57 @@ func TestFork_Refusals(t *testing.T) {
 	})
 }
 
+func TestTLSFromPEM(t *testing.T) {
+	conf, err := tlsFromPEM("")
+	require.NoError(t, err)
+	assert.Nil(t, conf)
+
+	_, err = tlsFromPEM("not a certificate")
+	require.ErrorContains(t, err, envCAPEM)
+
+	cert, _ := selfSigned(t)
+	pemBytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert.Certificate[0]})
+	conf, err = tlsFromPEM(string(pemBytes))
+	require.NoError(t, err)
+	require.NotNil(t, conf)
+	assert.Equal(t, uint16(tls.VersionTLS13), conf.MinVersion)
+}
+
+// TestRun_SandboxEnvironment runs the callback mode as a sandbox sees it: a TLS
+// edge, the CA in GIBSON_PLATFORM_CA_PEM, the grant in GIBSON_CG_JWT and the run
+// in GIBSON_MISSION_RUN_ID. A forked sandbox then calls Authorize with that run.
+func TestRun_SandboxEnvironment(t *testing.T) {
+	forkEnv(t, "10s")
+	cert, _ := selfSigned(t)
+	d, addr := startCallbackDaemon(t,
+		grpc.Creds(credentials.NewTLS(&tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS13})))
+	d.claims = []func() (*harnesspb.ClaimForkResponse, error){forkDispatch}
+	pemBytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert.Certificate[0]})
+
+	// Without the CA the client cannot reach the daemon.
+	env := map[string]string{envCallbackEndpoint: addr, envGrant: "g", envMissionRunID: "run-9"}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	require.Error(t, run(ctx, func(k string) string { return env[k] }))
+
+	// With the CA, the process is not forkable here, so it connects and parks nothing.
+	t.Setenv(fork.EnvForkable, "")
+	env[envCAPEM] = string(pemBytes)
+	require.NoError(t, run(context.Background(), func(k string) string { return env[k] }))
+	require.NotEmpty(t, d.named("GetTaxonomySchema"), "the TLS connection reached the daemon")
+	for _, c := range d.all() {
+		assert.Equal(t, []string{"Bearer g"}, c.md.Get("authorization"), c.method)
+	}
+}
+
+func TestDial_SendsTheMissionRunOfTheSandbox(t *testing.T) {
+	d, addr := startCallbackDaemon(t)
+	_, h, err := Dial(context.Background(), CallbackOptions{Endpoint: addr, MissionRunID: "run-9"})
+	require.NoError(t, err)
+	require.NoError(t, h.Authorize(context.Background(), "scan", "target:web"))
+	assert.Equal(t, "run-9", only[*harnesspb.AuthorizeRequest](t, &d.recorder, "Authorize").GetRunId())
+}
+
 func TestRun(t *testing.T) {
 	t.Setenv("GIBSON_URL", "")
 	t.Setenv("GIBSON_BOOTSTRAP_TOKEN", "")
@@ -737,7 +796,7 @@ func TestRun(t *testing.T) {
 	t.Run("callback transport, not forkable", func(t *testing.T) {
 		t.Setenv(fork.EnvForkable, "")
 		_, addr := startCallbackDaemon(t)
-		env := map[string]string{envCallbackEndpoint: addr, envCallbackToken: "g", "GIBSON_MISSION_ID": "m-1"}
+		env := map[string]string{envCallbackEndpoint: addr, envGrant: "g", envMissionID: "m-1", envMissionRunID: "run-9"}
 		require.NoError(t, run(context.Background(), func(k string) string { return env[k] }))
 	})
 }

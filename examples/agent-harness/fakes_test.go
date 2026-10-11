@@ -435,6 +435,14 @@ func (d *callbackDaemon) Authorize(_ context.Context, req *harnesspb.AuthorizeRe
 	if d.noAuthorize {
 		return nil, fmt.Errorf("authorize: %w", status.Error(codes.Unimplemented, "no Authorize"))
 	}
+	switch {
+	case strings.HasSuffix(req.GetResource(), ":invalid"):
+		return nil, fmt.Errorf("authorize: %w", status.Error(codes.InvalidArgument, "resource is not kind-qualified"))
+	case strings.HasSuffix(req.GetResource(), ":forbidden"):
+		return nil, fmt.Errorf("authorize: %w", status.Error(codes.PermissionDenied, "no"))
+	case strings.HasSuffix(req.GetResource(), ":anon"):
+		return nil, fmt.Errorf("authorize: %w", status.Error(codes.Unauthenticated, "no grant"))
+	}
 	if strings.HasSuffix(req.GetResource(), ":deny") {
 		return &harnesspb.AuthorizeResponse{Allowed: false, Reason: "denied by the fake"}, nil
 	}

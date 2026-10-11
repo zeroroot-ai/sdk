@@ -1776,12 +1776,14 @@ func (h *CallbackHarness) Workspaces() map[string]workspace.Workspace {
 //
 // Error behavior:
 //   - nil                        → the daemon allowed the action
-//   - ErrUnauthorized            → FGA denied; caller must refuse the operation
+//   - ErrUnauthorized            → FGA denied, or the daemon answered
+//     PermissionDenied or Unauthenticated; caller must refuse the operation
 //   - ErrAuthzServiceUnavailable → daemon/FGA unreachable or the daemon has no
 //     Authorize RPC; treated as deny
 //   - ErrNoRunContext            → the client serves no mission run, so there
 //     is nobody to authorize; treated as deny
-//   - ErrInvalidAction           → action or resource is empty/malformed
+//   - ErrInvalidAction           → action or resource is empty/malformed, or the
+//     daemon answered InvalidArgument
 func (h *CallbackHarness) Authorize(ctx context.Context, action, resource string) error {
 	if action == "" || resource == "" {
 		return harnessconst.ErrInvalidAction
@@ -1823,6 +1825,13 @@ func (h *CallbackHarness) Authorize(ctx context.Context, action, resource string
 			h.logger.Warn("Authorize: mission is no longer active",
 				"run_id", runID, "action", action, "resource", resource)
 			return harnessconst.ErrUnauthorized
+
+		case grpccodes.InvalidArgument:
+			// The daemon refuses a malformed request, for example a resource with no kind.
+			return fmt.Errorf("%w: %s", harnessconst.ErrInvalidAction, st.Message())
+
+		case grpccodes.PermissionDenied, grpccodes.Unauthenticated:
+			return fmt.Errorf("%w: %s", harnessconst.ErrUnauthorized, st.Message())
 
 		default:
 			return fmt.Errorf("Authorize RPC error: %w", errors.New(st.Message()))
