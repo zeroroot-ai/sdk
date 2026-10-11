@@ -63,6 +63,7 @@ const (
 	ComponentService_GetTaxonomySchema_FullMethodName    = "/gibson.component.v1.ComponentService/GetTaxonomySchema"
 	ComponentService_GetMissionRunHistory_FullMethodName = "/gibson.component.v1.ComponentService/GetMissionRunHistory"
 	ComponentService_ReportStepHints_FullMethodName      = "/gibson.component.v1.ComponentService/ReportStepHints"
+	ComponentService_Authorize_FullMethodName            = "/gibson.component.v1.ComponentService/Authorize"
 )
 
 // ComponentServiceClient is the client API for ComponentService service.
@@ -193,6 +194,14 @@ type ComponentServiceClient interface {
 	GetMissionRunHistory(ctx context.Context, in *GetMissionRunHistoryRequest, opts ...grpc.CallOption) (*GetMissionRunHistoryResponse, error)
 	// ReportStepHints reports planning step hints from an agent back to the orchestrator.
 	ReportStepHints(ctx context.Context, in *ReportStepHintsRequest, opts ...grpc.CallOption) (*ReportStepHintsResponse, error)
+	// Authorize asks the daemon whether the work item of the caller may do an
+	// action on a resource. It is the pull-transport twin of
+	// HarnessCallbackService.Authorize and runs the same decision: the daemon
+	// takes the mission run, the user and the tenant from the work item, never
+	// from the request, then runs the FGA check. A caller that is not the owner
+	// of the work item, or a work item with no mission run, is refused. The
+	// answer is allowed only on an explicit allow (D86).
+	Authorize(ctx context.Context, in *AuthorizeRequest, opts ...grpc.CallOption) (*AuthorizeResponse, error)
 }
 
 type componentServiceClient struct {
@@ -679,6 +688,16 @@ func (c *componentServiceClient) ReportStepHints(ctx context.Context, in *Report
 	return out, nil
 }
 
+func (c *componentServiceClient) Authorize(ctx context.Context, in *AuthorizeRequest, opts ...grpc.CallOption) (*AuthorizeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuthorizeResponse)
+	err := c.cc.Invoke(ctx, ComponentService_Authorize_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ComponentServiceServer is the server API for ComponentService service.
 // All implementations must embed UnimplementedComponentServiceServer
 // for forward compatibility.
@@ -807,6 +826,14 @@ type ComponentServiceServer interface {
 	GetMissionRunHistory(context.Context, *GetMissionRunHistoryRequest) (*GetMissionRunHistoryResponse, error)
 	// ReportStepHints reports planning step hints from an agent back to the orchestrator.
 	ReportStepHints(context.Context, *ReportStepHintsRequest) (*ReportStepHintsResponse, error)
+	// Authorize asks the daemon whether the work item of the caller may do an
+	// action on a resource. It is the pull-transport twin of
+	// HarnessCallbackService.Authorize and runs the same decision: the daemon
+	// takes the mission run, the user and the tenant from the work item, never
+	// from the request, then runs the FGA check. A caller that is not the owner
+	// of the work item, or a work item with no mission run, is refused. The
+	// answer is allowed only on an explicit allow (D86).
+	Authorize(context.Context, *AuthorizeRequest) (*AuthorizeResponse, error)
 	mustEmbedUnimplementedComponentServiceServer()
 }
 
@@ -948,6 +975,9 @@ func (UnimplementedComponentServiceServer) GetMissionRunHistory(context.Context,
 }
 func (UnimplementedComponentServiceServer) ReportStepHints(context.Context, *ReportStepHintsRequest) (*ReportStepHintsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReportStepHints not implemented")
+}
+func (UnimplementedComponentServiceServer) Authorize(context.Context, *AuthorizeRequest) (*AuthorizeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Authorize not implemented")
 }
 func (UnimplementedComponentServiceServer) mustEmbedUnimplementedComponentServiceServer() {}
 func (UnimplementedComponentServiceServer) testEmbeddedByValue()                          {}
@@ -1734,6 +1764,24 @@ func _ComponentService_ReportStepHints_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ComponentService_Authorize_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthorizeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ComponentServiceServer).Authorize(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ComponentService_Authorize_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ComponentServiceServer).Authorize(ctx, req.(*AuthorizeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ComponentService_ServiceDesc is the grpc.ServiceDesc for ComponentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1900,6 +1948,10 @@ var ComponentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ReportStepHints",
 			Handler:    _ComponentService_ReportStepHints_Handler,
+		},
+		{
+			MethodName: "Authorize",
+			Handler:    _ComponentService_Authorize_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
