@@ -22,6 +22,7 @@ gibson.bank.v1.BankService/StartSignIn
 gibson.bank.v1.BankService/StreamSignIn
 gibson.bank.v1.BankService/SubmitSignInCode
 gibson.bank.v1.BankService/UpdateBank
+gibson.component.v1.ComponentService/Authorize
 gibson.component.v1.ComponentService/CallTool
 gibson.component.v1.ComponentService/CallToolStream
 gibson.component.v1.ComponentService/CancelMission
