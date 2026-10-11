@@ -502,7 +502,7 @@ func describeTools(ts []tool.Descriptor) string {
 func describePlugins(ps []plugin.Descriptor) string {
 	out := make([]string, 0, len(ps))
 	for _, p := range ps {
-		var methods []string
+		methods := make([]string, 0, len(p.Methods))
 		for _, m := range p.Methods {
 			methods = append(methods, m.Name)
 		}
