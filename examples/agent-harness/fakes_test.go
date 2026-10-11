@@ -134,6 +134,8 @@ type callbackDaemon struct {
 	recorder
 
 	// claims is the answer of ClaimFork, in order. The last one repeats.
+	noAuthorize bool
+
 	claimMu sync.Mutex
 	claims  []func() (*harnesspb.ClaimForkResponse, error)
 }
@@ -427,7 +429,15 @@ func (d *callbackDaemon) GetMissionResults(
 	return &harnesspb.GetMissionResultsResponse{Result: missionResult()}, nil
 }
 
-func (d *callbackDaemon) Authorize(context.Context, *harnesspb.AuthorizeRequest) (*harnesspb.AuthorizeResponse, error) {
+// Authorize allows an action, except on a resource named "...:deny". A daemon
+// with noAuthorize set answers Unimplemented, as an old daemon does.
+func (d *callbackDaemon) Authorize(_ context.Context, req *harnesspb.AuthorizeRequest) (*harnesspb.AuthorizeResponse, error) {
+	if d.noAuthorize {
+		return nil, fmt.Errorf("authorize: %w", status.Error(codes.Unimplemented, "no Authorize"))
+	}
+	if strings.HasSuffix(req.GetResource(), ":deny") {
+		return &harnesspb.AuthorizeResponse{Allowed: false, Reason: "denied by the fake"}, nil
+	}
 	return &harnesspb.AuthorizeResponse{Allowed: true}, nil
 }
 

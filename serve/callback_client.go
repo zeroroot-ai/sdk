@@ -253,6 +253,13 @@ func (c *CallbackClient) contextWithMetadata(ctx context.Context) context.Contex
 	return metadata.NewOutgoingContext(ctx, md)
 }
 
+// missionRun returns the mission run id of the task that the client serves.
+func (c *CallbackClient) missionRun() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.missionRunID
+}
+
 // withoutGrant removes the grant from the outgoing metadata of a call.
 func withoutGrant(ctx context.Context) context.Context {
 	md, ok := metadata.FromOutgoingContext(ctx)

@@ -531,12 +531,14 @@ type Harness interface {
 	// Error handling:
 	//   - nil                          — allowed, proceed
 	//   - ErrUnauthorized              — FGA denied; log and return PERMISSION_DENIED
-	//   - ErrAuthzServiceUnavailable   — daemon/FGA unreachable; fail-closed by default
+	//   - ErrAuthzServiceUnavailable   — daemon/FGA unreachable; fail-closed
+	//   - ErrNoRunContext              — the harness serves no mission run; treat as deny
 	//   - ErrInvalidAction             — malformed action or resource; treat as deny
 	//   - ErrWorkExpired               — work envelope TTL exceeded; reject work item
 	//
-	// When the daemon does not support the Authorize RPC (rolling upgrade),
-	// the harness client degrades gracefully to allow.
+	// The callback harness fails closed. A daemon with no Authorize RPC is
+	// ErrAuthzServiceUnavailable. The pull transport has no Authorize RPC and
+	// relies on the pre-dispatch check of the daemon.
 	Authorize(ctx context.Context, action, resource string) error
 
 	// Context Access

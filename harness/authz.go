@@ -29,10 +29,12 @@ var (
 	ErrUnauthorized = errors.New("not authorized")
 
 	// ErrAuthzServiceUnavailable is returned when the daemon or FGA is unreachable.
-	// Fail-closed behavior (default): treat as deny.
-	// Fail-open behavior (dev mode): proceed but log a WARN and increment the
-	// gibson_component_authz_fail_open_total counter.
+	// It is also returned when the daemon has no Authorize RPC. Treat it as deny.
 	ErrAuthzServiceUnavailable = errors.New("authorization service unavailable")
+
+	// ErrNoRunContext is returned when the harness serves no mission run, so
+	// the daemon cannot say whose action it is. Treat it as deny.
+	ErrNoRunContext = errors.New("authorization needs a mission run: the harness serves no task")
 
 	// ErrInvalidAction is returned when action or resource is empty or malformed.
 	// Resource must be in "<type>:<name>" format (e.g. "tool:mytool-a").

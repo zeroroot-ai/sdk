@@ -71,14 +71,6 @@ type CallbackHarness struct {
 	toolsCache   []tool.Descriptor
 	pluginsCache []plugin.Descriptor
 	agentsCache  []agent.Descriptor
-
-	// Authorization context — populated from the work envelope's AuthzContext.
-	// authzRunID is the mission run ID used to resolve the caller in Authorize calls.
-	// failOpenAuthz controls behavior when the daemon is unreachable:
-	//   false (default) — fail-closed, treat as deny.
-	//   true            — fail-open (dev mode), log WARN and proceed.
-	authzRunID    string
-	failOpenAuthz bool
 }
 
 // NewCallbackHarness creates a new callback-based harness.
@@ -1775,29 +1767,31 @@ func (h *CallbackHarness) Workspaces() map[string]workspace.Workspace {
 // ============================================================================
 
 // Authorize implements agent.Harness by forwarding the authorization check to
-// the daemon's HarnessCallbackService.Authorize RPC.
+// the daemon's HarnessCallbackService.Authorize RPC. It fails closed: any
+// answer other than an explicit allow is an error.
+//
+// The run id of the RPC is the mission run of the task that the client serves.
+// RunTask-style callers set it with CallbackClient.SetFullContext, and a fork
+// gets it from its claim.
 //
 // Error behavior:
-//   - nil                       → allowed; proceed
-//   - ErrUnauthorized           → FGA denied; caller must refuse the operation
-//   - ErrAuthzServiceUnavailable → daemon/FGA unreachable; fail-closed by default
-//   - ErrInvalidAction          → action or resource is empty/malformed
-//
-// Graceful degradation: if the daemon does not implement the Authorize RPC
-// (codes.Unimplemented), Authorize logs DEBUG and returns nil to preserve
-// rolling-upgrade compatibility with older daemon versions.
+//   - nil                        → the daemon allowed the action
+//   - ErrUnauthorized            → FGA denied; caller must refuse the operation
+//   - ErrAuthzServiceUnavailable → daemon/FGA unreachable or the daemon has no
+//     Authorize RPC; treated as deny
+//   - ErrNoRunContext            → the client serves no mission run, so there
+//     is nobody to authorize; treated as deny
+//   - ErrInvalidAction           → action or resource is empty/malformed
 func (h *CallbackHarness) Authorize(ctx context.Context, action, resource string) error {
 	if action == "" || resource == "" {
 		return harnessconst.ErrInvalidAction
 	}
 
-	runID := h.authzRunID
+	runID := h.client.missionRun()
 	if runID == "" {
-		// No authz context set — work was dequeued without an AuthzContext (dev mode).
-		// Log and allow to avoid breaking components in development environments.
-		h.logger.Debug("Authorize called without AuthzContext run_id; allowing (dev mode)",
+		h.logger.WarnContext(ctx, "Authorize: the client serves no mission run; denying",
 			"action", action, "resource", resource)
-		return nil
+		return harnessconst.ErrNoRunContext
 	}
 
 	req := &harnesspb.AuthorizeRequest{
@@ -1811,18 +1805,12 @@ func (h *CallbackHarness) Authorize(ctx context.Context, action, resource string
 		st, ok := status.FromError(err)
 		if !ok {
 			// Non-gRPC error (connection issue).
-			return h.handleAuthzUnavailable(ctx, action, resource, err)
+			return h.denyUnavailable(ctx, action, resource, err)
 		}
 
 		switch st.Code() {
-		case grpccodes.Unimplemented:
-			// Old daemon without this RPC — graceful degrade to allow.
-			h.logger.Debug("daemon does not support Authorize RPC; defaulting to allow",
-				"action", action, "resource", resource)
-			return nil
-
-		case grpccodes.Unavailable, grpccodes.DeadlineExceeded:
-			return h.handleAuthzUnavailable(ctx, action, resource, err)
+		case grpccodes.Unimplemented, grpccodes.Unavailable, grpccodes.DeadlineExceeded:
+			return h.denyUnavailable(ctx, action, resource, err)
 
 		case grpccodes.NotFound:
 			// run_id not found in mission authz store — treat as deny.
@@ -1854,15 +1842,8 @@ func (h *CallbackHarness) Authorize(ctx context.Context, action, resource string
 	return nil
 }
 
-// handleAuthzUnavailable applies the fail-open / fail-closed policy when the
-// daemon's Authorize RPC is unreachable. Returns ErrAuthzServiceUnavailable on
-// fail-closed (default), or nil on fail-open (dev mode, with a WARN log).
-func (h *CallbackHarness) handleAuthzUnavailable(ctx context.Context, action, resource string, cause error) error {
-	if h.failOpenAuthz {
-		h.logger.WarnContext(ctx, "authorization service unavailable — proceeding (fail-open mode)",
-			"action", action, "resource", resource, "error", cause)
-		return nil
-	}
+// denyUnavailable denies the action when the daemon cannot answer.
+func (h *CallbackHarness) denyUnavailable(ctx context.Context, action, resource string, cause error) error {
 	h.logger.ErrorContext(ctx, "authorization service unavailable — denying (fail-closed)",
 		"action", action, "resource", resource, "error", cause)
 	return harnessconst.ErrAuthzServiceUnavailable

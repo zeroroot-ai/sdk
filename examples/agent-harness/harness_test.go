@@ -28,6 +28,7 @@ import (
 	harnesspb "github.com/zeroroot-ai/sdk/api/gen/gibson/harness/v1"
 	"github.com/zeroroot-ai/sdk/codegen/workspace"
 	"github.com/zeroroot-ai/sdk/fork"
+	"github.com/zeroroot-ai/sdk/harness"
 	"github.com/zeroroot-ai/sdk/llm"
 	"github.com/zeroroot-ai/sdk/mission"
 	"github.com/zeroroot-ai/sdk/plugin"
@@ -297,8 +298,11 @@ func TestCallbackHarness_EveryCallReachesTheDaemon(t *testing.T) {
 	t.Run("context", func(t *testing.T) {
 		assert.Equal(t, "m-1 Mission One", mustStep(t, rep, "Mission").Summary)
 		assert.Len(t, d.named("GetTaxonomySchema"), 1, "the harness reads the taxonomy at start")
-		// The callback harness sends no Authorize call unless it has a run id, and no option sets one.
-		assert.Empty(t, d.named("Authorize"))
+		// Authorize reaches the daemon with the mission run of the task.
+		az := only[*harnesspb.AuthorizeRequest](t, &d.recorder, "Authorize")
+		assert.Equal(t, "run-1", az.GetRunId())
+		assert.Equal(t, "scan", az.GetAction())
+		assert.Equal(t, "target:", az.GetResource())
 		require.NoError(t, mustStep(t, rep, "Authorize").Err)
 
 		total := value[llm.TokenUsage](t, rep, "TokenUsage")
@@ -318,6 +322,52 @@ func TestCallbackHarness_EveryCallReachesTheDaemon(t *testing.T) {
 		assert.Equal(t, int32(2), cm.GetContext().GetRunNumber())
 		assert.Equal(t, "trace-1", cm.GetContext().GetTraceId())
 		assert.Equal(t, "tex-1", cm.GetContext().GetToolExecutionId())
+	})
+}
+
+// TestCallbackHarness_AuthorizeFailsClosed proves that Authorize allows only on
+// an explicit allow from the daemon, and that it refuses every other case.
+func TestCallbackHarness_AuthorizeFailsClosed(t *testing.T) {
+	ctx := context.Background()
+	newHarness := func(t *testing.T, d *callbackDaemon, addr string, serveTask bool) agent.Harness {
+		t.Helper()
+		client, h, err := Dial(ctx, CallbackOptions{Endpoint: addr})
+		require.NoError(t, err)
+		t.Cleanup(func() { _ = client.Close() })
+		if serveTask {
+			client.SetFullContext(taskParamsFixture)
+		}
+		return h
+	}
+
+	t.Run("a task is served and the daemon allows", func(t *testing.T) {
+		d, addr := startCallbackDaemon(t)
+		h := newHarness(t, d, addr, true)
+		require.NoError(t, h.Authorize(ctx, "scan", "target:web"))
+		assert.Equal(t, "run-1", only[*harnesspb.AuthorizeRequest](t, &d.recorder, "Authorize").GetRunId())
+	})
+	t.Run("no mission run is refused and nothing is sent", func(t *testing.T) {
+		d, addr := startCallbackDaemon(t)
+		h := newHarness(t, d, addr, false)
+		require.ErrorIs(t, h.Authorize(ctx, "scan", "target:web"), harness.ErrNoRunContext)
+		assert.Empty(t, d.named("Authorize"))
+	})
+	t.Run("a denial is refused", func(t *testing.T) {
+		d, addr := startCallbackDaemon(t)
+		h := newHarness(t, d, addr, true)
+		require.ErrorIs(t, h.Authorize(ctx, "scan", "target:deny"), harness.ErrUnauthorized)
+	})
+	t.Run("a daemon with no Authorize RPC is refused", func(t *testing.T) {
+		d, addr := startCallbackDaemon(t)
+		d.noAuthorize = true
+		h := newHarness(t, d, addr, true)
+		require.ErrorIs(t, h.Authorize(ctx, "scan", "target:web"), harness.ErrAuthzServiceUnavailable)
+	})
+	t.Run("an empty action is refused", func(t *testing.T) {
+		d, addr := startCallbackDaemon(t)
+		h := newHarness(t, d, addr, true)
+		require.ErrorIs(t, h.Authorize(ctx, "", "target:web"), harness.ErrInvalidAction)
+		assert.Empty(t, d.named("Authorize"))
 	})
 }
 
