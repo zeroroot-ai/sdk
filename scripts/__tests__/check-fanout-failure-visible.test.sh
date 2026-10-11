@@ -89,11 +89,12 @@ awk '
 expect 1 "MUTATION continue-on-error: true on the regenerate step -> fail" "$work/regencoe.yml"
 
 echo "--- pass: a step-level continue-on-error is a different decision ---"
-# Deeper indentation, under steps:. It does not affect needs.<job>.result, so
+# Deeper indentation, under steps:, on a step other than the regenerate step.
+# It does not affect needs.<job>.result, so
 # the checker must not flag it — otherwise it would forbid a legitimate
 # best-effort step and get switched off.
 awk '
-  /^      - name: Commit$/ { print "        continue-on-error: true"; print; next }
+  /^      - name: Create branch$/ { print; print "        continue-on-error: true"; next }
   { print }
 ' "$REAL" > "$work/steplevel.yml"
 expect 0 "a step-level continue-on-error is not flagged" "$work/steplevel.yml"
