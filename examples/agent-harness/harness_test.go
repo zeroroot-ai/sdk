@@ -352,7 +352,7 @@ func TestCallbackHarness_AuthorizeFailsClosed(t *testing.T) {
 		assert.Empty(t, d.named("Authorize"))
 	})
 	t.Run("a denial is refused", func(t *testing.T) {
-		d, addr := startCallbackDaemon(t)
+		_, addr := startCallbackDaemon(t)
 		h := newHarness(t, addr, true)
 		require.ErrorIs(t, h.Authorize(context.Background(), "scan", "target:deny"), harness.ErrUnauthorized)
 	})
