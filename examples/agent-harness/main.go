@@ -31,17 +31,21 @@ const (
 	envMissionID    = "GIBSON_MISSION_ID"
 )
 
-// tlsFromPEM builds the client TLS config that trusts the CA in pem. Empty pem
-// means no TLS config, and the client dials without TLS.
+// tlsFromPEM builds the client TLS config. The client always uses TLS (1.3).
+// With the CA in pem it trusts that CA. With empty pem it trusts the system
+// roots, because the daemon leaves GIBSON_PLATFORM_CA_PEM out when the edge
+// uses public roots. It never dials without TLS.
 func tlsFromPEM(pem string) (*tls.Config, error) {
+	conf := &tls.Config{MinVersion: tls.VersionTLS13}
 	if pem == "" {
-		return nil, nil
+		return conf, nil
 	}
 	pool := x509.NewCertPool()
 	if !pool.AppendCertsFromPEM([]byte(pem)) {
 		return nil, errors.New(envCAPEM + " holds no certificate")
 	}
-	return &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS13}, nil
+	conf.RootCAs = pool
+	return conf, nil
 }
 
 func main() {

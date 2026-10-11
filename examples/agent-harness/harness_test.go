@@ -736,9 +736,12 @@ func TestFork_Refusals(t *testing.T) {
 }
 
 func TestTLSFromPEM(t *testing.T) {
+	// Empty PEM means the system roots and never plaintext.
 	conf, err := tlsFromPEM("")
 	require.NoError(t, err)
-	assert.Nil(t, conf)
+	require.NotNil(t, conf, "an empty PEM must not turn TLS off")
+	assert.Nil(t, conf.RootCAs, "nil RootCAs means the system roots")
+	assert.Equal(t, uint16(tls.VersionTLS13), conf.MinVersion)
 
 	_, err = tlsFromPEM("not a certificate")
 	require.ErrorContains(t, err, envCAPEM)
@@ -793,10 +796,15 @@ func TestRun(t *testing.T) {
 		err := run(context.Background(), func(string) string { return "" })
 		require.Error(t, err)
 	})
-	t.Run("callback transport, not forkable", func(t *testing.T) {
+	t.Run("a plaintext daemon is never dialed", func(t *testing.T) {
 		t.Setenv(fork.EnvForkable, "")
-		_, addr := startCallbackDaemon(t)
-		env := map[string]string{envCallbackEndpoint: addr, envGrant: "g", envMissionID: "m-1", envMissionRunID: "run-9"}
-		require.NoError(t, run(context.Background(), func(k string) string { return env[k] }))
+		d, addr := startCallbackDaemon(t)
+		env := map[string]string{envCallbackEndpoint: addr, envGrant: "g"}
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		// A process that is not forkable claims nothing, so run may return nil.
+		// What matters is that the handshake fails and no call reaches the daemon.
+		_ = run(ctx, func(k string) string { return env[k] })
+		assert.Empty(t, d.all(), "no CA in the environment still means TLS, so no plaintext call reached the daemon")
 	})
 }
