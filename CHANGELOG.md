@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.203.0](https://github.com/zeroroot-ai/sdk/compare/v0.202.0...v0.203.0) (2026-10-11)
+
+
+### Features
+
+* **component:** add ComponentService.Authorize for the pull transport (D86) ([#270](https://github.com/zeroroot-ai/sdk/issues/270)) ([d141953](https://github.com/zeroroot-ai/sdk/commit/d141953a6922a02a954abe7e400995a69d619bfb))
+
+
+### Bug Fixes
+
+* **capabilitygrant:** send registration credentials only to the platform origin ([#264](https://github.com/zeroroot-ai/sdk/issues/264)) ([f6bafb1](https://github.com/zeroroot-ai/sdk/commit/f6bafb1ecc0935ec63e24f0cc9afdd7eece249f2))
+
 ## [0.202.0](https://github.com/zeroroot-ai/sdk/compare/v0.201.0...v0.202.0) (2026-10-07)
 
 
