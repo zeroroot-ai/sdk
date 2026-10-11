@@ -40,11 +40,11 @@ func newAuthorizeHarness(t *testing.T, srv *authorizeServer, workID string) *Pla
 	return h
 }
 
-func setupAuthorizeTest(t *testing.T, srv *authorizeServer, workID string) (*PlatformHarness, func()) {
+func setupAuthorizeTest(t *testing.T, srv *authorizeServer, workID string) (h *PlatformHarness, cleanup func()) {
 	t.Helper()
 	// Reuse the dial logic of the parity tests by registering our server in
 	// place of theirs.
-	h, cleanup := setupParityTestWith(t, func(s *grpc.Server) { componentpb.RegisterComponentServiceServer(s, srv) })
+	h, cleanup = setupParityTestWith(t, func(s *grpc.Server) { componentpb.RegisterComponentServiceServer(s, srv) })
 	h.workID = workID
 	return h, cleanup
 }
@@ -98,7 +98,7 @@ func TestPlatformHarness_Authorize(t *testing.T) {
 			case tc.other:
 				require.Error(t, err)
 				for _, sentinel := range []error{harnessconst.ErrUnauthorized, harnessconst.ErrInvalidAction, harnessconst.ErrAuthzServiceUnavailable} {
-					assert.False(t, errors.Is(err, sentinel), "%v must not read as %v", err, sentinel)
+					assert.NotErrorIs(t, err, sentinel, "must not read as a sentinel")
 				}
 			default:
 				require.NoError(t, err)
