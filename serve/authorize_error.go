@@ -33,6 +33,8 @@ func authorizeError(ctx context.Context, logger *slog.Logger, scope, action, res
 	if !ok {
 		return denyUnavailable(ctx, logger, action, resource, err)
 	}
+	// Every code is listed, so a code added to gRPC later is a lint finding and
+	// not a silent default. Every case returns an error, none returns nil.
 	switch st.Code() {
 	case grpccodes.Unimplemented, grpccodes.Unavailable, grpccodes.DeadlineExceeded:
 		return denyUnavailable(ctx, logger, action, resource, err)
@@ -51,8 +53,14 @@ func authorizeError(ctx context.Context, logger *slog.Logger, scope, action, res
 	case grpccodes.PermissionDenied, grpccodes.Unauthenticated:
 		return fmt.Errorf("%w: %s", harnessconst.ErrUnauthorized, st.Message())
 
-	default:
+	case grpccodes.OK, grpccodes.Canceled, grpccodes.Unknown, grpccodes.AlreadyExists,
+		grpccodes.ResourceExhausted, grpccodes.Aborted, grpccodes.OutOfRange,
+		grpccodes.Internal, grpccodes.DataLoss:
 		return fmt.Errorf("Authorize RPC error: %w", errors.New(st.Message()))
+
+	default:
+		// A code that gRPC adds later. It is still an error.
+		return fmt.Errorf("Authorize RPC error (code %s): %w", st.Code(), errors.New(st.Message()))
 	}
 }
 

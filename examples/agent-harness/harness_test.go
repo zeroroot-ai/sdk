@@ -526,7 +526,7 @@ func TestPlatformHarness_EveryCallReachesTheDaemon(t *testing.T) {
 // TestPlatformHarness_AuthorizeFailsClosed proves that the pull transport allows
 // only on an explicit allow from the daemon, as the callback transport does.
 func TestPlatformHarness_AuthorizeFailsClosed(t *testing.T) {
-	newHarness := func(t *testing.T, d *componentDaemon, addr, workID string) agent.Harness {
+	newHarness := func(t *testing.T, addr, workID string) agent.Harness {
 		t.Helper()
 		pc, err := serve.NewPlatformClientWithOptions("http://"+addr, "")
 		require.NoError(t, err)
@@ -553,7 +553,7 @@ func TestPlatformHarness_AuthorizeFailsClosed(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			d, addr := startComponentDaemon(t)
 			d.noAuthorize = tc.noRPC
-			h := newHarness(t, d, addr, tc.workID)
+			h := newHarness(t, addr, tc.workID)
 
 			err := h.Authorize(context.Background(), "scan", tc.resource)
 
@@ -569,13 +569,13 @@ func TestPlatformHarness_AuthorizeFailsClosed(t *testing.T) {
 	}
 	t.Run("an empty action is refused and nothing is sent", func(t *testing.T) {
 		d, addr := startComponentDaemon(t)
-		h := newHarness(t, d, addr, "work-1")
+		h := newHarness(t, addr, "work-1")
 		require.ErrorIs(t, h.Authorize(context.Background(), "", "tool:nmap"), harness.ErrInvalidAction)
 		assert.Empty(t, d.named("Authorize"))
 	})
 	t.Run("an unreachable daemon is refused", func(t *testing.T) {
 		d, addr := startComponentDaemon(t)
-		h := newHarness(t, d, addr, "work-1")
+		h := newHarness(t, addr, "work-1")
 		// Stop the server by closing every connection: a fresh dial is refused.
 		d.stop()
 		err := h.Authorize(context.Background(), "scan", "tool:nmap")
