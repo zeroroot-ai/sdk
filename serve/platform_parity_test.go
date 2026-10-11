@@ -96,11 +96,18 @@ const parityBufSize = 1024 * 1024
 // PlatformHarness connected to it, plus a cleanup function.
 func setupParityTest(t *testing.T, mock *mockComponentServer) (*PlatformHarness, func()) {
 	t.Helper()
+	return setupParityTestWith(t, func(s *grpc.Server) { componentpb.RegisterComponentServiceServer(s, mock) })
+}
+
+// setupParityTestWith is setupParityTest for a test that registers its own
+// ComponentService implementation.
+func setupParityTestWith(t *testing.T, register func(*grpc.Server)) (harness *PlatformHarness, cleanup func()) {
+	t.Helper()
 
 	lis := bufconn.Listen(parityBufSize)
 
 	srv := grpc.NewServer()
-	componentpb.RegisterComponentServiceServer(srv, mock)
+	register(srv)
 
 	go func() {
 		if err := srv.Serve(lis); err != nil {
@@ -126,11 +133,11 @@ func setupParityTest(t *testing.T, mock *mockComponentServer) (*PlatformHarness,
 		instanceID: "test-instance",
 	}
 
-	harness := NewPlatformHarness(pc,
+	harness = NewPlatformHarness(pc,
 		WithPlatformWorkID("work-001"),
 	)
 
-	cleanup := func() {
+	cleanup = func() {
 		conn.Close()
 		srv.Stop()
 		lis.Close()

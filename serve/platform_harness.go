@@ -22,6 +22,7 @@ import (
 	componentpb "github.com/zeroroot-ai/sdk/api/gen/gibson/component/v1"
 	"github.com/zeroroot-ai/sdk/codegen/workspace"
 	"github.com/zeroroot-ai/sdk/finding"
+	harnessconst "github.com/zeroroot-ai/sdk/harness"
 	"github.com/zeroroot-ai/sdk/llm"
 	"github.com/zeroroot-ai/sdk/mission"
 	"github.com/zeroroot-ai/sdk/planning"
@@ -1039,14 +1040,33 @@ func (h *PlatformHarness) Workspaces() map[string]workspace.Workspace {
 // Authorization Methods
 // ============================================================================
 
-// Authorize is a no-op in PlatformHarness. Platform-mode components execute
-// via the daemon's platform pull-mode path which has its own pre-dispatch FGA
-// check. A direct harness callback channel for per-operation checks is not
-// yet wired in platform mode; this returns nil (allow) unconditionally.
+// Authorize asks the daemon whether the work item of this harness may do action
+// on resource, through ComponentService.Authorize. It means the same as
+// CallbackHarness.Authorize and fails closed in the same way (D86): it returns
+// nil only on an explicit allow.
 //
-// When the platform pull-mode path gains a callback channel, this method
-// will be updated to forward to the daemon's Authorize RPC.
-func (h *PlatformHarness) Authorize(_ context.Context, _, _ string) error {
+//   - ErrInvalidAction: action or resource is empty, or the daemon refused it
+//   - ErrUnauthorized: the daemon denied it, or the work item has no active run
+//   - ErrAuthzServiceUnavailable: the daemon cannot answer, or has no RPC
+//   - ErrNoRunContext: this harness has no work item
+func (h *PlatformHarness) Authorize(ctx context.Context, action, resource string) error {
+	if action == "" || resource == "" {
+		return harnessconst.ErrInvalidAction
+	}
+	if h.workID == "" {
+		h.logger.WarnContext(ctx, "Authorize: the harness has no work item; denying",
+			"action", action, "resource", resource)
+		return harnessconst.ErrNoRunContext
+	}
+	allowed, reason, err := h.client.Authorize(ctx, h.workID, action, resource)
+	if err != nil {
+		return authorizeError(ctx, h.logger, h.workID, action, resource, err)
+	}
+	if !allowed {
+		h.logger.InfoContext(ctx, "authz_denied_local",
+			"work_id", h.workID, "action", action, "resource", resource, "reason", reason)
+		return harnessconst.ErrUnauthorized
+	}
 	return nil
 }
 

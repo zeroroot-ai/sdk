@@ -536,9 +536,10 @@ type Harness interface {
 	//   - ErrInvalidAction             — malformed action or resource; treat as deny
 	//   - ErrWorkExpired               — work envelope TTL exceeded; reject work item
 	//
-	// The callback harness fails closed. A daemon with no Authorize RPC is
-	// ErrAuthzServiceUnavailable. The pull transport has no Authorize RPC and
-	// relies on the pre-dispatch check of the daemon.
+	// Both harnesses fail closed (D86). The callback harness asks the daemon with
+	// the mission run of the task. The pull harness asks ComponentService.Authorize
+	// with its work item, and the daemon takes the run from the work item. A daemon
+	// with no Authorize RPC is ErrAuthzServiceUnavailable.
 	Authorize(ctx context.Context, action, resource string) error
 
 	// Context Access

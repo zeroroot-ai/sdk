@@ -1804,38 +1804,7 @@ func (h *CallbackHarness) Authorize(ctx context.Context, action, resource string
 
 	resp, err := h.client.Authorize(ctx, req)
 	if err != nil {
-		st, ok := status.FromError(err)
-		if !ok {
-			// Non-gRPC error (connection issue).
-			return h.denyUnavailable(ctx, action, resource, err)
-		}
-
-		switch st.Code() {
-		case grpccodes.Unimplemented, grpccodes.Unavailable, grpccodes.DeadlineExceeded:
-			return h.denyUnavailable(ctx, action, resource, err)
-
-		case grpccodes.NotFound:
-			// run_id not found in mission authz store — treat as deny.
-			h.logger.Warn("Authorize: run_id not found in daemon mission store",
-				"run_id", runID, "action", action, "resource", resource)
-			return harnessconst.ErrUnauthorized
-
-		case grpccodes.FailedPrecondition:
-			// Mission is no longer active.
-			h.logger.Warn("Authorize: mission is no longer active",
-				"run_id", runID, "action", action, "resource", resource)
-			return harnessconst.ErrUnauthorized
-
-		case grpccodes.InvalidArgument:
-			// The daemon refuses a malformed request, for example a resource with no kind.
-			return fmt.Errorf("%w: %s", harnessconst.ErrInvalidAction, st.Message())
-
-		case grpccodes.PermissionDenied, grpccodes.Unauthenticated:
-			return fmt.Errorf("%w: %s", harnessconst.ErrUnauthorized, st.Message())
-
-		default:
-			return fmt.Errorf("Authorize RPC error: %w", errors.New(st.Message()))
-		}
+		return authorizeError(ctx, h.logger, runID, action, resource, err)
 	}
 
 	if !resp.Allowed {
@@ -1849,13 +1818,6 @@ func (h *CallbackHarness) Authorize(ctx context.Context, action, resource string
 	}
 
 	return nil
-}
-
-// denyUnavailable denies the action when the daemon cannot answer.
-func (h *CallbackHarness) denyUnavailable(ctx context.Context, action, resource string, cause error) error {
-	h.logger.ErrorContext(ctx, "authorization service unavailable — denying (fail-closed)",
-		"action", action, "resource", resource, "error", cause)
-	return harnessconst.ErrAuthzServiceUnavailable
 }
 
 // ── KnowledgeReader ─────────────────────────────────────────────────────────
