@@ -95,6 +95,14 @@ type jwtSVIDSource interface {
 	Close() error
 }
 
+// enrollWithSVID reports whether the client enrolls with a SPIRE JWT-SVID:
+// a Workload API socket is set, and the caller gave no bootstrap token. An
+// explicit bootstrap token wins, because it names the principal the caller
+// means to enroll as.
+func enrollWithSVID(socket, bootstrapToken string) bool {
+	return socket != "" && bootstrapToken == ""
+}
+
 // NewClient creates a Client from cfg. It resolves the host key path and
 // generates an ephemeral agent key, but does NOT yet contact the platform.
 // Call Discover then Register to complete the bootstrap sequence.
@@ -149,7 +157,14 @@ func NewClient(cfg ClientConfig) (*Client, error) {
 	// buildRegistrationAuth. Absence of the socket is normal for external
 	// agents and tests, so a missing or unreachable socket is not fatal here:
 	// log it and fall back to the existing behavior.
-	if socket := os.Getenv("SPIFFE_ENDPOINT_SOCKET"); socket != "" {
+	//
+	// A caller that hands a bootstrap token has chosen bootstrap enrollment:
+	// the token names the principal it enrolls as. A pod with a SPIRE socket
+	// that is not a plugin (an e2e runner, an operator) would otherwise enroll
+	// under its own SPIFFE ID, which the daemon refuses as "not a plugin
+	// identity" (gibson e2e-cluster run 38246956280). So the SVID source is
+	// built only when no bootstrap token was given.
+	if socket := os.Getenv("SPIFFE_ENDPOINT_SOCKET"); enrollWithSVID(socket, cfg.BootstrapToken) {
 		// NewClient has no caller-supplied context and the source is long-lived
 		// (it outlives any single Register call, refreshing SVIDs as needed for
 		// re-registration on every process start), so context.Background is

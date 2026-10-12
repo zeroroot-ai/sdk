@@ -124,6 +124,10 @@ loop opens an `X509Source` via the SPIRE Workload API and dials the daemon over 
 using the component's X509-SVID. The CG-JWT is still presented as the application-level
 credential — SPIFFE upgrades the **transport** only, it does not replace Capability Grant.
 
+For the registration credential, a bootstrap token that the caller gives wins over the
+socket. The `capabilitygrant` client enrolls with a JWT-SVID only when
+`SPIFFE_ENDPOINT_SOCKET` is set and `ClientConfig.BootstrapToken` is empty.
+
 | Env var | Default | Purpose |
 |---|---|---|
 | `SPIFFE_ENDPOINT_SOCKET` | `/run/spire/sockets/agent.sock` | SPIRE Workload API socket path |
