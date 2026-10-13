@@ -7,11 +7,11 @@ require (
 	buf.build/go/protovalidate v1.4.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
-	github.com/spiffe/go-spiffe/v2 v2.8.2
+	github.com/spiffe/go-spiffe/v2 v2.9.0
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/otel v1.47.0
 	go.opentelemetry.io/otel/trace v1.47.0
-	golang.org/x/sync v0.23.0
+	golang.org/x/sync v0.24.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260904194346-d0f1323225a4
 	google.golang.org/grpc v1.83.2
 	google.golang.org/protobuf v1.36.12
