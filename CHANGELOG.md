@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.205.1](https://github.com/zeroroot-ai/sdk/compare/v0.205.0...v0.205.1) (2026-10-13)
+
+
+### Bug Fixes
+
+* **capabilitygrant:** an explicit bootstrap token wins over a SPIRE JWT-SVID at registration ([#280](https://github.com/zeroroot-ai/sdk/issues/280)) ([1fdc8ad](https://github.com/zeroroot-ai/sdk/commit/1fdc8ad6b4126eaaeac84b906082ac9148a310d6))
+* **examples:** the custom-tool example calls serve.Tool only, and each example builds against this tree ([#276](https://github.com/zeroroot-ai/sdk/issues/276)) ([2428613](https://github.com/zeroroot-ai/sdk/commit/2428613dee1942f4a3ae8d0fa9dfd49f59c95ca5)), closes [#268](https://github.com/zeroroot-ai/sdk/issues/268)
+
 ## [0.205.0](https://github.com/zeroroot-ai/sdk/compare/v0.204.1...v0.205.0) (2026-10-11)
 
 
