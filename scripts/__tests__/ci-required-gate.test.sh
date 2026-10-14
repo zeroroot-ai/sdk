@@ -140,6 +140,37 @@ jobs:
 YAML
 assert_cov "MUTATION a gate job missing from needs" fail
 
+# gibson#807 condition 7: a baseline gate in a pull_request-only job is
+# skipped in the merge queue, and the aggregator reads the skip as a pass.
+write_wf <<'YAML'
+on: {pull_request: null, merge_group: null}
+jobs:
+  checks:
+    if: "github.event_name == 'pull_request'"
+    runs-on: ubuntu-latest
+    steps: [{run: make lint-unwired}]
+  ci-required:
+    needs: [checks]
+    runs-on: ubuntu-latest
+YAML
+assert_cov "MUTATION a baseline gate in a pull_request-only job" fail
+
+write_wf <<'YAML'
+on: {pull_request: null, merge_group: null}
+jobs:
+  checks:
+    if: "github.event_name == 'pull_request'"
+    runs-on: ubuntu-latest
+    steps: [{run: make lint}]
+  unwired:
+    runs-on: ubuntu-latest
+    steps: [{run: make lint-unwired}]
+  ci-required:
+    needs: [checks, unwired]
+    runs-on: ubuntu-latest
+YAML
+assert_cov "a baseline gate in a both-lanes job" pass
+
 # A stale name in needs: fails the whole workflow at parse time on GitHub,
 # presenting as infrastructure breakage rather than as a gate failure.
 write_wf <<'YAML'
