@@ -235,12 +235,6 @@ jobs:
       # wrong answer. The only record of what a number used to mean is history,
       # so this compares against the base revision of core.yaml. A depth-1 fetch
       # of main is enough -- the guard reads one file at one revision.
-      # #112: the standing tracker for declarations nothing reads. The baseline
-      # only shrinks, so adding one fails here. ast-checks#13 built the scanner;
-      # before it existed the tracker could not be re-measured at all.
-      - name: lint-unwired
-        run: make lint-unwired
-
       - name: taxonomy enum numbers still mean what they did
         run: |
           git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main
@@ -323,6 +317,25 @@ jobs:
       - name: Mutation-test the wire contract check
         run: bash scripts/__tests__/check-wire-contract.test.sh
 
+  # ---- unwired baseline (both lanes) ----
+  # #112: the standing tracker for declarations nothing reads. The baseline
+  # only shrinks, so adding one fails here. ast-checks#13 built the scanner.
+  # gibson#807 condition 7: this ran inside the pull_request-only
+  # `sdk-checks`, so the merge queue skipped it and ci-required read the skip
+  # as a pass. It measures the whole module, so the queue run checks the
+  # commit that lands.
+  unwired:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: lint-unwired
+        run: make lint-unwired
+
   # ---- THE required status check (sdk#79) ----
   # One context, transitively covering every gate above. The ruleset in
   # zeroroot-ai/.github (rulesets/repo/sdk.json) requires this job and no
@@ -347,6 +360,7 @@ jobs:
       - heavy
       - lint
       - sdk-checks
+      - unwired
       - coverage
       - ci-required-selftest
     runs-on: ubuntu-latest

@@ -75,7 +75,22 @@ if phantom:
     # a gate failure.
     print(f"::error::{path}: `{AGG}` lists unknown job(s) in needs: {', '.join(phantom)}")
 
-if missing or phantom:
+# A baseline gate measures the whole module, so it must run in both lanes.
+# A one-lane job is skipped in the other lane, and the aggregator reads the
+# skip as a pass (gibson#807 condition 7).
+BOTH_LANES = ("make lint-unwired", "make lint-deadcode")
+one_lane = []
+for j in sorted(gates):
+    job = jobs[j] or {}
+    if "github.event_name ==" not in str(job.get("if") or ""):
+        continue
+    runs = " ".join(str(st.get("run", "")) for st in (job.get("steps") or []))
+    one_lane += [f"{j} runs '{c}'" for c in BOTH_LANES if c in runs]
+if one_lane:
+    print(f"::error::{path}: one-lane job(s) run a baseline gate: {'; '.join(one_lane)}")
+    print(f"::error::The other lane skips them, and `{AGG}` reads a skip as a pass. Move the gate to a both-lanes job.")
+
+if missing or phantom or one_lane:
     sys.exit(1)
 
 print(f"ok  {path}: `{AGG}` covers all {len(gates)} gate job(s): "
