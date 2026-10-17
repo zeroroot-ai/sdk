@@ -70,7 +70,6 @@ func (c *Config) AddLLMSlot(name string, requirements llm.SlotRequirements) *Con
 		Name:             name,
 		Required:         true,
 		MinContextWindow: requirements.MinContextWindow,
-		RequiredFeatures: requirements.RequiredFeatures,
 		PreferredModels:  requirements.PreferredModels,
 	}
 	c.llmSlots = append(c.llmSlots, slot)

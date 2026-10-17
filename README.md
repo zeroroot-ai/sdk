@@ -62,7 +62,6 @@ func (a *K8sTroubleshooter) LLMSlots() []agent.SlotDefinition {
         agent.NewSlotDefinition("primary", "Main reasoning LLM", true).
             WithConstraints(agent.SlotConstraints{
                 MinContextWindow: 8000,
-                RequiredFeatures: []string{agent.FeatureToolUse},
             }),
     }
 }
@@ -159,7 +158,6 @@ func (a *MyAgent) LLMSlots() []agent.SlotDefinition {
         agent.NewSlotDefinition("primary", "Main reasoning LLM", true).
             WithConstraints(agent.SlotConstraints{
                 MinContextWindow: 8000,
-                RequiredFeatures: []string{agent.FeatureToolUse, agent.FeatureJSONMode},
             }),
         agent.NewSlotDefinition("fast", "Quick completions", false).
             WithConstraints(agent.SlotConstraints{
@@ -202,7 +200,6 @@ func (a *MyAgent) LLMSlots() []agent.SlotDefinition {
         agent.NewSlotDefinition("primary", "Main LLM", true).
             WithConstraints(agent.SlotConstraints{
                 MinContextWindow: 8000,
-                RequiredFeatures: []string{agent.FeatureToolUse},
             }),
     }
 }

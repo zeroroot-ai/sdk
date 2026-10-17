@@ -21,7 +21,6 @@ func TestConfig_SetTargetTypes(t *testing.T) {
 func TestConfig_AddLLMSlot(t *testing.T) {
 	requirements := llm.SlotRequirements{
 		MinContextWindow: 8000,
-		RequiredFeatures: []string{"function_calling"},
 		PreferredModels:  []string{"gpt-4"},
 	}
 
@@ -40,9 +39,6 @@ func TestConfig_AddLLMSlot(t *testing.T) {
 	}
 	if slot.MinContextWindow != 8000 {
 		t.Errorf("slot.MinContextWindow = %d, want 8000", slot.MinContextWindow)
-	}
-	if len(slot.RequiredFeatures) != 1 {
-		t.Errorf("len(slot.RequiredFeatures) = %d, want 1", len(slot.RequiredFeatures))
 	}
 	if len(slot.PreferredModels) != 1 {
 		t.Errorf("len(slot.PreferredModels) = %d, want 1", len(slot.PreferredModels))
