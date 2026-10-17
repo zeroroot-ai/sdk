@@ -84,7 +84,8 @@ func execute(ctx context.Context, h agent.Harness, task agent.Task) (agent.Resul
 [`examples/minimal-agent`](examples/minimal-agent) is a complete agent that
 also lists tools and records an observation.
 
-Deploy as a Kubernetes workload:
+Deploy as a Kubernetes workload. The agent dials the platform, so it opens no
+port for work. It needs the platform URL and a bootstrap token:
 
 ```yaml
 apiVersion: apps/v1
@@ -93,16 +94,25 @@ metadata:
   name: k8s-troubleshooter
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: k8s-troubleshooter
   template:
+    metadata:
+      labels:
+        app: k8s-troubleshooter
     spec:
       containers:
       - name: agent
         image: myorg/k8s-troubleshooter:latest
-        ports:
-        - containerPort: 50051
         env:
-        - name: REDIS_URL
-          value: redis://gibson-redis:6379
+        - name: GIBSON_URL
+          value: https://gibson.example.com
+        - name: GIBSON_BOOTSTRAP_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: gibson-bootstrap
+              key: token
 ```
 
 ## Core Concepts
@@ -176,6 +186,9 @@ if err := sdk.ServeAgent(a); err != nil {
 
 ### 3. Deploy to Kubernetes
 
+The health server listens on port 8080 (`GIBSON_HEALTH_PORT` changes it).
+`/readyz` returns 503 until the agent is registered with the platform.
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -183,13 +196,18 @@ metadata:
   name: my-agent
 spec:
   replicas: 2
+  selector:
+    matchLabels:
+      app: my-agent
   template:
+    metadata:
+      labels:
+        app: my-agent
     spec:
       containers:
       - name: agent
         image: myorg/my-agent:latest
         ports:
-        - containerPort: 50051
         - containerPort: 8080
         livenessProbe:
           httpGet:
@@ -200,8 +218,13 @@ spec:
             path: /readyz
             port: 8080
         env:
-        - name: REDIS_URL
-          value: redis://gibson-redis:6379
+        - name: GIBSON_URL
+          value: https://gibson.example.com
+        - name: GIBSON_BOOTSTRAP_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: gibson-bootstrap
+              key: token
 ```
 
 ## Building a Tool
@@ -216,32 +239,33 @@ The "auto-populate the graph" magic is one rule: **proto field 100 in your respo
 
 ### Worked example: an nmap tool that auto-populates host/port/service relationships
 
-**Step 1 — Bootstrap from the template**
+**Step 1 — Scaffold the tool**
 
 ```bash
-gh repo create my-nmap-tool --template zeroroot-ai/component-skeleton --public
+go install github.com/zeroroot-ai/adk/gibson/cmd/gibson@latest
+gibson component init my-nmap-tool --kind tool
 cd my-nmap-tool
-# You get: main.go, Dockerfile, Makefile, CLAUDE.md
 ```
 
 Set the name, the version and the description of the tool in `main.go`. A tool declares itself in code, and no manifest file exists.
 
 **Step 2 — Define the proto (field 100 is the magic)**
 
-`api/proto/mytool/nmap/v1/nmap.proto`:
+The scaffold writes `api/proto/gibson/tools/mynmaptool/v1/mynmaptool.proto`.
+Replace its two messages with these:
 
 ```proto
 syntax = "proto3";
 
-package mytool.nmap.v1;
-
-option go_package = "github.com/you/my-nmap-tool/api/gen/nmap/v1;nmappb";
+package gibson.tools.mynmaptool.v1;
 
 import "gibson/graphrag/v1/graphrag.proto";  // ← from this SDK
 
+option go_package = "github.com/zeroroot-ai/my-nmap-tool/api/gen/gibson/tools/mynmaptool/v1;mynmaptoolv1";
+
 message NmapRequest {
   repeated string targets = 1;          // "10.0.0.0/24" or "example.com"
-  string scan_type = 2;                 // "syn", "connect", "udp", etc.
+  string scan_type = 2;                 // "syn", "connect" or "udp"
   repeated string ports = 3;            // "1-1024" or "80,443,22"
   int32 timeout_seconds = 4;
 }
@@ -253,13 +277,13 @@ message NmapResponse {
   double scan_duration_seconds = 3;
 
   // ── Field 100 is reserved platform-wide for DiscoveryResult. ──
-  // Gibson's DiscoveryProcessor extracts it from every tool response
-  // and writes the entities + relationships into Neo4j automatically.
+  // Gibson's DiscoveryProcessor reads it from every tool response.
   gibson.graphrag.v1.DiscoveryResult discovery = 100;
 }
 ```
 
-Run `buf generate` (the skeleton's Makefile target). Output: `api/gen/nmap/v1/nmap.pb.go`.
+Run `make proto`. It runs `buf generate` and writes the Go bindings under
+`api/gen/gibson/tools/mynmaptool/v1/`.
 
 **Step 3 — Implement the tool**
 
@@ -271,8 +295,10 @@ import (
     "encoding/xml"
     "fmt"
     "os/exec"
+    "strings"
+    "time"
 
-    nmappb "github.com/you/my-nmap-tool/api/gen/nmap/v1"
+    nmappb "github.com/zeroroot-ai/my-nmap-tool/api/gen/gibson/tools/mynmaptool/v1"
     graphragpb "github.com/zeroroot-ai/sdk/api/gen/gibson/graphrag/v1"
     "github.com/zeroroot-ai/sdk/serve"
     "google.golang.org/protobuf/proto"
@@ -282,17 +308,32 @@ type NmapTool struct{}
 
 func (t *NmapTool) Name() string              { return "my-nmap-tool" }
 func (t *NmapTool) Version() string           { return "v0.1.0" }
-func (t *NmapTool) InputMessageType() string  { return "mytool.nmap.v1.NmapRequest" }
-func (t *NmapTool) OutputMessageType() string { return "mytool.nmap.v1.NmapResponse" }
+func (t *NmapTool) Description() string       { return "Runs nmap and reports hosts, ports and services" }
+func (t *NmapTool) Tags() []string            { return []string{"network", "discovery"} }
+func (t *NmapTool) InputMessageType() string  { return "gibson.tools.mynmaptool.v1.NmapRequest" }
+func (t *NmapTool) OutputMessageType() string { return "gibson.tools.mynmaptool.v1.NmapResponse" }
 
-// Execute is the tool's main entrypoint. SDK serves it over gRPC.
-func (t *NmapTool) Execute(ctx context.Context, in proto.Message) (proto.Message, error) {
-    req := in.(*nmappb.NmapRequest)
+var scanFlags = map[string]string{"syn": "-sS", "connect": "-sT", "udp": "-sU"}
 
-    // 1. Run nmap.
+// ExecuteProto is the entry point of the tool. The SDK calls it for each work item.
+func (t *NmapTool) ExecuteProto(ctx context.Context, in proto.Message) (proto.Message, error) {
+    req, ok := in.(*nmappb.NmapRequest)
+    if !ok {
+        return nil, fmt.Errorf("unexpected input %T", in)
+    }
+    if req.TimeoutSeconds > 0 {
+        var cancel context.CancelFunc
+        ctx, cancel = context.WithTimeout(ctx, time.Duration(req.TimeoutSeconds)*time.Second)
+        defer cancel()
+    }
+
+    // 1. Run nmap with XML output on stdout.
     args := []string{"-sV", "-oX", "-"}
-    if req.ScanType != "" {
-        args = append(args, "-s"+req.ScanType[:1])
+    if flag, ok := scanFlags[req.ScanType]; ok {
+        args = append(args, flag)
+    }
+    if len(req.Ports) > 0 {
+        args = append(args, "-p", strings.Join(req.Ports, ","))
     }
     args = append(args, req.Targets...)
     out, err := exec.CommandContext(ctx, "nmap", args...).Output()
@@ -300,30 +341,46 @@ func (t *NmapTool) Execute(ctx context.Context, in proto.Message) (proto.Message
         return nil, err
     }
 
-    // 2. Parse nmap's XML output (use a parser library — omitted here).
-    var parsed nmapXML
-    xml.Unmarshal(out, &parsed)
+    // 2. Parse the nmap XML report.
+    var run nmapRun
+    if err := xml.Unmarshal(out, &run); err != nil {
+        return nil, fmt.Errorf("parse nmap output: %w", err)
+    }
 
-    // 3. Translate parsed XML → DiscoveryResult.
-    //    THIS is the part that lights up the knowledge graph.
+    // 3. Translate the report into a DiscoveryResult.
+    //    THIS is the part that lights up the knowledge graph. gibson joins the
+    //    lists by ID: Port.HostId names a Host.Id, Service.PortId a Port.Id.
     discovery := &graphragpb.DiscoveryResult{}
-    for _, h := range parsed.Hosts {
-        discovery.Hosts = append(discovery.Hosts, &graphragpb.Host{
-            Ip:       h.Address,
-            Hostname: ptr(h.Hostname),
-        })
+    for _, h := range run.Hosts {
+        hostID := h.ip()
+        if hostID == "" {
+            continue
+        }
+        host := &graphragpb.Host{Id: ptr(hostID), Ip: hostID}
+        if len(h.Hostnames) > 0 {
+            host.Hostname = ptr(h.Hostnames[0].Name)
+        }
+        discovery.Hosts = append(discovery.Hosts, host)
         for _, p := range h.Ports {
+            // gibson treats each reported port as open, so report open ports only.
+            // nmap also lists closed and filtered ports when there are few.
+            if p.State.State != "open" {
+                continue
+            }
+            portID := fmt.Sprintf("%s/%s:%d", hostID, p.Protocol, p.PortID)
             discovery.Ports = append(discovery.Ports, &graphragpb.Port{
-                Number:   int32(p.Number),
+                Id:       ptr(portID),
+                HostId:   hostID, // ← edge: Host HAS_PORT Port
+                Number:   p.PortID,
                 Protocol: p.Protocol,
-                State:    ptr(p.State),
-                HostId:   h.Address, // ← edge: Port BELONGS_TO Host
+                State:    ptr(p.State.State),
             })
-            if p.Service != "" {
+            if p.Service.Name != "" {
                 discovery.Services = append(discovery.Services, &graphragpb.Service{
-                    Name:    p.Service,
-                    PortId:  fmt.Sprintf("%s:%d", h.Address, p.Number), // ← edge: Service RUNS_ON Port
-                    Version: p.Version,
+                    PortId:  portID, // ← edge: Port RUNS_SERVICE Service
+                    Name:    p.Service.Name,
+                    Product: ptr(p.Service.Product),
+                    Version: ptr(p.Service.Version),
                 })
             }
         }
@@ -332,31 +389,75 @@ func (t *NmapTool) Execute(ctx context.Context, in proto.Message) (proto.Message
     // 4. Return the response with discovery in field 100.
     return &nmappb.NmapResponse{
         RawXml:              string(out),
-        HostsScanned:        int32(len(parsed.Hosts)),
-        ScanDurationSeconds: parsed.Duration,
+        HostsScanned:        int32(len(run.Hosts)),
+        ScanDurationSeconds: run.RunStats.Finished.Elapsed,
         Discovery:           discovery, // ← the magic field
     }, nil
 }
 
 func ptr[T any](v T) *T { return &v }
 
+// nmapRun is the part of the nmap XML report (-oX) that the tool reads.
+type nmapRun struct {
+    Hosts    []nmapHost `xml:"host"`
+    RunStats struct {
+        Finished struct {
+            Elapsed float64 `xml:"elapsed,attr"`
+        } `xml:"finished"`
+    } `xml:"runstats"`
+}
+
+type nmapHost struct {
+    Addresses []struct {
+        Addr     string `xml:"addr,attr"`
+        AddrType string `xml:"addrtype,attr"`
+    } `xml:"address"`
+    Hostnames []struct {
+        Name string `xml:"name,attr"`
+    } `xml:"hostnames>hostname"`
+    Ports []nmapPort `xml:"ports>port"`
+}
+
+// ip returns the IPv4 or IPv6 address of the host. nmap also lists the MAC
+// address as an <address> element.
+func (h nmapHost) ip() string {
+    for _, a := range h.Addresses {
+        if a.AddrType == "ipv4" || a.AddrType == "ipv6" {
+            return a.Addr
+        }
+    }
+    return ""
+}
+
+type nmapPort struct {
+    Protocol string `xml:"protocol,attr"`
+    PortID   int32  `xml:"portid,attr"`
+    State    struct {
+        State string `xml:"state,attr"`
+    } `xml:"state"`
+    Service struct {
+        Name    string `xml:"name,attr"`
+        Product string `xml:"product,attr"`
+        Version string `xml:"version,attr"`
+    } `xml:"service"`
+}
+
 func main() {
-    // serve.Tool handles all gRPC plumbing, FileDescriptorSet registration
-    // with gibson, mode selection (local vs platform), health probes, OTel.
+    // serve.Tool connects to the platform at GIBSON_URL, registers the
+    // FileDescriptorSet, polls for work, and serves the health probes.
     if err := serve.Tool(&NmapTool{}); err != nil {
         panic(err)
     }
 }
 ```
 
-That's the entire tool — about 80 lines of your code.
-
 **Step 4 — Deploy**
 
-`make docker-build && make docker-push`, then either mode:
-
-- **Local mode**: deploy as a Kubernetes service, expose port `50051`, install via `gibson component install <git-url>`. Gibson sends work to your tool's gRPC port.
-- **Platform mode**: set `PLATFORM_URL=gibson:50002` env var. `serve.Tool()` switches to outbound — your tool polls gibson for work via `ComponentService.PollWork` instead of running its own server. Better for scaling: replicas can come and go without reconfiguring gibson.
+Build and push the image. The image must install `nmap`, and a SYN or UDP
+scan (`-sS`, `-sU`) needs the `NET_RAW` capability. `serve.Tool()` dials the platform at `GIBSON_URL`
+with `GIBSON_BOOTSTRAP_TOKEN` and polls for work through
+`ComponentService.PollWork`. The tool runs no server of its own, so replicas
+can come and go without a change to gibson.
 
 ```yaml
 apiVersion: apps/v1
@@ -365,30 +466,36 @@ metadata:
   name: my-nmap-tool
 spec:
   replicas: 5  # Scale horizontally
+  selector:
+    matchLabels:
+      app: my-nmap-tool
   template:
+    metadata:
+      labels:
+        app: my-nmap-tool
     spec:
       containers:
       - name: tool
         image: ghcr.io/you/my-nmap-tool:v0.1.0
         env:
-        - name: PLATFORM_URL
-          value: gibson:50002
-        - name: BOOTSTRAP_TOKEN
+        - name: GIBSON_URL
+          value: https://gibson.example.com
+        - name: GIBSON_BOOTSTRAP_TOKEN
           valueFrom:
             secretKeyRef:
               name: gibson-bootstrap
               key: token
 ```
 
-On first connection your tool sends its FileDescriptorSet (the schema for `NmapRequest`/`NmapResponse`) to gibson via `RegisterComponent`. Gibson caches it via `protoresolver`. From this point on, gibson knows how to call your tool by name and how to interpret its responses — without any compile-time dependency on your tool's Go types.
+On first connection your tool sends its FileDescriptorSet (the schema for `NmapRequest`/`NmapResponse`) to gibson via `RegisterComponent`. Gibson caches it via `protoresolver`. From this point on, gibson knows how to call your tool by name and how to interpret its responses, without any compile-time dependency on your tool's Go types.
 
 **Step 5 — How an agent uses it**
 
-In an agent (a separate component):
+In an agent (a separate component), inside its execute function:
 
 ```go
 import (
-    nmappb "github.com/you/my-nmap-tool/api/gen/nmap/v1"  // ← agent imports the tool's Go bindings
+    nmappb "github.com/zeroroot-ai/my-nmap-tool/api/gen/gibson/tools/mynmaptool/v1" // ← the tool's Go bindings
 )
 
 // Inside the agent's reasoning loop:
@@ -399,125 +506,124 @@ req := &nmappb.NmapRequest{
 }
 resp := &nmappb.NmapResponse{}
 if err := h.CallToolProto(ctx, "my-nmap-tool", req, resp); err != nil {
-    return err
+    return agent.Result{Status: agent.StatusFailed, Output: err.Error()}, nil
 }
 
-slog.Info("nmap done", "hosts", resp.HostsScanned, "duration", resp.ScanDurationSeconds)
+h.Logger().Info("nmap done", "hosts", resp.HostsScanned, "duration", resp.ScanDurationSeconds)
 
-// The agent does NOT need to do anything for the graph — gibson already
-// extracted resp.Discovery and wrote Hosts, Ports, Services + their
-// relationships to Neo4j BEFORE returning the response to the agent.
+// The agent does nothing for the graph. gibson reads resp.Discovery and
+// writes the hosts, ports and services after it answers the call.
 ```
 
 ### What gibson does automatically (the "free" part)
 
-The instant your tool's response hits gibson's `HarnessCallbackService.CallToolProto` handler, the `DiscoveryProcessor`:
+When your tool's response reaches gibson, the `DiscoveryProcessor`:
 
 1. Uses `protoresolver` to find field 100 of the cached `NmapResponse` descriptor.
-2. Reflects on `resp.Discovery` to extract every `Host`, `Port`, `Service`, etc.
-3. For each one, calls the GraphRAG `loader` to write/upsert the corresponding Neo4j node — taxonomy-typed (`:Host {ip: "10.0.0.5"}`, `:Port {number: 443, protocol: "tcp"}`, `:Service {name: "https"}`).
-4. Creates the relationships from `HostId` / `PortId` cross-references: `(:Port)-[:BELONGS_TO]->(:Host)`, `(:Service)-[:RUNS_ON]->(:Port)`.
-5. Tags everything with mission/agent/run IDs so the orchestrator's cross-mission intelligence queries can later say "the orchestrator's prior knowledge for 10.0.0.5 includes these 12 ports from mission XYZ."
+2. Reads `resp.Discovery` and extracts every `Host`, `Port`, `Service`, etc.
+3. Folds them into the World as observations. The graph projector then writes the nodes (`:Host {address: "10.0.0.5"}`, `:Port {number: 443, open: true}`, `:Service {name: "https"}`).
+4. Writes the relationships that the ID fields join: `(:Host)-[:HAS_PORT]->(:Port)` and `(:Port)-[:RUNS_SERVICE]->(:Service)`.
+
+This runs after gibson answers the tool call, so a graph read right after the call may not see the new nodes yet.
 
 ### What you DID NOT have to do
 
 - Write any Neo4j Cypher.
 - Touch this SDK's source.
 - Tell gibson about your proto types ahead of time (auto-discovered via FileDescriptorSet at registration).
-- Implement any "save to graph" logic — that's gibson's responsibility per the field-100 contract.
-- Care about which mission, target, or agent invoked you — gibson tags the graph entries with that context automatically.
+- Implement any "save to graph" logic. That is gibson's job under the field-100 contract.
 
 ### One sentence
 
-You implement `Execute(req) → resp`, you put your structured discoveries in field 100, and the platform handles persistence + cross-mission learning + intelligence queries on top of your tool's output without you writing a line of platform code.
+You implement `ExecuteProto(req) → resp`, you put your structured discoveries in field 100, and the platform writes them to the knowledge graph without you writing a line of platform code.
 
 ## Building a Plugin
 
-Plugins provide stateful service integrations:
+A plugin is a stateful service integration, and the only component that may
+read a secret. It declares its methods with `plugin.WithHandler` and serves
+them with `plugin.Serve`:
 
 ```go
-type SlackPlugin struct {
-    client *slack.Client
+package main
+
+import (
+    "context"
+    "fmt"
+    "log"
+
+    "github.com/zeroroot-ai/sdk/plugin"
+)
+
+type SendRequest struct {
+    Channel string `json:"channel"`
+    Message string `json:"message"`
 }
 
-func (p *SlackPlugin) Name() string    { return "slack" }
-func (p *SlackPlugin) Version() string { return "1.0.0" }
-
-func (p *SlackPlugin) Initialize(ctx context.Context, cfg plugin.PluginConfig) error {
-    token := cfg.Settings["token"].(string)
-    p.client = slack.New(token)
-    return nil
+type SendResponse struct {
+    Sent bool `json:"sent"`
 }
 
-func (p *SlackPlugin) Methods() []plugin.MethodDescriptor {
-    return []plugin.MethodDescriptor{
-        {
-            Name:        "send_message",
-            Description: "Send a message to a Slack channel",
-            InputSchema: schema.JSON(`{
-                "type": "object",
-                "properties": {
-                    "channel": {"type": "string"},
-                    "message": {"type": "string"}
-                },
-                "required": ["channel", "message"]
-            }`),
-        },
+func send(ctx context.Context, req SendRequest) (SendResponse, error) {
+    token, err := plugin.ResolveSecret(ctx, "cred:slack_token")
+    if err != nil {
+        return SendResponse{}, fmt.Errorf("resolve slack_token: %w", err)
     }
-}
-
-func (p *SlackPlugin) Query(ctx context.Context, method string, params map[string]any) (any, error) {
-    switch method {
-    case "send_message":
-        channel := params["channel"].(string)
-        message := params["message"].(string)
-        _, _, err := p.client.PostMessage(channel, slack.MsgOptionText(message, false))
-        return map[string]any{"sent": true}, err
-    default:
-        return nil, fmt.Errorf("unknown method: %s", method)
-    }
+    _ = token // call the Slack API with the token here
+    return SendResponse{Sent: true}, nil
 }
 
 func main() {
-    serve.Plugin(&SlackPlugin{}, serve.WithPort(50053))
+    if err := plugin.Serve(context.Background(),
+        plugin.WithName("slack"),
+        plugin.WithVersion("1.0.0"),
+        plugin.WithHandler("send_message", "Send a message to a Slack channel", send),
+    ); err != nil {
+        log.Fatal(err)
+    }
 }
 ```
 
 ## GraphRAG Knowledge Graph
 
-Every entity discovered by agents persists in Neo4j with full relationship mapping:
+An agent emits what it saw into the World, and the daemon projects it into the
+knowledge graph. An agent reads the graph with `QueryNodes`. Both calls need
+the callback harness: the agent dials `GIBSON_CALLBACK_ENDPOINT` and builds it
+with `serve.NewCallbackHarness`, as [`examples/agent-harness`](examples/agent-harness)
+does. The harness of an agent served with `sdk.ServeAgent` returns an error for
+`Observe` and `agent.ErrKnowledgeUnavailable` for `QueryNodes`.
 
 ```go
-// Create entities with automatic UUID assignment
-host := graphrag.NewHost()
-host.Ip = "192.168.1.100"
-host.Hostname = "api-server"
-host.Os = "Ubuntu 22.04"
+// Emit into the World; the daemon projects it into the graph.
+if err := h.Observe(ctx, agent.HostObservation{
+    Address: "10.0.0.5",
+    Ports:   []agent.PortObservation{{Number: 443, Protocol: "tcp", Service: "https"}},
+}); err != nil {
+    return agent.Result{Status: agent.StatusFailed, Output: err.Error()}, nil
+}
 
-// Child entities auto-wire parent relationships
-port := graphrag.NewPort(host, 443, "tcp")
-service := graphrag.NewService(port, "nginx")
-endpoint := graphrag.NewEndpoint(service, "/api/v1/status")
-
-// Emit into the World; the daemon projects it into the graph
-h.Observe(ctx, agent.HostObservation{Address: "10.0.0.5"})
-
-// Query knowledge
-results, _ := h.QueryNodes(ctx, &graphragpb.GraphQuery{
-    NodeType: "host",
-    Filters: map[string]string{"os": "Ubuntu*"},
+// Query what the tenant already knows.
+hits, err := h.QueryNodes(ctx, &graphragpb.GraphQuery{
+    Text:      "nginx hosts",
+    NodeTypes: []string{"host"},
+    TopK:      10,
 })
+switch {
+case errors.Is(err, agent.ErrKnowledgeUnavailable):
+    // The graph could not be read. Conclude nothing about the target.
+case err != nil:
+    return agent.Result{Status: agent.StatusFailed, Output: err.Error()}, nil
+default:
+    h.Logger().Info("prior knowledge", "hits", len(hits))
+}
 ```
 
 **Schema Highlights:**
 
 ```
-Host ──[HAS_PORT]──▶ Port ──[RUNS_SERVICE]──▶ Service ──[HAS_ENDPOINT]──▶ Endpoint
+Host ──[HAS_PORT]──▶ Port ──[RUNS_SERVICE]──▶ Service
 Domain ──[HAS_SUBDOMAIN]──▶ Subdomain ──[RESOLVES_TO]──▶ Host
 ```
 
-- UUID-based identity for mergeability
-- CEL-based validation rules
 - YAML-driven taxonomy (single source of truth)
 - Cross-mission intelligence
 
@@ -528,17 +634,13 @@ sdk/
 ├── agent/          # Agent interface, harness, task and result types
 ├── tool/           # Tool interface and builders
 ├── plugin/         # Plugin interface and serving
-├── llm/            # LLM message, completion and slot types
+├── llm/            # LLM message and completion types
 ├── mission/        # Mission context and sub-mission types
 ├── finding/        # Structured security findings
-├── graphrag/       # Knowledge graph client
-│   ├── domain/         # Generated domain types
-│   ├── validation/     # CEL-based validators
-│   ├── query/          # Query builders
+├── graphrag/       # Knowledge graph types and discovery extraction
 │   └── id/             # Node ID generation
 ├── auth/           # SDK-side identity and authorization
 ├── capabilitygrant/ # Capability Grant Protocol client
-├── spiffe/         # SPIFFE Workload API helpers
 ├── serve/          # gRPC serving utilities
 ├── health/         # Health check helpers
 ├── schema/         # JSON Schema types and validation

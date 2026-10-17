@@ -13,12 +13,12 @@ import (
 // It performs the Capability Grant bootstrap (discover → register), dials the platform,
 // and polls for work until a shutdown signal is received or an error occurs.
 //
-// WithCapabilityGrant or WithCapabilityGrantFromEnv must be provided; Agent returns an error
-// if PlatformURL is not configured.
+// DefaultConfig reads GIBSON_URL and GIBSON_BOOTSTRAP_TOKEN. Agent returns an
+// error if the platform URL is not set.
 //
 // Example:
 //
-//	err := serve.Agent(myAgent, serve.WithCapabilityGrantFromEnv())
+//	err := serve.Agent(myAgent)
 //	if err != nil {
 //	    log.Fatal(err)
 //	}

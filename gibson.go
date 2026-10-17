@@ -35,8 +35,8 @@ func NewAgent(opts ...AgentOption) (agent.Agent, error) {
 }
 
 // ServeAgent connects the agent to the Gibson platform with the default serve
-// configuration and polls for work. Call serve.Agent to pass options, for
-// example serve.WithCapabilityGrantFromEnv().
+// configuration and polls for work. serve.DefaultConfig reads GIBSON_URL and
+// GIBSON_BOOTSTRAP_TOKEN from the environment.
 //
 // Example:
 //

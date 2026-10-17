@@ -9,7 +9,7 @@
 //   - Completion requests and responses
 //   - Streaming response handling
 //   - Tool/function calling definitions
-//   - LLM slot definitions and requirements
+//   - LLM slot names
 //   - Token usage tracking
 //
 // # Message Types
@@ -78,10 +78,9 @@
 //
 // # Token Tracking
 //
-// Track token usage across different LLM slots with TokenTracker:
+// The harness tracks token usage per LLM slot. TokenTracker is its interface:
 //
-//	tracker := llm.NewTokenTracker()
-//	tracker.Add("primary", response.Usage)
-//	total := tracker.Total()
+//	usage := h.TokenUsage()
+//	total := usage.Total()
 //	fmt.Printf("Total tokens used: %d\n", total.TotalTokens)
 package llm

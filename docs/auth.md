@@ -106,23 +106,33 @@ reused on every subsequent run without re-registration.
 
 | Step | What happens |
 |---|---|
-| Bootstrap | `capabilitygrant.Authenticate` exchanges `GIBSON_AGENT_BOOTSTRAP_TOKEN` for the host registration record. Token is consumed on the first `Register` call; subsequent runs reuse the persisted key. |
+| Bootstrap | `capabilitygrant.Authenticate` exchanges `GIBSON_BOOTSTRAP_TOKEN` for the host registration record. Token is consumed on the first `Register` call; subsequent runs reuse the persisted key. |
 | Per-RPC credential | Each daemon RPC carries a CG-JWT (`Authorization: Bearer`): Ed25519-signed, ephemeral agent key, 55-second expiry. |
 
 Required env vars:
 
 | Env var | Required | Purpose |
 |---|---|---|
-| `GIBSON_PLATFORM_URL` | Always | Platform HTTPS base URL |
-| `GIBSON_AGENT_BOOTSTRAP_TOKEN` | First run only | One-time registration token; not needed after host key persists |
+| `GIBSON_URL` | Always | Platform HTTPS base URL |
+| `GIBSON_BOOTSTRAP_TOKEN` | First run only | One-time registration token; not needed after host key persists |
 | `GIBSON_HOST_KEY_PATH` | Optional | Override path for the Ed25519 host key file |
 
 ### SPIFFE transport upgrade (optional)
 
-When `SPIFFE_ENDPOINT_SOCKET` is set and the socket file exists at runtime, the serve
-loop opens an `X509Source` via the SPIRE Workload API and dials the daemon over mTLS
-using the component's X509-SVID. The CG-JWT is still presented as the application-level
-credential — SPIFFE upgrades the **transport** only, it does not replace Capability Grant.
+When `Config.SPIFFEEndpointSocket` is set and the socket file exists at runtime, the
+serve loop opens an `X509Source` via the SPIRE Workload API and dials the daemon over
+mTLS using the component's X509-SVID. The serve package reads no environment variable
+for this upgrade. Set `SPIFFEEndpointSocket` and `DaemonAddress` with an Option:
+
+```go
+err := serve.Agent(a, func(c *serve.Config) {
+    c.SPIFFEEndpointSocket = "/run/spire/sockets/agent.sock"
+    c.DaemonAddress = "gibson.gibson.svc.cluster.local:50002"
+})
+```
+
+The CG-JWT is still presented as the application-level credential. SPIFFE upgrades
+the **transport** only, it does not replace Capability Grant.
 
 For the registration credential, a bootstrap token that the caller gives wins over the
 socket. The `capabilitygrant` client enrolls with a JWT-SVID only when
@@ -130,22 +140,22 @@ socket. The `capabilitygrant` client enrolls with a JWT-SVID only when
 
 | Env var | Default | Purpose |
 |---|---|---|
-| `SPIFFE_ENDPOINT_SOCKET` | `/run/spire/sockets/agent.sock` | SPIRE Workload API socket path |
-| `GIBSON_DAEMON_ADDRESS` | `gibson.gibson.svc.cluster.local:50002` | Daemon gRPC address |
+| `SPIFFE_ENDPOINT_SOCKET` | none (unset: no JWT-SVID enrollment) | SPIRE Workload API address, with the `unix://` scheme, for example `unix:///run/spire/sockets/agent.sock` |
 
-### Recommended option call
+### Configuration
 
-`WithPlatformFromEnv()` reads both sets of env vars in one call and is the recommended
-option for all deployment topologies:
+`serve.DefaultConfig` reads `GIBSON_URL`, `GIBSON_BOOTSTRAP_TOKEN`,
+`GIBSON_HOST_KEY_PATH` and `GIBSON_HEALTH_PORT`, so `serve.Agent(myAgent)` and
+`serve.Tool(myTool)` need no option:
 
 ```go
-err := serve.Agent(myAgent, serve.WithPlatformFromEnv())
+err := serve.Agent(myAgent)
 ```
 
-For external deployments (no SPIRE), set `GIBSON_PLATFORM_URL` and
-`GIBSON_AGENT_BOOTSTRAP_TOKEN`; `SPIFFE_ENDPOINT_SOCKET` need not be set.
-For in-cluster deployments (SPIRE co-located), set all five env vars; the SPIFFE
-transport upgrade is applied automatically.
+Set `GIBSON_URL` and `GIBSON_BOOTSTRAP_TOKEN`. `SPIFFE_ENDPOINT_SOCKET` changes only
+the enrollment credential: the `capabilitygrant` client enrolls with a JWT-SVID when it
+is set and no bootstrap token is given. It does not turn on the SPIFFE transport
+upgrade. Set `Config.SPIFFEEndpointSocket` for that, as shown above.
 
 See ADR-0045, "One runtime identity for every component: the Capability Grant JWT", for the normative
 decision record.

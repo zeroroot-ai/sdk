@@ -17,7 +17,7 @@ import (
 // without it. Returns a descriptive error if PlatformURL is empty.
 func validateConfig(cfg *Config) error {
 	if cfg.PlatformURL == "" {
-		return errors.New("capability grant is required: set GIBSON_URL or call WithCapabilityGrant()")
+		return errors.New("capability grant is required: set GIBSON_URL")
 	}
 	return nil
 }
@@ -52,19 +52,18 @@ type Config struct {
 	HealthPort int
 
 	// PlatformURL is the Gibson platform HTTPS base URL.
-	// Required for platform mode. Set via WithCapabilityGrant(), WithCapabilityGrantFromEnv(),
-	// or the GIBSON_URL environment variable read by WithCapabilityGrantFromEnv().
+	// Required. DefaultConfig reads it from the GIBSON_URL environment variable.
 	PlatformURL string
 
 	// BootstrapToken is the one-time host registration credential used on the
 	// first call to Register. After the host key is persisted to disk the token
-	// is not needed for subsequent runs. Set via WithBootstrapToken() or the
-	// GIBSON_BOOTSTRAP_TOKEN environment variable read by WithCapabilityGrantFromEnv().
+	// is not needed for subsequent runs. DefaultConfig reads it from the
+	// GIBSON_BOOTSTRAP_TOKEN environment variable.
 	BootstrapToken string
 
 	// HostKeyPath is the path to the on-disk Ed25519 host keypair (JWK JSON, 0600).
-	// Defaults to ~/.gibson/host_key.json when empty. Set via WithHostKey() or the
-	// GIBSON_HOST_KEY_PATH environment variable read by WithCapabilityGrantFromEnv().
+	// Defaults to ~/.gibson/host_key.json when empty. DefaultConfig reads it from
+	// the GIBSON_HOST_KEY_PATH environment variable.
 	HostKeyPath string
 
 	// PollInterval is how often the component polls for work in platform mode.
@@ -81,15 +80,13 @@ type Config struct {
 	Extractor EntityExtractor
 
 	// SPIFFEEndpointSocket is the path to the SPIRE Workload API Unix socket.
-	// When set (and the socket exists), SPIFFE mode is used.
-	// Set via WithSPIFFE() or read from SPIFFE_ENDPOINT_SOCKET by WithSPIFFEFromEnv().
-	// Default: /run/spire/sockets/agent.sock
+	// When set (and the socket exists), SPIFFE mode is used. DefaultConfig
+	// leaves it empty and reads no environment variable for it. Set it with an
+	// Option.
 	SPIFFEEndpointSocket string
 
 	// DaemonAddress is the gRPC target address for the Gibson daemon in SPIFFE mode.
-	// Only used in SPIFFE mode. Set via WithSPIFFE() or read from GIBSON_DAEMON_ADDRESS
-	// by WithSPIFFEFromEnv().
-	// Default: gibson.gibson.svc.cluster.local:50002
+	// Only used in SPIFFE mode. Set it with an Option.
 	DaemonAddress string
 }
 
@@ -99,7 +96,7 @@ type Config struct {
 // component enrols itself at boot from two environment variables and nothing
 // else: GIBSON_URL and GIBSON_BOOTSTRAP_TOKEN (sdk#128, ADR-0097).
 //
-// It was opt-in through WithCapabilityGrantFromEnv, and plugin.Serve read
+// It was opt-in through an option that is now gone, and plugin.Serve read
 // GIBSON_URL on its own, so the three entry points disagreed: a developer who
 // set both variables and called serve.Agent(a) got
 //
@@ -108,8 +105,8 @@ type Config struct {
 // while the same two variables worked for plugin.Serve. Reading them here makes
 // all three behave the same way.
 //
-// Explicit options still win. They run after this function, so
-// WithPlatformURL or WithBootstrapToken overrides what the environment said.
+// An Option passed to Agent or Tool runs after this function, so it overrides
+// what the environment said.
 func DefaultConfig() *Config {
 	healthPort := 8080
 	if envHealth := os.Getenv("GIBSON_HEALTH_PORT"); envHealth != "" {

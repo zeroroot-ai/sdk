@@ -19,12 +19,12 @@ const SchemaFlag = "--schema"
 // Otherwise, performs the Capability Grant bootstrap (discover → register), connects
 // to the Gibson platform in pull mode, and polls for work.
 //
-// WithCapabilityGrant or WithCapabilityGrantFromEnv must be provided; Tool returns an error
-// if PlatformURL is not configured.
+// DefaultConfig reads GIBSON_URL and GIBSON_BOOTSTRAP_TOKEN. Tool returns an
+// error if the platform URL is not set.
 //
 // Example:
 //
-//	err := serve.Tool(myTool, serve.WithCapabilityGrantFromEnv())
+//	err := serve.Tool(myTool)
 //	if err != nil {
 //	    log.Fatal(err)
 //	}

@@ -59,13 +59,9 @@
 //
 // # Integration with SDK Serve
 //
-// Components using core/sdk/serve expose health endpoints automatically.
-// The HealthPort defaults to 8080 and can be overridden via WithHealthPort():
-//
-//	serve.Tool(myTool,
-//	    serve.WithCapabilityGrantFromEnv(),
-//	    serve.WithHealthPort(9091),
-//	)
+// Components served with the serve package expose health endpoints automatically.
+// The HealthPort defaults to 8080. The GIBSON_HEALTH_PORT environment variable
+// changes it.
 //
 // # Pre-built Checks
 //
