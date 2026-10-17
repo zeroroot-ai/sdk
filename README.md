@@ -46,55 +46,44 @@ package main
 
 import (
     "context"
+    "log"
+
+    sdk "github.com/zeroroot-ai/sdk"
     "github.com/zeroroot-ai/sdk/agent"
     "github.com/zeroroot-ai/sdk/llm"
-    "github.com/zeroroot-ai/sdk/serve"
 )
 
-type K8sTroubleshooter struct{}
-
-func (a *K8sTroubleshooter) Name() string        { return "k8s-troubleshooter" }
-func (a *K8sTroubleshooter) Version() string     { return "1.0.0" }
-func (a *K8sTroubleshooter) Description() string { return "Troubleshoots Kubernetes cluster issues" }
-
-func (a *K8sTroubleshooter) LLMSlots() []agent.SlotDefinition {
-    return []agent.SlotDefinition{
-        agent.NewSlotDefinition("primary", "Main reasoning LLM", true).
-            WithConstraints(agent.SlotConstraints{
-                MinContextWindow: 8000,
-            }),
-    }
-}
-
-func (a *K8sTroubleshooter) Execute(ctx context.Context, task agent.Task, h agent.Harness) (agent.Result, error) {
-    // Use LLM to reason about the issue
-    messages := []llm.Message{
-        llm.NewSystemMessage("You are a Kubernetes expert. Diagnose cluster issues."),
-        llm.NewUserMessage(task.Goal),
-    }
-    resp, err := h.Complete(ctx, "primary", messages)
-    if err != nil {
-        return agent.NewFailedResult(err), err
-    }
-
-    // Execute kubectl via tool
-    output, err := h.ExecuteTool(ctx, "kubectl", &pb.KubectlRequest{
-        Command: "get pods -A --field-selector=status.phase!=Running",
-    })
-
-    // Store findings in memory
-    h.Memory().Mission().Set(ctx, "diagnosis", resp.Content)
-
-    return agent.NewSuccessResult(map[string]any{
-        "diagnosis": resp.Content,
-        "pods":      output,
-    }), nil
-}
-
 func main() {
-    serve.Agent(&K8sTroubleshooter{}, serve.WithPort(50051))
+    a, err := sdk.NewAgent(
+        sdk.WithName("k8s-troubleshooter"),
+        sdk.WithVersion("1.0.0"),
+        sdk.WithDescription("Troubleshoots Kubernetes cluster issues"),
+        sdk.WithTargetTypes("kubernetes"),
+        sdk.WithLLMSlot("primary", llm.SlotRequirements{MinContextWindow: 8000}),
+        sdk.WithExecuteFunc(execute),
+    )
+    if err != nil {
+        log.Fatal(err)
+    }
+    if err := sdk.ServeAgent(a); err != nil {
+        log.Fatal(err)
+    }
+}
+
+func execute(ctx context.Context, h agent.Harness, task agent.Task) (agent.Result, error) {
+    resp, err := h.Complete(ctx, "primary", []llm.Message{
+        {Role: llm.RoleSystem, Content: "You are a Kubernetes expert. Diagnose cluster issues."},
+        {Role: llm.RoleUser, Content: task.Goal},
+    })
+    if err != nil {
+        return agent.Result{Status: agent.StatusFailed, Output: err.Error()}, nil
+    }
+    return agent.Result{Status: agent.StatusSuccess, Output: resp.Content}, nil
 }
 ```
+
+[`examples/minimal-agent`](examples/minimal-agent) is a complete agent that
+also lists tools and records an observation.
 
 Deploy as a Kubernetes workload:
 
@@ -150,103 +139,40 @@ composed of capability groups, declared in [`agent/harness.go`](agent/harness.go
 
 ### LLM Slots
 
-Agents declare abstract LLM requirements that are resolved at runtime:
+An agent names the LLM slots it uses. The `spec.llm_slots` list of the agent
+manifest declares the names. Tenant policy binds each slot to a provider and a
+model, and a mission can pin a binding per slot. The agent calls a slot by its
+name:
 
 ```go
-func (a *MyAgent) LLMSlots() []agent.SlotDefinition {
-    return []agent.SlotDefinition{
-        agent.NewSlotDefinition("primary", "Main reasoning LLM", true).
-            WithConstraints(agent.SlotConstraints{
-                MinContextWindow: 8000,
-            }),
-        agent.NewSlotDefinition("fast", "Quick completions", false).
-            WithConstraints(agent.SlotConstraints{
-                MinContextWindow: 4000,
-            }),
-    }
-}
+resp, err := h.Complete(ctx, "primary", messages)
 ```
-
-**Slot Features:**
-| Feature | Description |
-|---------|-------------|
-| `tool_use` | Function calling support |
-| `vision` | Image analysis capability |
-| `streaming` | Streaming response support |
-| `json_mode` | Structured JSON output |
 
 ## Building an Agent
 
-### 1. Implement the Agent Interface
+### 1. Configure the Agent
+
+`sdk.NewAgent` builds an `agent.Agent` from options. The execute function is
+the agent logic. The Quick Example above shows a complete agent.
 
 ```go
-type MyAgent struct {
-    config Config
-}
-
-// Identity
-func (a *MyAgent) Name() string        { return "my-agent" }
-func (a *MyAgent) Version() string     { return "1.0.0" }
-func (a *MyAgent) Description() string { return "My autonomous agent" }
-
-// Capabilities
-func (a *MyAgent) Capabilities() []string {
-    return []string{"troubleshooting", "analysis"}
-}
-
-// LLM Requirements
-func (a *MyAgent) LLMSlots() []agent.SlotDefinition {
-    return []agent.SlotDefinition{
-        agent.NewSlotDefinition("primary", "Main LLM", true).
-            WithConstraints(agent.SlotConstraints{
-                MinContextWindow: 8000,
-            }),
-    }
-}
-
-// Lifecycle
-func (a *MyAgent) Initialize(ctx context.Context, cfg agent.AgentConfig) error {
-    return nil
-}
-
-func (a *MyAgent) Shutdown(ctx context.Context) error {
-    return nil
-}
-
-func (a *MyAgent) Health(ctx context.Context) types.HealthStatus {
-    return types.HealthStatus{Status: types.HealthStatusHealthy}
-}
-
-// Core Execution
-func (a *MyAgent) Execute(ctx context.Context, task agent.Task, h agent.Harness) (agent.Result, error) {
-    result := agent.NewResult(task.ID)
-    result.Start()
-
-    // Your agent logic here
-    messages := []llm.Message{
-        llm.NewSystemMessage("You are an expert assistant"),
-        llm.NewUserMessage(task.Goal),
-    }
-    resp, err := h.Complete(ctx, "primary", messages)
-    if err != nil {
-        result.Fail(err)
-        return result, err
-    }
-
-    result.Complete(map[string]any{"response": resp.Content})
-    return result, nil
-}
+a, err := sdk.NewAgent(
+    sdk.WithName("my-agent"),
+    sdk.WithVersion("1.0.0"),
+    sdk.WithDescription("My autonomous agent"),
+    sdk.WithTargetTypes("llm_chat"),
+    sdk.WithLLMSlot("primary", llm.SlotRequirements{MinContextWindow: 8000}),
+    sdk.WithExecuteFunc(execute),
+)
 ```
+
+To implement `agent.Agent` yourself, read [`agent/agent.go`](agent/agent.go).
 
 ### 2. Serve the Agent
 
 ```go
-func main() {
-    agent := &myagent.MyAgent{}
-    serve.Agent(agent,
-        serve.WithPort(50051),
-        serve.WithHealthPort(8080),  // K8s probes
-    )
+if err := sdk.ServeAgent(a); err != nil {
+    log.Fatal(err)
 }
 ```
 
@@ -627,20 +553,10 @@ sdk/
 `go list ./...` is the full list. The module has no `memory` package and no
 `result` package.
 
-## gRPC Serving Options
+## gRPC Serving
 
-```go
-serve.Agent(agent,
-    serve.WithPort(50051),
-    serve.WithHealthPort(8080),  // K8s probes: /healthz, /readyz
-    serve.WithTLS(certFile, keyFile),
-    serve.WithLogger(logger),
-)
-
-serve.Tool(tool, serve.WithPort(50052))
-
-serve.Plugin(plugin, serve.WithPort(50053))
-```
+`sdk.ServeAgent(a)` serves an agent, and `serve.Tool(t)` serves a tool. Each
+call returns an error when serving fails.
 
 ## Documentation
 
