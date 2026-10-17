@@ -15,7 +15,6 @@
 // Agent Interface - The main interface all agents must implement:
 //   - Name, Version, Description: Agent metadata
 //   - Capabilities, TargetTypes, TechniqueTypes: Testing capabilities
-//   - LLMSlots: LLM requirements
 //   - Execute: Core task execution logic
 //   - Initialize, Shutdown, Health: Lifecycle management
 //
@@ -92,9 +91,6 @@
 //		AddCapability(agent.CapabilityPromptInjection).
 //		AddTargetType(types.TargetTypeLLMChat).
 //		AddTechniqueType(types.TechniquePromptInjection).
-//		AddLLMSlot("primary", llm.SlotRequirements{
-//			MinContextWindow: 8000,
-//		}).
 //		SetExecuteFunc(func(ctx context.Context, harness agent.Harness, task agent.Task) (agent.Result, error) {
 //			// Agent implementation here
 //			logger := harness.Logger()

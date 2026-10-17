@@ -7,8 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
-	"github.com/zeroroot-ai/sdk/llm"
 )
 
 // Config holds configuration for building an agent using the SDK.
@@ -19,7 +17,6 @@ type Config struct {
 	version     string
 	description string
 	targetTypes []string
-	llmSlots    []llm.SlotDefinition
 	executeFunc ExecuteFunc
 }
 
@@ -31,7 +28,6 @@ type ExecuteFunc func(ctx context.Context, harness Harness, task Task) (Result, 
 func NewConfig() *Config {
 	return &Config{
 		targetTypes: []string{},
-		llmSlots:    []llm.SlotDefinition{},
 	}
 }
 
@@ -59,20 +55,6 @@ func (c *Config) SetDescription(desc string) *Config {
 // SetTargetTypes sets the types of targets the agent can test.
 func (c *Config) SetTargetTypes(types []string) *Config {
 	c.targetTypes = types
-	return c
-}
-
-// AddLLMSlot adds an LLM slot definition to the agent.
-// The name identifies the slot (e.g., "primary", "vision").
-// The requirements specify what capabilities the LLM must have.
-func (c *Config) AddLLMSlot(name string, requirements llm.SlotRequirements) *Config {
-	slot := llm.SlotDefinition{
-		Name:             name,
-		Required:         true,
-		MinContextWindow: requirements.MinContextWindow,
-		PreferredModels:  requirements.PreferredModels,
-	}
-	c.llmSlots = append(c.llmSlots, slot)
 	return c
 }
 
@@ -112,7 +94,6 @@ func New(cfg *Config) (Agent, error) {
 		version:     cfg.version,
 		description: cfg.description,
 		targetTypes: cfg.targetTypes,
-		llmSlots:    cfg.llmSlots,
 		executeFunc: cfg.executeFunc,
 	}, nil
 }
@@ -124,7 +105,6 @@ type sdkAgent struct {
 	version     string
 	description string
 	targetTypes []string
-	llmSlots    []llm.SlotDefinition
 	executeFunc ExecuteFunc
 }
 
@@ -163,13 +143,6 @@ func (a *sdkAgent) TechniqueTypes() []string {
 // Execute performs a task using the configured execute function.
 func (a *sdkAgent) Execute(ctx context.Context, harness Harness, task Task) (Result, error) {
 	return a.executeFunc(ctx, harness, task)
-}
-
-// LLMSlots returns the LLM slots that the agent declared with AddLLMSlot. A
-// caller reaches it through an interface check, because agent.Agent does not
-// list it.
-func (a *sdkAgent) LLMSlots() []llm.SlotDefinition {
-	return a.llmSlots
 }
 
 // Shutdown has nothing to release for an agent built with New.

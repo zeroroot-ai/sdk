@@ -26,12 +26,6 @@ func main() {
 		// Target types are now strings for extensibility
 		sdk.WithTargetTypes("llm_chat"),
 
-		// Configure LLM requirements for the agent
-		// The agent requires an LLM with at least 8000 tokens of context window
-		sdk.WithLLMSlot("main", llm.SlotRequirements{
-			MinContextWindow: 8000,
-		}),
-
 		// Set the core execution function that runs when the agent receives a task
 		sdk.WithExecuteFunc(executeAgent),
 	)
@@ -68,7 +62,7 @@ func executeAgent(ctx context.Context, h agent.Harness, task agent.Task) (agent.
 	fmt.Printf("  Goal: %s\n", task.Goal)
 
 	// Example: Use the LLM through the harness
-	// The harness provides access to the "main" LLM slot we configured earlier
+	// The harness resolves the "main" LLM slot to a provider and a model
 	// In a real agent, you would construct prompts based on the task goal
 	// and analyze the responses for security vulnerabilities
 	maxTokens := 100

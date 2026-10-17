@@ -5,7 +5,6 @@ package sdk
 
 import (
 	"github.com/zeroroot-ai/sdk/agent"
-	"github.com/zeroroot-ai/sdk/llm"
 )
 
 // AgentOption configures an Agent.
@@ -40,20 +39,6 @@ func WithDescription(desc string) AgentOption {
 func WithTargetTypes(targetTypes ...string) AgentOption {
 	return func(c *agent.Config) {
 		c.SetTargetTypes(targetTypes)
-	}
-}
-
-// WithLLMSlot adds an LLM slot requirement to the agent.
-// The framework will provision an LLM that meets these requirements.
-//
-// Example:
-//
-//	WithLLMSlot("primary", llm.SlotRequirements{
-//	    MinContextWindow: 8000,
-//	})
-func WithLLMSlot(name string, requirements llm.SlotRequirements) AgentOption {
-	return func(c *agent.Config) {
-		c.AddLLMSlot(name, requirements)
 	}
 }
 

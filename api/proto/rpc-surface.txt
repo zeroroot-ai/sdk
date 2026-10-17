@@ -11,7 +11,6 @@ gibson.agentidentity.v1.AgentIdentityService/ListAgentIdentities
 gibson.agentidentity.v1.AgentIdentityService/RevokeAgentIdentity
 gibson.agent.v1.AgentService/Execute
 gibson.agent.v1.AgentService/GetDescriptor
-gibson.agent.v1.AgentService/GetSlotSchema
 gibson.agent.v1.AgentService/Health
 gibson.bank.v1.BankService/CreateBank
 gibson.bank.v1.BankService/DeleteBank

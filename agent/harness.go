@@ -214,7 +214,8 @@ type LLMCaller interface {
 	// LLM Access Methods
 	//
 	// These methods provide access to LLM completions through named slots.
-	// Slots are configured based on the agent's LLMSlots() requirements.
+	// A slot is a name. The platform resolves it to one of the tenant's
+	// providers and a model.
 
 	// Complete performs a single LLM completion request.
 	// The slot parameter identifies which LLM to use (e.g., "primary", "vision").
