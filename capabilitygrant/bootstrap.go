@@ -40,8 +40,8 @@ func ResolveBootstrap(explicitToken string) (*BootstrapCredential, error) {
 	}
 
 	// Documented fallback: the GIBSON_BOOTSTRAP_TOKEN environment variable.
-	// This is the contract the process-mode bridge runner relies on (and that
-	// plugin.WithBootstrapToken's doc advertises); honor it before the
+	// This is the contract the process-mode bridge runner relies on, and
+	// serve.DefaultConfig reads the same variable. Honor it before the
 	// in-cluster Kubernetes service-account token.
 	if envToken := strings.TrimSpace(os.Getenv("GIBSON_BOOTSTRAP_TOKEN")); envToken != "" {
 		return &BootstrapCredential{

@@ -1,28 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 Zero Root AI
 
-// Package serve provides functions for serving SDK tools and agents.
-//
-// This package provides gRPC server mode for production deployments:
-//
-// Use Tool() or Agent() to start a gRPC server that handles requests via the SDK protocol.
-//
-// Example:
-//
-//	func main() {
-//	    tool := &MyTool{}
-//	    err := serve.Tool(tool,
-//	        serve.WithPort(50052),
-//	        serve.WithGracefulShutdown(30*time.Second),
-//	    )
-//	    if err != nil {
-//	        log.Fatal(err)
-//	    }
-//	}
-//
-// Schema output is available via the --schema flag:
-//
-//	./tool --schema
 package serve
 
 import (

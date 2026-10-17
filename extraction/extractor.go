@@ -5,8 +5,8 @@
 // responses into standardized GraphRAG DiscoveryResult messages.
 //
 // Tool developers implement the EntityExtractor interface for their tool's
-// response type, then pass it to serve.WithExtractor() so the SDK serve loop
-// auto-populates proto field 100 before publishing results.
+// response type, then set it as serve.Config.Extractor with an Option, so the
+// SDK serve loop auto-populates proto field 100 before publishing results.
 //
 // Example:
 //
@@ -20,7 +20,7 @@
 //	}
 //
 //	// In main.go:
-//	serve.Tool(myTool, serve.WithExtractor(&MyExtractor{}))
+//	serve.Tool(myTool, func(c *serve.Config) { c.Extractor = &MyExtractor{} })
 package extraction
 
 import (

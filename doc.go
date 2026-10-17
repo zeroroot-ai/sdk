@@ -15,7 +15,7 @@
 //   - Agents: AI-powered entities that perform tasks and interact with users
 //   - Tools: Reusable capabilities that agents can invoke to accomplish tasks
 //   - Plugins: Extensions that add new functionality to the framework
-//   - Slots: Requirements that define LLM capabilities needed by agents
+//   - Slots: Names of the LLMs an agent calls, which the platform resolves
 //   - Runtime: The execution environment that manages agent lifecycle and tool execution
 //
 // # Architecture
