@@ -70,12 +70,11 @@
 //
 // # Slot Definitions
 //
-// Slots represent different LLM capabilities needed by a Gibson agent.
-// SlotDefinition specifies requirements like context window size and required features:
+// Slots name the LLMs a Gibson agent uses. Tenant policy binds each slot to a
+// provider and a model. SlotDefinition holds the name and the requirements:
 //
 //	slot := llm.SlotDefinition{
 //	    Name:             "primary",
-//	    Description:      "Main conversational LLM",
 //	    Required:         true,
 //	    MinContextWindow: 32000,
 //	    PreferredModels:  []string{"gpt-4-turbo", "claude-3-opus"},
