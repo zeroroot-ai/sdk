@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.207.0](https://github.com/zeroroot-ai/sdk/compare/v0.206.0...v0.207.0) (2026-10-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* **agent:** llm.SlotDefinition, llm.SlotRequirements, sdk.WithLLMSlot, agent.Config.AddLLMSlot and the AgentService GetSlotSchema RPC are deleted.
+
+### Code Refactoring
+
+* **agent:** delete the LLM slot declaration, which nothing read ([#296](https://github.com/zeroroot-ai/sdk/issues/296)) ([102771e](https://github.com/zeroroot-ai/sdk/commit/102771eb32a33a5cef4b618f20e6b7e359481f73)), closes [#295](https://github.com/zeroroot-ai/sdk/issues/295)
+
 ## [0.206.0](https://github.com/zeroroot-ai/sdk/compare/v0.205.1...v0.206.0) (2026-10-17)
 
 
