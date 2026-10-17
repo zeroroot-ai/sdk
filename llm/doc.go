@@ -70,15 +70,11 @@
 //
 // # Slot Definitions
 //
-// Slots name the LLMs a Gibson agent uses. Tenant policy binds each slot to a
-// provider and a model. SlotDefinition holds the name and the requirements:
+// Slots name the LLMs a Gibson agent uses. A slot is a name. The platform
+// resolves it to one of the tenant's providers and a model. A call names its
+// slot:
 //
-//	slot := llm.SlotDefinition{
-//	    Name:             "primary",
-//	    Required:         true,
-//	    MinContextWindow: 32000,
-//	    PreferredModels:  []string{"gpt-4-turbo", "claude-3-opus"},
-//	}
+//	resp, err := h.Complete(ctx, "primary", messages)
 //
 // # Token Tracking
 //

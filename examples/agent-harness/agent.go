@@ -40,7 +40,7 @@ import (
 const (
 	agentName    = "agent-harness"
 	agentVersion = "1.0.0"
-	// llmSlot is the one LLM slot the agent declares and uses.
+	// llmSlot is the one LLM slot the agent uses.
 	llmSlot = "main"
 )
 
@@ -84,11 +84,6 @@ func recordErr(r *Report, call string, err error) {
 	r.add(Step{Call: call, Err: err})
 }
 
-// slotDeclarer is implemented by the agent that sdk.NewAgent builds.
-type slotDeclarer interface {
-	LLMSlots() []llm.SlotDefinition
-}
-
 // New builds the agent with the options of the sdk.
 func New() (agent.Agent, error) {
 	a, err := sdk.NewAgent(
@@ -96,32 +91,12 @@ func New() (agent.Agent, error) {
 		sdk.WithVersion(agentVersion),
 		sdk.WithDescription("Calls each method of agent.Harness once"),
 		sdk.WithTargetTypes("llm_chat"),
-		sdk.WithLLMSlot(llmSlot, llm.SlotRequirements{
-			MinContextWindow: 8000,
-			PreferredModels:  []string{"claude"},
-		}),
 		sdk.WithExecuteFunc(execute),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("build the agent: %w", err)
 	}
 	return a, nil
-}
-
-// SlotSummary names the LLM slots that the agent declares and what each needs.
-// The agent calls it at start, so a slot that execute uses is declared.
-func SlotSummary(a agent.Agent) []string {
-	d, ok := a.(slotDeclarer)
-	if !ok {
-		return nil
-	}
-	var out []string
-	for _, s := range d.LLMSlots() {
-		out = append(out, fmt.Sprintf("%s required=%t window=%d models=%s",
-			s.Name, s.Required, s.MinContextWindow,
-			strings.Join(s.PreferredModels, ",")))
-	}
-	return out
 }
 
 // execute calls each method of agent.Harness. It is the same code for each

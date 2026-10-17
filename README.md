@@ -59,7 +59,6 @@ func main() {
         sdk.WithVersion("1.0.0"),
         sdk.WithDescription("Troubleshoots Kubernetes cluster issues"),
         sdk.WithTargetTypes("kubernetes"),
-        sdk.WithLLMSlot("primary", llm.SlotRequirements{MinContextWindow: 8000}),
         sdk.WithExecuteFunc(execute),
     )
     if err != nil {
@@ -139,10 +138,10 @@ composed of capability groups, declared in [`agent/harness.go`](agent/harness.go
 
 ### LLM Slots
 
-An agent names the LLM slots it uses. The `spec.llm_slots` list of the agent
-manifest declares the names. Tenant policy binds each slot to a provider and a
-model, and a mission can pin a binding per slot. The agent calls a slot by its
-name:
+An agent calls an LLM through a named slot. A slot is a name. The platform
+resolves it to one of the tenant's providers and a model. It uses the tenant
+default provider and model when that model meets the context floor of the
+slot:
 
 ```go
 resp, err := h.Complete(ctx, "primary", messages)
@@ -161,7 +160,6 @@ a, err := sdk.NewAgent(
     sdk.WithVersion("1.0.0"),
     sdk.WithDescription("My autonomous agent"),
     sdk.WithTargetTypes("llm_chat"),
-    sdk.WithLLMSlot("primary", llm.SlotRequirements{MinContextWindow: 8000}),
     sdk.WithExecuteFunc(execute),
 )
 ```

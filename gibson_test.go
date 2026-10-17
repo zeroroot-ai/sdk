@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/zeroroot-ai/sdk/agent"
-	"github.com/zeroroot-ai/sdk/llm"
 )
 
 func TestNewAgent(t *testing.T) {
@@ -21,7 +20,6 @@ func TestNewAgent(t *testing.T) {
 		WithVersion("1.2.3"),
 		WithDescription("finds things"),
 		WithTargetTypes("http", "dns"),
-		WithLLMSlot("primary", llm.SlotRequirements{MinContextWindow: 8000}),
 		WithExecuteFunc(exec),
 	)
 	if err != nil {

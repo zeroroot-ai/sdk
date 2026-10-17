@@ -59,7 +59,6 @@ func run(ctx context.Context, getenv func(string) string) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("slots: %v", SlotSummary(a))
 
 	endpoint := getenv(envCallbackEndpoint)
 	if endpoint == "" {

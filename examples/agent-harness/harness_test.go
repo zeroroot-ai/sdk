@@ -63,11 +63,9 @@ func value[T any](t *testing.T, rep *Report, call string) T {
 	return v
 }
 
-func TestSlotsAreDeclared(t *testing.T) {
+func TestShutdown(t *testing.T) {
 	a, err := New()
 	require.NoError(t, err)
-	require.Equal(t, []string{"main required=true window=8000 models=claude"}, SlotSummary(a))
-	require.Nil(t, SlotSummary(plainAgent{}))
 	require.NoError(t, Shutdown(context.Background(), a))
 	require.NoError(t, Shutdown(context.Background(), plainAgent{}))
 }

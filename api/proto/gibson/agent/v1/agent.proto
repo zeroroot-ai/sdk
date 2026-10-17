@@ -19,14 +19,6 @@ service AgentService {
         allowed_identities: 4  // COMPONENT
       };
     }
-    rpc GetSlotSchema(GetSlotSchemaRequest) returns (GetSlotSchemaResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "member"
-        object_type: "tenant"
-        object_deriver: "tenant_from_identity"
-        allowed_identities: 4  // COMPONENT
-      };
-    }
     rpc Execute(ExecuteRequest) returns (ExecuteResponse) {
       option (gibson.auth.v1.authz) = {
         relation: "member"
@@ -63,33 +55,6 @@ message GetDescriptorResponse {
     repeated string technique_types = 6;
     // Deprecated: v0.8.0. Use target_schemas (field 5) instead. Will be removed in v0.10.0.
     repeated string target_types = 7 [deprecated = true];
-}
-
-message AgentSlotDefinition {
-    string name = 1;
-    string description = 2;
-    bool required = 3;
-    AgentSlotConfig default_config = 4;
-    AgentSlotConstraints constraints = 5;
-}
-
-message AgentSlotConfig {
-    string provider = 1;
-    string model = 2;
-    double temperature = 3;
-    int32 max_tokens = 4;
-}
-
-message AgentSlotConstraints {
-    int32 min_context_window = 1;
-    // required_features was never enforced and was deleted (sdk#291).
-    reserved 2;
-    reserved "required_features";
-}
-
-message GetSlotSchemaRequest {}
-message GetSlotSchemaResponse {
-    repeated AgentSlotDefinition slots = 1;
 }
 
 message ExecuteRequest {

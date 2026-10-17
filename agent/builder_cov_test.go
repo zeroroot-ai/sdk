@@ -8,8 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"testing"
-
-	"github.com/zeroroot-ai/sdk/llm"
 )
 
 func TestNewBuildsAnAgent(t *testing.T) {
@@ -19,7 +17,6 @@ func TestNewBuildsAnAgent(t *testing.T) {
 		SetVersion("v").
 		SetDescription("d").
 		SetTargetTypes([]string{"http"}).
-		AddLLMSlot("primary", llm.SlotRequirements{MinContextWindow: 1}).
 		SetExecuteFunc(func(context.Context, Harness, Task) (Result, error) {
 			called = true
 			return Result{Status: StatusSuccess}, nil

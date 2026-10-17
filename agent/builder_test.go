@@ -5,8 +5,6 @@ package agent
 
 import (
 	"testing"
-
-	"github.com/zeroroot-ai/sdk/llm"
 )
 
 func TestConfig_SetTargetTypes(t *testing.T) {
@@ -15,33 +13,6 @@ func TestConfig_SetTargetTypes(t *testing.T) {
 
 	if len(cfg.targetTypes) != 2 {
 		t.Errorf("len(targetTypes) = %d, want 2", len(cfg.targetTypes))
-	}
-}
-
-func TestConfig_AddLLMSlot(t *testing.T) {
-	requirements := llm.SlotRequirements{
-		MinContextWindow: 8000,
-		PreferredModels:  []string{"gpt-4"},
-	}
-
-	cfg := NewConfig().AddLLMSlot("primary", requirements)
-
-	if len(cfg.llmSlots) != 1 {
-		t.Fatalf("len(llmSlots) = %d, want 1", len(cfg.llmSlots))
-	}
-
-	slot := cfg.llmSlots[0]
-	if slot.Name != "primary" {
-		t.Errorf("slot.Name = %s, want primary", slot.Name)
-	}
-	if !slot.Required {
-		t.Error("slot.Required should be true")
-	}
-	if slot.MinContextWindow != 8000 {
-		t.Errorf("slot.MinContextWindow = %d, want 8000", slot.MinContextWindow)
-	}
-	if len(slot.PreferredModels) != 1 {
-		t.Errorf("len(slot.PreferredModels) = %d, want 1", len(slot.PreferredModels))
 	}
 }
 

@@ -20,7 +20,6 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	AgentService_GetDescriptor_FullMethodName = "/gibson.agent.v1.AgentService/GetDescriptor"
-	AgentService_GetSlotSchema_FullMethodName = "/gibson.agent.v1.AgentService/GetSlotSchema"
 	AgentService_Execute_FullMethodName       = "/gibson.agent.v1.AgentService/Execute"
 	AgentService_Health_FullMethodName        = "/gibson.agent.v1.AgentService/Health"
 )
@@ -30,7 +29,6 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AgentServiceClient interface {
 	GetDescriptor(ctx context.Context, in *GetDescriptorRequest, opts ...grpc.CallOption) (*GetDescriptorResponse, error)
-	GetSlotSchema(ctx context.Context, in *GetSlotSchemaRequest, opts ...grpc.CallOption) (*GetSlotSchemaResponse, error)
 	Execute(ctx context.Context, in *ExecuteRequest, opts ...grpc.CallOption) (*ExecuteResponse, error)
 	Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error)
 }
@@ -47,16 +45,6 @@ func (c *agentServiceClient) GetDescriptor(ctx context.Context, in *GetDescripto
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetDescriptorResponse)
 	err := c.cc.Invoke(ctx, AgentService_GetDescriptor_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *agentServiceClient) GetSlotSchema(ctx context.Context, in *GetSlotSchemaRequest, opts ...grpc.CallOption) (*GetSlotSchemaResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetSlotSchemaResponse)
-	err := c.cc.Invoke(ctx, AgentService_GetSlotSchema_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +76,6 @@ func (c *agentServiceClient) Health(ctx context.Context, in *HealthRequest, opts
 // for forward compatibility.
 type AgentServiceServer interface {
 	GetDescriptor(context.Context, *GetDescriptorRequest) (*GetDescriptorResponse, error)
-	GetSlotSchema(context.Context, *GetSlotSchemaRequest) (*GetSlotSchemaResponse, error)
 	Execute(context.Context, *ExecuteRequest) (*ExecuteResponse, error)
 	Health(context.Context, *HealthRequest) (*HealthResponse, error)
 	mustEmbedUnimplementedAgentServiceServer()
@@ -103,9 +90,6 @@ type UnimplementedAgentServiceServer struct{}
 
 func (UnimplementedAgentServiceServer) GetDescriptor(context.Context, *GetDescriptorRequest) (*GetDescriptorResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDescriptor not implemented")
-}
-func (UnimplementedAgentServiceServer) GetSlotSchema(context.Context, *GetSlotSchemaRequest) (*GetSlotSchemaResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetSlotSchema not implemented")
 }
 func (UnimplementedAgentServiceServer) Execute(context.Context, *ExecuteRequest) (*ExecuteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Execute not implemented")
@@ -148,24 +132,6 @@ func _AgentService_GetDescriptor_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AgentServiceServer).GetDescriptor(ctx, req.(*GetDescriptorRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AgentService_GetSlotSchema_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetSlotSchemaRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AgentServiceServer).GetSlotSchema(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AgentService_GetSlotSchema_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentServiceServer).GetSlotSchema(ctx, req.(*GetSlotSchemaRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -216,10 +182,6 @@ var AgentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetDescriptor",
 			Handler:    _AgentService_GetDescriptor_Handler,
-		},
-		{
-			MethodName: "GetSlotSchema",
-			Handler:    _AgentService_GetSlotSchema_Handler,
 		},
 		{
 			MethodName: "Execute",
