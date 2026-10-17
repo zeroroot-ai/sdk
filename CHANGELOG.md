@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.206.0](https://github.com/zeroroot-ai/sdk/compare/v0.205.1...v0.206.0) (2026-10-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* **agent:** llm.SlotDefinition.RequiredFeatures, llm.SlotRequirements.RequiredFeatures and AgentSlotConstraints.required_features are deleted (D77).
+
+### Bug Fixes
+
+* **ci:** the unwired baseline gate runs in the merge queue too ([#288](https://github.com/zeroroot-ai/sdk/issues/288)) ([e342ff6](https://github.com/zeroroot-ai/sdk/commit/e342ff62c15503821bfebaa0c1019956ee9e7c58))
+
+
+### Code Refactoring
+
+* **agent:** delete required_features, which nothing enforced ([#292](https://github.com/zeroroot-ai/sdk/issues/292)) ([1253de2](https://github.com/zeroroot-ai/sdk/commit/1253de2db043d81a0f0b3744a38075b611b18638)), closes [#291](https://github.com/zeroroot-ai/sdk/issues/291)
+
 ## [0.205.1](https://github.com/zeroroot-ai/sdk/compare/v0.205.0...v0.205.1) (2026-10-13)
 
 
