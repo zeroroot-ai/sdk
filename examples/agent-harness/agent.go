@@ -98,7 +98,6 @@ func New() (agent.Agent, error) {
 		sdk.WithTargetTypes("llm_chat"),
 		sdk.WithLLMSlot(llmSlot, llm.SlotRequirements{
 			MinContextWindow: 8000,
-			RequiredFeatures: []string{"tools"},
 			PreferredModels:  []string{"claude"},
 		}),
 		sdk.WithExecuteFunc(execute),
@@ -118,9 +117,9 @@ func SlotSummary(a agent.Agent) []string {
 	}
 	var out []string
 	for _, s := range d.LLMSlots() {
-		out = append(out, fmt.Sprintf("%s required=%t window=%d features=%s models=%s",
+		out = append(out, fmt.Sprintf("%s required=%t window=%d models=%s",
 			s.Name, s.Required, s.MinContextWindow,
-			strings.Join(s.RequiredFeatures, ","), strings.Join(s.PreferredModels, ",")))
+			strings.Join(s.PreferredModels, ",")))
 	}
 	return out
 }

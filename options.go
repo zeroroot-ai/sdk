@@ -50,7 +50,6 @@ func WithTargetTypes(targetTypes ...string) AgentOption {
 //
 //	WithLLMSlot("primary", llm.SlotRequirements{
 //	    MinContextWindow: 8000,
-//	    RequiredFeatures: []string{"function_calling"},
 //	})
 func WithLLMSlot(name string, requirements llm.SlotRequirements) AgentOption {
 	return func(c *agent.Config) {

@@ -82,7 +82,9 @@ message AgentSlotConfig {
 
 message AgentSlotConstraints {
     int32 min_context_window = 1;
-    repeated string required_features = 2;
+    // required_features was never enforced and was deleted (sdk#291).
+    reserved 2;
+    reserved "required_features";
 }
 
 message GetSlotSchemaRequest {}

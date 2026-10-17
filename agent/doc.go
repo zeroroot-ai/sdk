@@ -94,7 +94,6 @@
 //		AddTechniqueType(types.TechniquePromptInjection).
 //		AddLLMSlot("primary", llm.SlotRequirements{
 //			MinContextWindow: 8000,
-//			RequiredFeatures: []string{"function_calling"},
 //		}).
 //		SetExecuteFunc(func(ctx context.Context, harness agent.Harness, task agent.Task) (agent.Result, error) {
 //			// Agent implementation here

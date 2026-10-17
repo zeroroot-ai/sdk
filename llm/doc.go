@@ -78,7 +78,6 @@
 //	    Description:      "Main conversational LLM",
 //	    Required:         true,
 //	    MinContextWindow: 32000,
-//	    RequiredFeatures: []string{"function_calling", "streaming"},
 //	    PreferredModels:  []string{"gpt-4-turbo", "claude-3-opus"},
 //	}
 //

@@ -15,10 +15,6 @@ type SlotDefinition struct {
 	// MinContextWindow specifies the minimum context window size (in tokens) required.
 	MinContextWindow int
 
-	// RequiredFeatures lists capabilities that the LLM must support.
-	// Examples: "vision", "function_calling", "json_mode", "streaming"
-	RequiredFeatures []string
-
 	// PreferredModels lists model identifiers that are preferred for this slot.
 	// This is a hint to the deployment system, not a strict requirement.
 	// Examples: "gpt-4-turbo", "claude-3-opus", "llama-3-70b"
@@ -30,10 +26,6 @@ type SlotDefinition struct {
 type SlotRequirements struct {
 	// MinContextWindow specifies the minimum context window size (in tokens) required.
 	MinContextWindow int
-
-	// RequiredFeatures lists capabilities that the LLM must support.
-	// Examples: "vision", "function_calling", "json_mode", "streaming"
-	RequiredFeatures []string
 
 	// PreferredModels lists model identifiers that are preferred.
 	// The deployment system will try to use these models if available.
