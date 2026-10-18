@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.207.1](https://github.com/zeroroot-ai/sdk/compare/v0.207.0...v0.207.1) (2026-10-18)
+
+
+### Bug Fixes
+
+* **schema:** keep FromType finite on a self-referential type ([#303](https://github.com/zeroroot-ai/sdk/issues/303)) ([afcaae7](https://github.com/zeroroot-ai/sdk/commit/afcaae7944cd67e800dbdba6e761d6505a2794e5))
+* **serve:** send a JSON Schema from PlatformHarness.CompleteStructured ([#301](https://github.com/zeroroot-ai/sdk/issues/301)) ([989f746](https://github.com/zeroroot-ai/sdk/commit/989f74659f110a5a81e0fc6c49129df7dfee9327))
+
 ## [0.207.0](https://github.com/zeroroot-ai/sdk/compare/v0.206.0...v0.207.0) (2026-10-17)
 
 
