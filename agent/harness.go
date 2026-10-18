@@ -237,6 +237,8 @@ type LLMCaller interface {
 	// For OpenAI: uses response_format with json_schema
 	// The prompt should be natural language - no JSON instructions needed.
 	// The schema parameter should be an instance of the struct type (e.g., MyStruct{}).
+	// The harness derives the JSON Schema from that type, so a ready-made
+	// schema (a map or a schema.JSON value) is not passed through.
 	// It returns the decoded JSON value, not the struct: a map[string]any for
 	// a struct schema. To get the struct, marshal the value and unmarshal it
 	// into the struct type.

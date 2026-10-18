@@ -62,7 +62,7 @@ func TestPlatformHarness_CompleteStructured_SendsAJSONSchema(t *testing.T) {
 }
 
 // sdk#299: the result is the decoded JSON value, a map for an object schema,
-// not a pointer to the caller's struct.
+// not a pointer to the caller's struct. CompleteStructuredAny is the same call.
 func TestPlatformHarness_CompleteStructured_ReturnsTheDecodedJSON(t *testing.T) {
 	srv := &structuredServer{}
 	harness, cleanup := setupParityTestWith(t, func(s *grpc.Server) {
@@ -70,7 +70,7 @@ func TestPlatformHarness_CompleteStructured_ReturnsTheDecodedJSON(t *testing.T) 
 	})
 	defer cleanup()
 
-	got, err := harness.CompleteStructured(context.Background(), "primary",
+	got, err := harness.CompleteStructuredAny(context.Background(), "primary",
 		[]llm.Message{{Role: llm.RoleUser, Content: "judge it"}}, structuredVerdict{})
 	require.NoError(t, err)
 
@@ -107,9 +107,9 @@ func TestCallbackHarness_CompleteStructured_ReturnsTheDecodedJSON(t *testing.T) 
 	)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		conn.Close()
+		_ = conn.Close()
 		srv.Stop()
-		lis.Close()
+		_ = lis.Close()
 	})
 	h := &CallbackHarness{
 		client: &CallbackClient{
