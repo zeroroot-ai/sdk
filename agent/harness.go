@@ -236,8 +236,10 @@ type LLMCaller interface {
 	// For Anthropic: uses tool_use pattern (schema becomes a tool definition)
 	// For OpenAI: uses response_format with json_schema
 	// The prompt should be natural language - no JSON instructions needed.
-	// Returns a pointer to the populated struct or an error.
 	// The schema parameter should be an instance of the struct type (e.g., MyStruct{}).
+	// It returns the decoded JSON value, not the struct: a map[string]any for
+	// a struct schema. To get the struct, marshal the value and unmarshal it
+	// into the struct type.
 	CompleteStructured(ctx context.Context, slot string, messages []llm.Message, schema any) (any, error)
 
 	// CompleteStructuredAny is an alias for CompleteStructured for compatibility.

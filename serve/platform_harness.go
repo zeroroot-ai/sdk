@@ -27,6 +27,7 @@ import (
 	"github.com/zeroroot-ai/sdk/mission"
 	"github.com/zeroroot-ai/sdk/planning"
 	"github.com/zeroroot-ai/sdk/plugin"
+	"github.com/zeroroot-ai/sdk/schema"
 	"github.com/zeroroot-ai/sdk/tool"
 	"github.com/zeroroot-ai/sdk/types"
 )
@@ -285,9 +286,11 @@ func (h *PlatformHarness) Stream(ctx context.Context, slot string, messages []ll
 }
 
 // CompleteStructured performs a completion requesting structured JSON output.
-// schema is marshaled to a JSON Schema string which the platform forwards to
-// the LLM. The returned JSON string is unmarshaled back to an any value.
-func (h *PlatformHarness) CompleteStructured(ctx context.Context, slot string, messages []llm.Message, schema any) (any, error) {
+// schemaType is an instance of the caller's struct. Its JSON Schema, from
+// schema.FromType as CallbackHarness builds it, goes to the platform as
+// schema_json (sdk#300). The returned JSON is decoded into an any value: a
+// map[string]any for an object schema.
+func (h *PlatformHarness) CompleteStructured(ctx context.Context, slot string, messages []llm.Message, schemaType any) (any, error) {
 	ctx, span := h.tracer.Start(ctx, "gen_ai.chat.structured",
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
@@ -297,7 +300,7 @@ func (h *PlatformHarness) CompleteStructured(ctx context.Context, slot string, m
 	)
 	defer span.End()
 
-	schemaJSON, err := json.Marshal(schema)
+	schemaJSON, err := json.Marshal(schema.FromType(schemaType))
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "failed to marshal schema")
@@ -327,8 +330,8 @@ func (h *PlatformHarness) CompleteStructured(ctx context.Context, slot string, m
 }
 
 // CompleteStructuredAny is an alias for CompleteStructured.
-func (h *PlatformHarness) CompleteStructuredAny(ctx context.Context, slot string, messages []llm.Message, schema any) (any, error) {
-	return h.CompleteStructured(ctx, slot, messages, schema)
+func (h *PlatformHarness) CompleteStructuredAny(ctx context.Context, slot string, messages []llm.Message, schemaType any) (any, error) {
+	return h.CompleteStructured(ctx, slot, messages, schemaType)
 }
 
 // ============================================================================
