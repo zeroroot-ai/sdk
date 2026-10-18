@@ -33,14 +33,17 @@ func FromType(t any) JSON {
 	}
 
 	rt := reflect.TypeOf(t)
-	return fromReflectType(rt)
+	return fromReflectType(rt, map[reflect.Type]bool{})
 }
 
 // fromReflectType generates a JSON schema from a reflect.Type
-func fromReflectType(t reflect.Type) JSON {
+// onPath holds the struct types between the root and t. A struct type that is
+// already on the path is a cycle: it becomes a bare object, so the schema of a
+// self-referential type stays finite (sdk#302).
+func fromReflectType(t reflect.Type, onPath map[reflect.Type]bool) JSON {
 	// Handle pointer types
 	if t.Kind() == reflect.Ptr {
-		return fromReflectType(t.Elem())
+		return fromReflectType(t.Elem(), onPath)
 	}
 
 	// Special handling for time.Time
@@ -53,9 +56,14 @@ func fromReflectType(t reflect.Type) JSON {
 
 	switch t.Kind() {
 	case reflect.Struct:
-		return fromStruct(t)
+		if onPath[t] {
+			return JSON{Type: "object"}
+		}
+		onPath[t] = true
+		defer delete(onPath, t)
+		return fromStruct(t, onPath)
 	case reflect.Slice, reflect.Array:
-		itemSchema := fromReflectType(t.Elem())
+		itemSchema := fromReflectType(t.Elem(), onPath)
 		return JSON{
 			Type:  "array",
 			Items: &itemSchema,
@@ -84,7 +92,7 @@ func fromReflectType(t reflect.Type) JSON {
 }
 
 // fromStruct generates a JSON schema from a struct type
-func fromStruct(t reflect.Type) JSON {
+func fromStruct(t reflect.Type, onPath map[reflect.Type]bool) JSON {
 	properties := make(map[string]JSON)
 	var required []string
 
@@ -119,7 +127,7 @@ func fromStruct(t reflect.Type) JSON {
 		}
 
 		// Generate schema for the field type
-		fieldSchema := fromReflectType(field.Type)
+		fieldSchema := fromReflectType(field.Type, onPath)
 
 		// Add description from doc tag if present
 		if desc := field.Tag.Get("description"); desc != "" {
