@@ -55,3 +55,40 @@ func TestFromType_RepeatedTypeIsNotACycle(t *testing.T) {
 		}
 	}
 }
+
+type mutualA struct {
+	B *mutualB `json:"b"`
+}
+
+type mutualB struct {
+	A []mutualA `json:"a"`
+}
+
+type selfSlice []selfSlice
+
+type selfPtr *selfPtr
+
+type holdsSelfPtr struct {
+	P selfPtr `json:"p"`
+}
+
+// A mutual cycle (A to B to A) stops at the second A.
+func TestFromType_MutualCycleStaysFinite(t *testing.T) {
+	got := FromType(mutualA{})
+	a := got.Properties["b"].Properties["a"]
+	if a.Type != "array" || a.Items == nil || a.Items.Type != "object" || a.Items.Properties != nil {
+		t.Fatalf("b.a = %+v, want an array of bare objects", a)
+	}
+}
+
+// Named slice and pointer types can refer to themselves too.
+func TestFromType_SelfReferentialSliceAndPointerStayFinite(t *testing.T) {
+	s := FromType(selfSlice{})
+	if s.Type != "array" || s.Items == nil || s.Items.Type != "array" || s.Items.Items != nil {
+		t.Fatalf("selfSlice = %+v, want an array of bare arrays", s)
+	}
+	p := FromType(holdsSelfPtr{})
+	if p.Properties["p"].Type != "" {
+		t.Fatalf("p = %+v, want the empty schema at the cycle", p.Properties["p"])
+	}
+}

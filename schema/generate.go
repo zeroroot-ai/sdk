@@ -27,6 +27,10 @@ import (
 //   - `json:"name"`: uses the JSON tag name for the property
 //   - `json:"-"`: skips the field
 //   - `json:"name,omitempty"`: field is optional (not in required list)
+//
+// A self-referential type stops where it refers back to itself: a bare object
+// for a struct, a bare array for a slice or an array, the empty schema for a
+// pointer. A provider in a strict schema mode can reject a bare object.
 func FromType(t any) JSON {
 	if t == nil {
 		return JSON{}
@@ -36,11 +40,24 @@ func FromType(t any) JSON {
 	return fromReflectType(rt, map[reflect.Type]bool{})
 }
 
-// fromReflectType generates a JSON schema from a reflect.Type
-// onPath holds the struct types between the root and t. A struct type that is
-// already on the path is a cycle: it becomes a bare object, so the schema of a
-// self-referential type stays finite (sdk#302).
+// fromReflectType generates a JSON schema from a reflect.Type.
+//
+// onPath holds the named types between the root and t. Only a named type can
+// refer to itself, so a named struct, pointer, slice or array type that is
+// already on the path is a cycle. It becomes a bare schema of its kind, so the
+// schema of a self-referential type stays finite (sdk#302).
 func fromReflectType(t reflect.Type, onPath map[reflect.Type]bool) JSON {
+	switch t.Kind() {
+	case reflect.Struct, reflect.Ptr, reflect.Slice, reflect.Array:
+		if t.Name() != "" {
+			if onPath[t] {
+				return cycleSchema(t)
+			}
+			onPath[t] = true
+			defer delete(onPath, t)
+		}
+	}
+
 	// Handle pointer types
 	if t.Kind() == reflect.Ptr {
 		return fromReflectType(t.Elem(), onPath)
@@ -56,11 +73,6 @@ func fromReflectType(t reflect.Type, onPath map[reflect.Type]bool) JSON {
 
 	switch t.Kind() {
 	case reflect.Struct:
-		if onPath[t] {
-			return JSON{Type: "object"}
-		}
-		onPath[t] = true
-		defer delete(onPath, t)
 		return fromStruct(t, onPath)
 	case reflect.Slice, reflect.Array:
 		itemSchema := fromReflectType(t.Elem(), onPath)
@@ -92,6 +104,20 @@ func fromReflectType(t reflect.Type, onPath map[reflect.Type]bool) JSON {
 }
 
 // fromStruct generates a JSON schema from a struct type
+// cycleSchema is the schema at the point where a named type refers back to
+// itself: a bare object for a struct, a bare array for a slice or an array,
+// and the empty schema (any value) for a pointer type.
+func cycleSchema(t reflect.Type) JSON {
+	switch t.Kind() {
+	case reflect.Struct:
+		return JSON{Type: "object"}
+	case reflect.Slice, reflect.Array:
+		return JSON{Type: "array"}
+	default:
+		return JSON{}
+	}
+}
+
 func fromStruct(t reflect.Type, onPath map[reflect.Type]bool) JSON {
 	properties := make(map[string]JSON)
 	var required []string
