@@ -30,7 +30,7 @@ import (
 //
 // A self-referential type stops where it refers back to itself: a bare object
 // for a struct, a bare array for a slice or an array, the empty schema for a
-// pointer. A provider in a strict schema mode can reject a bare object.
+// pointer. A provider in a strict schema mode can reject any of these three.
 func FromType(t any) JSON {
 	if t == nil {
 		return JSON{}
@@ -47,15 +47,12 @@ func FromType(t any) JSON {
 // already on the path is a cycle. It becomes a bare schema of its kind, so the
 // schema of a self-referential type stays finite (sdk#302).
 func fromReflectType(t reflect.Type, onPath map[reflect.Type]bool) JSON {
-	switch t.Kind() {
-	case reflect.Struct, reflect.Ptr, reflect.Slice, reflect.Array:
-		if t.Name() != "" {
-			if onPath[t] {
-				return cycleSchema(t)
-			}
-			onPath[t] = true
-			defer delete(onPath, t)
+	if canRecur(t) {
+		if onPath[t] {
+			return cycleSchema(t)
 		}
+		onPath[t] = true
+		defer delete(onPath, t)
 	}
 
 	// Handle pointer types
@@ -103,21 +100,31 @@ func fromReflectType(t reflect.Type, onPath map[reflect.Type]bool) JSON {
 	}
 }
 
-// fromStruct generates a JSON schema from a struct type
+// canRecur reports whether t is a named struct, pointer, slice or array type,
+// the kinds whose schema descends into another type and so can loop.
+func canRecur(t reflect.Type) bool {
+	if t.Name() == "" {
+		return false
+	}
+	k := t.Kind()
+	return k == reflect.Struct || k == reflect.Pointer || k == reflect.Slice || k == reflect.Array
+}
+
 // cycleSchema is the schema at the point where a named type refers back to
 // itself: a bare object for a struct, a bare array for a slice or an array,
 // and the empty schema (any value) for a pointer type.
 func cycleSchema(t reflect.Type) JSON {
-	switch t.Kind() {
-	case reflect.Struct:
+	k := t.Kind()
+	if k == reflect.Struct {
 		return JSON{Type: "object"}
-	case reflect.Slice, reflect.Array:
-		return JSON{Type: "array"}
-	default:
-		return JSON{}
 	}
+	if k == reflect.Slice || k == reflect.Array {
+		return JSON{Type: "array"}
+	}
+	return JSON{}
 }
 
+// fromStruct generates a JSON schema from a struct type
 func fromStruct(t reflect.Type, onPath map[reflect.Type]bool) JSON {
 	properties := make(map[string]JSON)
 	var required []string
