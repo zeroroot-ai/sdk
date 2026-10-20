@@ -6,6 +6,7 @@ package serve
 import (
 	"context"
 	"crypto/tls"
+	"encoding/base64"
 	"net"
 	"strings"
 	"testing"
@@ -410,4 +411,63 @@ func TestCallbackClientApplyClaimReplacesLaunchIdentity(t *testing.T) {
 	info = client.contextInfo()
 	assert.Equal(t, "task-fork", info.GetTaskId(), "the parent task came back")
 	assert.Equal(t, "run-fork", info.GetMissionRunId())
+}
+
+// grantWithRun builds an unsigned token whose payload names the run. The
+// client only reads the claim, and the daemon verifies the grant.
+func grantWithRun(run string) string {
+	enc := base64.RawURLEncoding.EncodeToString
+	return enc([]byte(`{"alg":"EdDSA"}`)) + "." + enc([]byte(`{"tenant":"acme","mrid":"`+run+`"}`)) + "." + enc([]byte("sig"))
+}
+
+// The grant names the mission run, so a client built with it sends the run
+// with no environment variable and no task context.
+func TestCallbackClientReadsTheRunFromTheGrant(t *testing.T) {
+	t.Setenv(EnvMissionRunID, "")
+	client, err := NewCallbackClient("localhost:50051", WithCallbackToken(grantWithRun("run-grant")))
+	require.NoError(t, err)
+	assert.Equal(t, "run-grant", client.contextInfo().GetMissionRunId())
+	client.SetFullContext(TaskContextParams{})
+	assert.Equal(t, "run-grant", client.contextInfo().GetMissionRunId())
+
+	// The environment of the launch wins over the grant.
+	t.Setenv(EnvMissionRunID, "run-env")
+	client, err = NewCallbackClient("localhost:50051", WithCallbackToken(grantWithRun("run-grant")))
+	require.NoError(t, err)
+	assert.Equal(t, "run-env", client.contextInfo().GetMissionRunId())
+}
+
+// A fork claim whose grant names the run sends that run, even when the claim
+// has no run of its own.
+func TestCallbackClientApplyClaimReadsTheRunFromItsGrant(t *testing.T) {
+	t.Setenv(EnvMissionRunID, "run-parent")
+	client, err := NewCallbackClient("localhost:50051")
+	require.NoError(t, err)
+	require.NoError(t, client.ApplyClaim(&fork.Claim{Grant: grantWithRun("run-fork")}))
+	assert.Equal(t, "run-fork", client.contextInfo().GetMissionRunId())
+}
+
+// A claim that names one run while its grant names another is refused, and the
+// client keeps what it had.
+func TestCallbackClientApplyClaimRefusesTwoRuns(t *testing.T) {
+	t.Setenv(EnvMissionRunID, "run-parent")
+	client, err := NewCallbackClient("localhost:50051")
+	require.NoError(t, err)
+	err = client.ApplyClaim(&fork.Claim{Grant: grantWithRun("run-a"), MissionRunID: "run-b"})
+	require.Error(t, err)
+	assert.Equal(t, "run-parent", client.contextInfo().GetMissionRunId())
+}
+
+// A launch that names one run while the grant names another is refused when the
+// client connects.
+func TestCallbackClientConnectRefusesTwoRuns(t *testing.T) {
+	t.Setenv(EnvMissionRunID, "run-env")
+	client, err := NewCallbackClient("localhost:50051", WithCallbackToken(grantWithRun("run-grant")))
+	require.NoError(t, err)
+	require.Error(t, client.Connect(context.Background()))
+
+	t.Setenv(EnvMissionRunID, "run-grant")
+	client, err = NewCallbackClient("localhost:50051", WithCallbackToken(grantWithRun("run-grant")))
+	require.NoError(t, err)
+	assert.Equal(t, "run-grant", client.contextInfo().GetMissionRunId())
 }
