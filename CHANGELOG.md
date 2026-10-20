@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.208.0](https://github.com/zeroroot-ai/sdk/compare/v0.207.1...v0.208.0) (2026-10-20)
+
+
+### Features
+
+* **daemon:** reserve the checkpoint fields of the pause and resume responses ([#315](https://github.com/zeroroot-ai/sdk/issues/315)) ([31ed11d](https://github.com/zeroroot-ai/sdk/commit/31ed11d07c6d248818fc03d12e39fbc53f77b2c3))
+
+
+### Bug Fixes
+
+* **rework:** remove stale schedule text ([5980784](https://github.com/zeroroot-ai/sdk/commit/5980784b24886e4d4581e6d24fbc1575341b4937))
+* **rework:** remove stale schedule text from buf-push and docs-spec-sync ([#311](https://github.com/zeroroot-ai/sdk/issues/311)) ([5980784](https://github.com/zeroroot-ai/sdk/commit/5980784b24886e4d4581e6d24fbc1575341b4937))
+* **rework:** send mission_run_id on every callback ([#313](https://github.com/zeroroot-ai/sdk/issues/313)) ([0bc9be6](https://github.com/zeroroot-ai/sdk/commit/0bc9be6a5e8b2203e941424f3322c70f7d0835c6)), closes [#309](https://github.com/zeroroot-ai/sdk/issues/309)
+* **rework:** send the launch task and run IDs on every callback ([#314](https://github.com/zeroroot-ai/sdk/issues/314)) ([95a89c6](https://github.com/zeroroot-ai/sdk/commit/95a89c62bf5d7bcf5b391f362ee67a26e445fcf1))
+
 ## [0.207.1](https://github.com/zeroroot-ai/sdk/compare/v0.207.0...v0.207.1) (2026-10-18)
 
 
