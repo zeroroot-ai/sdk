@@ -5,14 +5,12 @@ name: CodeQL
 # loads the custom queries of actions/codeql-queries. This file sets the
 # triggers, the languages, the build and the ignored paths only.
 #
-# The triggers are push to main and a weekly scan. An upload from a
+# The triggers are push to main and workflow_dispatch. An upload from a
 # merge_group run goes to a temporary ref, so it does not retire an alert on
 # main.
 on:
   push:
     branches: [main]
-  schedule:
-    - cron: "0 8 * * 2"
   workflow_dispatch:
 
 permissions:

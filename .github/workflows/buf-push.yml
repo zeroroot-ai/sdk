@@ -5,25 +5,23 @@ name: buf-push
 # `buf push` reads — the old buf.build/zeroroot-ai-platform/sdk module is
 # deprecated).
 #
-# Three trigger surfaces:
+# Two trigger surfaces:
 #  - push of a `v*` tag (created by release-please when its release PR is
 #    merged) — `--git-metadata` picks up the tag and labels the BSR commit
 #    with that version.
 #  - workflow_dispatch — lets a maintainer push the current main with a
 #    custom label (e.g. `manual-bootstrap`) to seed BSR ahead of the next
 #    tagged release, or backfill a label at an older tag with `--ref`.
-#  - schedule (weekly) — credential health check only, no push. See below.
 #
 # `BUF_TOKEN` is provisioned per-repo and authenticates a buf.build user
 # that holds publish permission on the `zeroroot-ai` BSR org.
 #
-# Why the weekly check (sdk#459): BSR tokens expire. When the last one did,
+# Why the credential check (sdk#459): BSR tokens expire. When the last one did,
 # the only surface that used it was this tag-triggered workflow, so the
 # breakage stayed invisible until a release day — and then stayed broken
-# through nine more releases. The scheduled run exercises the credential
-# against buf.build every week, so an expired token files the tracked issue
-# on a quiet Monday instead of silently dropping a release from the
-# registry.
+# through nine more releases. No schedule triggers this workflow (owner order
+# 2026-10-19). A person runs it with workflow_dispatch to exercise the
+# credential against buf.build before a release.
 
 on:
   # No on.push.tags: the tag event is unreliable (dropped for v0.183.1),
@@ -35,9 +33,6 @@ on:
         description: 'BSR label for a NON-tag (bootstrap) push; ignored on a tag ref, where the tag is the version'
         required: false
         default: 'manual-bootstrap'
-  schedule:
-    # Mondays 07:19 UTC. Credential check only — the push steps are skipped.
-    - cron: '19 7 * * 1'
 
 permissions:
   contents: read
@@ -65,7 +60,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Runs on every trigger, including the weekly schedule. `buf push`
+      # Runs on every trigger. `buf push`
       # reports an invalid token the same way, but only when a release is
       # already going out; this step is what turns a dead credential into an
       # alert of its own, and it names the failure plainly in the log.
@@ -89,8 +84,7 @@ jobs:
       # Tag ref (release-please dispatches this workflow at the release tag):
       # --git-metadata reads the checked-out tag and labels the BSR commit
       # with that version. This is the release publish. Gated to
-      # workflow_dispatch so the weekly `schedule` run stays a credential
-      # check only and never pushes.
+      # workflow_dispatch.
       - name: Push to BSR (tag = version)
         if: github.event_name == 'workflow_dispatch' && github.ref_type == 'tag'
         env:
@@ -127,7 +121,7 @@ jobs:
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           BODY="## buf-push failed\n\n"
           BODY="${BODY}Run: ${RUN_URL}\nRef: \`${{ github.ref }}\`\nEvent: \`${{ github.event_name }}\`\n\n"
-          BODY="${BODY}On a \`schedule\` event this is the weekly credential check: no release was lost yet, but the next one will be unless \`BUF_TOKEN\` is rotated first.\n\n"
+          BODY="${BODY}"
           BODY="${BODY}The BSR module \`buf.build/zeroroot-ai/sdk\` did NOT receive this push. "
           BODY="${BODY}Every consumer generating from BSR (or pinning a version label) is now behind the release tags until this is fixed.\n\n"
           BODY="${BODY}Most likely cause: expired/invalid \`BUF_TOKEN\` repo secret (see sdk#459 for the diagnosis and rotation steps). "
