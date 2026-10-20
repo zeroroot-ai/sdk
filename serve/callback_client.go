@@ -56,6 +56,11 @@ type CallbackClient struct {
 	launchMissionRunID string
 	launchTaskID       string
 
+	// envMissionRunID and grantMissionRunID are the two sources of the launch
+	// run. Connect refuses a client whose two sources name different runs.
+	envMissionRunID   string
+	grantMissionRunID string
+
 	// Connection lifecycle
 	connected bool
 	closed    bool
@@ -79,6 +84,7 @@ func NewCallbackClient(endpoint string, opts ...CallbackClientOption) (*Callback
 
 	client := &CallbackClient{
 		endpoint:           endpoint,
+		envMissionRunID:    os.Getenv(EnvMissionRunID),
 		launchMissionRunID: os.Getenv(EnvMissionRunID),
 		launchTaskID:       os.Getenv(EnvTaskID),
 	}
@@ -109,9 +115,10 @@ func WithCallbackToken(token string) CallbackClientOption {
 		c.token = token
 		// The grant names the mission run. It is the launch run when the
 		// launch gave none in the environment.
-		if run := capabilitygrant.MissionRunOf(token); run != "" && c.launchMissionRunID == "" {
-			c.launchMissionRunID = run
-			c.missionRunID = run
+		c.grantMissionRunID = capabilitygrant.MissionRunOf(token)
+		if c.grantMissionRunID != "" && c.launchMissionRunID == "" {
+			c.launchMissionRunID = c.grantMissionRunID
+			c.missionRunID = c.grantMissionRunID
 		}
 	}
 }
@@ -143,6 +150,9 @@ func (c *CallbackClient) Connect(ctx context.Context) error {
 
 	if c.closed {
 		return errors.New("client is closed")
+	}
+	if c.envMissionRunID != "" && c.grantMissionRunID != "" && c.envMissionRunID != c.grantMissionRunID {
+		return fmt.Errorf("the launch names run %q and the grant names run %q", c.envMissionRunID, c.grantMissionRunID)
 	}
 
 	// Check if already connected AND connection is actually healthy
@@ -1230,12 +1240,16 @@ func (c *CallbackClient) ApplyClaim(claim *fork.Claim) error {
 	if c.perRPCCreds != nil {
 		return errors.New("ApplyClaim: the client sends per-RPC credentials, which cannot carry the grant of the fork")
 	}
+	grantRun := capabilitygrant.MissionRunOf(claim.Grant)
+	if claim.MissionRunID != "" && grantRun != "" && claim.MissionRunID != grantRun {
+		return fmt.Errorf("ApplyClaim: the claim names run %q and its grant names run %q", claim.MissionRunID, grantRun)
+	}
 	c.token = claim.Grant
 	c.missionID = claim.MissionID
 	// The fork is a new process identity. Its task replaces the task of the
 	// launch, or clears it when the claim names none. The inherited task
 	// belongs to the parent and must not come back through a later context.
-	c.launchMissionRunID = firstNonEmpty(claim.MissionRunID, capabilitygrant.MissionRunOf(claim.Grant), c.launchMissionRunID)
+	c.launchMissionRunID = firstNonEmpty(claim.MissionRunID, grantRun, c.launchMissionRunID)
 	c.launchTaskID = ""
 	if claim.Task != nil {
 		c.launchTaskID = claim.Task.GetId()

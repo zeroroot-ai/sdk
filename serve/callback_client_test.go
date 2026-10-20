@@ -446,3 +446,28 @@ func TestCallbackClientApplyClaimReadsTheRunFromItsGrant(t *testing.T) {
 	require.NoError(t, client.ApplyClaim(&fork.Claim{Grant: grantWithRun("run-fork")}))
 	assert.Equal(t, "run-fork", client.contextInfo().GetMissionRunId())
 }
+
+// A claim that names one run while its grant names another is refused, and the
+// client keeps what it had.
+func TestCallbackClientApplyClaimRefusesTwoRuns(t *testing.T) {
+	t.Setenv(EnvMissionRunID, "run-parent")
+	client, err := NewCallbackClient("localhost:50051")
+	require.NoError(t, err)
+	err = client.ApplyClaim(&fork.Claim{Grant: grantWithRun("run-a"), MissionRunID: "run-b"})
+	require.Error(t, err)
+	assert.Equal(t, "run-parent", client.contextInfo().GetMissionRunId())
+}
+
+// A launch that names one run while the grant names another is refused when the
+// client connects.
+func TestCallbackClientConnectRefusesTwoRuns(t *testing.T) {
+	t.Setenv(EnvMissionRunID, "run-env")
+	client, err := NewCallbackClient("localhost:50051", WithCallbackToken(grantWithRun("run-grant")))
+	require.NoError(t, err)
+	require.Error(t, client.Connect(context.Background()))
+
+	t.Setenv(EnvMissionRunID, "run-grant")
+	client, err = NewCallbackClient("localhost:50051", WithCallbackToken(grantWithRun("run-grant")))
+	require.NoError(t, err)
+	assert.Equal(t, "run-grant", client.contextInfo().GetMissionRunId())
+}
