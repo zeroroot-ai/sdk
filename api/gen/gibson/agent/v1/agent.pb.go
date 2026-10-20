@@ -259,7 +259,10 @@ type ExecuteRequest struct {
 	// Used for mission-scoped GraphRAG storage.
 	MissionRunId string `protobuf:"bytes,9,opt,name=mission_run_id,json=missionRunId,proto3" json:"mission_run_id,omitempty"`
 	// Agent run ID - unique identifier for this specific agent execution.
-	// Used for DISCOVERED relationships and provenance tracking.
+	// Used for DISCOVERED relationships and provenance tracking. It is the
+	// agent run of the caller, as a work queue dispatch sets it. A delegation
+	// through ComponentService.DelegateToAgent leaves it empty, because the
+	// delegated agent starts a new run.
 	AgentRunId string `protobuf:"bytes,10,opt,name=agent_run_id,json=agentRunId,proto3" json:"agent_run_id,omitempty"`
 	// Run number - sequential number for this mission (1, 2, 3...).
 	// Used for mission memory queries and historical comparisons.

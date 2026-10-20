@@ -79,7 +79,10 @@ message ExecuteRequest {
     // Used for mission-scoped GraphRAG storage.
     string mission_run_id = 9 [(buf.validate.field).string = { max_len: 1024 }];
     // Agent run ID - unique identifier for this specific agent execution.
-    // Used for DISCOVERED relationships and provenance tracking.
+    // Used for DISCOVERED relationships and provenance tracking. It is the
+    // agent run of the caller, as a work queue dispatch sets it. A delegation
+    // through ComponentService.DelegateToAgent leaves it empty, because the
+    // delegated agent starts a new run.
     string agent_run_id = 10 [(buf.validate.field).string = { max_len: 1024 }];
     // Run number - sequential number for this mission (1, 2, 3...).
     // Used for mission memory queries and historical comparisons.
