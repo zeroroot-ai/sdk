@@ -49,6 +49,12 @@ type CallbackClient struct {
 	runNumber       int32  // Sequential run number (1, 2, 3...)
 	toolExecutionID string // ID for tool execution provenance
 
+	// Launch identity: the run and the task that the daemon gave the process
+	// at launch. A context that names none falls back to these, never to the
+	// value of an earlier task.
+	launchMissionRunID string
+	launchTaskID       string
+
 	// Connection lifecycle
 	connected bool
 	closed    bool
@@ -58,6 +64,11 @@ type CallbackClient struct {
 // mission run of the agent. A new callback client sends it on every callback.
 const EnvMissionRunID = "GIBSON_MISSION_RUN_ID"
 
+// EnvTaskID names the environment variable that the daemon sets to the task of
+// the agent. A new callback client sends it on every callback, so the daemon
+// can tell the instances of a for_each fan-out of one agent apart.
+const EnvTaskID = "GIBSON_TASK_ID"
+
 // NewCallbackClient creates a new callback client with the given endpoint.
 // The client is not connected until Connect() is called.
 func NewCallbackClient(endpoint string, opts ...CallbackClientOption) (*CallbackClient, error) {
@@ -66,9 +77,12 @@ func NewCallbackClient(endpoint string, opts ...CallbackClientOption) (*Callback
 	}
 
 	client := &CallbackClient{
-		endpoint:     endpoint,
-		missionRunID: os.Getenv(EnvMissionRunID),
+		endpoint:           endpoint,
+		launchMissionRunID: os.Getenv(EnvMissionRunID),
+		launchTaskID:       os.Getenv(EnvTaskID),
 	}
+	client.missionRunID = client.launchMissionRunID
+	client.taskID = client.launchTaskID
 
 	// Apply options
 	for _, opt := range opts {
@@ -215,14 +229,12 @@ func (c *CallbackClient) SetFullContext(params TaskContextParams) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.taskID = params.TaskID
+	c.taskID = firstNonEmpty(params.TaskID, c.launchTaskID)
 	c.agentName = params.AgentName
 	c.missionID = params.MissionID
 	c.traceID = params.TraceID
 	c.spanID = params.SpanID
-	if params.MissionRunID != "" {
-		c.missionRunID = params.MissionRunID
-	}
+	c.missionRunID = firstNonEmpty(params.MissionRunID, c.launchMissionRunID)
 	c.agentRunID = params.AgentRunID
 	c.runNumber = params.RunNumber
 	c.toolExecutionID = params.ToolExecutionID
@@ -1213,10 +1225,24 @@ func (c *CallbackClient) ApplyClaim(claim *fork.Claim) error {
 	}
 	c.token = claim.Grant
 	c.missionID = claim.MissionID
-	c.missionRunID = claim.MissionRunID
-	c.agentRunID = claim.AgentRunID
+	// The fork is a new process identity. Its task replaces the task of the
+	// launch, or clears it when the claim names none. The inherited task
+	// belongs to the parent and must not come back through a later context.
+	c.launchMissionRunID = firstNonEmpty(claim.MissionRunID, c.launchMissionRunID)
+	c.launchTaskID = ""
 	if claim.Task != nil {
-		c.taskID = claim.Task.GetId()
+		c.launchTaskID = claim.Task.GetId()
 	}
+	c.missionRunID = c.launchMissionRunID
+	c.agentRunID = claim.AgentRunID
+	c.taskID = c.launchTaskID
 	return nil
+}
+
+// firstNonEmpty returns v, or fallback when v is empty.
+func firstNonEmpty(v, fallback string) string {
+	if v != "" {
+		return v
+	}
+	return fallback
 }
