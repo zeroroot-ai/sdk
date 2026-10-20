@@ -5,13 +5,18 @@ name: buf-push
 # `buf push` reads — the old buf.build/zeroroot-ai-platform/sdk module is
 # deprecated).
 #
-# Two trigger surfaces:
-#  - push of a `v*` tag (created by release-please when its release PR is
-#    merged) — `--git-metadata` picks up the tag and labels the BSR commit
-#    with that version.
-#  - workflow_dispatch — lets a maintainer push the current main with a
-#    custom label (e.g. `manual-bootstrap`) to seed BSR ahead of the next
-#    tagged release, or backfill a label at an older tag with `--ref`.
+# One trigger, workflow_dispatch, with two uses:
+#  - release-please.yml dispatches it at the release tag it cut —
+#    `--git-metadata` picks up the tag and labels the BSR commit with that
+#    version.
+#  - a maintainer dispatches it to push the current main with a custom
+#    label (e.g. `manual-bootstrap`) to seed BSR ahead of the next tagged
+#    release, or to backfill a label at an older tag with `--ref`.
+#
+# WARNING: a dispatch run on a branch (a ref that is not a tag) pushes the
+# `manual-bootstrap` label, or the `label` input, to the BSR module. That
+# label is public on buf.build/zeroroot-ai/sdk. Dispatch on a branch only
+# when you mean to seed the BSR.
 #
 # `BUF_TOKEN` is provisioned per-repo and authenticates a buf.build user
 # that holds publish permission on the `zeroroot-ai` BSR org.
@@ -121,7 +126,6 @@ jobs:
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           BODY="## buf-push failed\n\n"
           BODY="${BODY}Run: ${RUN_URL}\nRef: \`${{ github.ref }}\`\nEvent: \`${{ github.event_name }}\`\n\n"
-          BODY="${BODY}"
           BODY="${BODY}The BSR module \`buf.build/zeroroot-ai/sdk\` did NOT receive this push. "
           BODY="${BODY}Every consumer generating from BSR (or pinning a version label) is now behind the release tags until this is fixed.\n\n"
           BODY="${BODY}Most likely cause: expired/invalid \`BUF_TOKEN\` repo secret (see sdk#459 for the diagnosis and rotation steps). "
