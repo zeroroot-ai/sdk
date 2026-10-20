@@ -912,32 +912,10 @@ message ResumeMissionResponse {
   // result contains typed operation metrics (for mission.completed events)
   OperationResult result = 8;
 
-  // checkpoint_metadata is not set by the daemon. A resume continues the
-  // same run, so a resume stream has no source checkpoint. A run that
-  // starts at a checkpoint is a new run from RewindMission, and it records
-  // the checkpoint in parent_checkpoint_id (ADR-0170).
-  CheckpointMetadata checkpoint_metadata = 9;
-}
-
-// CheckpointMetadata is the summary of a source checkpoint on a
-// ResumeMission response. The daemon does not send it today: see
-// ResumeMissionResponse.checkpoint_metadata. The checkpoints of a run are listed by
-// GetMissionCheckpoints (ADR-0170).
-message CheckpointMetadata {
-  // checkpoint_id is the identifier of the source checkpoint.
-  string checkpoint_id = 1;
-  // saved_at_unix_seconds is when the checkpoint was captured (Unix epoch seconds).
-  int64 saved_at_unix_seconds = 2;
-  // super_step_number identifies which super-step boundary this checkpoint
-  // captured (1-based; 0 if not super-step-aligned).
-  int32 super_step_number = 3;
-  // cadence_reason is a free-form classifier for why the checkpoint was
-  // taken. Recognized values per R9.1: "super_step",
-  // "parallel_group_complete", "approval_required", "graceful_shutdown".
-  // Promoted to enum at v1.0.0.
-  string cadence_reason = 4;
-  // size_bytes is the wire size of the checkpoint payload (advisory).
-  int64 size_bytes = 5;
+  // Field 9 was checkpoint_metadata. A resume continues the same run, so it
+  // has no source checkpoint (ADR-0170).
+  reserved 9;
+  reserved "checkpoint_metadata";
 }
 
 // StopMissionRequest requests mission termination.
@@ -1065,10 +1043,11 @@ message PauseMissionResponse {
   // success indicates if the pause request was accepted
   bool success = 1;
 
-  // checkpoint_id is empty. A pause does not make a checkpoint: a
+  // Field 2 was checkpoint_id. A pause does not make a checkpoint: a
   // checkpoint is the end of a node in a run (ADR-0170). Use
   // GetMissionCheckpoints to list the checkpoints of a run.
-  string checkpoint_id = 2;
+  reserved 2;
+  reserved "checkpoint_id";
 
   // message provides additional context about the pause operation
   string message = 3;
