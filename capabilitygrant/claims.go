@@ -59,6 +59,12 @@ type Claims struct {
 	// detection are per-task.
 	TaskID string
 
+	// MissionRunID is the mission run the grant serves, the signed claim
+	// "mrid". A mission ID is the same for every run of a record, so a
+	// callback names its run. Empty for a grant minted before the claim
+	// existed.
+	MissionRunID string
+
 	// AllowedRPCs is the set of fully-qualified gRPC method names the
 	// holder of this CG-JWT may invoke without further FGA evaluation.
 	// Method names use the slash-prefixed format
@@ -96,6 +102,9 @@ func (c Claims) AllowsMethod(method string) bool {
 func (c Claims) IsExpired(now time.Time) bool {
 	return now.After(c.ExpiresAt)
 }
+
+// MissionRunClaim is the name of the signed claim that carries the mission run.
+const MissionRunClaim = "mrid"
 
 // MaxLifetime is the upper bound enforced by the daemon's mint code
 // per Requirement 5.2. Verifiers also enforce it: a CG-JWT whose

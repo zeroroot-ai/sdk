@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	harnesspb "github.com/zeroroot-ai/sdk/api/gen/gibson/harness/v1"
+	"github.com/zeroroot-ai/sdk/capabilitygrant"
 	"github.com/zeroroot-ai/sdk/fork"
 )
 
@@ -106,6 +107,12 @@ func WithCallbackTLS(conf *tls.Config) CallbackClientOption {
 func WithCallbackToken(token string) CallbackClientOption {
 	return func(c *CallbackClient) {
 		c.token = token
+		// The grant names the mission run. It is the launch run when the
+		// launch gave none in the environment.
+		if run := capabilitygrant.MissionRunOf(token); run != "" && c.launchMissionRunID == "" {
+			c.launchMissionRunID = run
+			c.missionRunID = run
+		}
 	}
 }
 
@@ -1228,7 +1235,7 @@ func (c *CallbackClient) ApplyClaim(claim *fork.Claim) error {
 	// The fork is a new process identity. Its task replaces the task of the
 	// launch, or clears it when the claim names none. The inherited task
 	// belongs to the parent and must not come back through a later context.
-	c.launchMissionRunID = firstNonEmpty(claim.MissionRunID, c.launchMissionRunID)
+	c.launchMissionRunID = firstNonEmpty(claim.MissionRunID, capabilitygrant.MissionRunOf(claim.Grant), c.launchMissionRunID)
 	c.launchTaskID = ""
 	if claim.Task != nil {
 		c.launchTaskID = claim.Task.GetId()
@@ -1240,9 +1247,11 @@ func (c *CallbackClient) ApplyClaim(claim *fork.Claim) error {
 }
 
 // firstNonEmpty returns v, or fallback when v is empty.
-func firstNonEmpty(v, fallback string) string {
-	if v != "" {
-		return v
+func firstNonEmpty(values ...string) string {
+	for _, v := range values {
+		if v != "" {
+			return v
+		}
 	}
-	return fallback
+	return ""
 }

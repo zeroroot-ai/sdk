@@ -178,6 +178,7 @@ func claimsFromMap(mc jwt.MapClaims) (Claims, error) {
 
 	c.MissionID = stringClaim(mc, "mission_id")
 	c.TaskID = stringClaim(mc, "task_id")
+	c.MissionRunID = stringClaim(mc, MissionRunClaim)
 
 	if rawAllowed, ok := mc["allowed_rpcs"].([]any); ok {
 		c.AllowedRPCs = make([]string, 0, len(rawAllowed))
