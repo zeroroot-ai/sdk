@@ -18,13 +18,15 @@ value="${2-}"
 case "$kind" in
   tag)
     if [[ ! "$value" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-      echo "::error::fan-out tag '$value' is not a release tag (vMAJOR.MINOR.PATCH)"
+      # The value is untrusted. It stays out of the message, because a newline
+      # in it would start another workflow command.
+      echo "::error::the fan-out tag is not a release tag (vMAJOR.MINOR.PATCH)"
       exit 1
     fi
     ;;
   slug)
     if [[ ! "$value" =~ ^[a-uw-z][a-z0-9-]*$ ]] || [[ "$value" == *-v* ]]; then
-      echo "::error::branch_slug '$value' must match ^[a-uw-z][a-z0-9-]*\$ and hold no '-v'"
+      echo "::error::the branch_slug must match ^[a-uw-z][a-z0-9-]*\$ and hold no '-v'"
       exit 1
     fi
     ;;

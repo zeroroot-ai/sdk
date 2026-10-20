@@ -51,6 +51,20 @@ expect 1 slug 'a/../b'
 expect 1 slug 'a;id'
 expect 1 slug '-a'
 
+echo "--- required red: an untrusted value does not reach the output ---"
+# A newline in the value must not start a second workflow command, and the value
+# must not be echoed at all.
+for kind in tag slug; do
+  out="$(bash "$CHECK" "$kind" $'v1\n::set-output name=x::y' 2>&1)"
+  lines="$(printf '%s\n' "$out" | grep -c '^::error::')"
+  total="$(printf '%s\n' "$out" | wc -l)"
+  if [ "$lines" = 1 ] && [ "$total" = 1 ] && ! printf '%s' "$out" | grep -q 'set-output'; then
+    echo "ok   $kind: one ::error:: line and the value left out"; pass=$((pass + 1))
+  else
+    echo "FAIL $kind: output was: $out"; fail=$((fail + 1))
+  fi
+done
+
 echo "--- required red: usage ---"
 expect 2 other v0.1.0
 
