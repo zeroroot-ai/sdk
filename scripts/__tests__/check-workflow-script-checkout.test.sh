@@ -37,6 +37,44 @@ jobs:
       - run: bash scripts/x.sh
 Y
 )"
+expect 0 "a sparse checkout that covers the script" "$(case_dir sparse <<'Y'
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: scripts/x.sh
+          sparse-checkout-cone-mode: false
+      - run: bash scripts/x.sh
+Y
+)"
+expect 0 "this repo, then another repo, with the script copied out first" "$(case_dir copied <<'Y'
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - run: cp scripts/x.sh "${RUNNER_TEMP}/x.sh"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: zeroroot-ai/other
+      - run: bash "${RUNNER_TEMP}/x.sh"
+Y
+)"
+expect 0 "another repo into a path leaves this repo in place" "$(case_dir pathed <<'Y'
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: zeroroot-ai/other
+          path: other
+      - run: bash scripts/x.sh
+Y
+)"
 expect 0 "a job that runs no script of the repo" "$(case_dir noscript <<'Y'
 jobs:
   a:
@@ -73,6 +111,40 @@ jobs:
     steps:
       - run: bash scripts/x.sh
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+Y
+)"
+expect 1 "only a checkout of another repo before bash scripts/" "$(case_dir other <<'Y'
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: zeroroot-ai/other
+      - run: bash scripts/x.sh
+Y
+)"
+expect 1 "this repo, then another repo, then ./scripts/" "$(case_dir replaced <<'Y'
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: zeroroot-ai/${{ matrix.consumer }}
+      - run: ./scripts/x.sh
+Y
+)"
+expect 1 "a sparse checkout that does not cover the script" "$(case_dir sparsemiss <<'Y'
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: scripts/y.sh
+      - run: bash scripts/x.sh
 Y
 )"
 expect 1 "one job is fine and a second job has no checkout" "$(case_dir second <<'Y'
