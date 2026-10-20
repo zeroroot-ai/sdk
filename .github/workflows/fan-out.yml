@@ -127,6 +127,28 @@ jobs:
           - consumer: gibson-executor
             mod_dir: ""
             regen_authz: "false"
+          # Go modules that sit beside the root module of their repo and pin the
+          # sdk on their own: a branch_slug keeps the branch and the PR of each
+          # module apart from the root bump of the same repo.
+          - consumer: gibson
+            mod_dir: plugins/github
+            regen_authz: "false"
+            branch_slug: plugins-github
+          - consumer: gibson
+            mod_dir: plugins/gitlab
+            regen_authz: "false"
+            branch_slug: plugins-gitlab
+          - consumer: cve-triage
+            mod_dir: ""
+            regen_authz: "false"
+          - consumer: sdk
+            mod_dir: examples/minimal-agent
+            regen_authz: "false"
+            branch_slug: examples-minimal-agent
+          - consumer: sdk
+            mod_dir: examples/custom-tool
+            regen_authz: "false"
+            branch_slug: examples-custom-tool
     steps:
       # ------------------------------------------------------------------
       # Step 0a: mint a minimal App token scoped to just the consumer repo.
@@ -244,8 +266,26 @@ jobs:
           git config user.name "zeroday-sdk-fanout[bot]"
           git config user.email "zeroday-sdk-fanout[bot]@users.noreply.github.com"
 
+      # The branch of a module that sits beside the root module of its repo
+      # carries the slug of the module, so two shards of one repo never push
+      # the same branch or close the PR of each other.
+      - name: Resolve branch
+        id: branch
+        env:
+          TAG: ${{ needs.resolve-tag.outputs.tag }}
+          SLUG: ${{ matrix.branch_slug }}
+        run: |
+          set -euo pipefail
+          if [ -n "${SLUG}" ]; then
+            echo "name=chore/bump-sdk-${SLUG}-${TAG}" >> "$GITHUB_OUTPUT"
+            echo "prefix=chore/bump-sdk-${SLUG}-v" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=chore/bump-sdk-${TAG}" >> "$GITHUB_OUTPUT"
+            echo "prefix=chore/bump-sdk-v" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Create branch
-        run: git checkout -b chore/bump-sdk-${{ needs.resolve-tag.outputs.tag }}
+        run: git checkout -b ${{ steps.branch.outputs.name }}
 
       - name: Bump SDK
         working-directory: ${{ steps.paths.outputs.work_dir }}
@@ -301,10 +341,12 @@ jobs:
         run: |
           set -uo pipefail
           # Push branch if not already on remote (idempotent across re-runs).
-          if git ls-remote --exit-code origin chore/bump-sdk-${{ needs.resolve-tag.outputs.tag }} >/dev/null 2>&1; then
+          BRANCH="${{ steps.branch.outputs.name }}"
+          PREFIX="${{ steps.branch.outputs.prefix }}"
+          if git ls-remote --exit-code origin "${BRANCH}" >/dev/null 2>&1; then
             echo "Branch already exists upstream; skipping push"
           else
-            git push -u origin chore/bump-sdk-${{ needs.resolve-tag.outputs.tag }} || {
+            git push -u origin "${BRANCH}" || {
               echo "::error::failed to push branch"
               exit 1
             }
@@ -318,6 +360,7 @@ jobs:
           PR_BODY="Automated SDK bump from \`zeroroot-ai/sdk@${TAG}\`. Auto-merge enabled — will land if CI passes."
           gh pr create \
             --title "chore(deps): bump sdk to ${TAG}" \
+            --head "${BRANCH}" \
             --body "$PR_BODY" \
             -R "zeroroot-ai/${CONSUMER}" || \
             echo "::notice::gh pr create returned non-zero (likely PR already exists); continuing"
@@ -327,7 +370,7 @@ jobs:
           # $TAG those go CONFLICTING and never merge, accumulating indefinitely.
           # Close them so only the newest bump is ever open.
           gh pr list -R "zeroroot-ai/${CONSUMER}" --state open --json number,headRefName \
-            --jq '.[] | select(.headRefName | startswith("chore/bump-sdk-")) | select(.headRefName != "chore/bump-sdk-'"${TAG}"'") | .number' \
+            --jq '.[] | select(.headRefName | startswith("'"${PREFIX}"'")) | select(.headRefName != "'"${BRANCH}"'") | .number' \
             | while read -r old; do
                 [ -z "$old" ] && continue
                 echo "Closing superseded bump PR #${old} in ${CONSUMER}"
@@ -340,7 +383,7 @@ jobs:
           # ::warning) so a broken arm — repo "Allow auto-merge" disabled, or the
           # fanout App lacking pull-request write — is visible in the run and the
           # downstream summary, not silently leaving a PR to pile up (sdk#301).
-          if ! gh pr merge --auto --squash -R "zeroroot-ai/${CONSUMER}" "chore/bump-sdk-${TAG}"; then
+          if ! gh pr merge --auto --squash -R "zeroroot-ai/${CONSUMER}" "${BRANCH}"; then
             echo "::error::Auto-merge could not be armed for ${CONSUMER} bump to ${TAG}. Check the repo's 'Allow auto-merge' setting and the fanout App's Pull requests: write permission. PR is open awaiting human merge."
           fi
 
