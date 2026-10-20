@@ -1225,12 +1225,17 @@ func (c *CallbackClient) ApplyClaim(claim *fork.Claim) error {
 	}
 	c.token = claim.Grant
 	c.missionID = claim.MissionID
-	c.missionRunID = firstNonEmpty(claim.MissionRunID, c.launchMissionRunID)
+	// The fork is a new process identity. Its task replaces the task of the
+	// launch, or clears it when the claim names none. The inherited task
+	// belongs to the parent and must not come back through a later context.
+	c.launchMissionRunID = firstNonEmpty(claim.MissionRunID, c.launchMissionRunID)
+	c.launchTaskID = ""
+	if claim.Task != nil {
+		c.launchTaskID = claim.Task.GetId()
+	}
+	c.missionRunID = c.launchMissionRunID
 	c.agentRunID = claim.AgentRunID
 	c.taskID = c.launchTaskID
-	if claim.Task != nil {
-		c.taskID = firstNonEmpty(claim.Task.GetId(), c.launchTaskID)
-	}
 	return nil
 }
 
