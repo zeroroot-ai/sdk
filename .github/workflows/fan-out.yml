@@ -67,10 +67,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DISPATCH_TAG: ${{ inputs.tag }}
+          REF: ${{ github.ref }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            tag="${{ github.ref_name }}"
+          if [[ "${REF}" == refs/tags/* ]]; then
+            tag="${REF_NAME}"
           elif [ -n "$DISPATCH_TAG" ]; then
             tag="$DISPATCH_TAG"
           else
@@ -80,6 +82,9 @@ jobs:
               exit 1
             fi
           fi
+          # The tag names a branch and an argument of go get. Only a release
+          # tag passes (scripts/fanout-validate.sh).
+          bash scripts/fanout-validate.sh tag "$tag"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "Resolved fan-out tag: $tag"
 
@@ -276,7 +281,9 @@ jobs:
           SLUG: ${{ matrix.branch_slug }}
         run: |
           set -euo pipefail
+          bash scripts/fanout-validate.sh tag "${TAG}"
           if [ -n "${SLUG}" ]; then
+            bash scripts/fanout-validate.sh slug "${SLUG}"
             echo "name=chore/bump-sdk-${SLUG}-${TAG}" >> "$GITHUB_OUTPUT"
             echo "prefix=chore/bump-sdk-${SLUG}-v" >> "$GITHUB_OUTPUT"
           else
@@ -285,7 +292,9 @@ jobs:
           fi
 
       - name: Create branch
-        run: git checkout -b ${{ steps.branch.outputs.name }}
+        env:
+          BRANCH: ${{ steps.branch.outputs.name }}
+        run: git checkout -b "${BRANCH}"
 
       - name: Bump SDK
         working-directory: ${{ steps.paths.outputs.work_dir }}
@@ -338,11 +347,11 @@ jobs:
         if: steps.commit.outputs.no_change != 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          BRANCH: ${{ steps.branch.outputs.name }}
+          PREFIX: ${{ steps.branch.outputs.prefix }}
         run: |
           set -uo pipefail
           # Push branch if not already on remote (idempotent across re-runs).
-          BRANCH="${{ steps.branch.outputs.name }}"
-          PREFIX="${{ steps.branch.outputs.prefix }}"
           if git ls-remote --exit-code origin "${BRANCH}" >/dev/null 2>&1; then
             echo "Branch already exists upstream; skipping push"
           else

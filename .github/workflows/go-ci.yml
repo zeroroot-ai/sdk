@@ -305,6 +305,9 @@ jobs:
       - name: Mutation-test the fan-out failure-visibility check
         run: bash scripts/__tests__/check-fanout-failure-visible.test.sh
 
+      - name: Test the validation of the fan-out inputs
+        run: bash scripts/__tests__/fanout-validate.test.sh
+
       - name: A failed fan-out shard can still redden the run
         run: bash scripts/check-fanout-failure-visible.sh .github/workflows/fan-out.yml
 
