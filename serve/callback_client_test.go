@@ -13,6 +13,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/zeroroot-ai/sdk/fork"
 	"google.golang.org/grpc"
 )
 
@@ -364,4 +366,25 @@ func TestCallbackClientMissionRunIDFromEnv(t *testing.T) {
 	// A task context with a run ID wins.
 	client.SetFullContext(TaskContextParams{TaskID: "t2", MissionRunID: "run-2"})
 	assert.Equal(t, "run-2", client.contextInfo().GetMissionRunId())
+}
+
+// TestCallbackClientLaunchIdentity checks that the run and the task of the
+// launch are the fallback for a task context and for a fork claim, not the
+// values of an earlier task.
+func TestCallbackClientLaunchIdentity(t *testing.T) {
+	t.Setenv(EnvMissionRunID, "run-launch")
+	t.Setenv(EnvTaskID, "task-launch")
+	client, err := NewCallbackClient("localhost:50051")
+	require.NoError(t, err)
+	info := client.contextInfo()
+	assert.Equal(t, "task-launch", info.GetTaskId())
+
+	client.SetFullContext(TaskContextParams{TaskID: "t1", MissionRunID: "run-1"})
+	client.SetFullContext(TaskContextParams{})
+	info = client.contextInfo()
+	assert.Equal(t, "run-launch", info.GetMissionRunId(), "the run of the last task leaked")
+	assert.Equal(t, "task-launch", info.GetTaskId(), "the task of the last task leaked")
+
+	require.NoError(t, client.ApplyClaim(&fork.Claim{Grant: "g"}))
+	assert.Equal(t, "run-launch", client.contextInfo().GetMissionRunId(), "the claim cleared the run")
 }
