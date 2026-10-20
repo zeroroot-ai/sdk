@@ -18,11 +18,12 @@ func TestMissionRunOf(t *testing.T) {
 		token string
 		want  string
 	}{
-		"a grant with a run":          {tokenWithPayload(`{"mrid":"run-4"}`), "run-4"},
-		"a grant with no run":         {tokenWithPayload(`{"task_id":"t"}`), ""},
-		"a run that is no string":     {tokenWithPayload(`{"mrid":7}`), ""},
+		"a grant with a run":          {tokenWithPayload(`{"tenant":"acme","mrid":"run-4"}`), "run-4"},
+		"a grant with no run":         {tokenWithPayload(`{"tenant":"acme","task_id":"t"}`), ""},
+		"a run that is no string":     {tokenWithPayload(`{"tenant":"acme","mrid":7}`), ""},
 		"a payload that is no JSON":   {tokenWithPayload(`nope`), ""},
 		"two parts":                   {"a.b", ""},
+		"a grant with no tenant":      {tokenWithPayload(`{"mrid":"run-4"}`), ""},
 		"a payload that is no base64": {"a.%%%.c", ""},
 		"empty":                       {"", ""},
 	}

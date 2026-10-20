@@ -417,7 +417,7 @@ func TestCallbackClientApplyClaimReplacesLaunchIdentity(t *testing.T) {
 // client only reads the claim, and the daemon verifies the grant.
 func grantWithRun(run string) string {
 	enc := base64.RawURLEncoding.EncodeToString
-	return enc([]byte(`{"alg":"EdDSA"}`)) + "." + enc([]byte(`{"mrid":"`+run+`"}`)) + "." + enc([]byte("sig"))
+	return enc([]byte(`{"alg":"EdDSA"}`)) + "." + enc([]byte(`{"tenant":"acme","mrid":"`+run+`"}`)) + "." + enc([]byte("sig"))
 }
 
 // The grant names the mission run, so a client built with it sends the run
