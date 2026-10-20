@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.209.0](https://github.com/zeroroot-ai/sdk/compare/v0.208.0...v0.209.0) (2026-10-20)
+
+
+### Features
+
+* **capabilitygrant:** read the mission run claim, and send it from the callback client ([#317](https://github.com/zeroroot-ai/sdk/issues/317)) ([f241676](https://github.com/zeroroot-ai/sdk/commit/f241676ea281ae01fbc83aac9ec77988423836a0))
+
+
+### Bug Fixes
+
+* **rework:** validate the fan-out tag and branch slug ([#322](https://github.com/zeroroot-ai/sdk/issues/322)) ([99813cc](https://github.com/zeroroot-ai/sdk/commit/99813cc93f792308dbb9481cdf280f98aa1802cb))
+
 ## [0.208.0](https://github.com/zeroroot-ai/sdk/compare/v0.207.1...v0.208.0) (2026-10-20)
 
 
