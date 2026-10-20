@@ -398,37 +398,6 @@ import (
 
 	// result contains typed operation metrics (for mission.completed events)
 	result?: #OperationResult @protobuf(8,OperationResult)
-
-	// checkpoint_metadata is not set by the daemon. A resume continues the
-	// same run, so a resume stream has no source checkpoint. A run that
-	// starts at a checkpoint is a new run from RewindMission, and it records
-	// the checkpoint in parent_checkpoint_id (ADR-0170).
-	checkpointMetadata?: #CheckpointMetadata @protobuf(9,CheckpointMetadata,name=checkpoint_metadata)
-}
-
-// CheckpointMetadata is the summary of a source checkpoint on a
-// ResumeMission response. The daemon does not send it today: see
-// ResumeMissionResponse.checkpoint_metadata. The checkpoints of a run are listed by
-// GetMissionCheckpoints (ADR-0170).
-#CheckpointMetadata: {
-	// checkpoint_id is the identifier of the source checkpoint.
-	checkpointId?: string @protobuf(1,string,name=checkpoint_id)
-
-	// saved_at_unix_seconds is when the checkpoint was captured (Unix epoch seconds).
-	savedAtUnixSeconds?: int64 @protobuf(2,int64,name=saved_at_unix_seconds)
-
-	// super_step_number identifies which super-step boundary this checkpoint
-	// captured (1-based; 0 if not super-step-aligned).
-	superStepNumber?: int32 @protobuf(3,int32,name=super_step_number)
-
-	// cadence_reason is a free-form classifier for why the checkpoint was
-	// taken. Recognized values per R9.1: "super_step",
-	// "parallel_group_complete", "approval_required", "graceful_shutdown".
-	// Promoted to enum at v1.0.0.
-	cadenceReason?: string @protobuf(4,string,name=cadence_reason)
-
-	// size_bytes is the wire size of the checkpoint payload (advisory).
-	sizeBytes?: int64 @protobuf(5,int64,name=size_bytes)
 }
 
 // StopMissionRequest requests mission termination.
@@ -544,11 +513,6 @@ import (
 #PauseMissionResponse: {
 	// success indicates if the pause request was accepted
 	success?: bool @protobuf(1,bool)
-
-	// checkpoint_id is empty. A pause does not make a checkpoint: a
-	// checkpoint is the end of a node in a run (ADR-0170). Use
-	// GetMissionCheckpoints to list the checkpoints of a run.
-	checkpointId?: string @protobuf(2,string,name=checkpoint_id)
 
 	// message provides additional context about the pause operation
 	message?: string @protobuf(3,string)

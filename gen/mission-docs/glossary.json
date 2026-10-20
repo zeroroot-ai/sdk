@@ -12,7 +12,6 @@
   "CUEDiagnostic": "CUEDiagnostic is a single error or warning produced by CUE compilation or schema validation. Line and col are 1-based.",
   "Capabilities": "Capabilities describes runtime privileges and features available to a tool.",
   "CatalogMission": "CatalogMission is one checked-in mission, and what a caller must supply to render it.",
-  "CheckpointMetadata": "CheckpointMetadata is the summary of a source checkpoint on a ResumeMission response. The daemon does not send it today: see ResumeMissionResponse.checkpoint_metadata. The checkpoints of a run are listed by GetMissionCheckpoints (ADR-0170).",
   "CompleteMissionCUERequest": "CompleteMissionCUERequest requests completion items at a cursor position.",
   "CompleteMissionCUEResponse": "CompleteMissionCUEResponse returns the completion items for the cursor position.",
   "ConditionNodeConfig": "ConditionNodeConfig contains configuration for condition nodes",
