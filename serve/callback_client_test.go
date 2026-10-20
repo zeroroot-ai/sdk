@@ -348,3 +348,20 @@ func TestCallbackClientNotConnectedErrorMessages(t *testing.T) {
 		})
 	}
 }
+
+// TestCallbackClientMissionRunIDFromEnv checks that every callback context
+// carries the run ID that the daemon puts in the environment.
+func TestCallbackClientMissionRunIDFromEnv(t *testing.T) {
+	t.Setenv(EnvMissionRunID, "run-from-env")
+	client, err := NewCallbackClient("localhost:50051")
+	require.NoError(t, err)
+	assert.Equal(t, "run-from-env", client.contextInfo().GetMissionRunId())
+
+	// A task context without a run ID must keep the run ID of the launch.
+	client.SetFullContext(TaskContextParams{TaskID: "t1"})
+	assert.Equal(t, "run-from-env", client.contextInfo().GetMissionRunId())
+
+	// A task context with a run ID wins.
+	client.SetFullContext(TaskContextParams{TaskID: "t2", MissionRunID: "run-2"})
+	assert.Equal(t, "run-2", client.contextInfo().GetMissionRunId())
+}

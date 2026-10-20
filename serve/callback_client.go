@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -53,6 +54,10 @@ type CallbackClient struct {
 	closed    bool
 }
 
+// EnvMissionRunID names the environment variable that the daemon sets to the
+// mission run of the agent. A new callback client sends it on every callback.
+const EnvMissionRunID = "GIBSON_MISSION_RUN_ID"
+
 // NewCallbackClient creates a new callback client with the given endpoint.
 // The client is not connected until Connect() is called.
 func NewCallbackClient(endpoint string, opts ...CallbackClientOption) (*CallbackClient, error) {
@@ -61,7 +66,8 @@ func NewCallbackClient(endpoint string, opts ...CallbackClientOption) (*Callback
 	}
 
 	client := &CallbackClient{
-		endpoint: endpoint,
+		endpoint:     endpoint,
+		missionRunID: os.Getenv(EnvMissionRunID),
 	}
 
 	// Apply options
@@ -214,7 +220,9 @@ func (c *CallbackClient) SetFullContext(params TaskContextParams) {
 	c.missionID = params.MissionID
 	c.traceID = params.TraceID
 	c.spanID = params.SpanID
-	c.missionRunID = params.MissionRunID
+	if params.MissionRunID != "" {
+		c.missionRunID = params.MissionRunID
+	}
 	c.agentRunID = params.AgentRunID
 	c.runNumber = params.RunNumber
 	c.toolExecutionID = params.ToolExecutionID
