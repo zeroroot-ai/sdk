@@ -15,7 +15,8 @@
 #    repo in the workspace.
 #  - A checkout of another repo into the default path replaces the workspace,
 #    so this repo is gone again.
-#  - A checkout with a `path:` changes neither.
+#  - A checkout with a `path:` other than the workspace itself ("." or
+#    github.workspace) changes neither.
 #  - After a sparse checkout, the script must match a sparse pattern.
 #
 # A job that uses a reusable workflow has no steps and is skipped.
@@ -33,6 +34,7 @@ import yaml
 
 # `bash scripts/x.sh`, `sh ./scripts/x.sh` and `./scripts/x.sh`.
 SCRIPT_CALL = re.compile(r'(?:(?:^|[\s;&|(])(?:bash|sh)\s+(?:\./)?|(?:^|[\s;&|(])\./)(scripts/[^\s;&|)"\']+)', re.M)
+DEFAULT_PATHS = {"", ".", "./", "${{ github.workspace }}"}
 THIS_REPOS = {"", "zeroroot-ai/sdk", "${{ github.repository }}"}
 failures = []
 
@@ -44,7 +46,8 @@ def checkout_effect(step):
     this repo is gone from it. A checkout into a path changes neither.
     """
     with_ = step.get("with") or {}
-    if with_.get("path"):
+    # "." and the workspace itself are the default path.
+    if str(with_.get("path", "")).strip() not in DEFAULT_PATHS:
         return None
     if str(with_.get("repository", "")).strip() not in THIS_REPOS:
         return ("other", None)

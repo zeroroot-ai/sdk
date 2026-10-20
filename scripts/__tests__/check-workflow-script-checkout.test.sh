@@ -75,6 +75,17 @@ jobs:
       - run: bash scripts/x.sh
 Y
 )"
+expect 0 "this repo into path ." "$(case_dir dotpath <<'Y'
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          path: .
+      - run: bash scripts/x.sh
+Y
+)"
 expect 0 "a job that runs no script of the repo" "$(case_dir noscript <<'Y'
 jobs:
   a:
@@ -134,6 +145,32 @@ jobs:
         with:
           repository: zeroroot-ai/${{ matrix.consumer }}
       - run: ./scripts/x.sh
+Y
+)"
+expect 1 "this repo, then another repo into path ., then bash scripts/" "$(case_dir dotreplace <<'Y'
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: zeroroot-ai/gibson
+          path: .
+      - run: bash scripts/x.sh
+Y
+)"
+expect 1 "this repo, then another repo into the workspace path, then bash scripts/" "$(case_dir wsreplace <<'Y'
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: zeroroot-ai/gibson
+          path: ${{ github.workspace }}
+      - run: bash scripts/x.sh
 Y
 )"
 expect 1 "a sparse checkout that does not cover the script" "$(case_dir sparsemiss <<'Y'
