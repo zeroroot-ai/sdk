@@ -62,6 +62,14 @@ jobs:
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
     steps:
+      # The job runs scripts/fanout-validate.sh, so it needs the repo.
+      - name: Checkout the validation script
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: scripts/fanout-validate.sh
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
       - name: Resolve tag
         id: tag
         env:
@@ -239,6 +247,18 @@ jobs:
           owner: zeroroot-ai
           repositories: ${{ steps.derive.outputs.token_repos }}
 
+      # The workspace holds the consumer from the next step on, so the script of
+      # this repo goes to the temp dir first.
+      - name: Checkout the validation script
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: scripts/fanout-validate.sh
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Keep the validation script
+        run: cp scripts/fanout-validate.sh "${RUNNER_TEMP}/fanout-validate.sh"
+
       - name: Checkout consumer
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -283,9 +303,9 @@ jobs:
           SLUG: ${{ matrix.branch_slug }}
         run: |
           set -euo pipefail
-          bash scripts/fanout-validate.sh tag "${TAG}"
+          bash "${RUNNER_TEMP}/fanout-validate.sh" tag "${TAG}"
           if [ -n "${SLUG}" ]; then
-            bash scripts/fanout-validate.sh slug "${SLUG}"
+            bash "${RUNNER_TEMP}/fanout-validate.sh" slug "${SLUG}"
             echo "name=chore/bump-sdk-${SLUG}-${TAG}" >> "$GITHUB_OUTPUT"
             echo "prefix=chore/bump-sdk-${SLUG}-v" >> "$GITHUB_OUTPUT"
           else
