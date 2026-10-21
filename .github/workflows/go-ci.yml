@@ -125,6 +125,11 @@ jobs:
       - name: Mutation-test the pagination lint
         run: bash scripts/__tests__/lint-pagination.test.sh
 
+      # A --baseline run of coverage-floor.mjs keeps the full _comment
+      # rationale and writes the go.mod floor into it.
+      - name: Test the coverage baseline comment
+        run: bash scripts/__tests__/coverage-baseline-comment.test.sh
+
       # sdk#185: each string and enum field of each RPC request has a
       # buf.validate rule (ADR-0028). The second step proves that each rule of
       # the check can fail.
