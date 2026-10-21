@@ -49,6 +49,40 @@ jobs:
       - run: bash scripts/x.sh
 Y
 )"
+expect 0 "a cone sparse checkout of the scripts directory" "$(case_dir conedir <<'Y'
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: scripts
+      - run: bash scripts/x.sh
+Y
+)"
+expect 0 "a cone sparse checkout of a directory under scripts" "$(case_dir conesub <<'Y'
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: scripts/sub
+      - run: bash scripts/x.sh
+Y
+)"
+expect 0 "a glob sparse checkout of scripts/" "$(case_dir globdir <<'Y'
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: scripts/
+          sparse-checkout-cone-mode: false
+      - run: bash scripts/x.sh
+Y
+)"
 expect 0 "this repo, then another repo, with the script copied out first" "$(case_dir copied <<'Y'
 jobs:
   a:
@@ -181,6 +215,18 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           sparse-checkout: scripts/y.sh
+          sparse-checkout-cone-mode: false
+      - run: bash scripts/x.sh
+Y
+)"
+expect 1 "a cone sparse checkout of another directory" "$(case_dir conemiss <<'Y'
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: docs
       - run: bash scripts/x.sh
 Y
 )"

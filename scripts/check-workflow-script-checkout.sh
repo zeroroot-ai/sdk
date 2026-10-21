@@ -17,7 +17,11 @@
 #    so this repo is gone again.
 #  - A checkout with a `path:` other than the workspace itself ("." or
 #    github.workspace) changes neither.
-#  - After a sparse checkout, the script must match a sparse pattern.
+#  - After a sparse checkout, the sparse patterns must cover the script. In cone
+#    mode (the actions/checkout default) a pattern names a directory: it covers
+#    each file under it, each file directly in one of its parents, and each file
+#    at the root. With cone mode off, a pattern is a glob, and a pattern that
+#    ends in / covers each file under it.
 #
 # A job that uses a reusable workflow has no steps and is skipped.
 set -euo pipefail
@@ -52,21 +56,38 @@ def checkout_effect(step):
     if str(with_.get("repository", "")).strip() not in THIS_REPOS:
         return ("other", None)
     sparse = [line.strip() for line in str(with_.get("sparse-checkout", "")).splitlines() if line.strip()]
-    return ("this", sparse)
+    cone = str(with_.get("sparse-checkout-cone-mode", "true")).strip().lower() != "false"
+    return ("this", (sparse, cone))
+
+
+def sparse_covers(script, sparse, cone):
+    """Return True when the sparse checkout puts script in the workspace."""
+    parent = script.rpartition("/")[0]
+    for pattern in sparse:
+        if cone:
+            directory = pattern.strip("/")
+            # Under the directory, or directly in the directory or in one of its parents.
+            if script.startswith(directory + "/") or parent == "" or directory == parent or directory.startswith(parent + "/"):
+                return True
+        else:
+            glob = pattern.lstrip("/")
+            if fnmatch.fnmatch(script, glob) or (glob.endswith("/") and script.startswith(glob)):
+                return True
+    return False
 
 
 for path in sorted(pathlib.Path(sys.argv[1]).glob("*.y*ml")):
     doc = yaml.safe_load(path.read_text())
     for job_id, job in ((doc or {}).get("jobs") or {}).items():
         present = False
-        sparse = []
+        sparse, cone = [], True
         for index, step in enumerate((job or {}).get("steps") or []):
             name = step.get("name", f"step {index + 1}")
             if str(step.get("uses", "")).startswith("actions/checkout@"):
                 effect = checkout_effect(step)
                 if effect is not None:
                     present = effect[0] == "this"
-                    sparse = effect[1] or []
+                    sparse, cone = effect[1] or ([], True)
                 continue
             run = step.get("run")
             if not run:
@@ -74,7 +95,7 @@ for path in sorted(pathlib.Path(sys.argv[1]).glob("*.y*ml")):
             for script in SCRIPT_CALL.findall(run):
                 if not present:
                     failures.append(f"{path}: job {job_id}, step '{name}' runs {script}, and this repo is not in the workspace")
-                elif sparse and not any(fnmatch.fnmatch(script, pattern.lstrip("/")) for pattern in sparse):
+                elif sparse and not sparse_covers(script, sparse, cone):
                     failures.append(f"{path}: job {job_id}, step '{name}' runs {script}, and the sparse checkout does not cover it")
 
 if failures:
