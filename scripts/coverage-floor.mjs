@@ -62,7 +62,24 @@ function isExcludedPkg(pkg) {
 const EPSILON = 0.5;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const BASELINE_PATH = join(__dirname, "coverage-baseline.json");
+// COVERAGE_BASELINE_PATH and COVERAGE_GO_MOD_PATH let the fixture
+// scripts/__tests__/coverage-baseline-comment.test.sh write to a scratch file.
+const BASELINE_PATH =
+  process.env.COVERAGE_BASELINE_PATH || join(__dirname, "coverage-baseline.json");
+const GO_MOD_PATH =
+  process.env.COVERAGE_GO_MOD_PATH || join(__dirname, "..", "go.mod");
+
+// goFloor reads the `go` line of go.mod. The baseline records the toolchain
+// that measured it, because `go test -cover` counts statements differently
+// between Go releases.
+function goFloor() {
+  const m = /^go\s+(\S+)\s*$/m.exec(readFileSync(GO_MOD_PATH, "utf8"));
+  if (!m) {
+    process.stderr.write(`coverage-floor: no go line in ${GO_MOD_PATH}\n`);
+    process.exit(2);
+  }
+  return m[1];
+}
 
 function parseArgs(argv) {
   const args = argv.slice(2);
@@ -137,7 +154,12 @@ function main() {
           _comment:
             "Packages below the 80% coverage floor when the gate landed (sdk#356). " +
             "Burndown: sdk#388. Each entry is held at its recorded level (no regression) " +
-            "and removed once it reaches 80%. Regenerate with `make coverage-baseline`.",
+            "and removed once it reaches 80%. Regenerate with `make coverage-baseline`. " +
+            "These numbers are toolchain-dependent: `go test -cover` counts statements, " +
+            "and the count changes between Go releases. " +
+            `Re-recorded under go${goFloor()}, the floor in go.mod. ` +
+            "Moving the floor toolchain moves these numbers in both directions on an unchanged tree, " +
+            "so re-record this file in the same PR that moves the floor.",
           floor: FLOOR,
           packages: baseline,
         },
