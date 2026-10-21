@@ -248,16 +248,22 @@ jobs:
           repositories: ${{ steps.derive.outputs.token_repos }}
 
       # The workspace holds the consumer from the next step on, so the script of
-      # this repo goes to the temp dir first.
+      # this repo goes to the temp dir first. It is checked out into its own
+      # path: a sparse checkout of this repo into the workspace stays sparse
+      # when the consumer is this repo too, and the consumer go.mod is then
+      # missing.
       - name: Checkout the validation script
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          path: .fanout-validate
           sparse-checkout: scripts/fanout-validate.sh
           sparse-checkout-cone-mode: false
           persist-credentials: false
 
       - name: Keep the validation script
-        run: cp scripts/fanout-validate.sh "${RUNNER_TEMP}/fanout-validate.sh"
+        run: |
+          cp .fanout-validate/scripts/fanout-validate.sh "${RUNNER_TEMP}/fanout-validate.sh"
+          rm -rf .fanout-validate
 
       - name: Checkout consumer
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

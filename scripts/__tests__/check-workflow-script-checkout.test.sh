@@ -83,6 +83,25 @@ jobs:
       - run: bash scripts/x.sh
 Y
 )"
+expect 0 "a sparse checkout of this repo into a path, then a checkout of an expression repo" "$(case_dir sparsepath <<'Y'
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        consumer: [sdk, gibson]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          path: .keep
+          sparse-checkout: scripts/x.sh
+          sparse-checkout-cone-mode: false
+      - run: cp .keep/scripts/x.sh "$RUNNER_TEMP/x.sh"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: zeroroot-ai/${{ matrix.consumer }}
+Y
+)"
 expect 0 "this repo, then another repo, with the script copied out first" "$(case_dir copied <<'Y'
 jobs:
   a:
@@ -228,6 +247,24 @@ jobs:
         with:
           sparse-checkout: docs
       - run: bash scripts/x.sh
+Y
+)"
+expect 1 "a sparse checkout of this repo, then a checkout of an expression repo into the workspace" "$(case_dir sparsereuse <<'Y'
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        consumer: [sdk, gibson]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: scripts/x.sh
+          sparse-checkout-cone-mode: false
+      - run: cp scripts/x.sh "$RUNNER_TEMP/x.sh"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: zeroroot-ai/${{ matrix.consumer }}
 Y
 )"
 expect 1 "one job is fine and a second job has no checkout" "$(case_dir second <<'Y'

@@ -23,6 +23,11 @@
 #    at the root. With cone mode off, a pattern is a glob, and a pattern that
 #    ends in / covers each file under it.
 #
+#  - A sparse checkout of this repo into the default path stays sparse for a
+#    later checkout of this repo into the default path, because
+#    actions/checkout reuses the .git there. A later checkout whose repository
+#    is an expression can be this repo, so it fails too.
+#
 # A job that uses a reusable workflow has no steps and is skipped.
 set -euo pipefail
 
@@ -81,10 +86,19 @@ for path in sorted(pathlib.Path(sys.argv[1]).glob("*.y*ml")):
     for job_id, job in ((doc or {}).get("jobs") or {}).items():
         present = False
         sparse, cone = [], True
+        sparse_left = False
         for index, step in enumerate((job or {}).get("steps") or []):
             name = step.get("name", f"step {index + 1}")
             if str(step.get("uses", "")).startswith("actions/checkout@"):
+                with_ = step.get("with") or {}
+                in_default = str(with_.get("path", "")).strip() in DEFAULT_PATHS
+                repo = str(with_.get("repository", "")).strip()
+                if sparse_left and in_default and (repo in THIS_REPOS or "${{" in repo):
+                    failures.append(f"{path}: job {job_id}, step '{name}' checks out into a workspace that still holds a sparse checkout of this repo")
                 effect = checkout_effect(step)
+                if effect is not None:
+                    # A checkout of another repo replaces the .git, so no sparse state is left.
+                    sparse_left = effect[0] == "this" and bool(effect[1][0])
                 if effect is not None:
                     present = effect[0] == "this"
                     sparse, cone = effect[1] or ([], True)
