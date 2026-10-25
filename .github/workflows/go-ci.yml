@@ -47,7 +47,7 @@ jobs:
   # ---- fast tier (pull_request): reusable vet/build/test, no race ----
   fast:
     if: github.event_name == 'pull_request'
-    uses: zeroroot-ai/.github/.github/workflows/reusable-go-ci.yml@7626d9726b593f0e33bc668626e0dbe8771eee19 # v0.20.1
+    uses: zeroroot-ai/.github/.github/workflows/reusable-go-ci.yml@4bf8d348295c9a501b97cc2ffbdc0873c285b6f2 # v0.21.1
     with:
       tier: fast
       skip-lint: true # sdk runs its own pinned golangci-lint below (make lint)
@@ -55,7 +55,7 @@ jobs:
   # ---- heavy tier (merge_group): reusable race + govulncheck ----
   heavy:
     if: github.event_name == 'merge_group'
-    uses: zeroroot-ai/.github/.github/workflows/reusable-go-ci.yml@7626d9726b593f0e33bc668626e0dbe8771eee19 # v0.20.1
+    uses: zeroroot-ai/.github/.github/workflows/reusable-go-ci.yml@4bf8d348295c9a501b97cc2ffbdc0873c285b6f2 # v0.21.1
     with:
       tier: heavy
 
@@ -390,4 +390,4 @@ jobs:
   # go.mod here may require a first-party module only when it is sdk, adk,
   # setec or ast-checks (zeroroot-ai/.github#202).
   permissive-floor:
-    uses: zeroroot-ai/.github/.github/workflows/permissive-floor.yml@7626d9726b593f0e33bc668626e0dbe8771eee19 # v0.20.1
+    uses: zeroroot-ai/.github/.github/workflows/permissive-floor.yml@4bf8d348295c9a501b97cc2ffbdc0873c285b6f2 # v0.21.1
