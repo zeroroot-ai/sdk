@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.209.1](https://github.com/zeroroot-ai/sdk/compare/v0.209.0...v0.209.1) (2026-10-21)
+
+
+### Bug Fixes
+
+* **rework:** check the repo out in every fan-out job that runs a script ([#324](https://github.com/zeroroot-ai/sdk/issues/324)) ([e744688](https://github.com/zeroroot-ai/sdk/commit/e744688aba8ab210659b1f371e6a08bc362c5f71))
+* **rework:** keep the baseline rationale when coverage-floor re-records ([#326](https://github.com/zeroroot-ai/sdk/issues/326)) ([ab3d4cb](https://github.com/zeroroot-ai/sdk/commit/ab3d4cb8e8efef8c1cf8a45b4ad43482a93406bd))
+* **rework:** the fan-out keeps the validation script out of the consumer workspace ([#328](https://github.com/zeroroot-ai/sdk/issues/328)) ([d9337a8](https://github.com/zeroroot-ai/sdk/commit/d9337a8c8ea5b91e94819278893c195b0b6db952))
+
 ## [0.209.0](https://github.com/zeroroot-ai/sdk/compare/v0.208.0...v0.209.0) (2026-10-20)
 
 
