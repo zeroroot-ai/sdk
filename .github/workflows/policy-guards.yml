@@ -32,4 +32,4 @@ jobs:
     # grant is a ceiling on what the called workflow's GITHUB_TOKEN gets).
     permissions:
       contents: read
-    uses: zeroroot-ai/.github/.github/workflows/vault-auth-method-deny-list.yml@9e8c9f5b6f1ff36c0dd7cefe24fcf739c95b2055 # v0.21.2
+    uses: zeroroot-ai/.github/.github/workflows/vault-auth-method-deny-list.yml@a88e99f641209c147aad6cbd3b6d62c2764485ca # v0.21.3
