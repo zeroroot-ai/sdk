@@ -555,6 +555,8 @@ func ProtoToTask(pt *typespb.Task) agent.Task {
 			BlockedTools: pt.GetConstraints().GetBlockedTools(),
 		},
 		Job: cloneJobSpec(pt.GetJob()),
+
+		PinnedSkills: append([]string(nil), pt.GetPinnedSkills()...),
 	}
 }
 
@@ -581,6 +583,8 @@ func TaskToProto(t agent.Task) *typespb.Task {
 			BlockedTools: t.Constraints.BlockedTools,
 		},
 		Job: cloneJobSpec(t.Job),
+
+		PinnedSkills: append([]string(nil), t.PinnedSkills...),
 	}
 }
 

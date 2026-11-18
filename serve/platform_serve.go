@@ -315,6 +315,23 @@ func executePlatformAgentWork(ctx context.Context, client *PlatformClient, a age
 	// provided it (key: "mission_execution_context_json").
 	harness.SetMissionExecutionContext(missionExecutionContextFromWorkItem(work))
 
+	// Load the pinned Agent Skills before the first model call. A load that
+	// fails stops the run (gibson#1375).
+	if len(task.PinnedSkills) > 0 {
+		items, err := agent.LoadPinnedSkills(taskCtx, harness, task.PinnedSkills)
+		if err != nil {
+			slog.Warn("pinned skill load failed",
+				"component", "agent", "name", a.Name(), "work_id", work.WorkID, "error", err)
+			_ = client.SubmitResult(ctx, work.WorkID, nil, &WorkError{
+				Code:      "PINNED_SKILL_LOAD_FAILED",
+				Message:   err.Error(),
+				Retryable: false,
+			})
+			return
+		}
+		task.SkillItems = items
+	}
+
 	result, err := a.Execute(taskCtx, harness, task)
 
 	if err != nil {

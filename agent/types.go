@@ -5,6 +5,7 @@ package agent
 
 import (
 	jobpb "github.com/zeroroot-ai/sdk/api/gen/gibson/job/v1"
+	"github.com/zeroroot-ai/sdk/openresponses"
 )
 
 // Task represents a unit of work assigned to an agent.
@@ -34,6 +35,16 @@ type Task struct {
 	// enforce (repositories, credential names, World inputs, acceptance)
 	// lives here. Nil for a task that needs none of them.
 	Job *jobpb.JobSpec
+
+	// PinnedSkills lists the Agent Skills that the mission pins for this task,
+	// as canonical ids of the form skill:<name>.
+	PinnedSkills []string
+
+	// SkillItems holds the loaded pinned skills as Open Responses items, a
+	// function_call and a function_call_output for each skill. The SDK fills
+	// it before Execute runs. An agent puts these items at the start of its
+	// conversation, before its first model call.
+	SkillItems []openresponses.Item
 }
 
 // TaskConstraints defines operational limits for task execution.
