@@ -56,7 +56,7 @@ func validClaimsMap(now time.Time) jwt.MapClaims {
 		"jti":          "jti-001",
 		"iat":          now.Unix(),
 		"exp":          now.Add(15 * time.Minute).Unix(),
-		"allowed_rpcs": []any{"/gibson.harness.v1.HarnessCallbackService/LLMComplete"},
+		"allowed_rpcs": []any{"/gibson.harness.v1.HarnessCallbackService/ResolveModel"},
 	}
 }
 
@@ -83,7 +83,7 @@ func TestVerify_HappyPath(t *testing.T) {
 	if claims.Tenant.String() != "acme" {
 		t.Errorf("tenant: %q", claims.Tenant.String())
 	}
-	if !claims.AllowsMethod("/gibson.harness.v1.HarnessCallbackService/LLMComplete") {
+	if !claims.AllowsMethod("/gibson.harness.v1.HarnessCallbackService/ResolveModel") {
 		t.Errorf("expected method allowed")
 	}
 	if claims.AllowsMethod("/gibson.harness.v1.HarnessCallbackService/SubmitFinding") {

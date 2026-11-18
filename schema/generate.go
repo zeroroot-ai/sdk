@@ -12,8 +12,8 @@ import (
 // FromType generates a JSON schema from a Go type using reflection.
 // The schema describes the structure that the type represents, not the values.
 //
-// This is used when agents call CompleteStructured with a Go struct type -
-// the schema is sent to the daemon which forwards it to the LLM provider.
+// An agent uses it to build the JSON schema for a structured Open Responses
+// call from a Go struct type. The client sends the schema in text.format.
 //
 // Supported types:
 //   - struct: generates an object schema with properties from exported fields

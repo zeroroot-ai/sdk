@@ -22,6 +22,7 @@ type resolvedModel struct {
 	routeHeaders    map[string]string
 	contextWindow   int
 	maxOutputTokens int
+	gatewayCAPEM    string
 }
 
 // newModelClient builds the one model client for a resolved slot. The client
@@ -41,6 +42,7 @@ func newModelClient(
 		Model:           m.model,
 		RouteHeaders:    m.routeHeaders,
 		Headers:         headers,
+		CAPEM:           m.gatewayCAPEM,
 		Provider:        m.provider,
 		ContextWindow:   m.contextWindow,
 		MaxOutputTokens: m.maxOutputTokens,

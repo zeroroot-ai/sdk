@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -130,13 +132,12 @@ func (r *recorder) serve(t *testing.T, register func(*grpc.Server), extra ...grp
 	return lis.Addr().String()
 }
 
-// ---------------------------------------------------------------------------
-// The fake daemon: HarnessCallbackService
-// ---------------------------------------------------------------------------
-
 type callbackDaemon struct {
 	harnesspb.UnimplementedHarnessCallbackServiceServer
 	recorder
+
+	// gw is the fake model gateway that ResolveModel points to.
+	gw *testGateway
 
 	// claims is the answer of ClaimFork, in order. The last one repeats.
 	noAuthorize bool
@@ -147,51 +148,15 @@ type callbackDaemon struct {
 
 func startCallbackDaemon(t *testing.T, extra ...grpc.ServerOption) (d *callbackDaemon, addr string) {
 	t.Helper()
-	d = &callbackDaemon{}
+	d = &callbackDaemon{gw: startGateway(t)}
 	addr = d.serve(t, func(s *grpc.Server) { harnesspb.RegisterHarnessCallbackServiceServer(s, d) }, extra...)
 	return d, addr
 }
-
-var usage = &harnesspb.TokenUsage{InputTokens: 11, OutputTokens: 7, TotalTokens: 18}
 
 func (d *callbackDaemon) GetTaxonomySchema(context.Context, *harnesspb.GetTaxonomySchemaRequest) (
 	*harnesspb.GetTaxonomySchemaResponse, error,
 ) {
 	return &harnesspb.GetTaxonomySchemaResponse{Version: "tax-1"}, nil
-}
-
-func (d *callbackDaemon) LLMComplete(context.Context, *harnesspb.LLMCompleteRequest) (*harnesspb.LLMCompleteResponse, error) {
-	return &harnesspb.LLMCompleteResponse{Content: "hello", FinishReason: "stop", Usage: usage}, nil
-}
-
-func (d *callbackDaemon) LLMCompleteWithTools(
-	context.Context, *harnesspb.LLMCompleteWithToolsRequest,
-) (*harnesspb.LLMCompleteWithToolsResponse, error) {
-	return &harnesspb.LLMCompleteWithToolsResponse{
-		FinishReason: "tool_use", Usage: usage,
-		ToolCalls: []*harnesspb.ToolCall{{Id: "tc-1", Name: "lookup", Arguments: `{"host":"10.0.0.1"}`}},
-	}, nil
-}
-
-func (d *callbackDaemon) LLMCompleteStructured(
-	context.Context, *harnesspb.LLMCompleteStructuredRequest,
-) (*harnesspb.LLMCompleteStructuredResponse, error) {
-	return &harnesspb.LLMCompleteStructuredResponse{
-		Result: serve.ToTypedValue(map[string]any{"safe": true}), Usage: usage,
-	}, nil
-}
-
-func (d *callbackDaemon) LLMStream(_ *harnesspb.LLMStreamRequest, s grpc.ServerStreamingServer[harnesspb.LLMStreamResponse]) error {
-	for _, c := range []*harnesspb.LLMStreamResponse{
-		{Delta: "he"},
-		{Delta: "llo", ToolCalls: []*harnesspb.ToolCall{{Id: "tc-2", Name: "lookup"}}},
-		{FinishReason: "stop", Usage: usage},
-	} {
-		if err := s.Send(c); err != nil {
-			return fmt.Errorf("send: %w", err)
-		}
-	}
-	return nil
 }
 
 func (d *callbackDaemon) CallToolProto(context.Context, *harnesspb.CallToolProtoRequest) (*harnesspb.CallToolProtoResponse, error) {
@@ -485,10 +450,6 @@ func forkUnclaimed() (*harnesspb.ClaimForkResponse, error) {
 	return nil, fmt.Errorf("unclaimed: %w", st.Err())
 }
 
-// ---------------------------------------------------------------------------
-// The fake daemon: ComponentService (the pull transport of PlatformHarness)
-// ---------------------------------------------------------------------------
-
 type componentDaemon struct {
 	componentpb.UnimplementedComponentServiceServer
 	recorder
@@ -501,40 +462,6 @@ func startComponentDaemon(t *testing.T) (d *componentDaemon, addr string) {
 	d = &componentDaemon{}
 	addr = d.serve(t, func(s *grpc.Server) { componentpb.RegisterComponentServiceServer(s, d) })
 	return d, addr
-}
-
-var compUsage = &componentpb.TokenUsage{InputTokens: 11, OutputTokens: 7}
-
-func (d *componentDaemon) Complete(context.Context, *componentpb.CompleteRequest) (*componentpb.CompleteResponse, error) {
-	return &componentpb.CompleteResponse{Response: &componentpb.LLMMessage{Role: "assistant", Content: "hello"}, Usage: compUsage}, nil
-}
-
-func (d *componentDaemon) CompleteWithTools(
-	context.Context, *componentpb.CompleteWithToolsRequest,
-) (*componentpb.CompleteWithToolsResponse, error) {
-	return &componentpb.CompleteWithToolsResponse{
-		Response: &componentpb.LLMMessage{Role: "assistant", Content: "calling"}, Usage: compUsage, FinishReason: "tool_use",
-		ToolCalls: []*componentpb.ToolCallResult{{Id: "tc-1", Name: "lookup", ArgumentsJson: `{"host":"10.0.0.1"}`}},
-	}, nil
-}
-
-func (d *componentDaemon) CompleteStructured(
-	context.Context, *componentpb.CompleteStructuredRequest,
-) (*componentpb.CompleteStructuredResponse, error) {
-	return &componentpb.CompleteStructuredResponse{ResultJson: `{"safe":true}`}, nil
-}
-
-func (d *componentDaemon) CompleteStream(
-	_ *componentpb.CompleteStreamRequest, s grpc.ServerStreamingServer[componentpb.CompleteStreamResponse],
-) error {
-	for _, m := range []*componentpb.CompleteStreamResponse{
-		{Content: "he"}, {Content: "llo"}, {Done: true, Usage: compUsage},
-	} {
-		if err := s.Send(m); err != nil {
-			return fmt.Errorf("send: %w", err)
-		}
-	}
-	return nil
 }
 
 func (d *componentDaemon) CallTool(context.Context, *componentpb.CallToolRequest) (*componentpb.CallToolResponse, error) {
@@ -670,10 +597,6 @@ func (d *componentDaemon) GetMissionResults(
 	})}, nil
 }
 
-// ---------------------------------------------------------------------------
-// The fake setec identity socket (D74, D80)
-// ---------------------------------------------------------------------------
-
 type fakeIdentity struct {
 	mu       sync.Mutex
 	requests int
@@ -720,4 +643,87 @@ func (h *host) read() (string, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	return h.name, nil
+}
+
+// ---------------------------------------------------------------------------
+// The fake model gateway: POST /v1/responses (Open Responses)
+// ---------------------------------------------------------------------------
+
+// gatewayReq is one request that reached the fake gateway.
+type gatewayReq struct {
+	header http.Header
+	body   map[string]any
+}
+
+type testGateway struct {
+	mu   sync.Mutex
+	reqs []gatewayReq
+	srv  *httptest.Server
+}
+
+func startGateway(t *testing.T) *testGateway {
+	t.Helper()
+	g := &testGateway{}
+	g.srv = httptest.NewServer(http.HandlerFunc(g.handle))
+	t.Cleanup(g.srv.Close)
+	return g
+}
+
+func (g *testGateway) requests() []gatewayReq {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return append([]gatewayReq(nil), g.reqs...)
+}
+
+func (g *testGateway) handle(w http.ResponseWriter, r *http.Request) {
+	var body map[string]any
+	_ = json.NewDecoder(r.Body).Decode(&body)
+	g.mu.Lock()
+	g.reqs = append(g.reqs, gatewayReq{header: r.Header.Clone(), body: body})
+	g.mu.Unlock()
+
+	const usageJSON = `"usage":{"input_tokens":11,"output_tokens":7,"total_tokens":18}`
+	text := func(s string) string {
+		return `"output":[{"type":"message","id":"m1","role":"assistant","status":"completed",` +
+			`"content":[{"type":"output_text","text":` + strconv.Quote(s) + `,"annotations":[]}]}]`
+	}
+	switch {
+	case body["stream"] == true:
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "event: response.output_text.delta\n"+
+			`data: {"type":"response.output_text.delta","sequence_number":1,"item_id":"m1","output_index":0,"content_index":0,"delta":"he"}`+"\n\n")
+		fmt.Fprint(w, "event: response.output_text.delta\n"+
+			`data: {"type":"response.output_text.delta","sequence_number":2,"item_id":"m1","output_index":0,"content_index":0,"delta":"llo"}`+"\n\n")
+		fmt.Fprint(w, "event: response.completed\n"+
+			`data: {"type":"response.completed","sequence_number":3,"response":{"status":"completed",`+text("hello")+
+			`,`+usageJSON+`}}`+"\n\n")
+	case body["tools"] != nil:
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"status":"completed","output":[{"type":"function_call","id":"fc1","call_id":"tc-1","name":"lookup",`+
+			`"arguments":"{\"host\":\"10.0.0.1\"}","status":"completed"}],`+usageJSON+`}`)
+	case body["text"] != nil:
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"status":"completed",`+text(`{"safe":true}`)+`,`+usageJSON+`}`)
+	default:
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"status":"completed",`+text("hello")+`,`+usageJSON+`}`)
+	}
+}
+
+func (d *callbackDaemon) ResolveModel(
+	_ context.Context, req *harnesspb.ResolveModelRequest,
+) (*harnesspb.ResolveModelResponse, error) {
+	return &harnesspb.ResolveModelResponse{
+		Model: "model-exact", Provider: "prov", GatewayUrl: d.gw.srv.URL,
+		RouteHeaders: map[string]string{"x-gibson-tenant": "t1", "x-gibson-provider": "prov"},
+	}, nil
+}
+
+func (d *componentDaemon) ResolveModel(
+	_ context.Context, req *componentpb.ResolveModelRequest,
+) (*componentpb.ResolveModelResponse, error) {
+	return &componentpb.ResolveModelResponse{
+		Model: "model-exact", Provider: "prov", GatewayUrl: "http://gateway.invalid",
+		RouteHeaders: map[string]string{"x-gibson-tenant": "t1"},
+	}, nil
 }

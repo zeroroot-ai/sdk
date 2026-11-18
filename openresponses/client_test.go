@@ -5,15 +5,23 @@ package openresponses
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"io"
+	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -346,4 +354,69 @@ func TestOnUsage(t *testing.T) {
 	require.Len(t, got, 2)
 	assert.Equal(t, 13, got[0].TotalTokens)
 	assert.Equal(t, 7, got[1].TotalTokens)
+}
+
+func newTLSGateway(t *testing.T) (*httptest.Server, string) {
+	t.Helper()
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, plainReply)
+	}))
+	t.Cleanup(srv.Close)
+	der := srv.Certificate().Raw
+	pemBytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})
+	return srv, string(pemBytes)
+}
+
+func TestCAPEMTrustsOnlyTheBundle(t *testing.T) {
+	srv, ca := newTLSGateway(t)
+	req := &Request{Input: []Item{NewUserMessage("x")}}
+
+	// The bundle of the gateway: the call works.
+	good := &Client{BaseURL: srv.URL, Model: "m", CAPEM: ca}
+	_, err := good.Create(context.Background(), req)
+	require.NoError(t, err)
+
+	// No bundle: the system roots do not trust the test CA, so the call fails.
+	bad := &Client{BaseURL: srv.URL, Model: "m"}
+	_, err = bad.Create(context.Background(), req)
+	require.Error(t, err)
+
+	// Another bundle: the call fails.
+	wrong := &Client{BaseURL: srv.URL, Model: "m", CAPEM: selfSignedPEM(t)}
+	_, err = wrong.Create(context.Background(), req)
+	require.Error(t, err)
+}
+
+func TestCAPEMNeedsHTTPS(t *testing.T) {
+	_, ca := newTLSGateway(t)
+	cl := &Client{BaseURL: "http://gateway.example", Model: "m", CAPEM: ca}
+	_, err := cl.Create(context.Background(), &Request{})
+	require.ErrorContains(t, err, "https")
+}
+
+func TestCAPEMBadBundleAndConflict(t *testing.T) {
+	cl := &Client{BaseURL: "https://gateway.example", Model: "m", CAPEM: "not pem"}
+	_, err := cl.Create(context.Background(), &Request{})
+	require.ErrorContains(t, err, "no certificate")
+
+	_, ca := newTLSGateway(t)
+	cl = &Client{BaseURL: "https://gateway.example", Model: "m", CAPEM: ca, HTTPClient: http.DefaultClient}
+	_, err = cl.Create(context.Background(), &Request{})
+	require.ErrorContains(t, err, "not both")
+}
+
+// selfSignedPEM returns a CA certificate that did not sign the test gateway.
+func selfSignedPEM(t *testing.T) string {
+	t.Helper()
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	tmpl := &x509.Certificate{
+		SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "other-ca"},
+		NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(time.Hour),
+		IsCA: true, BasicConstraintsValid: true, KeyUsage: x509.KeyUsageCertSign,
+	}
+	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
+	require.NoError(t, err)
+	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}))
 }

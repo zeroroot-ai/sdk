@@ -15,39 +15,6 @@ import "gibson/auth/v1/options.proto";
 // HarnessCallbackService provides the harness interface for agents executing in standalone mode.
 // The SDK's CallbackHarness forwards all harness operations to the orchestrator via this service.
 service HarnessCallbackService {
-    // LLM Operations
-    rpc LLMComplete(LLMCompleteRequest) returns (LLMCompleteResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "can_use"
-        object_type: "component"
-        object_deriver: "system_tenant"
-        allowed_identities: 4  // COMPONENT
-      };
-    }
-    rpc LLMCompleteWithTools(LLMCompleteWithToolsRequest) returns (LLMCompleteWithToolsResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "can_use"
-        object_type: "component"
-        object_deriver: "system_tenant"
-        allowed_identities: 4  // COMPONENT
-      };
-    }
-    rpc LLMCompleteStructured(LLMCompleteStructuredRequest) returns (LLMCompleteStructuredResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "can_use"
-        object_type: "component"
-        object_deriver: "system_tenant"
-        allowed_identities: 4  // COMPONENT
-      };
-    }
-    rpc LLMStream(LLMStreamRequest) returns (stream LLMStreamResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "can_use"
-        object_type: "component"
-        object_deriver: "system_tenant"
-        allowed_identities: 4  // COMPONENT
-      };
-    }
     // ResolveModel turns a slot into one exact model name (ADR-0172, decision 4).
     // The agent then calls the model gateway with the Open Responses client of
     // the SDK. The gateway never sees a slot name. The agent sends the task
@@ -795,12 +762,6 @@ message ContextInfo {
     string tool_execution_id = 9;
 }
 
-message TokenUsage {
-    int32 input_tokens = 1;
-    int32 output_tokens = 2;
-    int32 total_tokens = 3;
-}
-
 // ResolveModelRequest asks the daemon for the model of a slot.
 message ResolveModelRequest {
     ContextInfo context = 1;
@@ -826,105 +787,11 @@ message ResolveModelResponse {
     int32 context_window = 5;
     // max_output_tokens is the output limit of the model in tokens. 0 means unknown.
     int32 max_output_tokens = 6;
-}
-
-message LLMMessage {
-    string role = 1;  // system, user, assistant, tool
-    string content = 2;
-    repeated ToolCall tool_calls = 3;
-    repeated ToolResult tool_results = 4;
-    string name = 5;  // For tool messages
-}
-
-message ToolCall {
-    string id = 1;
-    string name = 2;
-    string arguments = 3;  // JSON string
-}
-
-message ToolResult {
-    string tool_call_id = 1;
-    string content = 2;
-    bool is_error = 3;
-}
-
-message ToolDef {
-    string name = 1;
-    string description = 2;
-    JSONSchemaNode parameters = 3;
-}
-
-// ============================================================================
-// LLM Operations
-// ============================================================================
-
-message LLMCompleteRequest {
-    ContextInfo context = 1;
-    string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
-    repeated LLMMessage messages = 3;
-
-    // Completion options
-    optional double temperature = 4;
-    optional int32 max_tokens = 5;
-    optional double top_p = 6;
-    repeated string stop = 7;
-}
-
-message LLMCompleteWithToolsRequest {
-    ContextInfo context = 1;
-    string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
-    repeated LLMMessage messages = 3;
-    repeated ToolDef tools = 4;
-}
-
-message LLMCompleteStructuredRequest {
-    ContextInfo context = 1;
-    string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
-    repeated LLMMessage messages = 3;
-    string schema_json = 4 [(buf.validate.field).string = { max_len: 16777216 }]; // JSON-encoded schema (Go struct as JSON) - kept for backward compatibility
-}
-
-message LLMCompleteStructuredResponse {
-    gibson.common.v1.TypedValue result = 1;
-    reserved 2;  // Previously result_json
-    TokenUsage usage = 3;
-    HarnessError error = 4;
-}
-
-message LLMCompleteResponse {
-    string content = 1;
-    repeated ToolCall tool_calls = 2;
-    string finish_reason = 3;
-    TokenUsage usage = 4;
-    HarnessError error = 5;
-}
-
-message LLMCompleteWithToolsResponse {
-    string content = 1;
-    repeated ToolCall tool_calls = 2;
-    string finish_reason = 3;
-    TokenUsage usage = 4;
-    HarnessError error = 5;
-}
-
-message LLMStreamRequest {
-    ContextInfo context = 1;
-    string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
-    repeated LLMMessage messages = 3;
-
-    // Completion options
-    optional double temperature = 4;
-    optional int32 max_tokens = 5;
-    optional double top_p = 6;
-    repeated string stop = 7;
-}
-
-message LLMStreamResponse {
-    string delta = 1;
-    repeated ToolCall tool_calls = 2;
-    string finish_reason = 3;
-    TokenUsage usage = 4;
-    HarnessError error = 5;
+    // gateway_ca_pem is the PEM bundle of the private CA that signed the
+    // certificate of the model gateway. The agent trusts exactly this bundle
+    // for calls to gateway_url, which must use https. Empty means the system
+    // roots.
+    string gateway_ca_pem = 7;
 }
 
 // ============================================================================

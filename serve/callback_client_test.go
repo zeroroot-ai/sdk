@@ -190,8 +190,8 @@ func TestCallbackClientNotConnected(t *testing.T) {
 
 	ctx := context.Background()
 
-	// LLMComplete should fail when closed
-	_, err = client.LLMComplete(ctx, nil)
+	// ResolveModel should fail when closed
+	_, err = client.ResolveModel(ctx, "primary")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "not connected")
 }
@@ -251,28 +251,12 @@ func TestCallbackClientNotConnectedErrorMessages(t *testing.T) {
 		expectedMsg string
 	}{
 		{
-			name: "LLMComplete",
+			name: "ResolveModel",
 			call: func() error {
-				_, err := client.LLMComplete(ctx, nil)
+				_, err := client.ResolveModel(ctx, "primary")
 				return err
 			},
-			expectedMsg: "LLMComplete: client not connected",
-		},
-		{
-			name: "LLMCompleteWithTools",
-			call: func() error {
-				_, err := client.LLMCompleteWithTools(ctx, nil)
-				return err
-			},
-			expectedMsg: "LLMCompleteWithTools: client not connected",
-		},
-		{
-			name: "LLMStream",
-			call: func() error {
-				_, err := client.LLMStream(ctx, nil)
-				return err
-			},
-			expectedMsg: "LLMStream: client not connected",
+			expectedMsg: "ResolveModel: client not connected",
 		},
 		{
 			name: "ListTools",

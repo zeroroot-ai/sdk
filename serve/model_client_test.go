@@ -5,6 +5,7 @@ package serve
 
 import (
 	"context"
+	"encoding/pem"
 	"errors"
 	"io"
 	"net"
@@ -59,6 +60,7 @@ func TestNewModelClientNeedsModelAndURL(t *testing.T) {
 type fakeHarnessCallback struct {
 	harnesspb.UnimplementedHarnessCallbackServiceServer
 	gatewayURL string
+	caPEM      string
 	gotSlot    string
 }
 
@@ -70,7 +72,7 @@ func (f *fakeHarnessCallback) ResolveModel(
 		return nil, status.Error(codes.NotFound, "no model for slot")
 	}
 	return &harnesspb.ResolveModelResponse{
-		Model: "claude-exact-1", Provider: "prov", GatewayUrl: f.gatewayURL,
+		Model: "claude-exact-1", Provider: "prov", GatewayUrl: f.gatewayURL, GatewayCaPem: f.caPEM,
 		RouteHeaders:  map[string]string{"x-gibson-tenant": "t1", "x-gibson-provider": "prov"},
 		ContextWindow: 200000, MaxOutputTokens: 8192,
 	}, nil
@@ -79,7 +81,7 @@ func (f *fakeHarnessCallback) ResolveModel(
 func TestCallbackHarnessModelEndToEnd(t *testing.T) {
 	var gotHeader http.Header
 	var gotBody []byte
-	gw := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	gw := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotHeader = r.Header.Clone()
 		gotBody, _ = io.ReadAll(r.Body)
 		w.Header().Set("Content-Type", "application/json")
@@ -90,7 +92,8 @@ func TestCallbackHarnessModelEndToEnd(t *testing.T) {
 
 	lis := bufconn.Listen(1 << 20)
 	srv := grpc.NewServer()
-	fake := &fakeHarnessCallback{gatewayURL: gw.URL}
+	caPEM := string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: gw.Certificate().Raw}))
+	fake := &fakeHarnessCallback{gatewayURL: gw.URL, caPEM: caPEM}
 	harnesspb.RegisterHarnessCallbackServiceServer(srv, fake)
 	go func() { _ = srv.Serve(lis) }()
 	defer srv.Stop()
@@ -111,6 +114,7 @@ func TestCallbackHarnessModelEndToEnd(t *testing.T) {
 	assert.Equal(t, "primary", fake.gotSlot)
 	assert.Equal(t, "claude-exact-1", model.Model)
 	assert.Equal(t, 200000, model.ContextWindow)
+	assert.Equal(t, caPEM, model.CAPEM)
 
 	resp, err := model.Create(context.Background(), &openresponses.Request{
 		Input: []openresponses.Item{openresponses.NewUserMessage("hi")},

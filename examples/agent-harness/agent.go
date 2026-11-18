@@ -29,8 +29,8 @@ import (
 	"github.com/zeroroot-ai/sdk/agent"
 	graphragpb "github.com/zeroroot-ai/sdk/api/gen/gibson/graphrag/v1"
 	"github.com/zeroroot-ai/sdk/finding"
-	"github.com/zeroroot-ai/sdk/llm"
 	"github.com/zeroroot-ai/sdk/mission"
+	"github.com/zeroroot-ai/sdk/openresponses"
 	"github.com/zeroroot-ai/sdk/planning"
 	"github.com/zeroroot-ai/sdk/plugin"
 	"github.com/zeroroot-ai/sdk/tool"
@@ -132,73 +132,81 @@ func callContext(ctx context.Context, h agent.Harness, task agent.Task, rep *Rep
 }
 
 func callLLM(ctx context.Context, h agent.Harness, task agent.Task, rep *Report) {
-	msgs := []llm.Message{{Role: llm.RoleUser, Content: task.Goal}}
+	model, err := h.Model(ctx, llmSlot)
+	record(rep, "Model", model, err, func(m *openresponses.Client) string {
+		return fmt.Sprintf("model=%s provider=%s", m.Model, m.Provider)
+	})
+	if err != nil {
+		return
+	}
+	input := []openresponses.Item{openresponses.NewUserMessage(task.Goal)}
 
-	c, err := h.Complete(ctx, llmSlot, msgs, llm.WithTemperature(0.2), llm.WithMaxTokens(256))
-	record(rep, "Complete", c, err, describeCompletion)
+	temperature := 0.2
+	maxTokens := 256
+	c, err := model.Create(ctx, &openresponses.Request{Input: input, Temperature: &temperature, MaxOutputTokens: &maxTokens})
+	record(rep, "Create", c, err, describeResponse)
 
-	tools := []llm.ToolDef{{
+	tools := []openresponses.Tool{{
 		Name:        "lookup",
 		Description: "Look up a host",
 		Parameters:  map[string]any{"type": "object", "properties": map[string]any{"host": map[string]any{"type": "string"}}},
 	}}
-	ct, err := h.CompleteWithTools(ctx, llmSlot, msgs, tools)
-	record(rep, "CompleteWithTools", ct, err, describeCompletion)
+	ct, err := model.Create(ctx, &openresponses.Request{Input: input, Tools: tools})
+	record(rep, "CreateWithTools", ct, err, describeResponse)
 
 	type verdict struct {
 		Safe bool `json:"safe"`
 	}
-	cs, err := h.CompleteStructured(ctx, llmSlot, msgs, verdict{})
-	record(rep, "CompleteStructured", cs, err, func(v any) string { return fmt.Sprintf("%v", v) })
-	ca, err := h.CompleteStructuredAny(ctx, llmSlot, msgs, verdict{})
-	record(rep, "CompleteStructuredAny", ca, err, func(v any) string { return fmt.Sprintf("%v", v) })
+	var v verdict
+	schema := map[string]any{
+		"type": "object", "additionalProperties": false,
+		"properties": map[string]any{"safe": map[string]any{"type": "boolean"}},
+		"required":   []string{"safe"},
+	}
+	_, err = model.CreateStructured(ctx, &openresponses.Request{Input: input}, "verdict", schema, &v)
+	record(rep, "CreateStructured", v, err, func(v verdict) string { return fmt.Sprintf("%+v", v) })
 
-	ch, err := h.Stream(ctx, llmSlot, msgs)
+	st, err := model.Stream(ctx, &openresponses.Request{Input: input})
 	if err != nil {
 		rep.add(Step{Call: "Stream", Err: err})
 		return
 	}
-	s := drainStream(ch)
+	defer st.Close()
+	var text strings.Builder
+	final, err := st.Collect(func(d string) { text.WriteString(d) })
+	if err != nil {
+		rep.add(Step{Call: "Stream", Err: err})
+		return
+	}
+	s := streamed{Text: text.String(), ToolCalls: len(final.FunctionCalls()), Status: final.Status}
+	if final.Usage != nil {
+		s.Usage = *final.Usage
+	}
 	rep.add(Step{Call: "Stream", Value: s, Summary: s.String()})
 }
 
-// streamed is what the agent read from the chunks of a stream.
+// streamed is what the agent read from the events of a stream.
 type streamed struct {
 	Text      string
 	ToolCalls int
-	Finish    string
-	Usage     llm.TokenUsage
+	Status    string
+	Usage     openresponses.Usage
 }
 
 func (s streamed) String() string {
-	return fmt.Sprintf("text=%q tool_calls=%d finish=%s total=%d", s.Text, s.ToolCalls, s.Finish, s.Usage.TotalTokens)
+	return fmt.Sprintf("text=%q tool_calls=%d status=%s total=%d", s.Text, s.ToolCalls, s.Status, s.Usage.TotalTokens)
 }
 
-func drainStream(ch <-chan llm.StreamChunk) streamed {
-	var s streamed
-	var text strings.Builder
-	for chunk := range ch {
-		text.WriteString(chunk.Delta)
-		s.ToolCalls += len(chunk.ToolCalls)
-		if chunk.FinishReason != "" {
-			s.Finish = chunk.FinishReason
-		}
-		if chunk.Usage != nil {
-			s.Usage = *chunk.Usage
-		}
+func describeResponse(r *openresponses.Response) string {
+	calls := make([]string, 0)
+	for _, fc := range r.FunctionCalls() {
+		calls = append(calls, fc.CallID+":"+fc.Name+":"+fc.Arguments)
 	}
-	s.Text = text.String()
-	return s
-}
-
-func describeCompletion(c *llm.CompletionResponse) string {
-	calls := make([]string, 0, len(c.ToolCalls))
-	for _, tc := range c.ToolCalls {
-		calls = append(calls, tc.ID+":"+tc.Name+":"+tc.Arguments)
+	var total int
+	if r.Usage != nil {
+		total = r.Usage.TotalTokens
 	}
-	return fmt.Sprintf("content=%q finish=%s calls=[%s] in=%d out=%d total=%d",
-		c.Content, c.FinishReason, strings.Join(calls, ","),
-		c.Usage.InputTokens, c.Usage.OutputTokens, c.Usage.TotalTokens)
+	return fmt.Sprintf("text=%q status=%s calls=[%s] total=%d", r.Text(), r.Status, strings.Join(calls, ","), total)
 }
 
 // toolEvents records what a tool stream tells the agent.

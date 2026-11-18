@@ -19,7 +19,6 @@ import (
 	protolib "google.golang.org/protobuf/proto"
 
 	"github.com/zeroroot-ai/sdk/agent"
-	componentpb "github.com/zeroroot-ai/sdk/api/gen/gibson/component/v1"
 	"github.com/zeroroot-ai/sdk/codegen/workspace"
 	"github.com/zeroroot-ai/sdk/finding"
 	harnessconst "github.com/zeroroot-ai/sdk/harness"
@@ -28,7 +27,6 @@ import (
 	"github.com/zeroroot-ai/sdk/openresponses"
 	"github.com/zeroroot-ai/sdk/planning"
 	"github.com/zeroroot-ai/sdk/plugin"
-	"github.com/zeroroot-ai/sdk/schema"
 	"github.com/zeroroot-ai/sdk/tool"
 	"github.com/zeroroot-ai/sdk/types"
 )
@@ -51,7 +49,7 @@ type PlatformHarness struct {
 	logger  *slog.Logger
 	tracer  trace.Tracer
 
-	// tokenTracker accumulates token usage from Complete/CompleteWithTools calls.
+	// tokenTracker accumulates token usage from the model client.
 	tokenTracker *CallbackTokenTracker
 }
 
@@ -73,10 +71,6 @@ func NewPlatformHarness(client *PlatformClient, opts ...PlatformHarnessOption) *
 	return h
 }
 
-// ============================================================================
-// Observability
-// ============================================================================
-
 // Logger returns the structured logger for the agent.
 func (h *PlatformHarness) Logger() *slog.Logger { return h.logger }
 
@@ -86,19 +80,11 @@ func (h *PlatformHarness) Tracer() trace.Tracer { return h.tracer }
 // TokenUsage returns the accumulated token usage across all LLM slots.
 func (h *PlatformHarness) TokenUsage() llm.TokenTracker { return h.tokenTracker }
 
-// ============================================================================
-// Context Access
-// ============================================================================
-
 // Mission returns the current mission context.
 func (h *PlatformHarness) Mission() types.MissionContext { return h.mission }
 
 // Target returns information about the target being tested.
 func (h *PlatformHarness) Target() types.TargetInfo { return h.target }
-
-// ============================================================================
-// LLM Access
-// ============================================================================
 
 // Model resolves a slot to one exact model through the platform and returns the
 // client that calls the model gateway. The client sends the grant of the agent.
@@ -111,248 +97,9 @@ func (h *PlatformHarness) Model(ctx context.Context, slot string) (*openresponse
 	return newModelClient(slot, &resolvedModel{
 		model: resp.GetModel(), provider: resp.GetProvider(), gatewayURL: resp.GetGatewayUrl(),
 		routeHeaders: resp.GetRouteHeaders(), contextWindow: int(resp.GetContextWindow()),
-		maxOutputTokens: int(resp.GetMaxOutputTokens()),
+		maxOutputTokens: int(resp.GetMaxOutputTokens()), gatewayCAPEM: resp.GetGatewayCaPem(),
 	}, h.client.grantHeaders(), h.tokenTracker)
 }
-
-// Complete performs a non-streaming LLM completion through the platform.
-// The slot selects which named LLM slot to use (e.g. "primary").
-func (h *PlatformHarness) Complete(ctx context.Context, slot string, messages []llm.Message, opts ...llm.CompletionOption) (*llm.CompletionResponse, error) {
-	ctx, span := h.tracer.Start(ctx, "gen_ai.chat",
-		trace.WithSpanKind(trace.SpanKindClient),
-		trace.WithAttributes(
-			attribute.String("gen_ai.request.model", slot),
-			attribute.Int("gen_ai.request.message_count", len(messages)),
-		),
-	)
-	defer span.End()
-
-	// Convert messages to the platform wire format.
-	platMsgs := make([]LLMMessage, len(messages))
-	for i, m := range messages {
-		platMsgs[i] = LLMMessage{
-			Role:    string(m.Role),
-			Content: m.Content,
-		}
-	}
-
-	resp, err := h.client.Complete(ctx, h.workID, slot, platMsgs)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("PlatformHarness.Complete: %w", err)
-	}
-
-	result := &llm.CompletionResponse{}
-	if resp.Response != nil {
-		result.Content = resp.Response.Content
-	}
-	if resp.Usage != nil {
-		result.Usage = llm.TokenUsage{
-			InputTokens:  int(resp.Usage.InputTokens),
-			OutputTokens: int(resp.Usage.OutputTokens),
-			TotalTokens:  int(resp.Usage.InputTokens) + int(resp.Usage.OutputTokens),
-		}
-		h.tokenTracker.Add(slot, result.Usage)
-	}
-
-	span.SetAttributes(
-		attribute.Int("gen_ai.usage.input_tokens", result.Usage.InputTokens),
-		attribute.Int("gen_ai.usage.output_tokens", result.Usage.OutputTokens),
-	)
-
-	return result, nil
-}
-
-// CompleteWithTools performs a completion with tool definitions supplied to the
-// LLM. Tools are converted to componentpb.ToolDefinition wire format and sent
-// to the platform for forwarding to the LLM. ToolCalls in the response are
-// converted back to llm.ToolCall.
-func (h *PlatformHarness) CompleteWithTools(ctx context.Context, slot string, messages []llm.Message, tools []llm.ToolDef) (*llm.CompletionResponse, error) {
-	ctx, span := h.tracer.Start(ctx, "gen_ai.chat.tools",
-		trace.WithSpanKind(trace.SpanKindClient),
-		trace.WithAttributes(
-			attribute.String("gen_ai.request.model", slot),
-			attribute.Int("gen_ai.request.message_count", len(messages)),
-			attribute.Int("gen_ai.request.tool_count", len(tools)),
-		),
-	)
-	defer span.End()
-
-	// Convert messages to the wire format.
-	platMsgs := make([]LLMMessage, len(messages))
-	for i, m := range messages {
-		platMsgs[i] = LLMMessage{Role: string(m.Role), Content: m.Content}
-	}
-
-	// Convert llm.ToolDef slice to componentpb.ToolDefinition slice.
-	protoDefs := make([]*componentpb.ToolDefinition, 0, len(tools))
-	for _, td := range tools {
-		schemaJSON, err := json.Marshal(td.Parameters)
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, "failed to marshal tool parameters")
-			return nil, fmt.Errorf("PlatformHarness.CompleteWithTools: marshal tool %q parameters: %w", td.Name, err)
-		}
-		protoDefs = append(protoDefs, &componentpb.ToolDefinition{
-			Name:            td.Name,
-			Description:     td.Description,
-			InputSchemaJson: string(schemaJSON),
-		})
-	}
-
-	resp, err := h.client.CompleteWithTools(ctx, h.workID, slot, platMsgs, protoDefs)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("PlatformHarness.CompleteWithTools: %w", err)
-	}
-
-	result := &llm.CompletionResponse{
-		FinishReason: resp.FinishReason,
-	}
-	if resp.Response != nil {
-		result.Content = resp.Response.Content
-	}
-	if resp.Usage != nil {
-		result.Usage = llm.TokenUsage{
-			InputTokens:  int(resp.Usage.InputTokens),
-			OutputTokens: int(resp.Usage.OutputTokens),
-			TotalTokens:  int(resp.Usage.InputTokens) + int(resp.Usage.OutputTokens),
-		}
-		h.tokenTracker.Add(slot, result.Usage)
-	}
-
-	// Convert proto ToolCallResult slice to llm.ToolCall slice.
-	if len(resp.ToolCalls) > 0 {
-		result.ToolCalls = make([]llm.ToolCall, len(resp.ToolCalls))
-		for i, tc := range resp.ToolCalls {
-			result.ToolCalls[i] = llm.ToolCall{
-				ID:        tc.Id,
-				Name:      tc.Name,
-				Arguments: tc.ArgumentsJson,
-			}
-		}
-	}
-
-	span.SetAttributes(
-		attribute.Int("gen_ai.usage.input_tokens", result.Usage.InputTokens),
-		attribute.Int("gen_ai.usage.output_tokens", result.Usage.OutputTokens),
-		attribute.Int("gen_ai.response.tool_call_count", len(result.ToolCalls)),
-	)
-
-	return result, nil
-}
-
-// Stream performs a streaming completion request, proxying through the platform's
-// CompleteStream RPC. Returns a channel of llm.StreamChunk that is closed when
-// the stream completes or encounters an error.
-func (h *PlatformHarness) Stream(ctx context.Context, slot string, messages []llm.Message) (<-chan llm.StreamChunk, error) {
-	ctx, span := h.tracer.Start(ctx, "gen_ai.chat.stream",
-		trace.WithSpanKind(trace.SpanKindClient),
-		trace.WithAttributes(
-			attribute.String("gen_ai.request.model", slot),
-			attribute.Int("gen_ai.request.message_count", len(messages)),
-		),
-	)
-
-	platMsgs := make([]LLMMessage, len(messages))
-	for i, m := range messages {
-		platMsgs[i] = LLMMessage{Role: string(m.Role), Content: m.Content}
-	}
-
-	rawCh, err := h.client.StreamCompletion(ctx, h.workID, slot, platMsgs)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		span.End()
-		return nil, fmt.Errorf("PlatformHarness.Stream: %w", err)
-	}
-
-	out := make(chan llm.StreamChunk, 32)
-	go func() {
-		defer span.End()
-		defer close(out)
-		for raw := range rawCh {
-			if raw.Err != nil {
-				span.RecordError(raw.Err)
-				span.SetStatus(codes.Error, raw.Err.Error())
-				out <- llm.StreamChunk{FinishReason: "error"}
-				return
-			}
-			chunk := llm.StreamChunk{
-				Delta: raw.Content,
-			}
-			if raw.Done {
-				chunk.FinishReason = "stop"
-				if raw.Usage != nil {
-					chunk.Usage = &llm.TokenUsage{
-						InputTokens:  int(raw.Usage.InputTokens),
-						OutputTokens: int(raw.Usage.OutputTokens),
-						TotalTokens:  int(raw.Usage.InputTokens) + int(raw.Usage.OutputTokens),
-					}
-					h.tokenTracker.Add(slot, *chunk.Usage)
-				}
-			}
-			out <- chunk
-		}
-	}()
-
-	return out, nil
-}
-
-// CompleteStructured performs a completion requesting structured JSON output.
-// schemaType is an instance of the caller's struct. Its JSON Schema, from
-// schema.FromType as CallbackHarness builds it, goes to the platform as
-// schema_json (sdk#300). The returned JSON is decoded into an any value: a
-// map[string]any for an object schema.
-func (h *PlatformHarness) CompleteStructured(ctx context.Context, slot string, messages []llm.Message, schemaType any) (any, error) {
-	ctx, span := h.tracer.Start(ctx, "gen_ai.chat.structured",
-		trace.WithSpanKind(trace.SpanKindClient),
-		trace.WithAttributes(
-			attribute.String("gen_ai.request.model", slot),
-			attribute.Int("gen_ai.request.message_count", len(messages)),
-		),
-	)
-	defer span.End()
-
-	schemaJSON, err := json.Marshal(schema.FromType(schemaType))
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to marshal schema")
-		return nil, fmt.Errorf("PlatformHarness.CompleteStructured: marshal schema: %w", err)
-	}
-
-	platMsgs := make([]LLMMessage, len(messages))
-	for i, m := range messages {
-		platMsgs[i] = LLMMessage{Role: string(m.Role), Content: m.Content}
-	}
-
-	resultJSON, err := h.client.CompleteStructured(ctx, h.workID, slot, platMsgs, string(schemaJSON))
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("PlatformHarness.CompleteStructured: %w", err)
-	}
-
-	var result any
-	if err := json.Unmarshal([]byte(resultJSON), &result); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to unmarshal structured result")
-		return nil, fmt.Errorf("PlatformHarness.CompleteStructured: unmarshal result: %w", err)
-	}
-
-	return result, nil
-}
-
-// CompleteStructuredAny is an alias for CompleteStructured.
-func (h *PlatformHarness) CompleteStructuredAny(ctx context.Context, slot string, messages []llm.Message, schemaType any) (any, error) {
-	return h.CompleteStructured(ctx, slot, messages, schemaType)
-}
-
-// ============================================================================
-// Tool Access
-// ============================================================================
 
 // CallToolProto invokes a tool by name, marshaling the request proto to JSON
 // for transport and unmarshaling the JSON response back into resp.
@@ -604,10 +351,6 @@ func (h *PlatformHarness) ToolResults(ctx context.Context, jobID string) <-chan 
 	return out
 }
 
-// ============================================================================
-// Plugin Access
-// ============================================================================
-
 // QueryPlugin sends a query to a named plugin method. params is marshaled to
 // JSON for transport; the result JSON is unmarshaled back to any.
 func (h *PlatformHarness) QueryPlugin(ctx context.Context, name string, method string, params map[string]any) (any, error) {
@@ -650,10 +393,6 @@ func (h *PlatformHarness) ListPlugins(_ context.Context) ([]plugin.Descriptor, e
 	h.logger.Debug("PlatformHarness.ListPlugins: no ListPlugins RPC available — returning empty list")
 	return []plugin.Descriptor{}, nil
 }
-
-// ============================================================================
-// Agent Delegation
-// ============================================================================
 
 // DelegateToAgent dispatches a task to another agent identified by name. The
 // task is marshaled to JSON and sent via the platform's DelegateToAgent RPC;
@@ -719,10 +458,6 @@ func (h *PlatformHarness) ListAgents(ctx context.Context) ([]agent.Descriptor, e
 	return descs, nil
 }
 
-// ============================================================================
-// Finding Management
-// ============================================================================
-
 // SubmitFinding serializes the finding and submits it to the platform via the
 // SubmitFinding RPC tied to the current work item.
 func (h *PlatformHarness) SubmitFinding(ctx context.Context, f *finding.Finding) error {
@@ -752,14 +487,6 @@ func (h *PlatformHarness) SubmitFinding(ctx context.Context, f *finding.Finding)
 
 	return nil
 }
-
-// ============================================================================
-// Memory Access
-// ============================================================================
-
-// ============================================================================
-// Planning
-// ============================================================================
 
 // PlanContext returns nil. Planning context is not yet propagated through the
 // work item's context fields in the component proto. When the daemon adds a
@@ -811,19 +538,11 @@ func (h *PlatformHarness) ReportStepHints(ctx context.Context, hints *planning.S
 	return nil
 }
 
-// ============================================================================
-// Mission Execution Context
-// ============================================================================
-
 // SetMissionExecutionContext stores the mission execution context populated
 // from the work item's "mission_execution_context_json" context key. This is
 // called by the platform serve loop after constructing the harness.
 func (h *PlatformHarness) SetMissionExecutionContext(ctx types.MissionExecutionContext) {
 }
-
-// ============================================================================
-// MissionManager — proxied through PlatformClient
-// ============================================================================
 
 // CreateMission marshals the mission definition and opts to JSON and calls the platform's
 // CreateMission RPC. The JSON result is unmarshaled to *mission.MissionInfo.
@@ -1039,10 +758,6 @@ func (h *PlatformHarness) GetMissionResults(ctx context.Context, missionID strin
 	return &result, nil
 }
 
-// ============================================================================
-// Workspace Access
-// ============================================================================
-
 // Workspace returns nil — workspace support is not available in pull mode.
 func (h *PlatformHarness) Workspace() workspace.Workspace {
 	h.logger.Debug("PlatformHarness.Workspace: workspace not available in pull mode")
@@ -1054,10 +769,6 @@ func (h *PlatformHarness) Workspaces() map[string]workspace.Workspace {
 	h.logger.Debug("PlatformHarness.Workspaces: workspace not available in pull mode")
 	return map[string]workspace.Workspace{}
 }
-
-// ============================================================================
-// Authorization Methods
-// ============================================================================
 
 // Authorize asks the daemon whether the work item of this harness may do action
 // on resource, through ComponentService.Authorize. It means the same as
@@ -1088,22 +799,6 @@ func (h *PlatformHarness) Authorize(ctx context.Context, action, resource string
 	}
 	return nil
 }
-
-// ── KnowledgeReader ─────────────────────────────────────────────────────────
-//
-// Not wired in platform pull-mode, and each read says so rather than answering
-// empty. Same reasoning as WorldView above: an empty result reads as "the tenant
-// knows nothing", which a caller cannot distinguish from "I could not look" —
-// and for a security agent that is a silent false negative.
-//
-// ErrKnowledgeUnavailable is matchable, so a caller can degrade deliberately:
-//
-//	if errors.Is(err, agent.ErrKnowledgeUnavailable) { /* say so, conclude nothing */ }
-//
-// These reach the daemon over ComponentService, which does carry all eight RPCs
-// — what is missing is the client half plus a decode, since that service still
-// returns the JSON-bytes payloads the callback service has now moved off. The
-// dispatched path (CallbackHarness) is the one this epic needed, and it is wired.
 
 // QueryNodes is not wired in platform pull-mode; it reports ErrKnowledgeUnavailable.
 func (h *PlatformHarness) QueryNodes(context.Context, *graphragpb.GraphQuery) ([]*graphragpb.QueryResult, error) {

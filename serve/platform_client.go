@@ -26,15 +26,6 @@ import (
 	"github.com/zeroroot-ai/sdk/openresponses"
 )
 
-// ============================================================================
-// Local message types mirroring component.proto
-//
-// These types are the public API surface for PlatformClient callers. They
-// mirror the wire types in componentpb but are deliberately decoupled so that
-// callers in the serve package do not need to import the generated proto package
-// directly.
-// ============================================================================
-
 // ComponentInfo carries registration metadata sent in RegisterComponent.
 type ComponentInfo struct {
 	// Kind is "agent", "tool", or "plugin".
@@ -97,51 +88,6 @@ type WorkError struct {
 	Retryable bool
 }
 
-// LLMMessage is a single message in an LLM conversation, matching the
-// LLMMessage proto message in component.proto.
-type LLMMessage struct {
-	// Role is "system", "user", or "assistant".
-	Role    string
-	Content string
-}
-
-// TokenUsage reports token consumption for an LLM completion call.
-type TokenUsage struct {
-	InputTokens  int32
-	OutputTokens int32
-}
-
-// CompleteResponse carries the LLM reply for a non-streaming completion.
-type CompleteResponse struct {
-	Response *LLMMessage
-	Usage    *TokenUsage
-}
-
-// CompleteWithToolsResult holds the LLM reply, any tool calls, and token usage
-// for a CompleteWithTools request.
-type CompleteWithToolsResult struct {
-	// Response is the LLM text reply (may be nil when the model only emitted tool calls).
-	Response *LLMMessage
-	// ToolCalls is the list of tool-use invocations requested by the model.
-	ToolCalls []*componentpb.ToolCallResult
-	// Usage reports token consumption for this call.
-	Usage *TokenUsage
-	// FinishReason is the model's stop reason (e.g. "tool_use", "end_turn").
-	FinishReason string
-}
-
-// StreamChunk is a single token chunk delivered by StreamCompletion.
-type StreamChunk struct {
-	// Content is the incremental text fragment for this chunk.
-	Content string
-	// Done is true on the final chunk; Usage is only set when Done is true.
-	Done bool
-	// Usage reports token consumption, populated only on the final chunk.
-	Usage *TokenUsage
-	// Err is non-nil if the stream terminated with an error.
-	Err error
-}
-
 // ToolStreamEvent is a single event delivered by CallToolStream.
 type ToolStreamEvent struct {
 	// EventType is one of "progress", "partial", "warning", "error", "result".
@@ -161,10 +107,6 @@ type QueuedToolResultEvent struct {
 	// Err is non-nil if this invocation failed or the stream terminated with an error.
 	Err error
 }
-
-// ============================================================================
-// PlatformClient
-// ============================================================================
 
 // PlatformClient manages the outbound gRPC connection from a Gibson component
 // to the Gibson platform's ComponentService. It is thread-safe and supports
@@ -466,10 +408,6 @@ func (pc *PlatformClient) InstanceID() string {
 	return pc.instanceID
 }
 
-// ============================================================================
-// ComponentService RPC methods
-// ============================================================================
-
 // Register calls the RegisterComponent RPC and stores the returned instance ID
 // and poll timeout. The RegistrationResponse carries connection parameters
 // (heartbeat/poll intervals) that callers should use to configure their
@@ -645,55 +583,6 @@ func (pc *PlatformClient) grantHeaders() openresponses.HeaderFunc {
 	return grantHeaders("", signer)
 }
 
-// Complete proxies a non-streaming LLM completion request through the agent
-// harness. workID ties the request to the active work item for authorization
-// and billing. slot is the named LLM slot (e.g. "primary") declared by the agent.
-func (pc *PlatformClient) Complete(ctx context.Context, workID, slot string, messages []LLMMessage) (*CompleteResponse, error) {
-	if err := pc.ensureConnected("Complete"); err != nil {
-		return nil, err
-	}
-	if workID == "" {
-		return nil, errors.New("Complete: workID cannot be empty")
-	}
-	if slot == "" {
-		return nil, errors.New("Complete: slot cannot be empty")
-	}
-
-	protoMsgs := make([]*componentpb.LLMMessage, len(messages))
-	for i, m := range messages {
-		protoMsgs[i] = &componentpb.LLMMessage{
-			Role:    m.Role,
-			Content: m.Content,
-		}
-	}
-
-	req := &componentpb.CompleteRequest{
-		WorkId:   workID,
-		Slot:     slot,
-		Messages: protoMsgs,
-	}
-
-	resp, err := pc.service.Complete(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("Complete: %w", err)
-	}
-
-	result := &CompleteResponse{}
-	if resp.Response != nil {
-		result.Response = &LLMMessage{
-			Role:    resp.Response.Role,
-			Content: resp.Response.Content,
-		}
-	}
-	if resp.Usage != nil {
-		result.Usage = &TokenUsage{
-			InputTokens:  resp.Usage.InputTokens,
-			OutputTokens: resp.Usage.OutputTokens,
-		}
-	}
-	return result, nil
-}
-
 // CallTool proxies a tool execution request through the agent harness.
 // inputJSON must be a JSON object matching the named tool's input schema.
 // Returns the JSON-encoded tool output on success.
@@ -783,121 +672,6 @@ func (pc *PlatformClient) SubmitFinding(ctx context.Context, workID string, find
 		return "", fmt.Errorf("SubmitFinding: %w", err)
 	}
 	return resp.FindingId, nil
-}
-
-// ============================================================================
-// New harness-parity methods — added in task 2
-// ============================================================================
-
-// CompleteWithTools proxies an LLM completion with tool definitions for
-// function-calling support. tools is a slice of componentpb.ToolDefinition
-// describing the tools available to the model.
-func (pc *PlatformClient) CompleteWithTools(ctx context.Context, workID, slot string, messages []LLMMessage, tools []*componentpb.ToolDefinition) (*CompleteWithToolsResult, error) {
-	if err := pc.ensureConnected("CompleteWithTools"); err != nil {
-		return nil, err
-	}
-
-	protoMsgs := make([]*componentpb.LLMMessage, len(messages))
-	for i, m := range messages {
-		protoMsgs[i] = &componentpb.LLMMessage{Role: m.Role, Content: m.Content}
-	}
-
-	resp, err := pc.service.CompleteWithTools(ctx, &componentpb.CompleteWithToolsRequest{
-		WorkId:   workID,
-		Slot:     slot,
-		Messages: protoMsgs,
-		Tools:    tools,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("PlatformClient.CompleteWithTools: %w", err)
-	}
-
-	result := &CompleteWithToolsResult{
-		ToolCalls:    resp.ToolCalls,
-		FinishReason: resp.FinishReason,
-	}
-	if resp.Response != nil {
-		result.Response = &LLMMessage{Role: resp.Response.Role, Content: resp.Response.Content}
-	}
-	if resp.Usage != nil {
-		result.Usage = &TokenUsage{InputTokens: resp.Usage.InputTokens, OutputTokens: resp.Usage.OutputTokens}
-	}
-	return result, nil
-}
-
-// CompleteStructured proxies an LLM completion requesting JSON output conforming
-// to the provided JSON Schema. Returns the result_json string on success.
-func (pc *PlatformClient) CompleteStructured(ctx context.Context, workID, slot string, messages []LLMMessage, schemaJSON string) (string, error) {
-	if err := pc.ensureConnected("CompleteStructured"); err != nil {
-		return "", err
-	}
-
-	protoMsgs := make([]*componentpb.LLMMessage, len(messages))
-	for i, m := range messages {
-		protoMsgs[i] = &componentpb.LLMMessage{Role: m.Role, Content: m.Content}
-	}
-
-	resp, err := pc.service.CompleteStructured(ctx, &componentpb.CompleteStructuredRequest{
-		WorkId:     workID,
-		Slot:       slot,
-		Messages:   protoMsgs,
-		SchemaJson: schemaJSON,
-	})
-	if err != nil {
-		return "", fmt.Errorf("PlatformClient.CompleteStructured: %w", err)
-	}
-	return resp.ResultJson, nil
-}
-
-// StreamCompletion proxies a streaming LLM completion request. It opens a
-// server-side stream and returns a channel that receives chunks as they arrive.
-// The channel is closed after the final chunk or on error. Callers should drain
-// the channel until it is closed; the last event will have Done==true or a
-// non-nil Err.
-func (pc *PlatformClient) StreamCompletion(ctx context.Context, workID, slot string, messages []LLMMessage) (<-chan StreamChunk, error) {
-	if err := pc.ensureConnected("StreamCompletion"); err != nil {
-		return nil, err
-	}
-
-	protoMsgs := make([]*componentpb.LLMMessage, len(messages))
-	for i, m := range messages {
-		protoMsgs[i] = &componentpb.LLMMessage{Role: m.Role, Content: m.Content}
-	}
-
-	stream, err := pc.service.CompleteStream(ctx, &componentpb.CompleteStreamRequest{
-		WorkId:   workID,
-		Slot:     slot,
-		Messages: protoMsgs,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("PlatformClient.StreamCompletion: %w", err)
-	}
-
-	ch := make(chan StreamChunk, 32)
-	go func() {
-		defer close(ch)
-		for {
-			msg, recvErr := stream.Recv()
-			if recvErr != nil {
-				if !errors.Is(recvErr, io.EOF) {
-					ch <- StreamChunk{Err: fmt.Errorf("PlatformClient.StreamCompletion: %w", recvErr)}
-				}
-				return
-			}
-			chunk := StreamChunk{
-				Content: msg.Content,
-				Done:    msg.Done,
-			}
-			if msg.Usage != nil {
-				chunk.Usage = &TokenUsage{InputTokens: msg.Usage.InputTokens, OutputTokens: msg.Usage.OutputTokens}
-			}
-			ch <- chunk
-			if msg.Done {
-				return
-			}
-		}
-	}()
-	return ch, nil
 }
 
 // QueueToolWork submits a batch of tool invocations for parallel execution and

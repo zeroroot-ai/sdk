@@ -19,10 +19,6 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	HarnessCallbackService_LLMComplete_FullMethodName                     = "/gibson.harness.v1.HarnessCallbackService/LLMComplete"
-	HarnessCallbackService_LLMCompleteWithTools_FullMethodName            = "/gibson.harness.v1.HarnessCallbackService/LLMCompleteWithTools"
-	HarnessCallbackService_LLMCompleteStructured_FullMethodName           = "/gibson.harness.v1.HarnessCallbackService/LLMCompleteStructured"
-	HarnessCallbackService_LLMStream_FullMethodName                       = "/gibson.harness.v1.HarnessCallbackService/LLMStream"
 	HarnessCallbackService_ResolveModel_FullMethodName                    = "/gibson.harness.v1.HarnessCallbackService/ResolveModel"
 	HarnessCallbackService_CallToolProto_FullMethodName                   = "/gibson.harness.v1.HarnessCallbackService/CallToolProto"
 	HarnessCallbackService_CallToolProtoStream_FullMethodName             = "/gibson.harness.v1.HarnessCallbackService/CallToolProtoStream"
@@ -96,11 +92,6 @@ const (
 // HarnessCallbackService provides the harness interface for agents executing in standalone mode.
 // The SDK's CallbackHarness forwards all harness operations to the orchestrator via this service.
 type HarnessCallbackServiceClient interface {
-	// LLM Operations
-	LLMComplete(ctx context.Context, in *LLMCompleteRequest, opts ...grpc.CallOption) (*LLMCompleteResponse, error)
-	LLMCompleteWithTools(ctx context.Context, in *LLMCompleteWithToolsRequest, opts ...grpc.CallOption) (*LLMCompleteWithToolsResponse, error)
-	LLMCompleteStructured(ctx context.Context, in *LLMCompleteStructuredRequest, opts ...grpc.CallOption) (*LLMCompleteStructuredResponse, error)
-	LLMStream(ctx context.Context, in *LLMStreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LLMStreamResponse], error)
 	// ResolveModel turns a slot into one exact model name (ADR-0172, decision 4).
 	// The agent then calls the model gateway with the Open Responses client of
 	// the SDK. The gateway never sees a slot name. The agent sends the task
@@ -328,55 +319,6 @@ func NewHarnessCallbackServiceClient(cc grpc.ClientConnInterface) HarnessCallbac
 	return &harnessCallbackServiceClient{cc}
 }
 
-func (c *harnessCallbackServiceClient) LLMComplete(ctx context.Context, in *LLMCompleteRequest, opts ...grpc.CallOption) (*LLMCompleteResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(LLMCompleteResponse)
-	err := c.cc.Invoke(ctx, HarnessCallbackService_LLMComplete_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *harnessCallbackServiceClient) LLMCompleteWithTools(ctx context.Context, in *LLMCompleteWithToolsRequest, opts ...grpc.CallOption) (*LLMCompleteWithToolsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(LLMCompleteWithToolsResponse)
-	err := c.cc.Invoke(ctx, HarnessCallbackService_LLMCompleteWithTools_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *harnessCallbackServiceClient) LLMCompleteStructured(ctx context.Context, in *LLMCompleteStructuredRequest, opts ...grpc.CallOption) (*LLMCompleteStructuredResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(LLMCompleteStructuredResponse)
-	err := c.cc.Invoke(ctx, HarnessCallbackService_LLMCompleteStructured_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *harnessCallbackServiceClient) LLMStream(ctx context.Context, in *LLMStreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LLMStreamResponse], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &HarnessCallbackService_ServiceDesc.Streams[0], HarnessCallbackService_LLMStream_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[LLMStreamRequest, LLMStreamResponse]{ClientStream: stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type HarnessCallbackService_LLMStreamClient = grpc.ServerStreamingClient[LLMStreamResponse]
-
 func (c *harnessCallbackServiceClient) ResolveModel(ctx context.Context, in *ResolveModelRequest, opts ...grpc.CallOption) (*ResolveModelResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ResolveModelResponse)
@@ -399,7 +341,7 @@ func (c *harnessCallbackServiceClient) CallToolProto(ctx context.Context, in *Ca
 
 func (c *harnessCallbackServiceClient) CallToolProtoStream(ctx context.Context, in *CallToolProtoStreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CallToolProtoStreamResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &HarnessCallbackService_ServiceDesc.Streams[1], HarnessCallbackService_CallToolProtoStream_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &HarnessCallbackService_ServiceDesc.Streams[0], HarnessCallbackService_CallToolProtoStream_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -448,7 +390,7 @@ func (c *harnessCallbackServiceClient) QueueToolWork(ctx context.Context, in *Qu
 
 func (c *harnessCallbackServiceClient) ToolResults(ctx context.Context, in *ToolResultsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ToolResultsResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &HarnessCallbackService_ServiceDesc.Streams[2], HarnessCallbackService_ToolResults_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &HarnessCallbackService_ServiceDesc.Streams[1], HarnessCallbackService_ToolResults_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -917,7 +859,7 @@ func (c *harnessCallbackServiceClient) WorkspacePush(ctx context.Context, in *Wo
 
 func (c *harnessCallbackServiceClient) DevboxExec(ctx context.Context, in *DevboxExecRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DevboxExecResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &HarnessCallbackService_ServiceDesc.Streams[3], HarnessCallbackService_DevboxExec_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &HarnessCallbackService_ServiceDesc.Streams[2], HarnessCallbackService_DevboxExec_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -966,7 +908,7 @@ func (c *harnessCallbackServiceClient) DeleteSessionContext(ctx context.Context,
 
 func (c *harnessCallbackServiceClient) SubscribeInput(ctx context.Context, in *SubscribeInputRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SubscribeInputResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &HarnessCallbackService_ServiceDesc.Streams[4], HarnessCallbackService_SubscribeInput_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &HarnessCallbackService_ServiceDesc.Streams[3], HarnessCallbackService_SubscribeInput_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1060,11 +1002,6 @@ func (c *harnessCallbackServiceClient) ClaimFork(ctx context.Context, in *ClaimF
 // HarnessCallbackService provides the harness interface for agents executing in standalone mode.
 // The SDK's CallbackHarness forwards all harness operations to the orchestrator via this service.
 type HarnessCallbackServiceServer interface {
-	// LLM Operations
-	LLMComplete(context.Context, *LLMCompleteRequest) (*LLMCompleteResponse, error)
-	LLMCompleteWithTools(context.Context, *LLMCompleteWithToolsRequest) (*LLMCompleteWithToolsResponse, error)
-	LLMCompleteStructured(context.Context, *LLMCompleteStructuredRequest) (*LLMCompleteStructuredResponse, error)
-	LLMStream(*LLMStreamRequest, grpc.ServerStreamingServer[LLMStreamResponse]) error
 	// ResolveModel turns a slot into one exact model name (ADR-0172, decision 4).
 	// The agent then calls the model gateway with the Open Responses client of
 	// the SDK. The gateway never sees a slot name. The agent sends the task
@@ -1292,18 +1229,6 @@ type HarnessCallbackServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedHarnessCallbackServiceServer struct{}
 
-func (UnimplementedHarnessCallbackServiceServer) LLMComplete(context.Context, *LLMCompleteRequest) (*LLMCompleteResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method LLMComplete not implemented")
-}
-func (UnimplementedHarnessCallbackServiceServer) LLMCompleteWithTools(context.Context, *LLMCompleteWithToolsRequest) (*LLMCompleteWithToolsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method LLMCompleteWithTools not implemented")
-}
-func (UnimplementedHarnessCallbackServiceServer) LLMCompleteStructured(context.Context, *LLMCompleteStructuredRequest) (*LLMCompleteStructuredResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method LLMCompleteStructured not implemented")
-}
-func (UnimplementedHarnessCallbackServiceServer) LLMStream(*LLMStreamRequest, grpc.ServerStreamingServer[LLMStreamResponse]) error {
-	return status.Errorf(codes.Unimplemented, "method LLMStream not implemented")
-}
 func (UnimplementedHarnessCallbackServiceServer) ResolveModel(context.Context, *ResolveModelRequest) (*ResolveModelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ResolveModel not implemented")
 }
@@ -1517,71 +1442,6 @@ func RegisterHarnessCallbackServiceServer(s grpc.ServiceRegistrar, srv HarnessCa
 	}
 	s.RegisterService(&HarnessCallbackService_ServiceDesc, srv)
 }
-
-func _HarnessCallbackService_LLMComplete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LLMCompleteRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HarnessCallbackServiceServer).LLMComplete(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HarnessCallbackService_LLMComplete_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HarnessCallbackServiceServer).LLMComplete(ctx, req.(*LLMCompleteRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HarnessCallbackService_LLMCompleteWithTools_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LLMCompleteWithToolsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HarnessCallbackServiceServer).LLMCompleteWithTools(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HarnessCallbackService_LLMCompleteWithTools_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HarnessCallbackServiceServer).LLMCompleteWithTools(ctx, req.(*LLMCompleteWithToolsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HarnessCallbackService_LLMCompleteStructured_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LLMCompleteStructuredRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HarnessCallbackServiceServer).LLMCompleteStructured(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HarnessCallbackService_LLMCompleteStructured_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HarnessCallbackServiceServer).LLMCompleteStructured(ctx, req.(*LLMCompleteStructuredRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HarnessCallbackService_LLMStream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(LLMStreamRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(HarnessCallbackServiceServer).LLMStream(m, &grpc.GenericServerStream[LLMStreamRequest, LLMStreamResponse]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type HarnessCallbackService_LLMStreamServer = grpc.ServerStreamingServer[LLMStreamResponse]
 
 func _HarnessCallbackService_ResolveModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ResolveModelRequest)
@@ -2715,18 +2575,6 @@ var HarnessCallbackService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*HarnessCallbackServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "LLMComplete",
-			Handler:    _HarnessCallbackService_LLMComplete_Handler,
-		},
-		{
-			MethodName: "LLMCompleteWithTools",
-			Handler:    _HarnessCallbackService_LLMCompleteWithTools_Handler,
-		},
-		{
-			MethodName: "LLMCompleteStructured",
-			Handler:    _HarnessCallbackService_LLMCompleteStructured_Handler,
-		},
-		{
 			MethodName: "ResolveModel",
 			Handler:    _HarnessCallbackService_ResolveModel_Handler,
 		},
@@ -2968,11 +2816,6 @@ var HarnessCallbackService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "LLMStream",
-			Handler:       _HarnessCallbackService_LLMStream_Handler,
-			ServerStreams: true,
-		},
 		{
 			StreamName:    "CallToolProtoStream",
 			Handler:       _HarnessCallbackService_CallToolProtoStream_Handler,

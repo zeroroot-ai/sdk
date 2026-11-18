@@ -19,7 +19,7 @@
 //   - Initialize, Shutdown, Health: Lifecycle management
 //
 // Harness Interface - The runtime environment provided to agents:
-//   - LLM access (Complete, CompleteWithTools, Stream)
+//   - LLM access (Model, which returns the Open Responses client)
 //   - Tool access (CallToolProto, ListTools)
 //   - Plugin access (QueryPlugin, ListPlugins)
 //   - Agent delegation (DelegateToAgent, ListAgents)
@@ -97,7 +97,13 @@
 //			logger.Info("executing task", "task_id", task.ID)
 //
 //			// Use LLM
-//			resp, err := harness.Complete(ctx, "primary", messages)
+//			model, err := harness.Model(ctx, "primary")
+//			if err != nil {
+//				return agent.NewFailedResult(err), err
+//			}
+//			resp, err := model.Create(ctx, &openresponses.Request{
+//				Input: []openresponses.Item{openresponses.NewUserMessage("Test prompt")},
+//			})
 //			if err != nil {
 //				return agent.NewFailedResult(err), err
 //			}
@@ -139,13 +145,13 @@
 // The harness provides all runtime capabilities:
 //
 //	// LLM access
-//	messages := []llm.Message{
-//		{Role: llm.RoleUser, Content: "Test prompt"},
-//	}
-//	resp, err := harness.Complete(ctx, "primary", messages,
-//		llm.WithTemperature(0.7),
-//		llm.WithMaxTokens(1000),
-//	)
+//	model, err := harness.Model(ctx, "primary")
+//	temperature, maxTokens := 0.7, 1000
+//	resp, err := model.Create(ctx, &openresponses.Request{
+//		Input:           []openresponses.Item{openresponses.NewUserMessage("Test prompt")},
+//		Temperature:     &temperature,
+//		MaxOutputTokens: &maxTokens,
+//	})
 //
 //	// Tool calling (proto-based)
 //	// Replace mytoolpb with your tool's generated proto package; the SDK

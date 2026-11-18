@@ -23,8 +23,6 @@ const (
 	ComponentService_Heartbeat_FullMethodName            = "/gibson.component.v1.ComponentService/Heartbeat"
 	ComponentService_PollWork_FullMethodName             = "/gibson.component.v1.ComponentService/PollWork"
 	ComponentService_SubmitResult_FullMethodName         = "/gibson.component.v1.ComponentService/SubmitResult"
-	ComponentService_Complete_FullMethodName             = "/gibson.component.v1.ComponentService/Complete"
-	ComponentService_CompleteStream_FullMethodName       = "/gibson.component.v1.ComponentService/CompleteStream"
 	ComponentService_CallTool_FullMethodName             = "/gibson.component.v1.ComponentService/CallTool"
 	ComponentService_QueryPlugin_FullMethodName          = "/gibson.component.v1.ComponentService/QueryPlugin"
 	ComponentService_SubmitFinding_FullMethodName        = "/gibson.component.v1.ComponentService/SubmitFinding"
@@ -36,8 +34,6 @@ const (
 	ComponentService_TestPluginConnection_FullMethodName = "/gibson.component.v1.ComponentService/TestPluginConnection"
 	ComponentService_ListTenantPlugins_FullMethodName    = "/gibson.component.v1.ComponentService/ListTenantPlugins"
 	ComponentService_EnrollComponent_FullMethodName      = "/gibson.component.v1.ComponentService/EnrollComponent"
-	ComponentService_CompleteWithTools_FullMethodName    = "/gibson.component.v1.ComponentService/CompleteWithTools"
-	ComponentService_CompleteStructured_FullMethodName   = "/gibson.component.v1.ComponentService/CompleteStructured"
 	ComponentService_ResolveModel_FullMethodName         = "/gibson.component.v1.ComponentService/ResolveModel"
 	ComponentService_CallToolStream_FullMethodName       = "/gibson.component.v1.ComponentService/CallToolStream"
 	ComponentService_QueueToolWork_FullMethodName        = "/gibson.component.v1.ComponentService/QueueToolWork"
@@ -98,10 +94,6 @@ type ComponentServiceClient interface {
 	// Authorized by can_poll_work — see PollWork's comment for why this
 	// receive-side RPC does not share can_execute with the drive-side RPCs.
 	SubmitResult(ctx context.Context, in *SubmitResultRequest, opts ...grpc.CallOption) (*SubmitResultResponse, error)
-	// Complete proxies an LLM completion request through the agent harness.
-	Complete(ctx context.Context, in *CompleteRequest, opts ...grpc.CallOption) (*CompleteResponse, error)
-	// CompleteStream proxies a streaming LLM completion request through the agent harness.
-	CompleteStream(ctx context.Context, in *CompleteStreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CompleteStreamResponse], error)
 	// CallTool proxies a tool execution request through the agent harness.
 	CallTool(ctx context.Context, in *CallToolRequest, opts ...grpc.CallOption) (*CallToolResponse, error)
 	// QueryPlugin proxies a plugin query request through the agent harness.
@@ -133,12 +125,6 @@ type ComponentServiceClient interface {
 	// a catalog name is refused. A quota for each tenant bounds how many
 	// components agents enroll. Each enrollment writes an audit record.
 	EnrollComponent(ctx context.Context, in *EnrollComponentRequest, opts ...grpc.CallOption) (*EnrollComponentResponse, error)
-	// CompleteWithTools proxies an LLM completion with tool definitions for
-	// function-calling support. Returns the response including any tool calls.
-	CompleteWithTools(ctx context.Context, in *CompleteWithToolsRequest, opts ...grpc.CallOption) (*CompleteWithToolsResponse, error)
-	// CompleteStructured proxies an LLM completion requesting JSON output
-	// conforming to the supplied schema.
-	CompleteStructured(ctx context.Context, in *CompleteStructuredRequest, opts ...grpc.CallOption) (*CompleteStructuredResponse, error)
 	// ResolveModel turns a slot into one exact model name (ADR-0172). The agent
 	// then calls the model gateway with the Open Responses client of the SDK.
 	// The agent sends the task grant in the header x-capability-grant and sends
@@ -260,35 +246,6 @@ func (c *componentServiceClient) SubmitResult(ctx context.Context, in *SubmitRes
 	return out, nil
 }
 
-func (c *componentServiceClient) Complete(ctx context.Context, in *CompleteRequest, opts ...grpc.CallOption) (*CompleteResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CompleteResponse)
-	err := c.cc.Invoke(ctx, ComponentService_Complete_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *componentServiceClient) CompleteStream(ctx context.Context, in *CompleteStreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CompleteStreamResponse], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &ComponentService_ServiceDesc.Streams[0], ComponentService_CompleteStream_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[CompleteStreamRequest, CompleteStreamResponse]{ClientStream: stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type ComponentService_CompleteStreamClient = grpc.ServerStreamingClient[CompleteStreamResponse]
-
 func (c *componentServiceClient) CallTool(ctx context.Context, in *CallToolRequest, opts ...grpc.CallOption) (*CallToolResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CallToolResponse)
@@ -399,26 +356,6 @@ func (c *componentServiceClient) EnrollComponent(ctx context.Context, in *Enroll
 	return out, nil
 }
 
-func (c *componentServiceClient) CompleteWithTools(ctx context.Context, in *CompleteWithToolsRequest, opts ...grpc.CallOption) (*CompleteWithToolsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CompleteWithToolsResponse)
-	err := c.cc.Invoke(ctx, ComponentService_CompleteWithTools_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *componentServiceClient) CompleteStructured(ctx context.Context, in *CompleteStructuredRequest, opts ...grpc.CallOption) (*CompleteStructuredResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CompleteStructuredResponse)
-	err := c.cc.Invoke(ctx, ComponentService_CompleteStructured_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *componentServiceClient) ResolveModel(ctx context.Context, in *ResolveModelRequest, opts ...grpc.CallOption) (*ResolveModelResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ResolveModelResponse)
@@ -431,7 +368,7 @@ func (c *componentServiceClient) ResolveModel(ctx context.Context, in *ResolveMo
 
 func (c *componentServiceClient) CallToolStream(ctx context.Context, in *CallToolStreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CallToolStreamResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &ComponentService_ServiceDesc.Streams[1], ComponentService_CallToolStream_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &ComponentService_ServiceDesc.Streams[0], ComponentService_CallToolStream_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -460,7 +397,7 @@ func (c *componentServiceClient) QueueToolWork(ctx context.Context, in *QueueToo
 
 func (c *componentServiceClient) ToolResults(ctx context.Context, in *ToolResultsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ToolResultsResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &ComponentService_ServiceDesc.Streams[2], ComponentService_ToolResults_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &ComponentService_ServiceDesc.Streams[1], ComponentService_ToolResults_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -659,7 +596,7 @@ func (c *componentServiceClient) GetCredential(ctx context.Context, in *GetCrede
 
 func (c *componentServiceClient) WatchComponentEvents(ctx context.Context, in *WatchComponentEventsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ComponentEvent], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &ComponentService_ServiceDesc.Streams[3], ComponentService_WatchComponentEvents_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &ComponentService_ServiceDesc.Streams[2], ComponentService_WatchComponentEvents_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -747,10 +684,6 @@ type ComponentServiceServer interface {
 	// Authorized by can_poll_work — see PollWork's comment for why this
 	// receive-side RPC does not share can_execute with the drive-side RPCs.
 	SubmitResult(context.Context, *SubmitResultRequest) (*SubmitResultResponse, error)
-	// Complete proxies an LLM completion request through the agent harness.
-	Complete(context.Context, *CompleteRequest) (*CompleteResponse, error)
-	// CompleteStream proxies a streaming LLM completion request through the agent harness.
-	CompleteStream(*CompleteStreamRequest, grpc.ServerStreamingServer[CompleteStreamResponse]) error
 	// CallTool proxies a tool execution request through the agent harness.
 	CallTool(context.Context, *CallToolRequest) (*CallToolResponse, error)
 	// QueryPlugin proxies a plugin query request through the agent harness.
@@ -782,12 +715,6 @@ type ComponentServiceServer interface {
 	// a catalog name is refused. A quota for each tenant bounds how many
 	// components agents enroll. Each enrollment writes an audit record.
 	EnrollComponent(context.Context, *EnrollComponentRequest) (*EnrollComponentResponse, error)
-	// CompleteWithTools proxies an LLM completion with tool definitions for
-	// function-calling support. Returns the response including any tool calls.
-	CompleteWithTools(context.Context, *CompleteWithToolsRequest) (*CompleteWithToolsResponse, error)
-	// CompleteStructured proxies an LLM completion requesting JSON output
-	// conforming to the supplied schema.
-	CompleteStructured(context.Context, *CompleteStructuredRequest) (*CompleteStructuredResponse, error)
 	// ResolveModel turns a slot into one exact model name (ADR-0172). The agent
 	// then calls the model gateway with the Open Responses client of the SDK.
 	// The agent sends the task grant in the header x-capability-grant and sends
@@ -881,12 +808,6 @@ func (UnimplementedComponentServiceServer) PollWork(context.Context, *PollWorkRe
 func (UnimplementedComponentServiceServer) SubmitResult(context.Context, *SubmitResultRequest) (*SubmitResultResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SubmitResult not implemented")
 }
-func (UnimplementedComponentServiceServer) Complete(context.Context, *CompleteRequest) (*CompleteResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Complete not implemented")
-}
-func (UnimplementedComponentServiceServer) CompleteStream(*CompleteStreamRequest, grpc.ServerStreamingServer[CompleteStreamResponse]) error {
-	return status.Errorf(codes.Unimplemented, "method CompleteStream not implemented")
-}
 func (UnimplementedComponentServiceServer) CallTool(context.Context, *CallToolRequest) (*CallToolResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CallTool not implemented")
 }
@@ -919,12 +840,6 @@ func (UnimplementedComponentServiceServer) ListTenantPlugins(context.Context, *L
 }
 func (UnimplementedComponentServiceServer) EnrollComponent(context.Context, *EnrollComponentRequest) (*EnrollComponentResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method EnrollComponent not implemented")
-}
-func (UnimplementedComponentServiceServer) CompleteWithTools(context.Context, *CompleteWithToolsRequest) (*CompleteWithToolsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CompleteWithTools not implemented")
-}
-func (UnimplementedComponentServiceServer) CompleteStructured(context.Context, *CompleteStructuredRequest) (*CompleteStructuredResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CompleteStructured not implemented")
 }
 func (UnimplementedComponentServiceServer) ResolveModel(context.Context, *ResolveModelRequest) (*ResolveModelResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ResolveModel not implemented")
@@ -1099,35 +1014,6 @@ func _ComponentService_SubmitResult_Handler(srv interface{}, ctx context.Context
 	}
 	return interceptor(ctx, in, info, handler)
 }
-
-func _ComponentService_Complete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CompleteRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ComponentServiceServer).Complete(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ComponentService_Complete_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ComponentServiceServer).Complete(ctx, req.(*CompleteRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ComponentService_CompleteStream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(CompleteStreamRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(ComponentServiceServer).CompleteStream(m, &grpc.GenericServerStream[CompleteStreamRequest, CompleteStreamResponse]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type ComponentService_CompleteStreamServer = grpc.ServerStreamingServer[CompleteStreamResponse]
 
 func _ComponentService_CallTool_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CallToolRequest)
@@ -1323,42 +1209,6 @@ func _ComponentService_EnrollComponent_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ComponentServiceServer).EnrollComponent(ctx, req.(*EnrollComponentRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ComponentService_CompleteWithTools_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CompleteWithToolsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ComponentServiceServer).CompleteWithTools(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ComponentService_CompleteWithTools_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ComponentServiceServer).CompleteWithTools(ctx, req.(*CompleteWithToolsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ComponentService_CompleteStructured_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CompleteStructuredRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ComponentServiceServer).CompleteStructured(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ComponentService_CompleteStructured_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ComponentServiceServer).CompleteStructured(ctx, req.(*CompleteStructuredRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1852,10 +1702,6 @@ var ComponentService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ComponentService_SubmitResult_Handler,
 		},
 		{
-			MethodName: "Complete",
-			Handler:    _ComponentService_Complete_Handler,
-		},
-		{
 			MethodName: "CallTool",
 			Handler:    _ComponentService_CallTool_Handler,
 		},
@@ -1898,14 +1744,6 @@ var ComponentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "EnrollComponent",
 			Handler:    _ComponentService_EnrollComponent_Handler,
-		},
-		{
-			MethodName: "CompleteWithTools",
-			Handler:    _ComponentService_CompleteWithTools_Handler,
-		},
-		{
-			MethodName: "CompleteStructured",
-			Handler:    _ComponentService_CompleteStructured_Handler,
 		},
 		{
 			MethodName: "ResolveModel",
@@ -2005,11 +1843,6 @@ var ComponentService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "CompleteStream",
-			Handler:       _ComponentService_CompleteStream_Handler,
-			ServerStreams: true,
-		},
 		{
 			StreamName:    "CallToolStream",
 			Handler:       _ComponentService_CallToolStream_Handler,

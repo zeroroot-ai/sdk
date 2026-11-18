@@ -345,10 +345,6 @@ func (c *CallbackClient) IsConnected() bool {
 	return state == connectivity.Ready || state == connectivity.Idle || state == connectivity.Connecting
 }
 
-// ============================================================================
-// LLM Operations
-// ============================================================================
-
 // ResolveModel asks the orchestrator for the exact model of a slot.
 func (c *CallbackClient) ResolveModel(ctx context.Context, slot string) (*harnesspb.ResolveModelResponse, error) {
 	if !c.IsConnected() {
@@ -372,70 +368,6 @@ func (c *CallbackClient) grantHeaders() openresponses.HeaderFunc {
 	signer, _ := creds.(capabilitygrant.MethodSigner)
 	return grantHeaders(token, signer)
 }
-
-// LLMComplete performs an LLM completion request via the orchestrator.
-func (c *CallbackClient) LLMComplete(ctx context.Context, req *harnesspb.LLMCompleteRequest) (*harnesspb.LLMCompleteResponse, error) {
-	if !c.IsConnected() {
-		return nil, errors.New("LLMComplete: client not connected")
-	}
-
-	req.Context = c.contextInfo()
-	ctx = c.contextWithMetadata(ctx)
-	resp, err := c.client.LLMComplete(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("LLMComplete: %w", err)
-	}
-	return resp, nil
-}
-
-// LLMCompleteWithTools performs an LLM completion with tool calling enabled.
-func (c *CallbackClient) LLMCompleteWithTools(ctx context.Context, req *harnesspb.LLMCompleteWithToolsRequest) (*harnesspb.LLMCompleteWithToolsResponse, error) {
-	if !c.IsConnected() {
-		return nil, errors.New("LLMCompleteWithTools: client not connected")
-	}
-
-	req.Context = c.contextInfo()
-	ctx = c.contextWithMetadata(ctx)
-	resp, err := c.client.LLMCompleteWithTools(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("LLMCompleteWithTools: %w", err)
-	}
-	return resp, nil
-}
-
-// LLMCompleteStructured performs an LLM completion with structured output via the orchestrator.
-func (c *CallbackClient) LLMCompleteStructured(ctx context.Context, req *harnesspb.LLMCompleteStructuredRequest) (*harnesspb.LLMCompleteStructuredResponse, error) {
-	if !c.IsConnected() {
-		return nil, errors.New("LLMCompleteStructured: client not connected")
-	}
-
-	req.Context = c.contextInfo()
-	ctx = c.contextWithMetadata(ctx)
-	resp, err := c.client.LLMCompleteStructured(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("LLMCompleteStructured: %w", err)
-	}
-	return resp, nil
-}
-
-// LLMStream performs a streaming LLM completion request.
-func (c *CallbackClient) LLMStream(ctx context.Context, req *harnesspb.LLMStreamRequest) (harnesspb.HarnessCallbackService_LLMStreamClient, error) {
-	if !c.IsConnected() {
-		return nil, errors.New("LLMStream: client not connected")
-	}
-
-	req.Context = c.contextInfo()
-	ctx = c.contextWithMetadata(ctx)
-	resp, err := c.client.LLMStream(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("LLMStream: %w", err)
-	}
-	return resp, nil
-}
-
-// ============================================================================
-// Tool Operations
-// ============================================================================
 
 // CallToolProto invokes a tool via the orchestrator using proto-serialized JSON.
 func (c *CallbackClient) CallToolProto(ctx context.Context, req *harnesspb.CallToolProtoRequest) (*harnesspb.CallToolProtoResponse, error) {
@@ -488,10 +420,6 @@ func (c *CallbackClient) ListTools(ctx context.Context, req *harnesspb.ListTools
 	return resp, nil
 }
 
-// ============================================================================
-// Plugin Operations
-// ============================================================================
-
 // QueryPlugin sends a query to a plugin via the orchestrator.
 func (c *CallbackClient) QueryPlugin(ctx context.Context, req *harnesspb.QueryPluginRequest) (*harnesspb.QueryPluginResponse, error) {
 	if !c.IsConnected() {
@@ -521,10 +449,6 @@ func (c *CallbackClient) ListPlugins(ctx context.Context, req *harnesspb.ListPlu
 	}
 	return resp, nil
 }
-
-// ============================================================================
-// Agent Operations
-// ============================================================================
 
 // DelegateToAgent delegates a task to another agent.
 func (c *CallbackClient) DelegateToAgent(ctx context.Context, req *harnesspb.DelegateToAgentRequest) (*harnesspb.DelegateToAgentResponse, error) {
@@ -556,10 +480,6 @@ func (c *CallbackClient) ListAgents(ctx context.Context, req *harnesspb.ListAgen
 	return resp, nil
 }
 
-// ============================================================================
-// Finding Operations
-// ============================================================================
-
 // SubmitFinding submits a security finding to the orchestrator.
 func (c *CallbackClient) SubmitFinding(ctx context.Context, req *harnesspb.SubmitFindingRequest) (*harnesspb.SubmitFindingResponse, error) {
 	if !c.IsConnected() {
@@ -574,30 +494,6 @@ func (c *CallbackClient) SubmitFinding(ctx context.Context, req *harnesspb.Submi
 	}
 	return resp, nil
 }
-
-// ============================================================================
-// Memory Operations
-// ============================================================================
-
-// ============================================================================
-// Mission Memory Operations
-// ============================================================================
-
-// ============================================================================
-// Long-Term Memory Operations
-// ============================================================================
-
-// ============================================================================
-// GraphRAG Query Operations
-// ============================================================================
-
-// ============================================================================
-// GraphRAG Storage Operations
-// ============================================================================
-
-// ============================================================================
-// Planning Operations
-// ============================================================================
 
 // GetPlanContext retrieves the planning context from the orchestrator.
 func (c *CallbackClient) GetPlanContext(ctx context.Context, req *harnesspb.GetPlanContextRequest) (*harnesspb.GetPlanContextResponse, error) {
@@ -629,10 +525,6 @@ func (c *CallbackClient) ReportStepHints(ctx context.Context, req *harnesspb.Rep
 	return resp, nil
 }
 
-// ============================================================================
-// Tracing Operations
-// ============================================================================
-
 // RecordSpans sends a batch of spans to the orchestrator for distributed tracing.
 func (c *CallbackClient) RecordSpans(ctx context.Context, req *harnesspb.RecordSpansRequest) (*harnesspb.RecordSpansResponse, error) {
 	if !c.IsConnected() {
@@ -648,10 +540,6 @@ func (c *CallbackClient) RecordSpans(ctx context.Context, req *harnesspb.RecordS
 	return resp, nil
 }
 
-// ============================================================================
-// Credential Operations
-// ============================================================================
-
 // GetCredential retrieves a credential by name from the orchestrator's credential store.
 func (c *CallbackClient) GetCredential(ctx context.Context, req *harnesspb.GetCredentialRequest) (*harnesspb.GetCredentialResponse, error) {
 	if !c.IsConnected() {
@@ -666,10 +554,6 @@ func (c *CallbackClient) GetCredential(ctx context.Context, req *harnesspb.GetCr
 	}
 	return resp, nil
 }
-
-// ============================================================================
-// Taxonomy Operations
-// ============================================================================
 
 // GetTaxonomySchema retrieves the full taxonomy schema from the orchestrator.
 func (c *CallbackClient) GetTaxonomySchema(ctx context.Context, req *harnesspb.GetTaxonomySchemaRequest) (*harnesspb.GetTaxonomySchemaResponse, error) {
@@ -746,10 +630,6 @@ func (c *CallbackClient) ValidateRelationship(ctx context.Context, req *harnessp
 	return resp, nil
 }
 
-// ============================================================================
-// Proto-Canonical GraphRAG Operations
-// ============================================================================
-
 // Observe emits a typed observation into the World (ADR-0107).
 func (c *CallbackClient) Observe(ctx context.Context, req *harnesspb.ObserveRequest) (*harnesspb.ObserveResponse, error) {
 	if !c.IsConnected() {
@@ -798,10 +678,6 @@ func (c *CallbackClient) WorldView(ctx context.Context, req *harnesspb.WorldView
 	return resp, nil
 }
 
-// ============================================================================
-// Tool Work Queue Operations
-// ============================================================================
-
 // QueueToolWork queues multiple tool invocations for parallel execution.
 // Returns a job ID that can be used to retrieve results via ToolResults.
 func (c *CallbackClient) QueueToolWork(ctx context.Context, req *harnesspb.QueueToolWorkRequest) (*harnesspb.QueueToolWorkResponse, error) {
@@ -833,10 +709,6 @@ func (c *CallbackClient) ToolResults(ctx context.Context, req *harnesspb.ToolRes
 	}
 	return stream, nil
 }
-
-// ============================================================================
-// Mission Management Operations
-// ============================================================================
 
 // CreateMission creates a new mission from a mission definition.
 func (c *CallbackClient) CreateMission(ctx context.Context, req *harnesspb.CreateMissionRequest) (*harnesspb.CreateMissionResponse, error) {
@@ -943,10 +815,6 @@ func (c *CallbackClient) GetMissionResults(ctx context.Context, req *harnesspb.G
 	return resp, nil
 }
 
-// ============================================================================
-// Authorization Operations
-// ============================================================================
-
 // Authorize checks whether the current work execution is permitted to perform
 // the given action on the given resource by forwarding the call to the daemon's
 // HarnessCallbackService.Authorize RPC.
@@ -965,14 +833,6 @@ func (c *CallbackClient) Authorize(ctx context.Context, req *harnesspb.Authorize
 	}
 	return resp, nil
 }
-
-// ============================================================================
-// Workspace Operations
-//
-// Mirror the in-process workspace.Workspace surface (file IO + commit/push)
-// for out-of-process callback agents. v1 is unary-only; streaming variants
-// for files > 16 MB are deferred to a follow-on spec.
-// ============================================================================
 
 // WorkspaceList enumerates workspaces configured for the calling mission.
 func (c *CallbackClient) WorkspaceList(ctx context.Context, req *harnesspb.WorkspaceListRequest) (*harnesspb.WorkspaceListResponse, error) {
@@ -1072,15 +932,6 @@ func (c *CallbackClient) WorkspacePush(ctx context.Context, req *harnesspb.Works
 	}
 	return resp, nil
 }
-
-// ============================================================================
-// Knowledge Operations
-// ============================================================================
-//
-// Thin passthroughs, in the shape every other call on this client uses: attach
-// the task ContextInfo, attach the auth metadata, forward. The daemon resolves
-// tenant from that context — no method here takes a tenant, so an agent cannot
-// name another tenant's graph.
 
 // QueryNodes searches the tenant knowledge graph over the task-scoped callback transport.
 func (c *CallbackClient) QueryNodes(ctx context.Context, req *harnesspb.QueryNodesRequest) (*harnesspb.QueryNodesResponse, error) {

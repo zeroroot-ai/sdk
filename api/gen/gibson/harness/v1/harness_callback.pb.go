@@ -782,69 +782,6 @@ func (x *ContextInfo) GetToolExecutionId() string {
 	return ""
 }
 
-type TokenUsage struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	InputTokens  int32 `protobuf:"varint,1,opt,name=input_tokens,json=inputTokens,proto3" json:"input_tokens,omitempty"`
-	OutputTokens int32 `protobuf:"varint,2,opt,name=output_tokens,json=outputTokens,proto3" json:"output_tokens,omitempty"`
-	TotalTokens  int32 `protobuf:"varint,3,opt,name=total_tokens,json=totalTokens,proto3" json:"total_tokens,omitempty"`
-}
-
-func (x *TokenUsage) Reset() {
-	*x = TokenUsage{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[2]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *TokenUsage) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*TokenUsage) ProtoMessage() {}
-
-func (x *TokenUsage) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[2]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use TokenUsage.ProtoReflect.Descriptor instead.
-func (*TokenUsage) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *TokenUsage) GetInputTokens() int32 {
-	if x != nil {
-		return x.InputTokens
-	}
-	return 0
-}
-
-func (x *TokenUsage) GetOutputTokens() int32 {
-	if x != nil {
-		return x.OutputTokens
-	}
-	return 0
-}
-
-func (x *TokenUsage) GetTotalTokens() int32 {
-	if x != nil {
-		return x.TotalTokens
-	}
-	return 0
-}
-
 // ResolveModelRequest asks the daemon for the model of a slot.
 type ResolveModelRequest struct {
 	state         protoimpl.MessageState
@@ -859,7 +796,7 @@ type ResolveModelRequest struct {
 func (x *ResolveModelRequest) Reset() {
 	*x = ResolveModelRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[3]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -872,7 +809,7 @@ func (x *ResolveModelRequest) String() string {
 func (*ResolveModelRequest) ProtoMessage() {}
 
 func (x *ResolveModelRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[3]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -885,7 +822,7 @@ func (x *ResolveModelRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResolveModelRequest.ProtoReflect.Descriptor instead.
 func (*ResolveModelRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{3}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ResolveModelRequest) GetContext() *ContextInfo {
@@ -924,12 +861,17 @@ type ResolveModelResponse struct {
 	ContextWindow int32 `protobuf:"varint,5,opt,name=context_window,json=contextWindow,proto3" json:"context_window,omitempty"`
 	// max_output_tokens is the output limit of the model in tokens. 0 means unknown.
 	MaxOutputTokens int32 `protobuf:"varint,6,opt,name=max_output_tokens,json=maxOutputTokens,proto3" json:"max_output_tokens,omitempty"`
+	// gateway_ca_pem is the PEM bundle of the private CA that signed the
+	// certificate of the model gateway. The agent trusts exactly this bundle
+	// for calls to gateway_url, which must use https. Empty means the system
+	// roots.
+	GatewayCaPem string `protobuf:"bytes,7,opt,name=gateway_ca_pem,json=gatewayCaPem,proto3" json:"gateway_ca_pem,omitempty"`
 }
 
 func (x *ResolveModelResponse) Reset() {
 	*x = ResolveModelResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[4]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -942,7 +884,7 @@ func (x *ResolveModelResponse) String() string {
 func (*ResolveModelResponse) ProtoMessage() {}
 
 func (x *ResolveModelResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[4]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -955,7 +897,7 @@ func (x *ResolveModelResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResolveModelResponse.ProtoReflect.Descriptor instead.
 func (*ResolveModelResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{4}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ResolveModelResponse) GetModel() string {
@@ -1000,906 +942,11 @@ func (x *ResolveModelResponse) GetMaxOutputTokens() int32 {
 	return 0
 }
 
-type LLMMessage struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Role        string        `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"` // system, user, assistant, tool
-	Content     string        `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
-	ToolCalls   []*ToolCall   `protobuf:"bytes,3,rep,name=tool_calls,json=toolCalls,proto3" json:"tool_calls,omitempty"`
-	ToolResults []*ToolResult `protobuf:"bytes,4,rep,name=tool_results,json=toolResults,proto3" json:"tool_results,omitempty"`
-	Name        string        `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"` // For tool messages
-}
-
-func (x *LLMMessage) Reset() {
-	*x = LLMMessage{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[5]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *LLMMessage) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*LLMMessage) ProtoMessage() {}
-
-func (x *LLMMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[5]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use LLMMessage.ProtoReflect.Descriptor instead.
-func (*LLMMessage) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *LLMMessage) GetRole() string {
+func (x *ResolveModelResponse) GetGatewayCaPem() string {
 	if x != nil {
-		return x.Role
+		return x.GatewayCaPem
 	}
 	return ""
-}
-
-func (x *LLMMessage) GetContent() string {
-	if x != nil {
-		return x.Content
-	}
-	return ""
-}
-
-func (x *LLMMessage) GetToolCalls() []*ToolCall {
-	if x != nil {
-		return x.ToolCalls
-	}
-	return nil
-}
-
-func (x *LLMMessage) GetToolResults() []*ToolResult {
-	if x != nil {
-		return x.ToolResults
-	}
-	return nil
-}
-
-func (x *LLMMessage) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-type ToolCall struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Id        string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name      string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Arguments string `protobuf:"bytes,3,opt,name=arguments,proto3" json:"arguments,omitempty"` // JSON string
-}
-
-func (x *ToolCall) Reset() {
-	*x = ToolCall{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[6]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *ToolCall) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ToolCall) ProtoMessage() {}
-
-func (x *ToolCall) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[6]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ToolCall.ProtoReflect.Descriptor instead.
-func (*ToolCall) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *ToolCall) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
-func (x *ToolCall) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *ToolCall) GetArguments() string {
-	if x != nil {
-		return x.Arguments
-	}
-	return ""
-}
-
-type ToolResult struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	ToolCallId string `protobuf:"bytes,1,opt,name=tool_call_id,json=toolCallId,proto3" json:"tool_call_id,omitempty"`
-	Content    string `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
-	IsError    bool   `protobuf:"varint,3,opt,name=is_error,json=isError,proto3" json:"is_error,omitempty"`
-}
-
-func (x *ToolResult) Reset() {
-	*x = ToolResult{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[7]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *ToolResult) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ToolResult) ProtoMessage() {}
-
-func (x *ToolResult) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[7]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ToolResult.ProtoReflect.Descriptor instead.
-func (*ToolResult) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{7}
-}
-
-func (x *ToolResult) GetToolCallId() string {
-	if x != nil {
-		return x.ToolCallId
-	}
-	return ""
-}
-
-func (x *ToolResult) GetContent() string {
-	if x != nil {
-		return x.Content
-	}
-	return ""
-}
-
-func (x *ToolResult) GetIsError() bool {
-	if x != nil {
-		return x.IsError
-	}
-	return false
-}
-
-type ToolDef struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Name        string          `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Description string          `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
-	Parameters  *JSONSchemaNode `protobuf:"bytes,3,opt,name=parameters,proto3" json:"parameters,omitempty"`
-}
-
-func (x *ToolDef) Reset() {
-	*x = ToolDef{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[8]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *ToolDef) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ToolDef) ProtoMessage() {}
-
-func (x *ToolDef) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[8]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ToolDef.ProtoReflect.Descriptor instead.
-func (*ToolDef) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{8}
-}
-
-func (x *ToolDef) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *ToolDef) GetDescription() string {
-	if x != nil {
-		return x.Description
-	}
-	return ""
-}
-
-func (x *ToolDef) GetParameters() *JSONSchemaNode {
-	if x != nil {
-		return x.Parameters
-	}
-	return nil
-}
-
-type LLMCompleteRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Context  *ContextInfo  `protobuf:"bytes,1,opt,name=context,proto3" json:"context,omitempty"`
-	Slot     string        `protobuf:"bytes,2,opt,name=slot,proto3" json:"slot,omitempty"`
-	Messages []*LLMMessage `protobuf:"bytes,3,rep,name=messages,proto3" json:"messages,omitempty"`
-	// Completion options
-	Temperature *float64 `protobuf:"fixed64,4,opt,name=temperature,proto3,oneof" json:"temperature,omitempty"`
-	MaxTokens   *int32   `protobuf:"varint,5,opt,name=max_tokens,json=maxTokens,proto3,oneof" json:"max_tokens,omitempty"`
-	TopP        *float64 `protobuf:"fixed64,6,opt,name=top_p,json=topP,proto3,oneof" json:"top_p,omitempty"`
-	Stop        []string `protobuf:"bytes,7,rep,name=stop,proto3" json:"stop,omitempty"`
-}
-
-func (x *LLMCompleteRequest) Reset() {
-	*x = LLMCompleteRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[9]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *LLMCompleteRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*LLMCompleteRequest) ProtoMessage() {}
-
-func (x *LLMCompleteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[9]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use LLMCompleteRequest.ProtoReflect.Descriptor instead.
-func (*LLMCompleteRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{9}
-}
-
-func (x *LLMCompleteRequest) GetContext() *ContextInfo {
-	if x != nil {
-		return x.Context
-	}
-	return nil
-}
-
-func (x *LLMCompleteRequest) GetSlot() string {
-	if x != nil {
-		return x.Slot
-	}
-	return ""
-}
-
-func (x *LLMCompleteRequest) GetMessages() []*LLMMessage {
-	if x != nil {
-		return x.Messages
-	}
-	return nil
-}
-
-func (x *LLMCompleteRequest) GetTemperature() float64 {
-	if x != nil && x.Temperature != nil {
-		return *x.Temperature
-	}
-	return 0
-}
-
-func (x *LLMCompleteRequest) GetMaxTokens() int32 {
-	if x != nil && x.MaxTokens != nil {
-		return *x.MaxTokens
-	}
-	return 0
-}
-
-func (x *LLMCompleteRequest) GetTopP() float64 {
-	if x != nil && x.TopP != nil {
-		return *x.TopP
-	}
-	return 0
-}
-
-func (x *LLMCompleteRequest) GetStop() []string {
-	if x != nil {
-		return x.Stop
-	}
-	return nil
-}
-
-type LLMCompleteWithToolsRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Context  *ContextInfo  `protobuf:"bytes,1,opt,name=context,proto3" json:"context,omitempty"`
-	Slot     string        `protobuf:"bytes,2,opt,name=slot,proto3" json:"slot,omitempty"`
-	Messages []*LLMMessage `protobuf:"bytes,3,rep,name=messages,proto3" json:"messages,omitempty"`
-	Tools    []*ToolDef    `protobuf:"bytes,4,rep,name=tools,proto3" json:"tools,omitempty"`
-}
-
-func (x *LLMCompleteWithToolsRequest) Reset() {
-	*x = LLMCompleteWithToolsRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[10]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *LLMCompleteWithToolsRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*LLMCompleteWithToolsRequest) ProtoMessage() {}
-
-func (x *LLMCompleteWithToolsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[10]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use LLMCompleteWithToolsRequest.ProtoReflect.Descriptor instead.
-func (*LLMCompleteWithToolsRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{10}
-}
-
-func (x *LLMCompleteWithToolsRequest) GetContext() *ContextInfo {
-	if x != nil {
-		return x.Context
-	}
-	return nil
-}
-
-func (x *LLMCompleteWithToolsRequest) GetSlot() string {
-	if x != nil {
-		return x.Slot
-	}
-	return ""
-}
-
-func (x *LLMCompleteWithToolsRequest) GetMessages() []*LLMMessage {
-	if x != nil {
-		return x.Messages
-	}
-	return nil
-}
-
-func (x *LLMCompleteWithToolsRequest) GetTools() []*ToolDef {
-	if x != nil {
-		return x.Tools
-	}
-	return nil
-}
-
-type LLMCompleteStructuredRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Context    *ContextInfo  `protobuf:"bytes,1,opt,name=context,proto3" json:"context,omitempty"`
-	Slot       string        `protobuf:"bytes,2,opt,name=slot,proto3" json:"slot,omitempty"`
-	Messages   []*LLMMessage `protobuf:"bytes,3,rep,name=messages,proto3" json:"messages,omitempty"`
-	SchemaJson string        `protobuf:"bytes,4,opt,name=schema_json,json=schemaJson,proto3" json:"schema_json,omitempty"` // JSON-encoded schema (Go struct as JSON) - kept for backward compatibility
-}
-
-func (x *LLMCompleteStructuredRequest) Reset() {
-	*x = LLMCompleteStructuredRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[11]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *LLMCompleteStructuredRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*LLMCompleteStructuredRequest) ProtoMessage() {}
-
-func (x *LLMCompleteStructuredRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[11]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use LLMCompleteStructuredRequest.ProtoReflect.Descriptor instead.
-func (*LLMCompleteStructuredRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{11}
-}
-
-func (x *LLMCompleteStructuredRequest) GetContext() *ContextInfo {
-	if x != nil {
-		return x.Context
-	}
-	return nil
-}
-
-func (x *LLMCompleteStructuredRequest) GetSlot() string {
-	if x != nil {
-		return x.Slot
-	}
-	return ""
-}
-
-func (x *LLMCompleteStructuredRequest) GetMessages() []*LLMMessage {
-	if x != nil {
-		return x.Messages
-	}
-	return nil
-}
-
-func (x *LLMCompleteStructuredRequest) GetSchemaJson() string {
-	if x != nil {
-		return x.SchemaJson
-	}
-	return ""
-}
-
-type LLMCompleteStructuredResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Result *v1.TypedValue `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
-	Usage  *TokenUsage    `protobuf:"bytes,3,opt,name=usage,proto3" json:"usage,omitempty"`
-	Error  *HarnessError  `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
-}
-
-func (x *LLMCompleteStructuredResponse) Reset() {
-	*x = LLMCompleteStructuredResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[12]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *LLMCompleteStructuredResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*LLMCompleteStructuredResponse) ProtoMessage() {}
-
-func (x *LLMCompleteStructuredResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[12]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use LLMCompleteStructuredResponse.ProtoReflect.Descriptor instead.
-func (*LLMCompleteStructuredResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{12}
-}
-
-func (x *LLMCompleteStructuredResponse) GetResult() *v1.TypedValue {
-	if x != nil {
-		return x.Result
-	}
-	return nil
-}
-
-func (x *LLMCompleteStructuredResponse) GetUsage() *TokenUsage {
-	if x != nil {
-		return x.Usage
-	}
-	return nil
-}
-
-func (x *LLMCompleteStructuredResponse) GetError() *HarnessError {
-	if x != nil {
-		return x.Error
-	}
-	return nil
-}
-
-type LLMCompleteResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Content      string        `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
-	ToolCalls    []*ToolCall   `protobuf:"bytes,2,rep,name=tool_calls,json=toolCalls,proto3" json:"tool_calls,omitempty"`
-	FinishReason string        `protobuf:"bytes,3,opt,name=finish_reason,json=finishReason,proto3" json:"finish_reason,omitempty"`
-	Usage        *TokenUsage   `protobuf:"bytes,4,opt,name=usage,proto3" json:"usage,omitempty"`
-	Error        *HarnessError `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`
-}
-
-func (x *LLMCompleteResponse) Reset() {
-	*x = LLMCompleteResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[13]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *LLMCompleteResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*LLMCompleteResponse) ProtoMessage() {}
-
-func (x *LLMCompleteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[13]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use LLMCompleteResponse.ProtoReflect.Descriptor instead.
-func (*LLMCompleteResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{13}
-}
-
-func (x *LLMCompleteResponse) GetContent() string {
-	if x != nil {
-		return x.Content
-	}
-	return ""
-}
-
-func (x *LLMCompleteResponse) GetToolCalls() []*ToolCall {
-	if x != nil {
-		return x.ToolCalls
-	}
-	return nil
-}
-
-func (x *LLMCompleteResponse) GetFinishReason() string {
-	if x != nil {
-		return x.FinishReason
-	}
-	return ""
-}
-
-func (x *LLMCompleteResponse) GetUsage() *TokenUsage {
-	if x != nil {
-		return x.Usage
-	}
-	return nil
-}
-
-func (x *LLMCompleteResponse) GetError() *HarnessError {
-	if x != nil {
-		return x.Error
-	}
-	return nil
-}
-
-type LLMCompleteWithToolsResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Content      string        `protobuf:"bytes,1,opt,name=content,proto3" json:"content,omitempty"`
-	ToolCalls    []*ToolCall   `protobuf:"bytes,2,rep,name=tool_calls,json=toolCalls,proto3" json:"tool_calls,omitempty"`
-	FinishReason string        `protobuf:"bytes,3,opt,name=finish_reason,json=finishReason,proto3" json:"finish_reason,omitempty"`
-	Usage        *TokenUsage   `protobuf:"bytes,4,opt,name=usage,proto3" json:"usage,omitempty"`
-	Error        *HarnessError `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`
-}
-
-func (x *LLMCompleteWithToolsResponse) Reset() {
-	*x = LLMCompleteWithToolsResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[14]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *LLMCompleteWithToolsResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*LLMCompleteWithToolsResponse) ProtoMessage() {}
-
-func (x *LLMCompleteWithToolsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[14]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use LLMCompleteWithToolsResponse.ProtoReflect.Descriptor instead.
-func (*LLMCompleteWithToolsResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{14}
-}
-
-func (x *LLMCompleteWithToolsResponse) GetContent() string {
-	if x != nil {
-		return x.Content
-	}
-	return ""
-}
-
-func (x *LLMCompleteWithToolsResponse) GetToolCalls() []*ToolCall {
-	if x != nil {
-		return x.ToolCalls
-	}
-	return nil
-}
-
-func (x *LLMCompleteWithToolsResponse) GetFinishReason() string {
-	if x != nil {
-		return x.FinishReason
-	}
-	return ""
-}
-
-func (x *LLMCompleteWithToolsResponse) GetUsage() *TokenUsage {
-	if x != nil {
-		return x.Usage
-	}
-	return nil
-}
-
-func (x *LLMCompleteWithToolsResponse) GetError() *HarnessError {
-	if x != nil {
-		return x.Error
-	}
-	return nil
-}
-
-type LLMStreamRequest struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Context  *ContextInfo  `protobuf:"bytes,1,opt,name=context,proto3" json:"context,omitempty"`
-	Slot     string        `protobuf:"bytes,2,opt,name=slot,proto3" json:"slot,omitempty"`
-	Messages []*LLMMessage `protobuf:"bytes,3,rep,name=messages,proto3" json:"messages,omitempty"`
-	// Completion options
-	Temperature *float64 `protobuf:"fixed64,4,opt,name=temperature,proto3,oneof" json:"temperature,omitempty"`
-	MaxTokens   *int32   `protobuf:"varint,5,opt,name=max_tokens,json=maxTokens,proto3,oneof" json:"max_tokens,omitempty"`
-	TopP        *float64 `protobuf:"fixed64,6,opt,name=top_p,json=topP,proto3,oneof" json:"top_p,omitempty"`
-	Stop        []string `protobuf:"bytes,7,rep,name=stop,proto3" json:"stop,omitempty"`
-}
-
-func (x *LLMStreamRequest) Reset() {
-	*x = LLMStreamRequest{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[15]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *LLMStreamRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*LLMStreamRequest) ProtoMessage() {}
-
-func (x *LLMStreamRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[15]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use LLMStreamRequest.ProtoReflect.Descriptor instead.
-func (*LLMStreamRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{15}
-}
-
-func (x *LLMStreamRequest) GetContext() *ContextInfo {
-	if x != nil {
-		return x.Context
-	}
-	return nil
-}
-
-func (x *LLMStreamRequest) GetSlot() string {
-	if x != nil {
-		return x.Slot
-	}
-	return ""
-}
-
-func (x *LLMStreamRequest) GetMessages() []*LLMMessage {
-	if x != nil {
-		return x.Messages
-	}
-	return nil
-}
-
-func (x *LLMStreamRequest) GetTemperature() float64 {
-	if x != nil && x.Temperature != nil {
-		return *x.Temperature
-	}
-	return 0
-}
-
-func (x *LLMStreamRequest) GetMaxTokens() int32 {
-	if x != nil && x.MaxTokens != nil {
-		return *x.MaxTokens
-	}
-	return 0
-}
-
-func (x *LLMStreamRequest) GetTopP() float64 {
-	if x != nil && x.TopP != nil {
-		return *x.TopP
-	}
-	return 0
-}
-
-func (x *LLMStreamRequest) GetStop() []string {
-	if x != nil {
-		return x.Stop
-	}
-	return nil
-}
-
-type LLMStreamResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Delta        string        `protobuf:"bytes,1,opt,name=delta,proto3" json:"delta,omitempty"`
-	ToolCalls    []*ToolCall   `protobuf:"bytes,2,rep,name=tool_calls,json=toolCalls,proto3" json:"tool_calls,omitempty"`
-	FinishReason string        `protobuf:"bytes,3,opt,name=finish_reason,json=finishReason,proto3" json:"finish_reason,omitempty"`
-	Usage        *TokenUsage   `protobuf:"bytes,4,opt,name=usage,proto3" json:"usage,omitempty"`
-	Error        *HarnessError `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`
-}
-
-func (x *LLMStreamResponse) Reset() {
-	*x = LLMStreamResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[16]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *LLMStreamResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*LLMStreamResponse) ProtoMessage() {}
-
-func (x *LLMStreamResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[16]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use LLMStreamResponse.ProtoReflect.Descriptor instead.
-func (*LLMStreamResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{16}
-}
-
-func (x *LLMStreamResponse) GetDelta() string {
-	if x != nil {
-		return x.Delta
-	}
-	return ""
-}
-
-func (x *LLMStreamResponse) GetToolCalls() []*ToolCall {
-	if x != nil {
-		return x.ToolCalls
-	}
-	return nil
-}
-
-func (x *LLMStreamResponse) GetFinishReason() string {
-	if x != nil {
-		return x.FinishReason
-	}
-	return ""
-}
-
-func (x *LLMStreamResponse) GetUsage() *TokenUsage {
-	if x != nil {
-		return x.Usage
-	}
-	return nil
-}
-
-func (x *LLMStreamResponse) GetError() *HarnessError {
-	if x != nil {
-		return x.Error
-	}
-	return nil
 }
 
 // CallToolProtoRequest invokes a tool using proto-serialized JSON input/output.
@@ -1921,7 +968,7 @@ type CallToolProtoRequest struct {
 func (x *CallToolProtoRequest) Reset() {
 	*x = CallToolProtoRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[17]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1934,7 +981,7 @@ func (x *CallToolProtoRequest) String() string {
 func (*CallToolProtoRequest) ProtoMessage() {}
 
 func (x *CallToolProtoRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[17]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1947,7 +994,7 @@ func (x *CallToolProtoRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CallToolProtoRequest.ProtoReflect.Descriptor instead.
 func (*CallToolProtoRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{17}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *CallToolProtoRequest) GetContext() *ContextInfo {
@@ -1999,7 +1046,7 @@ type CallToolProtoResponse struct {
 func (x *CallToolProtoResponse) Reset() {
 	*x = CallToolProtoResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[18]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2012,7 +1059,7 @@ func (x *CallToolProtoResponse) String() string {
 func (*CallToolProtoResponse) ProtoMessage() {}
 
 func (x *CallToolProtoResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[18]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2025,7 +1072,7 @@ func (x *CallToolProtoResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CallToolProtoResponse.ProtoReflect.Descriptor instead.
 func (*CallToolProtoResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{18}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *CallToolProtoResponse) GetOutputJson() []byte {
@@ -2063,7 +1110,7 @@ type CallToolProtoStreamRequest struct {
 func (x *CallToolProtoStreamRequest) Reset() {
 	*x = CallToolProtoStreamRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[19]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2076,7 +1123,7 @@ func (x *CallToolProtoStreamRequest) String() string {
 func (*CallToolProtoStreamRequest) ProtoMessage() {}
 
 func (x *CallToolProtoStreamRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[19]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2089,7 +1136,7 @@ func (x *CallToolProtoStreamRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CallToolProtoStreamRequest.ProtoReflect.Descriptor instead.
 func (*CallToolProtoStreamRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{19}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *CallToolProtoStreamRequest) GetContext() *ContextInfo {
@@ -2155,7 +1202,7 @@ type CallToolProtoStreamResponse struct {
 func (x *CallToolProtoStreamResponse) Reset() {
 	*x = CallToolProtoStreamResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[20]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2168,7 +1215,7 @@ func (x *CallToolProtoStreamResponse) String() string {
 func (*CallToolProtoStreamResponse) ProtoMessage() {}
 
 func (x *CallToolProtoStreamResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[20]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2181,7 +1228,7 @@ func (x *CallToolProtoStreamResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CallToolProtoStreamResponse.ProtoReflect.Descriptor instead.
 func (*CallToolProtoStreamResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{20}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{7}
 }
 
 func (m *CallToolProtoStreamResponse) GetPayload() isCallToolProtoStreamResponse_Payload {
@@ -2295,7 +1342,7 @@ type ToolProgressEvent struct {
 func (x *ToolProgressEvent) Reset() {
 	*x = ToolProgressEvent{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[21]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2308,7 +1355,7 @@ func (x *ToolProgressEvent) String() string {
 func (*ToolProgressEvent) ProtoMessage() {}
 
 func (x *ToolProgressEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[21]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2321,7 +1368,7 @@ func (x *ToolProgressEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ToolProgressEvent.ProtoReflect.Descriptor instead.
 func (*ToolProgressEvent) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{21}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ToolProgressEvent) GetPercent() int32 {
@@ -2358,7 +1405,7 @@ type ToolPartialResultEvent struct {
 func (x *ToolPartialResultEvent) Reset() {
 	*x = ToolPartialResultEvent{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[22]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2371,7 +1418,7 @@ func (x *ToolPartialResultEvent) String() string {
 func (*ToolPartialResultEvent) ProtoMessage() {}
 
 func (x *ToolPartialResultEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[22]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2384,7 +1431,7 @@ func (x *ToolPartialResultEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ToolPartialResultEvent.ProtoReflect.Descriptor instead.
 func (*ToolPartialResultEvent) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{22}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ToolPartialResultEvent) GetOutputJson() []byte {
@@ -2414,7 +1461,7 @@ type ToolWarningEvent struct {
 func (x *ToolWarningEvent) Reset() {
 	*x = ToolWarningEvent{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[23]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2427,7 +1474,7 @@ func (x *ToolWarningEvent) String() string {
 func (*ToolWarningEvent) ProtoMessage() {}
 
 func (x *ToolWarningEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[23]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2440,7 +1487,7 @@ func (x *ToolWarningEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ToolWarningEvent.ProtoReflect.Descriptor instead.
 func (*ToolWarningEvent) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{23}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ToolWarningEvent) GetMessage() string {
@@ -2469,7 +1516,7 @@ type ToolCompleteEvent struct {
 func (x *ToolCompleteEvent) Reset() {
 	*x = ToolCompleteEvent{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[24]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2482,7 +1529,7 @@ func (x *ToolCompleteEvent) String() string {
 func (*ToolCompleteEvent) ProtoMessage() {}
 
 func (x *ToolCompleteEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[24]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2495,7 +1542,7 @@ func (x *ToolCompleteEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ToolCompleteEvent.ProtoReflect.Descriptor instead.
 func (*ToolCompleteEvent) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{24}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ToolCompleteEvent) GetOutputJson() []byte {
@@ -2518,7 +1565,7 @@ type ToolErrorEvent struct {
 func (x *ToolErrorEvent) Reset() {
 	*x = ToolErrorEvent{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[25]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2531,7 +1578,7 @@ func (x *ToolErrorEvent) String() string {
 func (*ToolErrorEvent) ProtoMessage() {}
 
 func (x *ToolErrorEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[25]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2544,7 +1591,7 @@ func (x *ToolErrorEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ToolErrorEvent.ProtoReflect.Descriptor instead.
 func (*ToolErrorEvent) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{25}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ToolErrorEvent) GetError() *HarnessError {
@@ -2572,7 +1619,7 @@ type ListToolsRequest struct {
 func (x *ListToolsRequest) Reset() {
 	*x = ListToolsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[26]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2585,7 +1632,7 @@ func (x *ListToolsRequest) String() string {
 func (*ListToolsRequest) ProtoMessage() {}
 
 func (x *ListToolsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[26]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2598,7 +1645,7 @@ func (x *ListToolsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListToolsRequest.ProtoReflect.Descriptor instead.
 func (*ListToolsRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{26}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ListToolsRequest) GetContext() *ContextInfo {
@@ -2620,7 +1667,7 @@ type ListToolsResponse struct {
 func (x *ListToolsResponse) Reset() {
 	*x = ListToolsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[27]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2633,7 +1680,7 @@ func (x *ListToolsResponse) String() string {
 func (*ListToolsResponse) ProtoMessage() {}
 
 func (x *ListToolsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[27]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2646,7 +1693,7 @@ func (x *ListToolsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListToolsResponse.ProtoReflect.Descriptor instead.
 func (*ListToolsResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{27}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ListToolsResponse) GetTools() []*HarnessToolDescriptor {
@@ -2677,7 +1724,7 @@ type HarnessToolDescriptor struct {
 func (x *HarnessToolDescriptor) Reset() {
 	*x = HarnessToolDescriptor{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[28]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2690,7 +1737,7 @@ func (x *HarnessToolDescriptor) String() string {
 func (*HarnessToolDescriptor) ProtoMessage() {}
 
 func (x *HarnessToolDescriptor) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[28]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2703,7 +1750,7 @@ func (x *HarnessToolDescriptor) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HarnessToolDescriptor.ProtoReflect.Descriptor instead.
 func (*HarnessToolDescriptor) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{28}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *HarnessToolDescriptor) GetName() string {
@@ -2749,7 +1796,7 @@ type SearchToolsRequest struct {
 func (x *SearchToolsRequest) Reset() {
 	*x = SearchToolsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[29]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[16]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2762,7 +1809,7 @@ func (x *SearchToolsRequest) String() string {
 func (*SearchToolsRequest) ProtoMessage() {}
 
 func (x *SearchToolsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[29]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[16]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2775,7 +1822,7 @@ func (x *SearchToolsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchToolsRequest.ProtoReflect.Descriptor instead.
 func (*SearchToolsRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{29}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *SearchToolsRequest) GetContext() *ContextInfo {
@@ -2826,7 +1873,7 @@ type SearchToolsResponse struct {
 func (x *SearchToolsResponse) Reset() {
 	*x = SearchToolsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[30]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2839,7 +1886,7 @@ func (x *SearchToolsResponse) String() string {
 func (*SearchToolsResponse) ProtoMessage() {}
 
 func (x *SearchToolsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[30]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2852,7 +1899,7 @@ func (x *SearchToolsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchToolsResponse.ProtoReflect.Descriptor instead.
 func (*SearchToolsResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{30}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *SearchToolsResponse) GetCandidates() []*SearchToolsCandidate {
@@ -2890,7 +1937,7 @@ type SearchToolsCandidate struct {
 func (x *SearchToolsCandidate) Reset() {
 	*x = SearchToolsCandidate{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[31]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[18]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2903,7 +1950,7 @@ func (x *SearchToolsCandidate) String() string {
 func (*SearchToolsCandidate) ProtoMessage() {}
 
 func (x *SearchToolsCandidate) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[31]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[18]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2916,7 +1963,7 @@ func (x *SearchToolsCandidate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchToolsCandidate.ProtoReflect.Descriptor instead.
 func (*SearchToolsCandidate) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{31}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *SearchToolsCandidate) GetId() string {
@@ -2977,7 +2024,7 @@ type QueueToolWorkRequest struct {
 func (x *QueueToolWorkRequest) Reset() {
 	*x = QueueToolWorkRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[32]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[19]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2990,7 +2037,7 @@ func (x *QueueToolWorkRequest) String() string {
 func (*QueueToolWorkRequest) ProtoMessage() {}
 
 func (x *QueueToolWorkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[32]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[19]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3003,7 +2050,7 @@ func (x *QueueToolWorkRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueueToolWorkRequest.ProtoReflect.Descriptor instead.
 func (*QueueToolWorkRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{32}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *QueueToolWorkRequest) GetContext() *ContextInfo {
@@ -3054,7 +2101,7 @@ type QueueToolWorkResponse struct {
 func (x *QueueToolWorkResponse) Reset() {
 	*x = QueueToolWorkResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[33]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[20]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3067,7 +2114,7 @@ func (x *QueueToolWorkResponse) String() string {
 func (*QueueToolWorkResponse) ProtoMessage() {}
 
 func (x *QueueToolWorkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[33]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[20]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3080,7 +2127,7 @@ func (x *QueueToolWorkResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueueToolWorkResponse.ProtoReflect.Descriptor instead.
 func (*QueueToolWorkResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{33}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *QueueToolWorkResponse) GetJobId() string {
@@ -3110,7 +2157,7 @@ type ToolResultsRequest struct {
 func (x *ToolResultsRequest) Reset() {
 	*x = ToolResultsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[34]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[21]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3123,7 +2170,7 @@ func (x *ToolResultsRequest) String() string {
 func (*ToolResultsRequest) ProtoMessage() {}
 
 func (x *ToolResultsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[34]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[21]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3136,7 +2183,7 @@ func (x *ToolResultsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ToolResultsRequest.ProtoReflect.Descriptor instead.
 func (*ToolResultsRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{34}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ToolResultsRequest) GetContext() *ContextInfo {
@@ -3169,7 +2216,7 @@ type ToolResultsResponse struct {
 func (x *ToolResultsResponse) Reset() {
 	*x = ToolResultsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[35]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[22]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3182,7 +2229,7 @@ func (x *ToolResultsResponse) String() string {
 func (*ToolResultsResponse) ProtoMessage() {}
 
 func (x *ToolResultsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[35]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[22]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3195,7 +2242,7 @@ func (x *ToolResultsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ToolResultsResponse.ProtoReflect.Descriptor instead.
 func (*ToolResultsResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{35}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *ToolResultsResponse) GetIndex() int32 {
@@ -3259,7 +2306,7 @@ type JSONSchemaNode struct {
 func (x *JSONSchemaNode) Reset() {
 	*x = JSONSchemaNode{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[36]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[23]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3272,7 +2319,7 @@ func (x *JSONSchemaNode) String() string {
 func (*JSONSchemaNode) ProtoMessage() {}
 
 func (x *JSONSchemaNode) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[36]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[23]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3285,7 +2332,7 @@ func (x *JSONSchemaNode) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JSONSchemaNode.ProtoReflect.Descriptor instead.
 func (*JSONSchemaNode) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{36}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *JSONSchemaNode) GetType() string {
@@ -3401,7 +2448,7 @@ type TaxonomyMapping struct {
 func (x *TaxonomyMapping) Reset() {
 	*x = TaxonomyMapping{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[37]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[24]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3414,7 +2461,7 @@ func (x *TaxonomyMapping) String() string {
 func (*TaxonomyMapping) ProtoMessage() {}
 
 func (x *TaxonomyMapping) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[37]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[24]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3427,7 +2474,7 @@ func (x *TaxonomyMapping) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaxonomyMapping.ProtoReflect.Descriptor instead.
 func (*TaxonomyMapping) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{37}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *TaxonomyMapping) GetNodeType() string {
@@ -3466,7 +2513,7 @@ type PropertyMapping struct {
 func (x *PropertyMapping) Reset() {
 	*x = PropertyMapping{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[38]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[25]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3479,7 +2526,7 @@ func (x *PropertyMapping) String() string {
 func (*PropertyMapping) ProtoMessage() {}
 
 func (x *PropertyMapping) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[38]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[25]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3492,7 +2539,7 @@ func (x *PropertyMapping) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PropertyMapping.ProtoReflect.Descriptor instead.
 func (*PropertyMapping) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{38}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *PropertyMapping) GetSource() string {
@@ -3537,7 +2584,7 @@ type NodeReference struct {
 func (x *NodeReference) Reset() {
 	*x = NodeReference{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[39]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[26]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3550,7 +2597,7 @@ func (x *NodeReference) String() string {
 func (*NodeReference) ProtoMessage() {}
 
 func (x *NodeReference) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[39]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[26]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3563,7 +2610,7 @@ func (x *NodeReference) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NodeReference.ProtoReflect.Descriptor instead.
 func (*NodeReference) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{39}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *NodeReference) GetType() string {
@@ -3595,7 +2642,7 @@ type RelationshipMapping struct {
 func (x *RelationshipMapping) Reset() {
 	*x = RelationshipMapping{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[40]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[27]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3608,7 +2655,7 @@ func (x *RelationshipMapping) String() string {
 func (*RelationshipMapping) ProtoMessage() {}
 
 func (x *RelationshipMapping) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[40]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[27]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3621,7 +2668,7 @@ func (x *RelationshipMapping) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RelationshipMapping.ProtoReflect.Descriptor instead.
 func (*RelationshipMapping) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{40}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *RelationshipMapping) GetType() string {
@@ -3666,7 +2713,7 @@ type QueryPluginRequest struct {
 func (x *QueryPluginRequest) Reset() {
 	*x = QueryPluginRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[41]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[28]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3679,7 +2726,7 @@ func (x *QueryPluginRequest) String() string {
 func (*QueryPluginRequest) ProtoMessage() {}
 
 func (x *QueryPluginRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[41]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[28]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3692,7 +2739,7 @@ func (x *QueryPluginRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryPluginRequest.ProtoReflect.Descriptor instead.
 func (*QueryPluginRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{41}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *QueryPluginRequest) GetContext() *ContextInfo {
@@ -3735,7 +2782,7 @@ type QueryPluginResponse struct {
 func (x *QueryPluginResponse) Reset() {
 	*x = QueryPluginResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[42]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[29]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3748,7 +2795,7 @@ func (x *QueryPluginResponse) String() string {
 func (*QueryPluginResponse) ProtoMessage() {}
 
 func (x *QueryPluginResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[42]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[29]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3761,7 +2808,7 @@ func (x *QueryPluginResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryPluginResponse.ProtoReflect.Descriptor instead.
 func (*QueryPluginResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{42}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *QueryPluginResponse) GetResult() *v1.TypedValue {
@@ -3789,7 +2836,7 @@ type ListPluginsRequest struct {
 func (x *ListPluginsRequest) Reset() {
 	*x = ListPluginsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[43]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[30]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3802,7 +2849,7 @@ func (x *ListPluginsRequest) String() string {
 func (*ListPluginsRequest) ProtoMessage() {}
 
 func (x *ListPluginsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[43]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[30]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3815,7 +2862,7 @@ func (x *ListPluginsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPluginsRequest.ProtoReflect.Descriptor instead.
 func (*ListPluginsRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{43}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *ListPluginsRequest) GetContext() *ContextInfo {
@@ -3837,7 +2884,7 @@ type ListPluginsResponse struct {
 func (x *ListPluginsResponse) Reset() {
 	*x = ListPluginsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[44]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[31]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3850,7 +2897,7 @@ func (x *ListPluginsResponse) String() string {
 func (*ListPluginsResponse) ProtoMessage() {}
 
 func (x *ListPluginsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[44]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[31]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3863,7 +2910,7 @@ func (x *ListPluginsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPluginsResponse.ProtoReflect.Descriptor instead.
 func (*ListPluginsResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{44}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *ListPluginsResponse) GetPlugins() []*HarnessPluginDescriptor {
@@ -3894,7 +2941,7 @@ type HarnessPluginDescriptor struct {
 func (x *HarnessPluginDescriptor) Reset() {
 	*x = HarnessPluginDescriptor{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[45]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[32]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3907,7 +2954,7 @@ func (x *HarnessPluginDescriptor) String() string {
 func (*HarnessPluginDescriptor) ProtoMessage() {}
 
 func (x *HarnessPluginDescriptor) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[45]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[32]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3920,7 +2967,7 @@ func (x *HarnessPluginDescriptor) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HarnessPluginDescriptor.ProtoReflect.Descriptor instead.
 func (*HarnessPluginDescriptor) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{45}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *HarnessPluginDescriptor) GetName() string {
@@ -3975,7 +3022,7 @@ type DelegateToAgentRequest struct {
 func (x *DelegateToAgentRequest) Reset() {
 	*x = DelegateToAgentRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[46]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[33]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3988,7 +3035,7 @@ func (x *DelegateToAgentRequest) String() string {
 func (*DelegateToAgentRequest) ProtoMessage() {}
 
 func (x *DelegateToAgentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[46]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[33]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4001,7 +3048,7 @@ func (x *DelegateToAgentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DelegateToAgentRequest.ProtoReflect.Descriptor instead.
 func (*DelegateToAgentRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{46}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *DelegateToAgentRequest) GetContext() *ContextInfo {
@@ -4101,7 +3148,7 @@ type DelegateToAgentResponse struct {
 func (x *DelegateToAgentResponse) Reset() {
 	*x = DelegateToAgentResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[47]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[34]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4114,7 +3161,7 @@ func (x *DelegateToAgentResponse) String() string {
 func (*DelegateToAgentResponse) ProtoMessage() {}
 
 func (x *DelegateToAgentResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[47]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[34]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4127,7 +3174,7 @@ func (x *DelegateToAgentResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DelegateToAgentResponse.ProtoReflect.Descriptor instead.
 func (*DelegateToAgentResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{47}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *DelegateToAgentResponse) GetResult() *v11.Result {
@@ -4169,7 +3216,7 @@ type ListAgentsRequest struct {
 func (x *ListAgentsRequest) Reset() {
 	*x = ListAgentsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[48]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[35]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4182,7 +3229,7 @@ func (x *ListAgentsRequest) String() string {
 func (*ListAgentsRequest) ProtoMessage() {}
 
 func (x *ListAgentsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[48]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[35]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4195,7 +3242,7 @@ func (x *ListAgentsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAgentsRequest.ProtoReflect.Descriptor instead.
 func (*ListAgentsRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{48}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *ListAgentsRequest) GetContext() *ContextInfo {
@@ -4217,7 +3264,7 @@ type ListAgentsResponse struct {
 func (x *ListAgentsResponse) Reset() {
 	*x = ListAgentsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[49]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[36]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4230,7 +3277,7 @@ func (x *ListAgentsResponse) String() string {
 func (*ListAgentsResponse) ProtoMessage() {}
 
 func (x *ListAgentsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[49]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[36]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4243,7 +3290,7 @@ func (x *ListAgentsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAgentsResponse.ProtoReflect.Descriptor instead.
 func (*ListAgentsResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{49}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *ListAgentsResponse) GetAgents() []*HarnessAgentDescriptor {
@@ -4276,7 +3323,7 @@ type HarnessAgentDescriptor struct {
 func (x *HarnessAgentDescriptor) Reset() {
 	*x = HarnessAgentDescriptor{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[50]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[37]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4289,7 +3336,7 @@ func (x *HarnessAgentDescriptor) String() string {
 func (*HarnessAgentDescriptor) ProtoMessage() {}
 
 func (x *HarnessAgentDescriptor) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[50]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[37]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4302,7 +3349,7 @@ func (x *HarnessAgentDescriptor) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HarnessAgentDescriptor.ProtoReflect.Descriptor instead.
 func (*HarnessAgentDescriptor) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{50}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *HarnessAgentDescriptor) GetName() string {
@@ -4371,7 +3418,7 @@ type SubmitFindingRequest struct {
 func (x *SubmitFindingRequest) Reset() {
 	*x = SubmitFindingRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[51]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[38]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4384,7 +3431,7 @@ func (x *SubmitFindingRequest) String() string {
 func (*SubmitFindingRequest) ProtoMessage() {}
 
 func (x *SubmitFindingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[51]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[38]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4397,7 +3444,7 @@ func (x *SubmitFindingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitFindingRequest.ProtoReflect.Descriptor instead.
 func (*SubmitFindingRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{51}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *SubmitFindingRequest) GetContext() *ContextInfo {
@@ -4439,7 +3486,7 @@ type SubmitFindingResponse struct {
 func (x *SubmitFindingResponse) Reset() {
 	*x = SubmitFindingResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[52]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[39]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4452,7 +3499,7 @@ func (x *SubmitFindingResponse) String() string {
 func (*SubmitFindingResponse) ProtoMessage() {}
 
 func (x *SubmitFindingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[52]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[39]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4465,7 +3512,7 @@ func (x *SubmitFindingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitFindingResponse.ProtoReflect.Descriptor instead.
 func (*SubmitFindingResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{52}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *SubmitFindingResponse) GetError() *HarnessError {
@@ -4491,7 +3538,7 @@ type FindingFilter struct {
 func (x *FindingFilter) Reset() {
 	*x = FindingFilter{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[53]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[40]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4504,7 +3551,7 @@ func (x *FindingFilter) String() string {
 func (*FindingFilter) ProtoMessage() {}
 
 func (x *FindingFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[53]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[40]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4517,7 +3564,7 @@ func (x *FindingFilter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FindingFilter.ProtoReflect.Descriptor instead.
 func (*FindingFilter) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{53}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *FindingFilter) GetMissionId() string {
@@ -4568,7 +3615,7 @@ type QueryNodesRequest struct {
 func (x *QueryNodesRequest) Reset() {
 	*x = QueryNodesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[54]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[41]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4581,7 +3628,7 @@ func (x *QueryNodesRequest) String() string {
 func (*QueryNodesRequest) ProtoMessage() {}
 
 func (x *QueryNodesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[54]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[41]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4594,7 +3641,7 @@ func (x *QueryNodesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryNodesRequest.ProtoReflect.Descriptor instead.
 func (*QueryNodesRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{54}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *QueryNodesRequest) GetContext() *ContextInfo {
@@ -4624,7 +3671,7 @@ type QueryNodesResponse struct {
 func (x *QueryNodesResponse) Reset() {
 	*x = QueryNodesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[55]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[42]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4637,7 +3684,7 @@ func (x *QueryNodesResponse) String() string {
 func (*QueryNodesResponse) ProtoMessage() {}
 
 func (x *QueryNodesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[55]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[42]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4650,7 +3697,7 @@ func (x *QueryNodesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryNodesResponse.ProtoReflect.Descriptor instead.
 func (*QueryNodesResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{55}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *QueryNodesResponse) GetResults() []*v12.QueryResult {
@@ -4681,7 +3728,7 @@ type FindSimilarAttacksRequest struct {
 func (x *FindSimilarAttacksRequest) Reset() {
 	*x = FindSimilarAttacksRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[56]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[43]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4694,7 +3741,7 @@ func (x *FindSimilarAttacksRequest) String() string {
 func (*FindSimilarAttacksRequest) ProtoMessage() {}
 
 func (x *FindSimilarAttacksRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[56]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[43]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4707,7 +3754,7 @@ func (x *FindSimilarAttacksRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FindSimilarAttacksRequest.ProtoReflect.Descriptor instead.
 func (*FindSimilarAttacksRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{56}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *FindSimilarAttacksRequest) GetContext() *ContextInfo {
@@ -4744,7 +3791,7 @@ type FindSimilarAttacksResponse struct {
 func (x *FindSimilarAttacksResponse) Reset() {
 	*x = FindSimilarAttacksResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[57]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[44]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4757,7 +3804,7 @@ func (x *FindSimilarAttacksResponse) String() string {
 func (*FindSimilarAttacksResponse) ProtoMessage() {}
 
 func (x *FindSimilarAttacksResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[57]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[44]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4770,7 +3817,7 @@ func (x *FindSimilarAttacksResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FindSimilarAttacksResponse.ProtoReflect.Descriptor instead.
 func (*FindSimilarAttacksResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{57}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *FindSimilarAttacksResponse) GetResults() []*v12.AttackPattern {
@@ -4801,7 +3848,7 @@ type GetAttackChainsRequest struct {
 func (x *GetAttackChainsRequest) Reset() {
 	*x = GetAttackChainsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[58]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[45]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4814,7 +3861,7 @@ func (x *GetAttackChainsRequest) String() string {
 func (*GetAttackChainsRequest) ProtoMessage() {}
 
 func (x *GetAttackChainsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[58]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[45]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4827,7 +3874,7 @@ func (x *GetAttackChainsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAttackChainsRequest.ProtoReflect.Descriptor instead.
 func (*GetAttackChainsRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{58}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *GetAttackChainsRequest) GetContext() *ContextInfo {
@@ -4864,7 +3911,7 @@ type GetAttackChainsResponse struct {
 func (x *GetAttackChainsResponse) Reset() {
 	*x = GetAttackChainsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[59]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[46]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4877,7 +3924,7 @@ func (x *GetAttackChainsResponse) String() string {
 func (*GetAttackChainsResponse) ProtoMessage() {}
 
 func (x *GetAttackChainsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[59]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[46]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4890,7 +3937,7 @@ func (x *GetAttackChainsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAttackChainsResponse.ProtoReflect.Descriptor instead.
 func (*GetAttackChainsResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{59}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *GetAttackChainsResponse) GetResults() []*v12.AttackChain {
@@ -4921,7 +3968,7 @@ type FindSimilarFindingsRequest struct {
 func (x *FindSimilarFindingsRequest) Reset() {
 	*x = FindSimilarFindingsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[60]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[47]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4934,7 +3981,7 @@ func (x *FindSimilarFindingsRequest) String() string {
 func (*FindSimilarFindingsRequest) ProtoMessage() {}
 
 func (x *FindSimilarFindingsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[60]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[47]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4947,7 +3994,7 @@ func (x *FindSimilarFindingsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FindSimilarFindingsRequest.ProtoReflect.Descriptor instead.
 func (*FindSimilarFindingsRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{60}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *FindSimilarFindingsRequest) GetContext() *ContextInfo {
@@ -4984,7 +4031,7 @@ type FindSimilarFindingsResponse struct {
 func (x *FindSimilarFindingsResponse) Reset() {
 	*x = FindSimilarFindingsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[61]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[48]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4997,7 +4044,7 @@ func (x *FindSimilarFindingsResponse) String() string {
 func (*FindSimilarFindingsResponse) ProtoMessage() {}
 
 func (x *FindSimilarFindingsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[61]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[48]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5010,7 +4057,7 @@ func (x *FindSimilarFindingsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FindSimilarFindingsResponse.ProtoReflect.Descriptor instead.
 func (*FindSimilarFindingsResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{61}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *FindSimilarFindingsResponse) GetResults() []*v12.FindingNode {
@@ -5040,7 +4087,7 @@ type GetRelatedFindingsRequest struct {
 func (x *GetRelatedFindingsRequest) Reset() {
 	*x = GetRelatedFindingsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[62]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[49]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5053,7 +4100,7 @@ func (x *GetRelatedFindingsRequest) String() string {
 func (*GetRelatedFindingsRequest) ProtoMessage() {}
 
 func (x *GetRelatedFindingsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[62]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[49]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5066,7 +4113,7 @@ func (x *GetRelatedFindingsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRelatedFindingsRequest.ProtoReflect.Descriptor instead.
 func (*GetRelatedFindingsRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{62}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *GetRelatedFindingsRequest) GetContext() *ContextInfo {
@@ -5096,7 +4143,7 @@ type GetRelatedFindingsResponse struct {
 func (x *GetRelatedFindingsResponse) Reset() {
 	*x = GetRelatedFindingsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[63]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[50]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5109,7 +4156,7 @@ func (x *GetRelatedFindingsResponse) String() string {
 func (*GetRelatedFindingsResponse) ProtoMessage() {}
 
 func (x *GetRelatedFindingsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[63]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[50]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5122,7 +4169,7 @@ func (x *GetRelatedFindingsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRelatedFindingsResponse.ProtoReflect.Descriptor instead.
 func (*GetRelatedFindingsResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{63}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *GetRelatedFindingsResponse) GetResults() []*v12.FindingNode {
@@ -5154,7 +4201,7 @@ type GetFindingsRequest struct {
 func (x *GetFindingsRequest) Reset() {
 	*x = GetFindingsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[64]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[51]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5167,7 +4214,7 @@ func (x *GetFindingsRequest) String() string {
 func (*GetFindingsRequest) ProtoMessage() {}
 
 func (x *GetFindingsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[64]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[51]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5180,7 +4227,7 @@ func (x *GetFindingsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetFindingsRequest.ProtoReflect.Descriptor instead.
 func (*GetFindingsRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{64}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *GetFindingsRequest) GetContext() *ContextInfo {
@@ -5210,7 +4257,7 @@ type GetFindingsResponse struct {
 func (x *GetFindingsResponse) Reset() {
 	*x = GetFindingsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[65]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[52]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5223,7 +4270,7 @@ func (x *GetFindingsResponse) String() string {
 func (*GetFindingsResponse) ProtoMessage() {}
 
 func (x *GetFindingsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[65]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[52]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5236,7 +4283,7 @@ func (x *GetFindingsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetFindingsResponse.ProtoReflect.Descriptor instead.
 func (*GetFindingsResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{65}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *GetFindingsResponse) GetFindings() []*v11.Finding {
@@ -5280,7 +4327,7 @@ type ApplicationFindingsRequest struct {
 func (x *ApplicationFindingsRequest) Reset() {
 	*x = ApplicationFindingsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[66]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[53]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5293,7 +4340,7 @@ func (x *ApplicationFindingsRequest) String() string {
 func (*ApplicationFindingsRequest) ProtoMessage() {}
 
 func (x *ApplicationFindingsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[66]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[53]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5306,7 +4353,7 @@ func (x *ApplicationFindingsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApplicationFindingsRequest.ProtoReflect.Descriptor instead.
 func (*ApplicationFindingsRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{66}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *ApplicationFindingsRequest) GetContext() *ContextInfo {
@@ -5402,7 +4449,7 @@ type ApplicationFinding struct {
 func (x *ApplicationFinding) Reset() {
 	*x = ApplicationFinding{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[67]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[54]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5415,7 +4462,7 @@ func (x *ApplicationFinding) String() string {
 func (*ApplicationFinding) ProtoMessage() {}
 
 func (x *ApplicationFinding) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[67]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[54]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5428,7 +4475,7 @@ func (x *ApplicationFinding) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApplicationFinding.ProtoReflect.Descriptor instead.
 func (*ApplicationFinding) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{67}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *ApplicationFinding) GetFindingId() string {
@@ -5539,7 +4586,7 @@ type ApplicationFindingsResponse struct {
 func (x *ApplicationFindingsResponse) Reset() {
 	*x = ApplicationFindingsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[68]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[55]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5552,7 +4599,7 @@ func (x *ApplicationFindingsResponse) String() string {
 func (*ApplicationFindingsResponse) ProtoMessage() {}
 
 func (x *ApplicationFindingsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[68]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[55]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5565,7 +4612,7 @@ func (x *ApplicationFindingsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ApplicationFindingsResponse.ProtoReflect.Descriptor instead.
 func (*ApplicationFindingsResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{68}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *ApplicationFindingsResponse) GetFindings() []*ApplicationFinding {
@@ -5600,7 +4647,7 @@ type GetRunFindingsRequest struct {
 func (x *GetRunFindingsRequest) Reset() {
 	*x = GetRunFindingsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[69]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[56]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5613,7 +4660,7 @@ func (x *GetRunFindingsRequest) String() string {
 func (*GetRunFindingsRequest) ProtoMessage() {}
 
 func (x *GetRunFindingsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[69]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[56]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5626,7 +4673,7 @@ func (x *GetRunFindingsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRunFindingsRequest.ProtoReflect.Descriptor instead.
 func (*GetRunFindingsRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{69}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *GetRunFindingsRequest) GetContext() *ContextInfo {
@@ -5663,7 +4710,7 @@ type GetRunFindingsResponse struct {
 func (x *GetRunFindingsResponse) Reset() {
 	*x = GetRunFindingsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[70]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[57]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5676,7 +4723,7 @@ func (x *GetRunFindingsResponse) String() string {
 func (*GetRunFindingsResponse) ProtoMessage() {}
 
 func (x *GetRunFindingsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[70]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[57]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5689,7 +4736,7 @@ func (x *GetRunFindingsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRunFindingsResponse.ProtoReflect.Descriptor instead.
 func (*GetRunFindingsResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{70}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *GetRunFindingsResponse) GetFindings() []*v11.Finding {
@@ -5718,7 +4765,7 @@ type GetMissionRunHistoryRequest struct {
 func (x *GetMissionRunHistoryRequest) Reset() {
 	*x = GetMissionRunHistoryRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[71]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[58]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5731,7 +4778,7 @@ func (x *GetMissionRunHistoryRequest) String() string {
 func (*GetMissionRunHistoryRequest) ProtoMessage() {}
 
 func (x *GetMissionRunHistoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[71]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[58]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5744,7 +4791,7 @@ func (x *GetMissionRunHistoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMissionRunHistoryRequest.ProtoReflect.Descriptor instead.
 func (*GetMissionRunHistoryRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{71}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *GetMissionRunHistoryRequest) GetContext() *ContextInfo {
@@ -5767,7 +4814,7 @@ type GetMissionRunHistoryResponse struct {
 func (x *GetMissionRunHistoryResponse) Reset() {
 	*x = GetMissionRunHistoryResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[72]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[59]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5780,7 +4827,7 @@ func (x *GetMissionRunHistoryResponse) String() string {
 func (*GetMissionRunHistoryResponse) ProtoMessage() {}
 
 func (x *GetMissionRunHistoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[72]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[59]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5793,7 +4840,7 @@ func (x *GetMissionRunHistoryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMissionRunHistoryResponse.ProtoReflect.Descriptor instead.
 func (*GetMissionRunHistoryResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{72}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{59}
 }
 
 func (x *GetMissionRunHistoryResponse) GetRuns() []*v11.MissionRunSummary {
@@ -5835,7 +4882,7 @@ type ObserveRequest struct {
 func (x *ObserveRequest) Reset() {
 	*x = ObserveRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[73]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[60]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5848,7 +4895,7 @@ func (x *ObserveRequest) String() string {
 func (*ObserveRequest) ProtoMessage() {}
 
 func (x *ObserveRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[73]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[60]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5861,7 +4908,7 @@ func (x *ObserveRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ObserveRequest.ProtoReflect.Descriptor instead.
 func (*ObserveRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{73}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{60}
 }
 
 func (x *ObserveRequest) GetContext() *ContextInfo {
@@ -6052,7 +5099,7 @@ type LifecycleEntityObservation struct {
 func (x *LifecycleEntityObservation) Reset() {
 	*x = LifecycleEntityObservation{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[74]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[61]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6065,7 +5112,7 @@ func (x *LifecycleEntityObservation) String() string {
 func (*LifecycleEntityObservation) ProtoMessage() {}
 
 func (x *LifecycleEntityObservation) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[74]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[61]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6078,7 +5125,7 @@ func (x *LifecycleEntityObservation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LifecycleEntityObservation.ProtoReflect.Descriptor instead.
 func (*LifecycleEntityObservation) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{74}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{61}
 }
 
 func (x *LifecycleEntityObservation) GetLabel() string {
@@ -6129,7 +5176,7 @@ type LifecycleEntityEdge struct {
 func (x *LifecycleEntityEdge) Reset() {
 	*x = LifecycleEntityEdge{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[75]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[62]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6142,7 +5189,7 @@ func (x *LifecycleEntityEdge) String() string {
 func (*LifecycleEntityEdge) ProtoMessage() {}
 
 func (x *LifecycleEntityEdge) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[75]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[62]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6155,7 +5202,7 @@ func (x *LifecycleEntityEdge) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LifecycleEntityEdge.ProtoReflect.Descriptor instead.
 func (*LifecycleEntityEdge) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{75}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{62}
 }
 
 func (x *LifecycleEntityEdge) GetType() string {
@@ -6195,7 +5242,7 @@ type HostObservation struct {
 func (x *HostObservation) Reset() {
 	*x = HostObservation{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[76]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[63]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6208,7 +5255,7 @@ func (x *HostObservation) String() string {
 func (*HostObservation) ProtoMessage() {}
 
 func (x *HostObservation) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[76]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[63]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6221,7 +5268,7 @@ func (x *HostObservation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HostObservation.ProtoReflect.Descriptor instead.
 func (*HostObservation) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{76}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{63}
 }
 
 func (x *HostObservation) GetAddress() string {
@@ -6271,7 +5318,7 @@ type PortObservation struct {
 func (x *PortObservation) Reset() {
 	*x = PortObservation{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[77]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[64]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6284,7 +5331,7 @@ func (x *PortObservation) String() string {
 func (*PortObservation) ProtoMessage() {}
 
 func (x *PortObservation) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[77]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[64]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6297,7 +5344,7 @@ func (x *PortObservation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PortObservation.ProtoReflect.Descriptor instead.
 func (*PortObservation) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{77}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{64}
 }
 
 func (x *PortObservation) GetNumber() int32 {
@@ -6369,7 +5416,7 @@ type EndpointObservation struct {
 func (x *EndpointObservation) Reset() {
 	*x = EndpointObservation{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[78]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[65]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6382,7 +5429,7 @@ func (x *EndpointObservation) String() string {
 func (*EndpointObservation) ProtoMessage() {}
 
 func (x *EndpointObservation) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[78]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[65]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6395,7 +5442,7 @@ func (x *EndpointObservation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EndpointObservation.ProtoReflect.Descriptor instead.
 func (*EndpointObservation) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{78}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{65}
 }
 
 func (x *EndpointObservation) GetPath() string {
@@ -6425,7 +5472,7 @@ type TechnologyObservation struct {
 func (x *TechnologyObservation) Reset() {
 	*x = TechnologyObservation{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[79]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[66]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6438,7 +5485,7 @@ func (x *TechnologyObservation) String() string {
 func (*TechnologyObservation) ProtoMessage() {}
 
 func (x *TechnologyObservation) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[79]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[66]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6451,7 +5498,7 @@ func (x *TechnologyObservation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TechnologyObservation.ProtoReflect.Descriptor instead.
 func (*TechnologyObservation) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{79}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{66}
 }
 
 func (x *TechnologyObservation) GetName() string {
@@ -6483,7 +5530,7 @@ type CertificateObservation struct {
 func (x *CertificateObservation) Reset() {
 	*x = CertificateObservation{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[80]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[67]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6496,7 +5543,7 @@ func (x *CertificateObservation) String() string {
 func (*CertificateObservation) ProtoMessage() {}
 
 func (x *CertificateObservation) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[80]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[67]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6509,7 +5556,7 @@ func (x *CertificateObservation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CertificateObservation.ProtoReflect.Descriptor instead.
 func (*CertificateObservation) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{80}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{67}
 }
 
 func (x *CertificateObservation) GetFingerprint() string {
@@ -6552,7 +5599,7 @@ type DomainObservation struct {
 func (x *DomainObservation) Reset() {
 	*x = DomainObservation{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[81]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[68]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6565,7 +5612,7 @@ func (x *DomainObservation) String() string {
 func (*DomainObservation) ProtoMessage() {}
 
 func (x *DomainObservation) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[81]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[68]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6578,7 +5625,7 @@ func (x *DomainObservation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainObservation.ProtoReflect.Descriptor instead.
 func (*DomainObservation) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{81}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{68}
 }
 
 func (x *DomainObservation) GetName() string {
@@ -6602,7 +5649,7 @@ type SubdomainObservation struct {
 func (x *SubdomainObservation) Reset() {
 	*x = SubdomainObservation{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[82]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[69]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6615,7 +5662,7 @@ func (x *SubdomainObservation) String() string {
 func (*SubdomainObservation) ProtoMessage() {}
 
 func (x *SubdomainObservation) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[82]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[69]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6628,7 +5675,7 @@ func (x *SubdomainObservation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubdomainObservation.ProtoReflect.Descriptor instead.
 func (*SubdomainObservation) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{82}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{69}
 }
 
 func (x *SubdomainObservation) GetFqdn() string {
@@ -6666,7 +5713,7 @@ type CredentialObservation struct {
 func (x *CredentialObservation) Reset() {
 	*x = CredentialObservation{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[83]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[70]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6679,7 +5726,7 @@ func (x *CredentialObservation) String() string {
 func (*CredentialObservation) ProtoMessage() {}
 
 func (x *CredentialObservation) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[83]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[70]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6692,7 +5739,7 @@ func (x *CredentialObservation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CredentialObservation.ProtoReflect.Descriptor instead.
 func (*CredentialObservation) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{83}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{70}
 }
 
 func (x *CredentialObservation) GetSecretHash() string {
@@ -6729,7 +5776,7 @@ type AccountObservation struct {
 func (x *AccountObservation) Reset() {
 	*x = AccountObservation{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[84]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[71]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6742,7 +5789,7 @@ func (x *AccountObservation) String() string {
 func (*AccountObservation) ProtoMessage() {}
 
 func (x *AccountObservation) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[84]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[71]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6755,7 +5802,7 @@ func (x *AccountObservation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AccountObservation.ProtoReflect.Descriptor instead.
 func (*AccountObservation) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{84}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{71}
 }
 
 func (x *AccountObservation) GetIdentifier() string {
@@ -6798,7 +5845,7 @@ type MemoryObservation struct {
 func (x *MemoryObservation) Reset() {
 	*x = MemoryObservation{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[85]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[72]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6811,7 +5858,7 @@ func (x *MemoryObservation) String() string {
 func (*MemoryObservation) ProtoMessage() {}
 
 func (x *MemoryObservation) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[85]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[72]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6824,7 +5871,7 @@ func (x *MemoryObservation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MemoryObservation.ProtoReflect.Descriptor instead.
 func (*MemoryObservation) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{85}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{72}
 }
 
 func (x *MemoryObservation) GetText() string {
@@ -6896,7 +5943,7 @@ type HypothesisObservation struct {
 func (x *HypothesisObservation) Reset() {
 	*x = HypothesisObservation{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[86]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[73]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6909,7 +5956,7 @@ func (x *HypothesisObservation) String() string {
 func (*HypothesisObservation) ProtoMessage() {}
 
 func (x *HypothesisObservation) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[86]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[73]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6922,7 +5969,7 @@ func (x *HypothesisObservation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HypothesisObservation.ProtoReflect.Descriptor instead.
 func (*HypothesisObservation) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{86}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{73}
 }
 
 func (x *HypothesisObservation) GetProposer() string {
@@ -6985,7 +6032,7 @@ type ReferencedEntity struct {
 func (x *ReferencedEntity) Reset() {
 	*x = ReferencedEntity{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[87]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[74]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6998,7 +6045,7 @@ func (x *ReferencedEntity) String() string {
 func (*ReferencedEntity) ProtoMessage() {}
 
 func (x *ReferencedEntity) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[87]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[74]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7011,7 +6058,7 @@ func (x *ReferencedEntity) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReferencedEntity.ProtoReflect.Descriptor instead.
 func (*ReferencedEntity) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{87}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{74}
 }
 
 func (x *ReferencedEntity) GetLabel() string {
@@ -7059,7 +6106,7 @@ type ReasoningStepObservation struct {
 func (x *ReasoningStepObservation) Reset() {
 	*x = ReasoningStepObservation{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[88]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[75]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7072,7 +6119,7 @@ func (x *ReasoningStepObservation) String() string {
 func (*ReasoningStepObservation) ProtoMessage() {}
 
 func (x *ReasoningStepObservation) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[88]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[75]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7085,7 +6132,7 @@ func (x *ReasoningStepObservation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReasoningStepObservation.ProtoReflect.Descriptor instead.
 func (*ReasoningStepObservation) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{88}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{75}
 }
 
 func (x *ReasoningStepObservation) GetAgent() string {
@@ -7153,7 +6200,7 @@ type AnalysisObservation struct {
 func (x *AnalysisObservation) Reset() {
 	*x = AnalysisObservation{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[89]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[76]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7166,7 +6213,7 @@ func (x *AnalysisObservation) String() string {
 func (*AnalysisObservation) ProtoMessage() {}
 
 func (x *AnalysisObservation) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[89]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[76]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7179,7 +6226,7 @@ func (x *AnalysisObservation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AnalysisObservation.ProtoReflect.Descriptor instead.
 func (*AnalysisObservation) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{89}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{76}
 }
 
 func (x *AnalysisObservation) GetAgent() string {
@@ -7222,7 +6269,7 @@ type ObserveResponse struct {
 func (x *ObserveResponse) Reset() {
 	*x = ObserveResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[90]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[77]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7235,7 +6282,7 @@ func (x *ObserveResponse) String() string {
 func (*ObserveResponse) ProtoMessage() {}
 
 func (x *ObserveResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[90]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[77]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7248,7 +6295,7 @@ func (x *ObserveResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ObserveResponse.ProtoReflect.Descriptor instead.
 func (*ObserveResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{90}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{77}
 }
 
 func (x *ObserveResponse) GetError() *HarnessError {
@@ -7271,7 +6318,7 @@ type PlaceBetRequest struct {
 func (x *PlaceBetRequest) Reset() {
 	*x = PlaceBetRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[91]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[78]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7284,7 +6331,7 @@ func (x *PlaceBetRequest) String() string {
 func (*PlaceBetRequest) ProtoMessage() {}
 
 func (x *PlaceBetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[91]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[78]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7297,7 +6344,7 @@ func (x *PlaceBetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlaceBetRequest.ProtoReflect.Descriptor instead.
 func (*PlaceBetRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{91}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{78}
 }
 
 func (x *PlaceBetRequest) GetContext() *ContextInfo {
@@ -7337,7 +6384,7 @@ type Bet struct {
 func (x *Bet) Reset() {
 	*x = Bet{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[92]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[79]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7350,7 +6397,7 @@ func (x *Bet) String() string {
 func (*Bet) ProtoMessage() {}
 
 func (x *Bet) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[92]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[79]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7363,7 +6410,7 @@ func (x *Bet) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Bet.ProtoReflect.Descriptor instead.
 func (*Bet) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{92}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{79}
 }
 
 func (x *Bet) GetHypothesisId() string {
@@ -7406,7 +6453,7 @@ type PlaceBetResponse struct {
 func (x *PlaceBetResponse) Reset() {
 	*x = PlaceBetResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[93]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[80]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7419,7 +6466,7 @@ func (x *PlaceBetResponse) String() string {
 func (*PlaceBetResponse) ProtoMessage() {}
 
 func (x *PlaceBetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[93]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[80]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7432,7 +6479,7 @@ func (x *PlaceBetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlaceBetResponse.ProtoReflect.Descriptor instead.
 func (*PlaceBetResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{93}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{80}
 }
 
 func (x *PlaceBetResponse) GetError() *HarnessError {
@@ -7483,7 +6530,7 @@ type SubmitProofRequest struct {
 func (x *SubmitProofRequest) Reset() {
 	*x = SubmitProofRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[94]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[81]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7496,7 +6543,7 @@ func (x *SubmitProofRequest) String() string {
 func (*SubmitProofRequest) ProtoMessage() {}
 
 func (x *SubmitProofRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[94]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[81]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7509,7 +6556,7 @@ func (x *SubmitProofRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitProofRequest.ProtoReflect.Descriptor instead.
 func (*SubmitProofRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{94}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{81}
 }
 
 func (x *SubmitProofRequest) GetContext() *ContextInfo {
@@ -7578,7 +6625,7 @@ type SubmitProofResponse struct {
 func (x *SubmitProofResponse) Reset() {
 	*x = SubmitProofResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[95]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[82]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7591,7 +6638,7 @@ func (x *SubmitProofResponse) String() string {
 func (*SubmitProofResponse) ProtoMessage() {}
 
 func (x *SubmitProofResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[95]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[82]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7604,7 +6651,7 @@ func (x *SubmitProofResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitProofResponse.ProtoReflect.Descriptor instead.
 func (*SubmitProofResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{95}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{82}
 }
 
 func (x *SubmitProofResponse) GetHypothesisId() string {
@@ -7661,7 +6708,7 @@ type RequestDestructiveAuthorizationRequest struct {
 func (x *RequestDestructiveAuthorizationRequest) Reset() {
 	*x = RequestDestructiveAuthorizationRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[96]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[83]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7674,7 +6721,7 @@ func (x *RequestDestructiveAuthorizationRequest) String() string {
 func (*RequestDestructiveAuthorizationRequest) ProtoMessage() {}
 
 func (x *RequestDestructiveAuthorizationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[96]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[83]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7687,7 +6734,7 @@ func (x *RequestDestructiveAuthorizationRequest) ProtoReflect() protoreflect.Mes
 
 // Deprecated: Use RequestDestructiveAuthorizationRequest.ProtoReflect.Descriptor instead.
 func (*RequestDestructiveAuthorizationRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{96}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{83}
 }
 
 func (x *RequestDestructiveAuthorizationRequest) GetContext() *ContextInfo {
@@ -7752,7 +6799,7 @@ type RequestDestructiveAuthorizationResponse struct {
 func (x *RequestDestructiveAuthorizationResponse) Reset() {
 	*x = RequestDestructiveAuthorizationResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[97]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[84]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7765,7 +6812,7 @@ func (x *RequestDestructiveAuthorizationResponse) String() string {
 func (*RequestDestructiveAuthorizationResponse) ProtoMessage() {}
 
 func (x *RequestDestructiveAuthorizationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[97]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[84]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7778,7 +6825,7 @@ func (x *RequestDestructiveAuthorizationResponse) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use RequestDestructiveAuthorizationResponse.ProtoReflect.Descriptor instead.
 func (*RequestDestructiveAuthorizationResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{97}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{84}
 }
 
 func (x *RequestDestructiveAuthorizationResponse) GetError() *HarnessError {
@@ -7811,7 +6858,7 @@ type WorldViewRequest struct {
 func (x *WorldViewRequest) Reset() {
 	*x = WorldViewRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[98]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[85]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7824,7 +6871,7 @@ func (x *WorldViewRequest) String() string {
 func (*WorldViewRequest) ProtoMessage() {}
 
 func (x *WorldViewRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[98]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[85]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7837,7 +6884,7 @@ func (x *WorldViewRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorldViewRequest.ProtoReflect.Descriptor instead.
 func (*WorldViewRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{98}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{85}
 }
 
 func (x *WorldViewRequest) GetContext() *ContextInfo {
@@ -7871,7 +6918,7 @@ type WorldViewResponse struct {
 func (x *WorldViewResponse) Reset() {
 	*x = WorldViewResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[99]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[86]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7884,7 +6931,7 @@ func (x *WorldViewResponse) String() string {
 func (*WorldViewResponse) ProtoMessage() {}
 
 func (x *WorldViewResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[99]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[86]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7897,7 +6944,7 @@ func (x *WorldViewResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorldViewResponse.ProtoReflect.Descriptor instead.
 func (*WorldViewResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{99}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{86}
 }
 
 func (x *WorldViewResponse) GetError() *HarnessError {
@@ -7948,7 +6995,7 @@ type WorldEntity struct {
 func (x *WorldEntity) Reset() {
 	*x = WorldEntity{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[100]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[87]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7961,7 +7008,7 @@ func (x *WorldEntity) String() string {
 func (*WorldEntity) ProtoMessage() {}
 
 func (x *WorldEntity) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[100]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[87]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7974,7 +7021,7 @@ func (x *WorldEntity) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorldEntity.ProtoReflect.Descriptor instead.
 func (*WorldEntity) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{100}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{87}
 }
 
 func (x *WorldEntity) GetHandle() string {
@@ -8016,7 +7063,7 @@ type GetPlanContextRequest struct {
 func (x *GetPlanContextRequest) Reset() {
 	*x = GetPlanContextRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[101]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[88]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8029,7 +7076,7 @@ func (x *GetPlanContextRequest) String() string {
 func (*GetPlanContextRequest) ProtoMessage() {}
 
 func (x *GetPlanContextRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[101]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[88]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8042,7 +7089,7 @@ func (x *GetPlanContextRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPlanContextRequest.ProtoReflect.Descriptor instead.
 func (*GetPlanContextRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{101}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{88}
 }
 
 func (x *GetPlanContextRequest) GetContext() *ContextInfo {
@@ -8063,7 +7110,7 @@ type GetPlanContextResponse struct {
 func (x *GetPlanContextResponse) Reset() {
 	*x = GetPlanContextResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[102]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[89]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8076,7 +7123,7 @@ func (x *GetPlanContextResponse) String() string {
 func (*GetPlanContextResponse) ProtoMessage() {}
 
 func (x *GetPlanContextResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[102]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[89]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8089,7 +7136,7 @@ func (x *GetPlanContextResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPlanContextResponse.ProtoReflect.Descriptor instead.
 func (*GetPlanContextResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{102}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{89}
 }
 
 func (x *GetPlanContextResponse) GetError() *HarnessError {
@@ -8111,7 +7158,7 @@ type ReportStepHintsRequest struct {
 func (x *ReportStepHintsRequest) Reset() {
 	*x = ReportStepHintsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[103]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[90]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8124,7 +7171,7 @@ func (x *ReportStepHintsRequest) String() string {
 func (*ReportStepHintsRequest) ProtoMessage() {}
 
 func (x *ReportStepHintsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[103]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[90]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8137,7 +7184,7 @@ func (x *ReportStepHintsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportStepHintsRequest.ProtoReflect.Descriptor instead.
 func (*ReportStepHintsRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{103}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{90}
 }
 
 func (x *ReportStepHintsRequest) GetContext() *ContextInfo {
@@ -8165,7 +7212,7 @@ type ReportStepHintsResponse struct {
 func (x *ReportStepHintsResponse) Reset() {
 	*x = ReportStepHintsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[104]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[91]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8178,7 +7225,7 @@ func (x *ReportStepHintsResponse) String() string {
 func (*ReportStepHintsResponse) ProtoMessage() {}
 
 func (x *ReportStepHintsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[104]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[91]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8191,7 +7238,7 @@ func (x *ReportStepHintsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportStepHintsResponse.ProtoReflect.Descriptor instead.
 func (*ReportStepHintsResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{104}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{91}
 }
 
 func (x *ReportStepHintsResponse) GetError() *HarnessError {
@@ -8212,7 +7259,7 @@ type StepHints struct {
 func (x *StepHints) Reset() {
 	*x = StepHints{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[105]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[92]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8225,7 +7272,7 @@ func (x *StepHints) String() string {
 func (*StepHints) ProtoMessage() {}
 
 func (x *StepHints) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[105]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[92]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8238,7 +7285,7 @@ func (x *StepHints) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StepHints.ProtoReflect.Descriptor instead.
 func (*StepHints) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{105}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{92}
 }
 
 func (x *StepHints) GetConfidence() float64 {
@@ -8266,7 +7313,7 @@ type AnyValue struct {
 func (x *AnyValue) Reset() {
 	*x = AnyValue{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[106]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[93]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8279,7 +7326,7 @@ func (x *AnyValue) String() string {
 func (*AnyValue) ProtoMessage() {}
 
 func (x *AnyValue) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[106]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[93]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8292,7 +7339,7 @@ func (x *AnyValue) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AnyValue.ProtoReflect.Descriptor instead.
 func (*AnyValue) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{106}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{93}
 }
 
 func (m *AnyValue) GetValue() isAnyValue_Value {
@@ -8384,7 +7431,7 @@ type KeyValue struct {
 func (x *KeyValue) Reset() {
 	*x = KeyValue{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[107]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[94]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8397,7 +7444,7 @@ func (x *KeyValue) String() string {
 func (*KeyValue) ProtoMessage() {}
 
 func (x *KeyValue) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[107]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[94]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8410,7 +7457,7 @@ func (x *KeyValue) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KeyValue.ProtoReflect.Descriptor instead.
 func (*KeyValue) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{107}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{94}
 }
 
 func (x *KeyValue) GetKey() string {
@@ -8441,7 +7488,7 @@ type SpanEvent struct {
 func (x *SpanEvent) Reset() {
 	*x = SpanEvent{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[108]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[95]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8454,7 +7501,7 @@ func (x *SpanEvent) String() string {
 func (*SpanEvent) ProtoMessage() {}
 
 func (x *SpanEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[108]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[95]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8467,7 +7514,7 @@ func (x *SpanEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SpanEvent.ProtoReflect.Descriptor instead.
 func (*SpanEvent) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{108}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{95}
 }
 
 func (x *SpanEvent) GetName() string {
@@ -8513,7 +7560,7 @@ type Span struct {
 func (x *Span) Reset() {
 	*x = Span{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[109]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[96]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8526,7 +7573,7 @@ func (x *Span) String() string {
 func (*Span) ProtoMessage() {}
 
 func (x *Span) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[109]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[96]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8539,7 +7586,7 @@ func (x *Span) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Span.ProtoReflect.Descriptor instead.
 func (*Span) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{109}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{96}
 }
 
 func (x *Span) GetTraceId() string {
@@ -8631,7 +7678,7 @@ type RecordSpanRequest struct {
 func (x *RecordSpanRequest) Reset() {
 	*x = RecordSpanRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[110]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[97]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8644,7 +7691,7 @@ func (x *RecordSpanRequest) String() string {
 func (*RecordSpanRequest) ProtoMessage() {}
 
 func (x *RecordSpanRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[110]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[97]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8657,7 +7704,7 @@ func (x *RecordSpanRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RecordSpanRequest.ProtoReflect.Descriptor instead.
 func (*RecordSpanRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{110}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{97}
 }
 
 func (x *RecordSpanRequest) GetContext() *ContextInfo {
@@ -8685,7 +7732,7 @@ type RecordSpanResponse struct {
 func (x *RecordSpanResponse) Reset() {
 	*x = RecordSpanResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[111]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[98]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8698,7 +7745,7 @@ func (x *RecordSpanResponse) String() string {
 func (*RecordSpanResponse) ProtoMessage() {}
 
 func (x *RecordSpanResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[111]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[98]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8711,7 +7758,7 @@ func (x *RecordSpanResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RecordSpanResponse.ProtoReflect.Descriptor instead.
 func (*RecordSpanResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{111}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{98}
 }
 
 func (x *RecordSpanResponse) GetError() *HarnessError {
@@ -8733,7 +7780,7 @@ type RecordSpansRequest struct {
 func (x *RecordSpansRequest) Reset() {
 	*x = RecordSpansRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[112]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[99]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8746,7 +7793,7 @@ func (x *RecordSpansRequest) String() string {
 func (*RecordSpansRequest) ProtoMessage() {}
 
 func (x *RecordSpansRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[112]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[99]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8759,7 +7806,7 @@ func (x *RecordSpansRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RecordSpansRequest.ProtoReflect.Descriptor instead.
 func (*RecordSpansRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{112}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{99}
 }
 
 func (x *RecordSpansRequest) GetContext() *ContextInfo {
@@ -8787,7 +7834,7 @@ type RecordSpansResponse struct {
 func (x *RecordSpansResponse) Reset() {
 	*x = RecordSpansResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[113]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[100]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8800,7 +7847,7 @@ func (x *RecordSpansResponse) String() string {
 func (*RecordSpansResponse) ProtoMessage() {}
 
 func (x *RecordSpansResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[113]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[100]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8813,7 +7860,7 @@ func (x *RecordSpansResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RecordSpansResponse.ProtoReflect.Descriptor instead.
 func (*RecordSpansResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{113}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{100}
 }
 
 func (x *RecordSpansResponse) GetError() *HarnessError {
@@ -8835,7 +7882,7 @@ type GetCredentialRequest struct {
 func (x *GetCredentialRequest) Reset() {
 	*x = GetCredentialRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[114]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[101]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8848,7 +7895,7 @@ func (x *GetCredentialRequest) String() string {
 func (*GetCredentialRequest) ProtoMessage() {}
 
 func (x *GetCredentialRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[114]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[101]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8861,7 +7908,7 @@ func (x *GetCredentialRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCredentialRequest.ProtoReflect.Descriptor instead.
 func (*GetCredentialRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{114}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{101}
 }
 
 func (x *GetCredentialRequest) GetContext() *ContextInfo {
@@ -8890,7 +7937,7 @@ type GetCredentialResponse struct {
 func (x *GetCredentialResponse) Reset() {
 	*x = GetCredentialResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[115]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[102]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8903,7 +7950,7 @@ func (x *GetCredentialResponse) String() string {
 func (*GetCredentialResponse) ProtoMessage() {}
 
 func (x *GetCredentialResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[115]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[102]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8916,7 +7963,7 @@ func (x *GetCredentialResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCredentialResponse.ProtoReflect.Descriptor instead.
 func (*GetCredentialResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{115}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{102}
 }
 
 func (x *GetCredentialResponse) GetCredential() *Credential {
@@ -8953,7 +8000,7 @@ type Credential struct {
 func (x *Credential) Reset() {
 	*x = Credential{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[116]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[103]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8966,7 +8013,7 @@ func (x *Credential) String() string {
 func (*Credential) ProtoMessage() {}
 
 func (x *Credential) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[116]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[103]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8979,7 +8026,7 @@ func (x *Credential) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Credential.ProtoReflect.Descriptor instead.
 func (*Credential) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{116}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{103}
 }
 
 func (x *Credential) GetName() string {
@@ -9092,7 +8139,7 @@ type BasicAuth struct {
 func (x *BasicAuth) Reset() {
 	*x = BasicAuth{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[117]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[104]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9105,7 +8152,7 @@ func (x *BasicAuth) String() string {
 func (*BasicAuth) ProtoMessage() {}
 
 func (x *BasicAuth) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[117]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[104]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9118,7 +8165,7 @@ func (x *BasicAuth) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BasicAuth.ProtoReflect.Descriptor instead.
 func (*BasicAuth) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{117}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{104}
 }
 
 func (x *BasicAuth) GetUsername() string {
@@ -9148,7 +8195,7 @@ type OAuthCredential struct {
 func (x *OAuthCredential) Reset() {
 	*x = OAuthCredential{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[118]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[105]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9161,7 +8208,7 @@ func (x *OAuthCredential) String() string {
 func (*OAuthCredential) ProtoMessage() {}
 
 func (x *OAuthCredential) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[118]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[105]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9174,7 +8221,7 @@ func (x *OAuthCredential) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OAuthCredential.ProtoReflect.Descriptor instead.
 func (*OAuthCredential) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{118}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{105}
 }
 
 func (x *OAuthCredential) GetAccessToken() string {
@@ -9202,7 +8249,7 @@ type GetTaxonomySchemaRequest struct {
 func (x *GetTaxonomySchemaRequest) Reset() {
 	*x = GetTaxonomySchemaRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[119]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[106]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9215,7 +8262,7 @@ func (x *GetTaxonomySchemaRequest) String() string {
 func (*GetTaxonomySchemaRequest) ProtoMessage() {}
 
 func (x *GetTaxonomySchemaRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[119]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[106]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9228,7 +8275,7 @@ func (x *GetTaxonomySchemaRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTaxonomySchemaRequest.ProtoReflect.Descriptor instead.
 func (*GetTaxonomySchemaRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{119}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{106}
 }
 
 func (x *GetTaxonomySchemaRequest) GetContext() *ContextInfo {
@@ -9256,7 +8303,7 @@ type GetTaxonomySchemaResponse struct {
 func (x *GetTaxonomySchemaResponse) Reset() {
 	*x = GetTaxonomySchemaResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[120]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[107]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9269,7 +8316,7 @@ func (x *GetTaxonomySchemaResponse) String() string {
 func (*GetTaxonomySchemaResponse) ProtoMessage() {}
 
 func (x *GetTaxonomySchemaResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[120]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[107]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9282,7 +8329,7 @@ func (x *GetTaxonomySchemaResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTaxonomySchemaResponse.ProtoReflect.Descriptor instead.
 func (*GetTaxonomySchemaResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{120}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{107}
 }
 
 func (x *GetTaxonomySchemaResponse) GetVersion() string {
@@ -9357,7 +8404,7 @@ type TaxonomyNodeType struct {
 func (x *TaxonomyNodeType) Reset() {
 	*x = TaxonomyNodeType{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[121]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[108]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9370,7 +8417,7 @@ func (x *TaxonomyNodeType) String() string {
 func (*TaxonomyNodeType) ProtoMessage() {}
 
 func (x *TaxonomyNodeType) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[121]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[108]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9383,7 +8430,7 @@ func (x *TaxonomyNodeType) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaxonomyNodeType.ProtoReflect.Descriptor instead.
 func (*TaxonomyNodeType) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{121}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{108}
 }
 
 func (x *TaxonomyNodeType) GetId() string {
@@ -9447,7 +8494,7 @@ type TaxonomyRelationshipType struct {
 func (x *TaxonomyRelationshipType) Reset() {
 	*x = TaxonomyRelationshipType{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[122]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[109]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9460,7 +8507,7 @@ func (x *TaxonomyRelationshipType) String() string {
 func (*TaxonomyRelationshipType) ProtoMessage() {}
 
 func (x *TaxonomyRelationshipType) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[122]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[109]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9473,7 +8520,7 @@ func (x *TaxonomyRelationshipType) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaxonomyRelationshipType.ProtoReflect.Descriptor instead.
 func (*TaxonomyRelationshipType) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{122}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{109}
 }
 
 func (x *TaxonomyRelationshipType) GetId() string {
@@ -9555,7 +8602,7 @@ type TaxonomyTechnique struct {
 func (x *TaxonomyTechnique) Reset() {
 	*x = TaxonomyTechnique{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[123]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[110]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9568,7 +8615,7 @@ func (x *TaxonomyTechnique) String() string {
 func (*TaxonomyTechnique) ProtoMessage() {}
 
 func (x *TaxonomyTechnique) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[123]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[110]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9581,7 +8628,7 @@ func (x *TaxonomyTechnique) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaxonomyTechnique.ProtoReflect.Descriptor instead.
 func (*TaxonomyTechnique) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{123}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{110}
 }
 
 func (x *TaxonomyTechnique) GetTechniqueId() string {
@@ -9643,7 +8690,7 @@ type TaxonomyTargetType struct {
 func (x *TaxonomyTargetType) Reset() {
 	*x = TaxonomyTargetType{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[124]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[111]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9656,7 +8703,7 @@ func (x *TaxonomyTargetType) String() string {
 func (*TaxonomyTargetType) ProtoMessage() {}
 
 func (x *TaxonomyTargetType) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[124]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[111]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9669,7 +8716,7 @@ func (x *TaxonomyTargetType) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaxonomyTargetType.ProtoReflect.Descriptor instead.
 func (*TaxonomyTargetType) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{124}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{111}
 }
 
 func (x *TaxonomyTargetType) GetId() string {
@@ -9738,7 +8785,7 @@ type TaxonomyTechniqueType struct {
 func (x *TaxonomyTechniqueType) Reset() {
 	*x = TaxonomyTechniqueType{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[125]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[112]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9751,7 +8798,7 @@ func (x *TaxonomyTechniqueType) String() string {
 func (*TaxonomyTechniqueType) ProtoMessage() {}
 
 func (x *TaxonomyTechniqueType) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[125]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[112]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9764,7 +8811,7 @@ func (x *TaxonomyTechniqueType) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaxonomyTechniqueType.ProtoReflect.Descriptor instead.
 func (*TaxonomyTechniqueType) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{125}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{112}
 }
 
 func (x *TaxonomyTechniqueType) GetId() string {
@@ -9830,7 +8877,7 @@ type TaxonomyCapability struct {
 func (x *TaxonomyCapability) Reset() {
 	*x = TaxonomyCapability{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[126]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[113]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9843,7 +8890,7 @@ func (x *TaxonomyCapability) String() string {
 func (*TaxonomyCapability) ProtoMessage() {}
 
 func (x *TaxonomyCapability) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[126]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[113]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9856,7 +8903,7 @@ func (x *TaxonomyCapability) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaxonomyCapability.ProtoReflect.Descriptor instead.
 func (*TaxonomyCapability) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{126}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{113}
 }
 
 func (x *TaxonomyCapability) GetId() string {
@@ -9902,7 +8949,7 @@ type TaxonomyProperty struct {
 func (x *TaxonomyProperty) Reset() {
 	*x = TaxonomyProperty{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[127]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[114]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9915,7 +8962,7 @@ func (x *TaxonomyProperty) String() string {
 func (*TaxonomyProperty) ProtoMessage() {}
 
 func (x *TaxonomyProperty) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[127]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[114]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9928,7 +8975,7 @@ func (x *TaxonomyProperty) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaxonomyProperty.ProtoReflect.Descriptor instead.
 func (*TaxonomyProperty) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{127}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{114}
 }
 
 func (x *TaxonomyProperty) GetName() string {
@@ -9995,7 +9042,7 @@ type ProposeOntologyExtensionRequest struct {
 func (x *ProposeOntologyExtensionRequest) Reset() {
 	*x = ProposeOntologyExtensionRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[128]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[115]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10008,7 +9055,7 @@ func (x *ProposeOntologyExtensionRequest) String() string {
 func (*ProposeOntologyExtensionRequest) ProtoMessage() {}
 
 func (x *ProposeOntologyExtensionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[128]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[115]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10021,7 +9068,7 @@ func (x *ProposeOntologyExtensionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProposeOntologyExtensionRequest.ProtoReflect.Descriptor instead.
 func (*ProposeOntologyExtensionRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{128}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{115}
 }
 
 func (x *ProposeOntologyExtensionRequest) GetContext() *ContextInfo {
@@ -10076,7 +9123,7 @@ type ProposeOntologyExtensionResponse struct {
 func (x *ProposeOntologyExtensionResponse) Reset() {
 	*x = ProposeOntologyExtensionResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[129]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[116]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10089,7 +9136,7 @@ func (x *ProposeOntologyExtensionResponse) String() string {
 func (*ProposeOntologyExtensionResponse) ProtoMessage() {}
 
 func (x *ProposeOntologyExtensionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[129]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[116]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10102,7 +9149,7 @@ func (x *ProposeOntologyExtensionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProposeOntologyExtensionResponse.ProtoReflect.Descriptor instead.
 func (*ProposeOntologyExtensionResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{129}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{116}
 }
 
 func (x *ProposeOntologyExtensionResponse) GetAccepted() bool {
@@ -10132,7 +9179,7 @@ type GenerateNodeIDRequest struct {
 func (x *GenerateNodeIDRequest) Reset() {
 	*x = GenerateNodeIDRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[130]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[117]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10145,7 +9192,7 @@ func (x *GenerateNodeIDRequest) String() string {
 func (*GenerateNodeIDRequest) ProtoMessage() {}
 
 func (x *GenerateNodeIDRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[130]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[117]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10158,7 +9205,7 @@ func (x *GenerateNodeIDRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateNodeIDRequest.ProtoReflect.Descriptor instead.
 func (*GenerateNodeIDRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{130}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{117}
 }
 
 func (x *GenerateNodeIDRequest) GetContext() *ContextInfo {
@@ -10194,7 +9241,7 @@ type GenerateNodeIDResponse struct {
 func (x *GenerateNodeIDResponse) Reset() {
 	*x = GenerateNodeIDResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[131]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[118]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10207,7 +9254,7 @@ func (x *GenerateNodeIDResponse) String() string {
 func (*GenerateNodeIDResponse) ProtoMessage() {}
 
 func (x *GenerateNodeIDResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[131]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[118]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10220,7 +9267,7 @@ func (x *GenerateNodeIDResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateNodeIDResponse.ProtoReflect.Descriptor instead.
 func (*GenerateNodeIDResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{131}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{118}
 }
 
 func (x *GenerateNodeIDResponse) GetNodeId() string {
@@ -10249,7 +9296,7 @@ type ValidateFindingRequest struct {
 func (x *ValidateFindingRequest) Reset() {
 	*x = ValidateFindingRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[132]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[119]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10262,7 +9309,7 @@ func (x *ValidateFindingRequest) String() string {
 func (*ValidateFindingRequest) ProtoMessage() {}
 
 func (x *ValidateFindingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[132]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[119]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10275,7 +9322,7 @@ func (x *ValidateFindingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateFindingRequest.ProtoReflect.Descriptor instead.
 func (*ValidateFindingRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{132}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{119}
 }
 
 func (x *ValidateFindingRequest) GetContext() *ContextInfo {
@@ -10305,7 +9352,7 @@ type ValidateGraphNodeRequest struct {
 func (x *ValidateGraphNodeRequest) Reset() {
 	*x = ValidateGraphNodeRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[133]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[120]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10318,7 +9365,7 @@ func (x *ValidateGraphNodeRequest) String() string {
 func (*ValidateGraphNodeRequest) ProtoMessage() {}
 
 func (x *ValidateGraphNodeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[133]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[120]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10331,7 +9378,7 @@ func (x *ValidateGraphNodeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateGraphNodeRequest.ProtoReflect.Descriptor instead.
 func (*ValidateGraphNodeRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{133}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{120}
 }
 
 func (x *ValidateGraphNodeRequest) GetContext() *ContextInfo {
@@ -10368,7 +9415,7 @@ type ValidateRelationshipRequest struct {
 func (x *ValidateRelationshipRequest) Reset() {
 	*x = ValidateRelationshipRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[134]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[121]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10381,7 +9428,7 @@ func (x *ValidateRelationshipRequest) String() string {
 func (*ValidateRelationshipRequest) ProtoMessage() {}
 
 func (x *ValidateRelationshipRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[134]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[121]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10394,7 +9441,7 @@ func (x *ValidateRelationshipRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateRelationshipRequest.ProtoReflect.Descriptor instead.
 func (*ValidateRelationshipRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{134}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{121}
 }
 
 func (x *ValidateRelationshipRequest) GetContext() *ContextInfo {
@@ -10432,7 +9479,7 @@ type ValidateFindingResponse struct {
 func (x *ValidateFindingResponse) Reset() {
 	*x = ValidateFindingResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[135]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[122]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10445,7 +9492,7 @@ func (x *ValidateFindingResponse) String() string {
 func (*ValidateFindingResponse) ProtoMessage() {}
 
 func (x *ValidateFindingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[135]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[122]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10458,7 +9505,7 @@ func (x *ValidateFindingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateFindingResponse.ProtoReflect.Descriptor instead.
 func (*ValidateFindingResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{135}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{122}
 }
 
 func (x *ValidateFindingResponse) GetValid() bool {
@@ -10503,7 +9550,7 @@ type ValidateGraphNodeResponse struct {
 func (x *ValidateGraphNodeResponse) Reset() {
 	*x = ValidateGraphNodeResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[136]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[123]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10516,7 +9563,7 @@ func (x *ValidateGraphNodeResponse) String() string {
 func (*ValidateGraphNodeResponse) ProtoMessage() {}
 
 func (x *ValidateGraphNodeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[136]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[123]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10529,7 +9576,7 @@ func (x *ValidateGraphNodeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateGraphNodeResponse.ProtoReflect.Descriptor instead.
 func (*ValidateGraphNodeResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{136}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{123}
 }
 
 func (x *ValidateGraphNodeResponse) GetValid() bool {
@@ -10574,7 +9621,7 @@ type ValidateRelationshipResponse struct {
 func (x *ValidateRelationshipResponse) Reset() {
 	*x = ValidateRelationshipResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[137]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[124]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10587,7 +9634,7 @@ func (x *ValidateRelationshipResponse) String() string {
 func (*ValidateRelationshipResponse) ProtoMessage() {}
 
 func (x *ValidateRelationshipResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[137]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[124]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10600,7 +9647,7 @@ func (x *ValidateRelationshipResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateRelationshipResponse.ProtoReflect.Descriptor instead.
 func (*ValidateRelationshipResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{137}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{124}
 }
 
 func (x *ValidateRelationshipResponse) GetValid() bool {
@@ -10644,7 +9691,7 @@ type ValidationError struct {
 func (x *ValidationError) Reset() {
 	*x = ValidationError{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[138]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[125]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10657,7 +9704,7 @@ func (x *ValidationError) String() string {
 func (*ValidationError) ProtoMessage() {}
 
 func (x *ValidationError) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[138]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[125]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10670,7 +9717,7 @@ func (x *ValidationError) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidationError.ProtoReflect.Descriptor instead.
 func (*ValidationError) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{138}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{125}
 }
 
 func (x *ValidationError) GetField() string {
@@ -10710,7 +9757,7 @@ type MissionMetrics struct {
 func (x *MissionMetrics) Reset() {
 	*x = MissionMetrics{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[139]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[126]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10723,7 +9770,7 @@ func (x *MissionMetrics) String() string {
 func (*MissionMetrics) ProtoMessage() {}
 
 func (x *MissionMetrics) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[139]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[126]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10736,7 +9783,7 @@ func (x *MissionMetrics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MissionMetrics.ProtoReflect.Descriptor instead.
 func (*MissionMetrics) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{139}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{126}
 }
 
 func (x *MissionMetrics) GetDurationMs() int64 {
@@ -10792,7 +9839,7 @@ type MissionInfo struct {
 func (x *MissionInfo) Reset() {
 	*x = MissionInfo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[140]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[127]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10805,7 +9852,7 @@ func (x *MissionInfo) String() string {
 func (*MissionInfo) ProtoMessage() {}
 
 func (x *MissionInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[140]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[127]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10818,7 +9865,7 @@ func (x *MissionInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MissionInfo.ProtoReflect.Descriptor instead.
 func (*MissionInfo) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{140}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{127}
 }
 
 func (x *MissionInfo) GetId() string {
@@ -10888,7 +9935,7 @@ type MissionStatusInfo struct {
 func (x *MissionStatusInfo) Reset() {
 	*x = MissionStatusInfo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[141]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[128]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10901,7 +9948,7 @@ func (x *MissionStatusInfo) String() string {
 func (*MissionStatusInfo) ProtoMessage() {}
 
 func (x *MissionStatusInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[141]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[128]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10914,7 +9961,7 @@ func (x *MissionStatusInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MissionStatusInfo.ProtoReflect.Descriptor instead.
 func (*MissionStatusInfo) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{141}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{128}
 }
 
 func (x *MissionStatusInfo) GetStatus() MissionStatus {
@@ -10984,7 +10031,7 @@ type MissionResult struct {
 func (x *MissionResult) Reset() {
 	*x = MissionResult{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[142]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[129]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10997,7 +10044,7 @@ func (x *MissionResult) String() string {
 func (*MissionResult) ProtoMessage() {}
 
 func (x *MissionResult) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[142]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[129]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11010,7 +10057,7 @@ func (x *MissionResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MissionResult.ProtoReflect.Descriptor instead.
 func (*MissionResult) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{142}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{129}
 }
 
 func (x *MissionResult) GetMissionId() string {
@@ -11079,7 +10126,7 @@ type MissionFilter struct {
 func (x *MissionFilter) Reset() {
 	*x = MissionFilter{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[143]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[130]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11092,7 +10139,7 @@ func (x *MissionFilter) String() string {
 func (*MissionFilter) ProtoMessage() {}
 
 func (x *MissionFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[143]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[130]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11105,7 +10152,7 @@ func (x *MissionFilter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MissionFilter.ProtoReflect.Descriptor instead.
 func (*MissionFilter) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{143}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{130}
 }
 
 func (x *MissionFilter) GetStatus() MissionStatus {
@@ -11211,7 +10258,7 @@ type CreateMissionRequest struct {
 func (x *CreateMissionRequest) Reset() {
 	*x = CreateMissionRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[144]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[131]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11224,7 +10271,7 @@ func (x *CreateMissionRequest) String() string {
 func (*CreateMissionRequest) ProtoMessage() {}
 
 func (x *CreateMissionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[144]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[131]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11237,7 +10284,7 @@ func (x *CreateMissionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateMissionRequest.ProtoReflect.Descriptor instead.
 func (*CreateMissionRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{144}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{131}
 }
 
 func (x *CreateMissionRequest) GetContext() *ContextInfo {
@@ -11330,7 +10377,7 @@ type CreateMissionResponse struct {
 func (x *CreateMissionResponse) Reset() {
 	*x = CreateMissionResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[145]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[132]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11343,7 +10390,7 @@ func (x *CreateMissionResponse) String() string {
 func (*CreateMissionResponse) ProtoMessage() {}
 
 func (x *CreateMissionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[145]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[132]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11356,7 +10403,7 @@ func (x *CreateMissionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateMissionResponse.ProtoReflect.Descriptor instead.
 func (*CreateMissionResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{145}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{132}
 }
 
 func (x *CreateMissionResponse) GetMission() *MissionInfo {
@@ -11392,7 +10439,7 @@ type RunMissionRequest struct {
 func (x *RunMissionRequest) Reset() {
 	*x = RunMissionRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[146]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[133]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11405,7 +10452,7 @@ func (x *RunMissionRequest) String() string {
 func (*RunMissionRequest) ProtoMessage() {}
 
 func (x *RunMissionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[146]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[133]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11418,7 +10465,7 @@ func (x *RunMissionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunMissionRequest.ProtoReflect.Descriptor instead.
 func (*RunMissionRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{146}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{133}
 }
 
 func (x *RunMissionRequest) GetContext() *ContextInfo {
@@ -11468,7 +10515,7 @@ type RunMissionResponse struct {
 func (x *RunMissionResponse) Reset() {
 	*x = RunMissionResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[147]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[134]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11481,7 +10528,7 @@ func (x *RunMissionResponse) String() string {
 func (*RunMissionResponse) ProtoMessage() {}
 
 func (x *RunMissionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[147]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[134]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11494,7 +10541,7 @@ func (x *RunMissionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunMissionResponse.ProtoReflect.Descriptor instead.
 func (*RunMissionResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{147}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{134}
 }
 
 func (x *RunMissionResponse) GetError() *HarnessError {
@@ -11517,7 +10564,7 @@ type GetMissionStatusRequest struct {
 func (x *GetMissionStatusRequest) Reset() {
 	*x = GetMissionStatusRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[148]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[135]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11530,7 +10577,7 @@ func (x *GetMissionStatusRequest) String() string {
 func (*GetMissionStatusRequest) ProtoMessage() {}
 
 func (x *GetMissionStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[148]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[135]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11543,7 +10590,7 @@ func (x *GetMissionStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMissionStatusRequest.ProtoReflect.Descriptor instead.
 func (*GetMissionStatusRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{148}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{135}
 }
 
 func (x *GetMissionStatusRequest) GetContext() *ContextInfo {
@@ -11573,7 +10620,7 @@ type GetMissionStatusResponse struct {
 func (x *GetMissionStatusResponse) Reset() {
 	*x = GetMissionStatusResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[149]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[136]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11586,7 +10633,7 @@ func (x *GetMissionStatusResponse) String() string {
 func (*GetMissionStatusResponse) ProtoMessage() {}
 
 func (x *GetMissionStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[149]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[136]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11599,7 +10646,7 @@ func (x *GetMissionStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMissionStatusResponse.ProtoReflect.Descriptor instead.
 func (*GetMissionStatusResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{149}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{136}
 }
 
 func (x *GetMissionStatusResponse) GetStatus() *MissionStatusInfo {
@@ -11630,7 +10677,7 @@ type WaitForMissionRequest struct {
 func (x *WaitForMissionRequest) Reset() {
 	*x = WaitForMissionRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[150]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[137]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11643,7 +10690,7 @@ func (x *WaitForMissionRequest) String() string {
 func (*WaitForMissionRequest) ProtoMessage() {}
 
 func (x *WaitForMissionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[150]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[137]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11656,7 +10703,7 @@ func (x *WaitForMissionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WaitForMissionRequest.ProtoReflect.Descriptor instead.
 func (*WaitForMissionRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{150}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{137}
 }
 
 func (x *WaitForMissionRequest) GetContext() *ContextInfo {
@@ -11693,7 +10740,7 @@ type WaitForMissionResponse struct {
 func (x *WaitForMissionResponse) Reset() {
 	*x = WaitForMissionResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[151]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[138]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11706,7 +10753,7 @@ func (x *WaitForMissionResponse) String() string {
 func (*WaitForMissionResponse) ProtoMessage() {}
 
 func (x *WaitForMissionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[151]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[138]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11719,7 +10766,7 @@ func (x *WaitForMissionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WaitForMissionResponse.ProtoReflect.Descriptor instead.
 func (*WaitForMissionResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{151}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{138}
 }
 
 func (x *WaitForMissionResponse) GetResult() *MissionResult {
@@ -11755,7 +10802,7 @@ type ListMissionsRequest struct {
 func (x *ListMissionsRequest) Reset() {
 	*x = ListMissionsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[152]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[139]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11768,7 +10815,7 @@ func (x *ListMissionsRequest) String() string {
 func (*ListMissionsRequest) ProtoMessage() {}
 
 func (x *ListMissionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[152]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[139]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11781,7 +10828,7 @@ func (x *ListMissionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMissionsRequest.ProtoReflect.Descriptor instead.
 func (*ListMissionsRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{152}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{139}
 }
 
 func (x *ListMissionsRequest) GetContext() *ContextInfo {
@@ -11828,7 +10875,7 @@ type ListMissionsResponse struct {
 func (x *ListMissionsResponse) Reset() {
 	*x = ListMissionsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[153]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[140]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11841,7 +10888,7 @@ func (x *ListMissionsResponse) String() string {
 func (*ListMissionsResponse) ProtoMessage() {}
 
 func (x *ListMissionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[153]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[140]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11854,7 +10901,7 @@ func (x *ListMissionsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMissionsResponse.ProtoReflect.Descriptor instead.
 func (*ListMissionsResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{153}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{140}
 }
 
 func (x *ListMissionsResponse) GetMissions() []*MissionInfo {
@@ -11891,7 +10938,7 @@ type CancelMissionRequest struct {
 func (x *CancelMissionRequest) Reset() {
 	*x = CancelMissionRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[154]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[141]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11904,7 +10951,7 @@ func (x *CancelMissionRequest) String() string {
 func (*CancelMissionRequest) ProtoMessage() {}
 
 func (x *CancelMissionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[154]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[141]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11917,7 +10964,7 @@ func (x *CancelMissionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelMissionRequest.ProtoReflect.Descriptor instead.
 func (*CancelMissionRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{154}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{141}
 }
 
 func (x *CancelMissionRequest) GetContext() *ContextInfo {
@@ -11946,7 +10993,7 @@ type CancelMissionResponse struct {
 func (x *CancelMissionResponse) Reset() {
 	*x = CancelMissionResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[155]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[142]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -11959,7 +11006,7 @@ func (x *CancelMissionResponse) String() string {
 func (*CancelMissionResponse) ProtoMessage() {}
 
 func (x *CancelMissionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[155]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[142]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11972,7 +11019,7 @@ func (x *CancelMissionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelMissionResponse.ProtoReflect.Descriptor instead.
 func (*CancelMissionResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{155}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{142}
 }
 
 func (x *CancelMissionResponse) GetError() *HarnessError {
@@ -11995,7 +11042,7 @@ type GetMissionResultsRequest struct {
 func (x *GetMissionResultsRequest) Reset() {
 	*x = GetMissionResultsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[156]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[143]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12008,7 +11055,7 @@ func (x *GetMissionResultsRequest) String() string {
 func (*GetMissionResultsRequest) ProtoMessage() {}
 
 func (x *GetMissionResultsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[156]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[143]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12021,7 +11068,7 @@ func (x *GetMissionResultsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMissionResultsRequest.ProtoReflect.Descriptor instead.
 func (*GetMissionResultsRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{156}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{143}
 }
 
 func (x *GetMissionResultsRequest) GetContext() *ContextInfo {
@@ -12051,7 +11098,7 @@ type GetMissionResultsResponse struct {
 func (x *GetMissionResultsResponse) Reset() {
 	*x = GetMissionResultsResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[157]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[144]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12064,7 +11111,7 @@ func (x *GetMissionResultsResponse) String() string {
 func (*GetMissionResultsResponse) ProtoMessage() {}
 
 func (x *GetMissionResultsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[157]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[144]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12077,7 +11124,7 @@ func (x *GetMissionResultsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMissionResultsResponse.ProtoReflect.Descriptor instead.
 func (*GetMissionResultsResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{157}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{144}
 }
 
 func (x *GetMissionResultsResponse) GetResult() *MissionResult {
@@ -12115,7 +11162,7 @@ type AuthorizeRequest struct {
 func (x *AuthorizeRequest) Reset() {
 	*x = AuthorizeRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[158]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[145]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12128,7 +11175,7 @@ func (x *AuthorizeRequest) String() string {
 func (*AuthorizeRequest) ProtoMessage() {}
 
 func (x *AuthorizeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[158]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[145]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12141,7 +11188,7 @@ func (x *AuthorizeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuthorizeRequest.ProtoReflect.Descriptor instead.
 func (*AuthorizeRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{158}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{145}
 }
 
 func (x *AuthorizeRequest) GetRunId() string {
@@ -12181,7 +11228,7 @@ type AuthorizeResponse struct {
 func (x *AuthorizeResponse) Reset() {
 	*x = AuthorizeResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[159]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[146]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12194,7 +11241,7 @@ func (x *AuthorizeResponse) String() string {
 func (*AuthorizeResponse) ProtoMessage() {}
 
 func (x *AuthorizeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[159]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[146]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12207,7 +11254,7 @@ func (x *AuthorizeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuthorizeResponse.ProtoReflect.Descriptor instead.
 func (*AuthorizeResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{159}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{146}
 }
 
 func (x *AuthorizeResponse) GetAllowed() bool {
@@ -12240,7 +11287,7 @@ type WorkspaceInfo struct {
 func (x *WorkspaceInfo) Reset() {
 	*x = WorkspaceInfo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[160]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[147]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12253,7 +11300,7 @@ func (x *WorkspaceInfo) String() string {
 func (*WorkspaceInfo) ProtoMessage() {}
 
 func (x *WorkspaceInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[160]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[147]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12266,7 +11313,7 @@ func (x *WorkspaceInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkspaceInfo.ProtoReflect.Descriptor instead.
 func (*WorkspaceInfo) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{160}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{147}
 }
 
 func (x *WorkspaceInfo) GetName() string {
@@ -12297,7 +11344,7 @@ type WorkspaceListRequest struct {
 func (x *WorkspaceListRequest) Reset() {
 	*x = WorkspaceListRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[161]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[148]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12310,7 +11357,7 @@ func (x *WorkspaceListRequest) String() string {
 func (*WorkspaceListRequest) ProtoMessage() {}
 
 func (x *WorkspaceListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[161]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[148]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12323,7 +11370,7 @@ func (x *WorkspaceListRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkspaceListRequest.ProtoReflect.Descriptor instead.
 func (*WorkspaceListRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{161}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{148}
 }
 
 func (x *WorkspaceListRequest) GetContext() *ContextInfo {
@@ -12345,7 +11392,7 @@ type WorkspaceListResponse struct {
 func (x *WorkspaceListResponse) Reset() {
 	*x = WorkspaceListResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[162]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[149]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12358,7 +11405,7 @@ func (x *WorkspaceListResponse) String() string {
 func (*WorkspaceListResponse) ProtoMessage() {}
 
 func (x *WorkspaceListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[162]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[149]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12371,7 +11418,7 @@ func (x *WorkspaceListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkspaceListResponse.ProtoReflect.Descriptor instead.
 func (*WorkspaceListResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{162}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{149}
 }
 
 func (x *WorkspaceListResponse) GetWorkspaces() []*WorkspaceInfo {
@@ -12396,7 +11443,7 @@ type WorkspaceGetInfoRequest struct {
 func (x *WorkspaceGetInfoRequest) Reset() {
 	*x = WorkspaceGetInfoRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[163]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[150]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12409,7 +11456,7 @@ func (x *WorkspaceGetInfoRequest) String() string {
 func (*WorkspaceGetInfoRequest) ProtoMessage() {}
 
 func (x *WorkspaceGetInfoRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[163]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[150]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12422,7 +11469,7 @@ func (x *WorkspaceGetInfoRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkspaceGetInfoRequest.ProtoReflect.Descriptor instead.
 func (*WorkspaceGetInfoRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{163}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{150}
 }
 
 func (x *WorkspaceGetInfoRequest) GetContext() *ContextInfo {
@@ -12452,7 +11499,7 @@ type WorkspaceGetInfoResponse struct {
 func (x *WorkspaceGetInfoResponse) Reset() {
 	*x = WorkspaceGetInfoResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[164]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[151]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12465,7 +11512,7 @@ func (x *WorkspaceGetInfoResponse) String() string {
 func (*WorkspaceGetInfoResponse) ProtoMessage() {}
 
 func (x *WorkspaceGetInfoResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[164]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[151]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12478,7 +11525,7 @@ func (x *WorkspaceGetInfoResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkspaceGetInfoResponse.ProtoReflect.Descriptor instead.
 func (*WorkspaceGetInfoResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{164}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{151}
 }
 
 func (x *WorkspaceGetInfoResponse) GetWorkspace() *WorkspaceInfo {
@@ -12504,7 +11551,7 @@ type WorkspaceReadFileRequest struct {
 func (x *WorkspaceReadFileRequest) Reset() {
 	*x = WorkspaceReadFileRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[165]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[152]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12517,7 +11564,7 @@ func (x *WorkspaceReadFileRequest) String() string {
 func (*WorkspaceReadFileRequest) ProtoMessage() {}
 
 func (x *WorkspaceReadFileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[165]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[152]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12530,7 +11577,7 @@ func (x *WorkspaceReadFileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkspaceReadFileRequest.ProtoReflect.Descriptor instead.
 func (*WorkspaceReadFileRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{165}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{152}
 }
 
 func (x *WorkspaceReadFileRequest) GetContext() *ContextInfo {
@@ -12566,7 +11613,7 @@ type WorkspaceReadFileResponse struct {
 func (x *WorkspaceReadFileResponse) Reset() {
 	*x = WorkspaceReadFileResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[166]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[153]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12579,7 +11626,7 @@ func (x *WorkspaceReadFileResponse) String() string {
 func (*WorkspaceReadFileResponse) ProtoMessage() {}
 
 func (x *WorkspaceReadFileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[166]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[153]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12592,7 +11639,7 @@ func (x *WorkspaceReadFileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkspaceReadFileResponse.ProtoReflect.Descriptor instead.
 func (*WorkspaceReadFileResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{166}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{153}
 }
 
 func (x *WorkspaceReadFileResponse) GetContent() []byte {
@@ -12620,7 +11667,7 @@ type WorkspaceWriteFileRequest struct {
 func (x *WorkspaceWriteFileRequest) Reset() {
 	*x = WorkspaceWriteFileRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[167]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[154]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12633,7 +11680,7 @@ func (x *WorkspaceWriteFileRequest) String() string {
 func (*WorkspaceWriteFileRequest) ProtoMessage() {}
 
 func (x *WorkspaceWriteFileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[167]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[154]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12646,7 +11693,7 @@ func (x *WorkspaceWriteFileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkspaceWriteFileRequest.ProtoReflect.Descriptor instead.
 func (*WorkspaceWriteFileRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{167}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{154}
 }
 
 func (x *WorkspaceWriteFileRequest) GetContext() *ContextInfo {
@@ -12687,7 +11734,7 @@ type WorkspaceWriteFileResponse struct {
 func (x *WorkspaceWriteFileResponse) Reset() {
 	*x = WorkspaceWriteFileResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[168]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[155]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12700,7 +11747,7 @@ func (x *WorkspaceWriteFileResponse) String() string {
 func (*WorkspaceWriteFileResponse) ProtoMessage() {}
 
 func (x *WorkspaceWriteFileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[168]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[155]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12713,7 +11760,7 @@ func (x *WorkspaceWriteFileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkspaceWriteFileResponse.ProtoReflect.Descriptor instead.
 func (*WorkspaceWriteFileResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{168}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{155}
 }
 
 // WorkspaceListFilesRequest enumerates workspace files matching a glob.
@@ -12733,7 +11780,7 @@ type WorkspaceListFilesRequest struct {
 func (x *WorkspaceListFilesRequest) Reset() {
 	*x = WorkspaceListFilesRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[169]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[156]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12746,7 +11793,7 @@ func (x *WorkspaceListFilesRequest) String() string {
 func (*WorkspaceListFilesRequest) ProtoMessage() {}
 
 func (x *WorkspaceListFilesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[169]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[156]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12759,7 +11806,7 @@ func (x *WorkspaceListFilesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkspaceListFilesRequest.ProtoReflect.Descriptor instead.
 func (*WorkspaceListFilesRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{169}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{156}
 }
 
 func (x *WorkspaceListFilesRequest) GetContext() *ContextInfo {
@@ -12799,7 +11846,7 @@ type WorkspaceListFilesResponse struct {
 func (x *WorkspaceListFilesResponse) Reset() {
 	*x = WorkspaceListFilesResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[170]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[157]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12812,7 +11859,7 @@ func (x *WorkspaceListFilesResponse) String() string {
 func (*WorkspaceListFilesResponse) ProtoMessage() {}
 
 func (x *WorkspaceListFilesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[170]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[157]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12825,7 +11872,7 @@ func (x *WorkspaceListFilesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkspaceListFilesResponse.ProtoReflect.Descriptor instead.
 func (*WorkspaceListFilesResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{170}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{157}
 }
 
 func (x *WorkspaceListFilesResponse) GetPaths() []string {
@@ -12858,7 +11905,7 @@ type WorkspaceCommitRequest struct {
 func (x *WorkspaceCommitRequest) Reset() {
 	*x = WorkspaceCommitRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[171]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[158]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12871,7 +11918,7 @@ func (x *WorkspaceCommitRequest) String() string {
 func (*WorkspaceCommitRequest) ProtoMessage() {}
 
 func (x *WorkspaceCommitRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[171]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[158]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12884,7 +11931,7 @@ func (x *WorkspaceCommitRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkspaceCommitRequest.ProtoReflect.Descriptor instead.
 func (*WorkspaceCommitRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{171}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{158}
 }
 
 func (x *WorkspaceCommitRequest) GetContext() *ContextInfo {
@@ -12920,7 +11967,7 @@ type WorkspaceCommitResponse struct {
 func (x *WorkspaceCommitResponse) Reset() {
 	*x = WorkspaceCommitResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[172]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[159]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12933,7 +11980,7 @@ func (x *WorkspaceCommitResponse) String() string {
 func (*WorkspaceCommitResponse) ProtoMessage() {}
 
 func (x *WorkspaceCommitResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[172]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[159]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12946,7 +11993,7 @@ func (x *WorkspaceCommitResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkspaceCommitResponse.ProtoReflect.Descriptor instead.
 func (*WorkspaceCommitResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{172}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{159}
 }
 
 func (x *WorkspaceCommitResponse) GetCommitSha() string {
@@ -12970,7 +12017,7 @@ type WorkspacePushRequest struct {
 func (x *WorkspacePushRequest) Reset() {
 	*x = WorkspacePushRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[173]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[160]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -12983,7 +12030,7 @@ func (x *WorkspacePushRequest) String() string {
 func (*WorkspacePushRequest) ProtoMessage() {}
 
 func (x *WorkspacePushRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[173]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[160]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -12996,7 +12043,7 @@ func (x *WorkspacePushRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkspacePushRequest.ProtoReflect.Descriptor instead.
 func (*WorkspacePushRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{173}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{160}
 }
 
 func (x *WorkspacePushRequest) GetContext() *ContextInfo {
@@ -13023,7 +12070,7 @@ type WorkspacePushResponse struct {
 func (x *WorkspacePushResponse) Reset() {
 	*x = WorkspacePushResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[174]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[161]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13036,7 +12083,7 @@ func (x *WorkspacePushResponse) String() string {
 func (*WorkspacePushResponse) ProtoMessage() {}
 
 func (x *WorkspacePushResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[174]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[161]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13049,7 +12096,7 @@ func (x *WorkspacePushResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkspacePushResponse.ProtoReflect.Descriptor instead.
 func (*WorkspacePushResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{174}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{161}
 }
 
 // DevboxExecRequest names the session and the command. No tenant field, no
@@ -13076,7 +12123,7 @@ type DevboxExecRequest struct {
 func (x *DevboxExecRequest) Reset() {
 	*x = DevboxExecRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[175]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[162]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13089,7 +12136,7 @@ func (x *DevboxExecRequest) String() string {
 func (*DevboxExecRequest) ProtoMessage() {}
 
 func (x *DevboxExecRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[175]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[162]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13102,7 +12149,7 @@ func (x *DevboxExecRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DevboxExecRequest.ProtoReflect.Descriptor instead.
 func (*DevboxExecRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{175}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{162}
 }
 
 func (x *DevboxExecRequest) GetContext() *ContextInfo {
@@ -13153,7 +12200,7 @@ type DevboxExecResponse struct {
 func (x *DevboxExecResponse) Reset() {
 	*x = DevboxExecResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[176]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[163]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13166,7 +12213,7 @@ func (x *DevboxExecResponse) String() string {
 func (*DevboxExecResponse) ProtoMessage() {}
 
 func (x *DevboxExecResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[176]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[163]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13179,7 +12226,7 @@ func (x *DevboxExecResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DevboxExecResponse.ProtoReflect.Descriptor instead.
 func (*DevboxExecResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{176}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{163}
 }
 
 func (m *DevboxExecResponse) GetPayload() isDevboxExecResponse_Payload {
@@ -13259,7 +12306,7 @@ type DevboxExecExit struct {
 func (x *DevboxExecExit) Reset() {
 	*x = DevboxExecExit{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[177]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[164]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13272,7 +12319,7 @@ func (x *DevboxExecExit) String() string {
 func (*DevboxExecExit) ProtoMessage() {}
 
 func (x *DevboxExecExit) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[177]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[164]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13285,7 +12332,7 @@ func (x *DevboxExecExit) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DevboxExecExit.ProtoReflect.Descriptor instead.
 func (*DevboxExecExit) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{177}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{164}
 }
 
 func (x *DevboxExecExit) GetExitCode() int32 {
@@ -13318,7 +12365,7 @@ type PutSessionContextRequest struct {
 func (x *PutSessionContextRequest) Reset() {
 	*x = PutSessionContextRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[178]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[165]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13331,7 +12378,7 @@ func (x *PutSessionContextRequest) String() string {
 func (*PutSessionContextRequest) ProtoMessage() {}
 
 func (x *PutSessionContextRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[178]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[165]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13344,7 +12391,7 @@ func (x *PutSessionContextRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutSessionContextRequest.ProtoReflect.Descriptor instead.
 func (*PutSessionContextRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{178}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{165}
 }
 
 func (x *PutSessionContextRequest) GetContext() *ContextInfo {
@@ -13389,7 +12436,7 @@ type PutSessionContextResponse struct {
 func (x *PutSessionContextResponse) Reset() {
 	*x = PutSessionContextResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[179]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[166]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13402,7 +12449,7 @@ func (x *PutSessionContextResponse) String() string {
 func (*PutSessionContextResponse) ProtoMessage() {}
 
 func (x *PutSessionContextResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[179]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[166]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13415,7 +12462,7 @@ func (x *PutSessionContextResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutSessionContextResponse.ProtoReflect.Descriptor instead.
 func (*PutSessionContextResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{179}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{166}
 }
 
 func (x *PutSessionContextResponse) GetError() *HarnessError {
@@ -13444,7 +12491,7 @@ type GetSessionContextRequest struct {
 func (x *GetSessionContextRequest) Reset() {
 	*x = GetSessionContextRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[180]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[167]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13457,7 +12504,7 @@ func (x *GetSessionContextRequest) String() string {
 func (*GetSessionContextRequest) ProtoMessage() {}
 
 func (x *GetSessionContextRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[180]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[167]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13470,7 +12517,7 @@ func (x *GetSessionContextRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSessionContextRequest.ProtoReflect.Descriptor instead.
 func (*GetSessionContextRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{180}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{167}
 }
 
 func (x *GetSessionContextRequest) GetContext() *ContextInfo {
@@ -13502,7 +12549,7 @@ type GetSessionContextResponse struct {
 func (x *GetSessionContextResponse) Reset() {
 	*x = GetSessionContextResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[181]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[168]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13515,7 +12562,7 @@ func (x *GetSessionContextResponse) String() string {
 func (*GetSessionContextResponse) ProtoMessage() {}
 
 func (x *GetSessionContextResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[181]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[168]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13528,7 +12575,7 @@ func (x *GetSessionContextResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSessionContextResponse.ProtoReflect.Descriptor instead.
 func (*GetSessionContextResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{181}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{168}
 }
 
 func (x *GetSessionContextResponse) GetError() *HarnessError {
@@ -13564,7 +12611,7 @@ type DeleteSessionContextRequest struct {
 func (x *DeleteSessionContextRequest) Reset() {
 	*x = DeleteSessionContextRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[182]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[169]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13577,7 +12624,7 @@ func (x *DeleteSessionContextRequest) String() string {
 func (*DeleteSessionContextRequest) ProtoMessage() {}
 
 func (x *DeleteSessionContextRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[182]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[169]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13590,7 +12637,7 @@ func (x *DeleteSessionContextRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteSessionContextRequest.ProtoReflect.Descriptor instead.
 func (*DeleteSessionContextRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{182}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{169}
 }
 
 func (x *DeleteSessionContextRequest) GetContext() *ContextInfo {
@@ -13620,7 +12667,7 @@ type DeleteSessionContextResponse struct {
 func (x *DeleteSessionContextResponse) Reset() {
 	*x = DeleteSessionContextResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[183]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[170]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13633,7 +12680,7 @@ func (x *DeleteSessionContextResponse) String() string {
 func (*DeleteSessionContextResponse) ProtoMessage() {}
 
 func (x *DeleteSessionContextResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[183]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[170]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13646,7 +12693,7 @@ func (x *DeleteSessionContextResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteSessionContextResponse.ProtoReflect.Descriptor instead.
 func (*DeleteSessionContextResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{183}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{170}
 }
 
 func (x *DeleteSessionContextResponse) GetError() *HarnessError {
@@ -13669,7 +12716,7 @@ type SubscribeInputRequest struct {
 func (x *SubscribeInputRequest) Reset() {
 	*x = SubscribeInputRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[184]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[171]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13682,7 +12729,7 @@ func (x *SubscribeInputRequest) String() string {
 func (*SubscribeInputRequest) ProtoMessage() {}
 
 func (x *SubscribeInputRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[184]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[171]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13695,7 +12742,7 @@ func (x *SubscribeInputRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubscribeInputRequest.ProtoReflect.Descriptor instead.
 func (*SubscribeInputRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{184}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{171}
 }
 
 func (x *SubscribeInputRequest) GetContext() *ContextInfo {
@@ -13718,7 +12765,7 @@ type SubscribeInputResponse struct {
 func (x *SubscribeInputResponse) Reset() {
 	*x = SubscribeInputResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[185]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[172]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13731,7 +12778,7 @@ func (x *SubscribeInputResponse) String() string {
 func (*SubscribeInputResponse) ProtoMessage() {}
 
 func (x *SubscribeInputResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[185]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[172]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13744,7 +12791,7 @@ func (x *SubscribeInputResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubscribeInputResponse.ProtoReflect.Descriptor instead.
 func (*SubscribeInputResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{185}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{172}
 }
 
 func (x *SubscribeInputResponse) GetInput() *v14.Input {
@@ -13767,7 +12814,7 @@ type PullJobRequest struct {
 func (x *PullJobRequest) Reset() {
 	*x = PullJobRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[186]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[173]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13780,7 +12827,7 @@ func (x *PullJobRequest) String() string {
 func (*PullJobRequest) ProtoMessage() {}
 
 func (x *PullJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[186]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[173]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13793,7 +12840,7 @@ func (x *PullJobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PullJobRequest.ProtoReflect.Descriptor instead.
 func (*PullJobRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{186}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{173}
 }
 
 func (x *PullJobRequest) GetContext() *ContextInfo {
@@ -13818,7 +12865,7 @@ type PullJobResponse struct {
 func (x *PullJobResponse) Reset() {
 	*x = PullJobResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[187]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[174]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13831,7 +12878,7 @@ func (x *PullJobResponse) String() string {
 func (*PullJobResponse) ProtoMessage() {}
 
 func (x *PullJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[187]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[174]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13844,7 +12891,7 @@ func (x *PullJobResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PullJobResponse.ProtoReflect.Descriptor instead.
 func (*PullJobResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{187}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{174}
 }
 
 func (x *PullJobResponse) GetJob() *v14.Job {
@@ -13880,7 +12927,7 @@ type ReportJobStateRequest struct {
 func (x *ReportJobStateRequest) Reset() {
 	*x = ReportJobStateRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[188]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[175]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13893,7 +12940,7 @@ func (x *ReportJobStateRequest) String() string {
 func (*ReportJobStateRequest) ProtoMessage() {}
 
 func (x *ReportJobStateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[188]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[175]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13906,7 +12953,7 @@ func (x *ReportJobStateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportJobStateRequest.ProtoReflect.Descriptor instead.
 func (*ReportJobStateRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{188}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{175}
 }
 
 func (x *ReportJobStateRequest) GetContext() *ContextInfo {
@@ -13949,7 +12996,7 @@ type ReportJobStateResponse struct {
 func (x *ReportJobStateResponse) Reset() {
 	*x = ReportJobStateResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[189]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[176]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -13962,7 +13009,7 @@ func (x *ReportJobStateResponse) String() string {
 func (*ReportJobStateResponse) ProtoMessage() {}
 
 func (x *ReportJobStateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[189]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[176]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -13975,7 +13022,7 @@ func (x *ReportJobStateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportJobStateResponse.ProtoReflect.Descriptor instead.
 func (*ReportJobStateResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{189}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{176}
 }
 
 func (x *ReportJobStateResponse) GetError() *HarnessError {
@@ -14002,7 +13049,7 @@ type ReportDeliverableRequest struct {
 func (x *ReportDeliverableRequest) Reset() {
 	*x = ReportDeliverableRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[190]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[177]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14015,7 +13062,7 @@ func (x *ReportDeliverableRequest) String() string {
 func (*ReportDeliverableRequest) ProtoMessage() {}
 
 func (x *ReportDeliverableRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[190]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[177]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14028,7 +13075,7 @@ func (x *ReportDeliverableRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportDeliverableRequest.ProtoReflect.Descriptor instead.
 func (*ReportDeliverableRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{190}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{177}
 }
 
 func (x *ReportDeliverableRequest) GetContext() *ContextInfo {
@@ -14064,7 +13111,7 @@ type ReportDeliverableResponse struct {
 func (x *ReportDeliverableResponse) Reset() {
 	*x = ReportDeliverableResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[191]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[178]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14077,7 +13124,7 @@ func (x *ReportDeliverableResponse) String() string {
 func (*ReportDeliverableResponse) ProtoMessage() {}
 
 func (x *ReportDeliverableResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[191]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[178]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14090,7 +13137,7 @@ func (x *ReportDeliverableResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportDeliverableResponse.ProtoReflect.Descriptor instead.
 func (*ReportDeliverableResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{191}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{178}
 }
 
 func (x *ReportDeliverableResponse) GetError() *HarnessError {
@@ -14120,7 +13167,7 @@ type OpenJobRequest struct {
 func (x *OpenJobRequest) Reset() {
 	*x = OpenJobRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[192]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[179]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14133,7 +13180,7 @@ func (x *OpenJobRequest) String() string {
 func (*OpenJobRequest) ProtoMessage() {}
 
 func (x *OpenJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[192]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[179]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14146,7 +13193,7 @@ func (x *OpenJobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OpenJobRequest.ProtoReflect.Descriptor instead.
 func (*OpenJobRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{192}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{179}
 }
 
 func (x *OpenJobRequest) GetContext() *ContextInfo {
@@ -14191,7 +13238,7 @@ type OpenJobResponse struct {
 func (x *OpenJobResponse) Reset() {
 	*x = OpenJobResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[193]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[180]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14204,7 +13251,7 @@ func (x *OpenJobResponse) String() string {
 func (*OpenJobResponse) ProtoMessage() {}
 
 func (x *OpenJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[193]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[180]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14217,7 +13264,7 @@ func (x *OpenJobResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OpenJobResponse.ProtoReflect.Descriptor instead.
 func (*OpenJobResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{193}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{180}
 }
 
 func (x *OpenJobResponse) GetJob() *v14.Job {
@@ -14255,7 +13302,7 @@ type SendInputRequest struct {
 func (x *SendInputRequest) Reset() {
 	*x = SendInputRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[194]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[181]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14268,7 +13315,7 @@ func (x *SendInputRequest) String() string {
 func (*SendInputRequest) ProtoMessage() {}
 
 func (x *SendInputRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[194]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[181]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14281,7 +13328,7 @@ func (x *SendInputRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendInputRequest.ProtoReflect.Descriptor instead.
 func (*SendInputRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{194}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{181}
 }
 
 func (x *SendInputRequest) GetContext() *ContextInfo {
@@ -14326,7 +13373,7 @@ type SendInputResponse struct {
 func (x *SendInputResponse) Reset() {
 	*x = SendInputResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[195]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[182]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14339,7 +13386,7 @@ func (x *SendInputResponse) String() string {
 func (*SendInputResponse) ProtoMessage() {}
 
 func (x *SendInputResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[195]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[182]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14352,7 +13399,7 @@ func (x *SendInputResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendInputResponse.ProtoReflect.Descriptor instead.
 func (*SendInputResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{195}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{182}
 }
 
 func (x *SendInputResponse) GetInput() *v14.Input {
@@ -14388,7 +13435,7 @@ type CloseJobRequest struct {
 func (x *CloseJobRequest) Reset() {
 	*x = CloseJobRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[196]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[183]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14401,7 +13448,7 @@ func (x *CloseJobRequest) String() string {
 func (*CloseJobRequest) ProtoMessage() {}
 
 func (x *CloseJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[196]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[183]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14414,7 +13461,7 @@ func (x *CloseJobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CloseJobRequest.ProtoReflect.Descriptor instead.
 func (*CloseJobRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{196}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{183}
 }
 
 func (x *CloseJobRequest) GetContext() *ContextInfo {
@@ -14459,7 +13506,7 @@ type CloseJobResponse struct {
 func (x *CloseJobResponse) Reset() {
 	*x = CloseJobResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[197]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[184]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14472,7 +13519,7 @@ func (x *CloseJobResponse) String() string {
 func (*CloseJobResponse) ProtoMessage() {}
 
 func (x *CloseJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[197]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[184]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14485,7 +13532,7 @@ func (x *CloseJobResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CloseJobResponse.ProtoReflect.Descriptor instead.
 func (*CloseJobResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{197}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{184}
 }
 
 func (x *CloseJobResponse) GetJob() *v14.Job {
@@ -14517,7 +13564,7 @@ type ClaimForkRequest struct {
 func (x *ClaimForkRequest) Reset() {
 	*x = ClaimForkRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[198]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[185]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14530,7 +13577,7 @@ func (x *ClaimForkRequest) String() string {
 func (*ClaimForkRequest) ProtoMessage() {}
 
 func (x *ClaimForkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[198]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[185]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14543,7 +13590,7 @@ func (x *ClaimForkRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClaimForkRequest.ProtoReflect.Descriptor instead.
 func (*ClaimForkRequest) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{198}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{185}
 }
 
 func (x *ClaimForkRequest) GetSandboxId() string {
@@ -14579,7 +13626,7 @@ type ClaimForkResponse struct {
 func (x *ClaimForkResponse) Reset() {
 	*x = ClaimForkResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[199]
+		mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[186]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -14592,7 +13639,7 @@ func (x *ClaimForkResponse) String() string {
 func (*ClaimForkResponse) ProtoMessage() {}
 
 func (x *ClaimForkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[199]
+	mi := &file_gibson_harness_v1_harness_callback_proto_msgTypes[186]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14605,7 +13652,7 @@ func (x *ClaimForkResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClaimForkResponse.ProtoReflect.Descriptor instead.
 func (*ClaimForkResponse) Descriptor() ([]byte, []int) {
-	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{199}
+	return file_gibson_harness_v1_harness_callback_proto_rawDescGZIP(), []int{186}
 }
 
 func (x *ClaimForkResponse) GetGrant() string {
@@ -14704,206 +13751,38 @@ var file_gibson_harness_v1_harness_callback_proto_rawDesc = []byte{
 	0x01, 0x28, 0x05, 0x52, 0x09, 0x72, 0x75, 0x6e, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72, 0x12, 0x2a,
 	0x0a, 0x11, 0x74, 0x6f, 0x6f, 0x6c, 0x5f, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e,
 	0x5f, 0x69, 0x64, 0x18, 0x09, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0f, 0x74, 0x6f, 0x6f, 0x6c, 0x45,
-	0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x49, 0x64, 0x22, 0x77, 0x0a, 0x0a, 0x54, 0x6f,
-	0x6b, 0x65, 0x6e, 0x55, 0x73, 0x61, 0x67, 0x65, 0x12, 0x21, 0x0a, 0x0c, 0x69, 0x6e, 0x70, 0x75,
-	0x74, 0x5f, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0b,
-	0x69, 0x6e, 0x70, 0x75, 0x74, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x73, 0x12, 0x23, 0x0a, 0x0d, 0x6f,
-	0x75, 0x74, 0x70, 0x75, 0x74, 0x5f, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x73, 0x18, 0x02, 0x20, 0x01,
-	0x28, 0x05, 0x52, 0x0c, 0x6f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x73,
-	0x12, 0x21, 0x0a, 0x0c, 0x74, 0x6f, 0x74, 0x61, 0x6c, 0x5f, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x73,
-	0x18, 0x03, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0b, 0x74, 0x6f, 0x74, 0x61, 0x6c, 0x54, 0x6f, 0x6b,
-	0x65, 0x6e, 0x73, 0x22, 0x6d, 0x0a, 0x13, 0x52, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65, 0x4d, 0x6f,
-	0x64, 0x65, 0x6c, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x38, 0x0a, 0x07, 0x63, 0x6f,
-	0x6e, 0x74, 0x65, 0x78, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x67, 0x69,
-	0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e,
-	0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x07, 0x63, 0x6f, 0x6e,
-	0x74, 0x65, 0x78, 0x74, 0x12, 0x1c, 0x0a, 0x04, 0x73, 0x6c, 0x6f, 0x74, 0x18, 0x02, 0x20, 0x01,
-	0x28, 0x09, 0x42, 0x08, 0xba, 0x48, 0x05, 0x72, 0x03, 0x18, 0x80, 0x08, 0x52, 0x04, 0x73, 0x6c,
-	0x6f, 0x74, 0x22, 0xdd, 0x02, 0x0a, 0x14, 0x52, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65, 0x4d, 0x6f,
-	0x64, 0x65, 0x6c, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x6d,
-	0x6f, 0x64, 0x65, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x6d, 0x6f, 0x64, 0x65,
-	0x6c, 0x12, 0x1a, 0x0a, 0x08, 0x70, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x18, 0x02, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x08, 0x70, 0x72, 0x6f, 0x76, 0x69, 0x64, 0x65, 0x72, 0x12, 0x1f, 0x0a,
-	0x0b, 0x67, 0x61, 0x74, 0x65, 0x77, 0x61, 0x79, 0x5f, 0x75, 0x72, 0x6c, 0x18, 0x03, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x0a, 0x67, 0x61, 0x74, 0x65, 0x77, 0x61, 0x79, 0x55, 0x72, 0x6c, 0x12, 0x5e,
-	0x0a, 0x0d, 0x72, 0x6f, 0x75, 0x74, 0x65, 0x5f, 0x68, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x18,
-	0x04, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x39, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68,
-	0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x73, 0x6f, 0x6c, 0x76,
-	0x65, 0x4d, 0x6f, 0x64, 0x65, 0x6c, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x2e, 0x52,
-	0x6f, 0x75, 0x74, 0x65, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79,
-	0x52, 0x0c, 0x72, 0x6f, 0x75, 0x74, 0x65, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x12, 0x25,
-	0x0a, 0x0e, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x5f, 0x77, 0x69, 0x6e, 0x64, 0x6f, 0x77,
-	0x18, 0x05, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0d, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x57,
-	0x69, 0x6e, 0x64, 0x6f, 0x77, 0x12, 0x2a, 0x0a, 0x11, 0x6d, 0x61, 0x78, 0x5f, 0x6f, 0x75, 0x74,
-	0x70, 0x75, 0x74, 0x5f, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x73, 0x18, 0x06, 0x20, 0x01, 0x28, 0x05,
-	0x52, 0x0f, 0x6d, 0x61, 0x78, 0x4f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x54, 0x6f, 0x6b, 0x65, 0x6e,
-	0x73, 0x1a, 0x3f, 0x0a, 0x11, 0x52, 0x6f, 0x75, 0x74, 0x65, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72,
-	0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75,
-	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02,
-	0x38, 0x01, 0x22, 0xcc, 0x01, 0x0a, 0x0a, 0x4c, 0x4c, 0x4d, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67,
-	0x65, 0x12, 0x12, 0x0a, 0x04, 0x72, 0x6f, 0x6c, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x04, 0x72, 0x6f, 0x6c, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74,
-	0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x12,
-	0x3a, 0x0a, 0x0a, 0x74, 0x6f, 0x6f, 0x6c, 0x5f, 0x63, 0x61, 0x6c, 0x6c, 0x73, 0x18, 0x03, 0x20,
-	0x03, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72,
-	0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x6f, 0x6f, 0x6c, 0x43, 0x61, 0x6c, 0x6c,
-	0x52, 0x09, 0x74, 0x6f, 0x6f, 0x6c, 0x43, 0x61, 0x6c, 0x6c, 0x73, 0x12, 0x40, 0x0a, 0x0c, 0x74,
-	0x6f, 0x6f, 0x6c, 0x5f, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28,
-	0x0b, 0x32, 0x1d, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65,
-	0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x6f, 0x6f, 0x6c, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74,
-	0x52, 0x0b, 0x74, 0x6f, 0x6f, 0x6c, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x12, 0x12, 0x0a,
-	0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d,
-	0x65, 0x22, 0x4c, 0x0a, 0x08, 0x54, 0x6f, 0x6f, 0x6c, 0x43, 0x61, 0x6c, 0x6c, 0x12, 0x0e, 0x0a,
-	0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a,
-	0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d,
-	0x65, 0x12, 0x1c, 0x0a, 0x09, 0x61, 0x72, 0x67, 0x75, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x18, 0x03,
-	0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x61, 0x72, 0x67, 0x75, 0x6d, 0x65, 0x6e, 0x74, 0x73, 0x22,
-	0x63, 0x0a, 0x0a, 0x54, 0x6f, 0x6f, 0x6c, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x12, 0x20, 0x0a,
-	0x0c, 0x74, 0x6f, 0x6f, 0x6c, 0x5f, 0x63, 0x61, 0x6c, 0x6c, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x0a, 0x74, 0x6f, 0x6f, 0x6c, 0x43, 0x61, 0x6c, 0x6c, 0x49, 0x64, 0x12,
-	0x18, 0x0a, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x12, 0x19, 0x0a, 0x08, 0x69, 0x73, 0x5f,
-	0x65, 0x72, 0x72, 0x6f, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x69, 0x73, 0x45,
-	0x72, 0x72, 0x6f, 0x72, 0x22, 0x82, 0x01, 0x0a, 0x07, 0x54, 0x6f, 0x6f, 0x6c, 0x44, 0x65, 0x66,
-	0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04,
-	0x6e, 0x61, 0x6d, 0x65, 0x12, 0x20, 0x0a, 0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74,
-	0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x64, 0x65, 0x73, 0x63, 0x72,
-	0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x41, 0x0a, 0x0a, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x65,
-	0x74, 0x65, 0x72, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x21, 0x2e, 0x67, 0x69, 0x62,
-	0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4a,
-	0x53, 0x4f, 0x4e, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x4e, 0x6f, 0x64, 0x65, 0x52, 0x0a, 0x70,
-	0x61, 0x72, 0x61, 0x6d, 0x65, 0x74, 0x65, 0x72, 0x73, 0x22, 0xc9, 0x02, 0x0a, 0x12, 0x4c, 0x4c,
-	0x4d, 0x43, 0x6f, 0x6d, 0x70, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x12, 0x38, 0x0a, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x0b, 0x32, 0x1e, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65,
-	0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x49, 0x6e, 0x66,
-	0x6f, 0x52, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x12, 0x1c, 0x0a, 0x04, 0x73, 0x6c,
-	0x6f, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x08, 0xba, 0x48, 0x05, 0x72, 0x03, 0x18,
-	0x80, 0x08, 0x52, 0x04, 0x73, 0x6c, 0x6f, 0x74, 0x12, 0x39, 0x0a, 0x08, 0x6d, 0x65, 0x73, 0x73,
-	0x61, 0x67, 0x65, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x67, 0x69, 0x62,
-	0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4c,
-	0x4c, 0x4d, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x52, 0x08, 0x6d, 0x65, 0x73, 0x73, 0x61,
-	0x67, 0x65, 0x73, 0x12, 0x25, 0x0a, 0x0b, 0x74, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75,
-	0x72, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x01, 0x48, 0x00, 0x52, 0x0b, 0x74, 0x65, 0x6d, 0x70,
-	0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65, 0x88, 0x01, 0x01, 0x12, 0x22, 0x0a, 0x0a, 0x6d, 0x61,
-	0x78, 0x5f, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x73, 0x18, 0x05, 0x20, 0x01, 0x28, 0x05, 0x48, 0x01,
-	0x52, 0x09, 0x6d, 0x61, 0x78, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x73, 0x88, 0x01, 0x01, 0x12, 0x18,
-	0x0a, 0x05, 0x74, 0x6f, 0x70, 0x5f, 0x70, 0x18, 0x06, 0x20, 0x01, 0x28, 0x01, 0x48, 0x02, 0x52,
-	0x04, 0x74, 0x6f, 0x70, 0x50, 0x88, 0x01, 0x01, 0x12, 0x12, 0x0a, 0x04, 0x73, 0x74, 0x6f, 0x70,
-	0x18, 0x07, 0x20, 0x03, 0x28, 0x09, 0x52, 0x04, 0x73, 0x74, 0x6f, 0x70, 0x42, 0x0e, 0x0a, 0x0c,
-	0x5f, 0x74, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65, 0x42, 0x0d, 0x0a, 0x0b,
-	0x5f, 0x6d, 0x61, 0x78, 0x5f, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x73, 0x42, 0x08, 0x0a, 0x06, 0x5f,
-	0x74, 0x6f, 0x70, 0x5f, 0x70, 0x22, 0xe2, 0x01, 0x0a, 0x1b, 0x4c, 0x4c, 0x4d, 0x43, 0x6f, 0x6d,
-	0x70, 0x6c, 0x65, 0x74, 0x65, 0x57, 0x69, 0x74, 0x68, 0x54, 0x6f, 0x6f, 0x6c, 0x73, 0x52, 0x65,
-	0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x38, 0x0a, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e,
-	0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x6f, 0x6e, 0x74, 0x65,
-	0x78, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x12,
-	0x1c, 0x0a, 0x04, 0x73, 0x6c, 0x6f, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x08, 0xba,
-	0x48, 0x05, 0x72, 0x03, 0x18, 0x80, 0x08, 0x52, 0x04, 0x73, 0x6c, 0x6f, 0x74, 0x12, 0x39, 0x0a,
-	0x08, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32,
-	0x1d, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73,
-	0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x4c, 0x4d, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x52, 0x08,
-	0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x73, 0x12, 0x30, 0x0a, 0x05, 0x74, 0x6f, 0x6f, 0x6c,
-	0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e,
-	0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x6f, 0x6f, 0x6c,
-	0x44, 0x65, 0x66, 0x52, 0x05, 0x74, 0x6f, 0x6f, 0x6c, 0x73, 0x22, 0xde, 0x01, 0x0a, 0x1c, 0x4c,
-	0x4c, 0x4d, 0x43, 0x6f, 0x6d, 0x70, 0x6c, 0x65, 0x74, 0x65, 0x53, 0x74, 0x72, 0x75, 0x63, 0x74,
-	0x75, 0x72, 0x65, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x38, 0x0a, 0x07, 0x63,
-	0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x67,
-	0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31,
-	0x2e, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x07, 0x63, 0x6f,
-	0x6e, 0x74, 0x65, 0x78, 0x74, 0x12, 0x1c, 0x0a, 0x04, 0x73, 0x6c, 0x6f, 0x74, 0x18, 0x02, 0x20,
-	0x01, 0x28, 0x09, 0x42, 0x08, 0xba, 0x48, 0x05, 0x72, 0x03, 0x18, 0x80, 0x08, 0x52, 0x04, 0x73,
-	0x6c, 0x6f, 0x74, 0x12, 0x39, 0x0a, 0x08, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x73, 0x18,
-	0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68,
-	0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x4c, 0x4d, 0x4d, 0x65, 0x73,
-	0x73, 0x61, 0x67, 0x65, 0x52, 0x08, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x73, 0x12, 0x2b,
-	0x0a, 0x0b, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x5f, 0x6a, 0x73, 0x6f, 0x6e, 0x18, 0x04, 0x20,
-	0x01, 0x28, 0x09, 0x42, 0x0a, 0xba, 0x48, 0x07, 0x72, 0x05, 0x18, 0x80, 0x80, 0x80, 0x08, 0x52,
-	0x0a, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x4a, 0x73, 0x6f, 0x6e, 0x22, 0xc7, 0x01, 0x0a, 0x1d,
-	0x4c, 0x4c, 0x4d, 0x43, 0x6f, 0x6d, 0x70, 0x6c, 0x65, 0x74, 0x65, 0x53, 0x74, 0x72, 0x75, 0x63,
-	0x74, 0x75, 0x72, 0x65, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x34, 0x0a,
-	0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e,
-	0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x63, 0x6f, 0x6d, 0x6d, 0x6f, 0x6e, 0x2e, 0x76, 0x31,
-	0x2e, 0x54, 0x79, 0x70, 0x65, 0x64, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x06, 0x72, 0x65, 0x73,
-	0x75, 0x6c, 0x74, 0x12, 0x33, 0x0a, 0x05, 0x75, 0x73, 0x61, 0x67, 0x65, 0x18, 0x03, 0x20, 0x01,
-	0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e,
-	0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x55, 0x73, 0x61, 0x67,
-	0x65, 0x52, 0x05, 0x75, 0x73, 0x61, 0x67, 0x65, 0x12, 0x35, 0x0a, 0x05, 0x65, 0x72, 0x72, 0x6f,
-	0x72, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1f, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e,
-	0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x48, 0x61, 0x72, 0x6e,
-	0x65, 0x73, 0x73, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x52, 0x05, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x4a,
-	0x04, 0x08, 0x02, 0x10, 0x03, 0x22, 0xfc, 0x01, 0x0a, 0x13, 0x4c, 0x4c, 0x4d, 0x43, 0x6f, 0x6d,
-	0x70, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x18, 0x0a,
-	0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07,
-	0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x12, 0x3a, 0x0a, 0x0a, 0x74, 0x6f, 0x6f, 0x6c, 0x5f,
-	0x63, 0x61, 0x6c, 0x6c, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x67, 0x69,
-	0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e,
-	0x54, 0x6f, 0x6f, 0x6c, 0x43, 0x61, 0x6c, 0x6c, 0x52, 0x09, 0x74, 0x6f, 0x6f, 0x6c, 0x43, 0x61,
-	0x6c, 0x6c, 0x73, 0x12, 0x23, 0x0a, 0x0d, 0x66, 0x69, 0x6e, 0x69, 0x73, 0x68, 0x5f, 0x72, 0x65,
-	0x61, 0x73, 0x6f, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x66, 0x69, 0x6e, 0x69,
-	0x73, 0x68, 0x52, 0x65, 0x61, 0x73, 0x6f, 0x6e, 0x12, 0x33, 0x0a, 0x05, 0x75, 0x73, 0x61, 0x67,
-	0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e,
-	0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x6f, 0x6b, 0x65,
-	0x6e, 0x55, 0x73, 0x61, 0x67, 0x65, 0x52, 0x05, 0x75, 0x73, 0x61, 0x67, 0x65, 0x12, 0x35, 0x0a,
-	0x05, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1f, 0x2e, 0x67,
-	0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31,
-	0x2e, 0x48, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x52, 0x05, 0x65,
-	0x72, 0x72, 0x6f, 0x72, 0x22, 0x85, 0x02, 0x0a, 0x1c, 0x4c, 0x4c, 0x4d, 0x43, 0x6f, 0x6d, 0x70,
-	0x6c, 0x65, 0x74, 0x65, 0x57, 0x69, 0x74, 0x68, 0x54, 0x6f, 0x6f, 0x6c, 0x73, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x12,
-	0x3a, 0x0a, 0x0a, 0x74, 0x6f, 0x6f, 0x6c, 0x5f, 0x63, 0x61, 0x6c, 0x6c, 0x73, 0x18, 0x02, 0x20,
-	0x03, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72,
-	0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x6f, 0x6f, 0x6c, 0x43, 0x61, 0x6c, 0x6c,
-	0x52, 0x09, 0x74, 0x6f, 0x6f, 0x6c, 0x43, 0x61, 0x6c, 0x6c, 0x73, 0x12, 0x23, 0x0a, 0x0d, 0x66,
-	0x69, 0x6e, 0x69, 0x73, 0x68, 0x5f, 0x72, 0x65, 0x61, 0x73, 0x6f, 0x6e, 0x18, 0x03, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x0c, 0x66, 0x69, 0x6e, 0x69, 0x73, 0x68, 0x52, 0x65, 0x61, 0x73, 0x6f, 0x6e,
-	0x12, 0x33, 0x0a, 0x05, 0x75, 0x73, 0x61, 0x67, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32,
-	0x1d, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73,
-	0x2e, 0x76, 0x31, 0x2e, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x55, 0x73, 0x61, 0x67, 0x65, 0x52, 0x05,
-	0x75, 0x73, 0x61, 0x67, 0x65, 0x12, 0x35, 0x0a, 0x05, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x18, 0x05,
-	0x20, 0x01, 0x28, 0x0b, 0x32, 0x1f, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61,
-	0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x48, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73,
-	0x45, 0x72, 0x72, 0x6f, 0x72, 0x52, 0x05, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x22, 0xc7, 0x02, 0x0a,
-	0x10, 0x4c, 0x4c, 0x4d, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x49, 0x64, 0x22, 0x6d, 0x0a, 0x13, 0x52, 0x65,
+	0x73, 0x6f, 0x6c, 0x76, 0x65, 0x4d, 0x6f, 0x64, 0x65, 0x6c, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
 	0x74, 0x12, 0x38, 0x0a, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x18, 0x01, 0x20, 0x01,
 	0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e,
 	0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x49, 0x6e,
 	0x66, 0x6f, 0x52, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x12, 0x1c, 0x0a, 0x04, 0x73,
 	0x6c, 0x6f, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x08, 0xba, 0x48, 0x05, 0x72, 0x03,
-	0x18, 0x80, 0x08, 0x52, 0x04, 0x73, 0x6c, 0x6f, 0x74, 0x12, 0x39, 0x0a, 0x08, 0x6d, 0x65, 0x73,
-	0x73, 0x61, 0x67, 0x65, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x67, 0x69,
-	0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e,
-	0x4c, 0x4c, 0x4d, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x52, 0x08, 0x6d, 0x65, 0x73, 0x73,
-	0x61, 0x67, 0x65, 0x73, 0x12, 0x25, 0x0a, 0x0b, 0x74, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74,
-	0x75, 0x72, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x01, 0x48, 0x00, 0x52, 0x0b, 0x74, 0x65, 0x6d,
-	0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65, 0x88, 0x01, 0x01, 0x12, 0x22, 0x0a, 0x0a, 0x6d,
-	0x61, 0x78, 0x5f, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x73, 0x18, 0x05, 0x20, 0x01, 0x28, 0x05, 0x48,
-	0x01, 0x52, 0x09, 0x6d, 0x61, 0x78, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x73, 0x88, 0x01, 0x01, 0x12,
-	0x18, 0x0a, 0x05, 0x74, 0x6f, 0x70, 0x5f, 0x70, 0x18, 0x06, 0x20, 0x01, 0x28, 0x01, 0x48, 0x02,
-	0x52, 0x04, 0x74, 0x6f, 0x70, 0x50, 0x88, 0x01, 0x01, 0x12, 0x12, 0x0a, 0x04, 0x73, 0x74, 0x6f,
-	0x70, 0x18, 0x07, 0x20, 0x03, 0x28, 0x09, 0x52, 0x04, 0x73, 0x74, 0x6f, 0x70, 0x42, 0x0e, 0x0a,
-	0x0c, 0x5f, 0x74, 0x65, 0x6d, 0x70, 0x65, 0x72, 0x61, 0x74, 0x75, 0x72, 0x65, 0x42, 0x0d, 0x0a,
-	0x0b, 0x5f, 0x6d, 0x61, 0x78, 0x5f, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x73, 0x42, 0x08, 0x0a, 0x06,
-	0x5f, 0x74, 0x6f, 0x70, 0x5f, 0x70, 0x22, 0xf6, 0x01, 0x0a, 0x11, 0x4c, 0x4c, 0x4d, 0x53, 0x74,
-	0x72, 0x65, 0x61, 0x6d, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x14, 0x0a, 0x05,
-	0x64, 0x65, 0x6c, 0x74, 0x61, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x64, 0x65, 0x6c,
-	0x74, 0x61, 0x12, 0x3a, 0x0a, 0x0a, 0x74, 0x6f, 0x6f, 0x6c, 0x5f, 0x63, 0x61, 0x6c, 0x6c, 0x73,
-	0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e,
-	0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x6f, 0x6f, 0x6c, 0x43,
-	0x61, 0x6c, 0x6c, 0x52, 0x09, 0x74, 0x6f, 0x6f, 0x6c, 0x43, 0x61, 0x6c, 0x6c, 0x73, 0x12, 0x23,
-	0x0a, 0x0d, 0x66, 0x69, 0x6e, 0x69, 0x73, 0x68, 0x5f, 0x72, 0x65, 0x61, 0x73, 0x6f, 0x6e, 0x18,
-	0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x66, 0x69, 0x6e, 0x69, 0x73, 0x68, 0x52, 0x65, 0x61,
-	0x73, 0x6f, 0x6e, 0x12, 0x33, 0x0a, 0x05, 0x75, 0x73, 0x61, 0x67, 0x65, 0x18, 0x04, 0x20, 0x01,
-	0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e,
-	0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x55, 0x73, 0x61, 0x67,
-	0x65, 0x52, 0x05, 0x75, 0x73, 0x61, 0x67, 0x65, 0x12, 0x35, 0x0a, 0x05, 0x65, 0x72, 0x72, 0x6f,
-	0x72, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1f, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e,
-	0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x48, 0x61, 0x72, 0x6e,
-	0x65, 0x73, 0x73, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x52, 0x05, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x22,
+	0x18, 0x80, 0x08, 0x52, 0x04, 0x73, 0x6c, 0x6f, 0x74, 0x22, 0x83, 0x03, 0x0a, 0x14, 0x52, 0x65,
+	0x73, 0x6f, 0x6c, 0x76, 0x65, 0x4d, 0x6f, 0x64, 0x65, 0x6c, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x6d, 0x6f, 0x64, 0x65, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x05, 0x6d, 0x6f, 0x64, 0x65, 0x6c, 0x12, 0x1a, 0x0a, 0x08, 0x70, 0x72, 0x6f, 0x76,
+	0x69, 0x64, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x70, 0x72, 0x6f, 0x76,
+	0x69, 0x64, 0x65, 0x72, 0x12, 0x1f, 0x0a, 0x0b, 0x67, 0x61, 0x74, 0x65, 0x77, 0x61, 0x79, 0x5f,
+	0x75, 0x72, 0x6c, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x67, 0x61, 0x74, 0x65, 0x77,
+	0x61, 0x79, 0x55, 0x72, 0x6c, 0x12, 0x5e, 0x0a, 0x0d, 0x72, 0x6f, 0x75, 0x74, 0x65, 0x5f, 0x68,
+	0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x39, 0x2e, 0x67,
+	0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31,
+	0x2e, 0x52, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65, 0x4d, 0x6f, 0x64, 0x65, 0x6c, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x2e, 0x52, 0x6f, 0x75, 0x74, 0x65, 0x48, 0x65, 0x61, 0x64, 0x65,
+	0x72, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x0c, 0x72, 0x6f, 0x75, 0x74, 0x65, 0x48, 0x65,
+	0x61, 0x64, 0x65, 0x72, 0x73, 0x12, 0x25, 0x0a, 0x0e, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74,
+	0x5f, 0x77, 0x69, 0x6e, 0x64, 0x6f, 0x77, 0x18, 0x05, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0d, 0x63,
+	0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x57, 0x69, 0x6e, 0x64, 0x6f, 0x77, 0x12, 0x2a, 0x0a, 0x11,
+	0x6d, 0x61, 0x78, 0x5f, 0x6f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x5f, 0x74, 0x6f, 0x6b, 0x65, 0x6e,
+	0x73, 0x18, 0x06, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0f, 0x6d, 0x61, 0x78, 0x4f, 0x75, 0x74, 0x70,
+	0x75, 0x74, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x73, 0x12, 0x24, 0x0a, 0x0e, 0x67, 0x61, 0x74, 0x65,
+	0x77, 0x61, 0x79, 0x5f, 0x63, 0x61, 0x5f, 0x70, 0x65, 0x6d, 0x18, 0x07, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x0c, 0x67, 0x61, 0x74, 0x65, 0x77, 0x61, 0x79, 0x43, 0x61, 0x50, 0x65, 0x6d, 0x1a, 0x3f,
+	0x0a, 0x11, 0x52, 0x6f, 0x75, 0x74, 0x65, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x45, 0x6e,
+	0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22,
 	0xe1, 0x01, 0x0a, 0x14, 0x43, 0x61, 0x6c, 0x6c, 0x54, 0x6f, 0x6f, 0x6c, 0x50, 0x72, 0x6f, 0x74,
 	0x6f, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x38, 0x0a, 0x07, 0x63, 0x6f, 0x6e, 0x74,
 	0x65, 0x78, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x67, 0x69, 0x62, 0x73,
@@ -17016,649 +15895,611 @@ var file_gibson_harness_v1_harness_callback_proto_rawDesc = []byte{
 	0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x53, 0x54, 0x41, 0x52, 0x54, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45,
 	0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x22, 0x0a, 0x1e, 0x4f, 0x52, 0x49, 0x47,
 	0x49, 0x4e, 0x41, 0x54, 0x49, 0x4f, 0x4e, 0x5f, 0x53, 0x54, 0x41, 0x52, 0x54, 0x5f, 0x43, 0x41,
-	0x4c, 0x4c, 0x45, 0x52, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x45, 0x10, 0x01, 0x32, 0xb5, 0x4e, 0x0a,
+	0x4c, 0x4c, 0x45, 0x52, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x45, 0x10, 0x01, 0x32, 0xd8, 0x49, 0x0a,
 	0x16, 0x48, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x43, 0x61, 0x6c, 0x6c, 0x62, 0x61, 0x63, 0x6b,
-	0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x87, 0x01, 0x0a, 0x0b, 0x4c, 0x4c, 0x4d, 0x43,
-	0x6f, 0x6d, 0x70, 0x6c, 0x65, 0x74, 0x65, 0x12, 0x25, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e,
-	0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x4c, 0x4d, 0x43,
-	0x6f, 0x6d, 0x70, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x26,
-	0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e,
-	0x76, 0x31, 0x2e, 0x4c, 0x4c, 0x4d, 0x43, 0x6f, 0x6d, 0x70, 0x6c, 0x65, 0x74, 0x65, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61,
-	0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74,
-	0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20,
-	0x04, 0x12, 0xa2, 0x01, 0x0a, 0x14, 0x4c, 0x4c, 0x4d, 0x43, 0x6f, 0x6d, 0x70, 0x6c, 0x65, 0x74,
-	0x65, 0x57, 0x69, 0x74, 0x68, 0x54, 0x6f, 0x6f, 0x6c, 0x73, 0x12, 0x2e, 0x2e, 0x67, 0x69, 0x62,
-	0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4c,
-	0x4c, 0x4d, 0x43, 0x6f, 0x6d, 0x70, 0x6c, 0x65, 0x74, 0x65, 0x57, 0x69, 0x74, 0x68, 0x54, 0x6f,
-	0x6f, 0x6c, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2f, 0x2e, 0x67, 0x69, 0x62,
-	0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4c,
-	0x4c, 0x4d, 0x43, 0x6f, 0x6d, 0x70, 0x6c, 0x65, 0x74, 0x65, 0x57, 0x69, 0x74, 0x68, 0x54, 0x6f,
+	0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x8a, 0x01, 0x0a, 0x0c, 0x52, 0x65, 0x73, 0x6f,
+	0x6c, 0x76, 0x65, 0x4d, 0x6f, 0x64, 0x65, 0x6c, 0x12, 0x26, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f,
+	0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x73,
+	0x6f, 0x6c, 0x76, 0x65, 0x4d, 0x6f, 0x64, 0x65, 0x6c, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x1a, 0x27, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73,
+	0x73, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65, 0x4d, 0x6f, 0x64, 0x65,
+	0x6c, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a,
+	0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e,
+	0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61,
+	0x6e, 0x74, 0x20, 0x04, 0x12, 0x8d, 0x01, 0x0a, 0x0d, 0x43, 0x61, 0x6c, 0x6c, 0x54, 0x6f, 0x6f,
+	0x6c, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x27, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e,
+	0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x61, 0x6c, 0x6c, 0x54,
+	0x6f, 0x6f, 0x6c, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x28, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73,
+	0x2e, 0x76, 0x31, 0x2e, 0x43, 0x61, 0x6c, 0x6c, 0x54, 0x6f, 0x6f, 0x6c, 0x50, 0x72, 0x6f, 0x74,
+	0x6f, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a,
+	0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e,
+	0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61,
+	0x6e, 0x74, 0x20, 0x04, 0x12, 0xa1, 0x01, 0x0a, 0x13, 0x43, 0x61, 0x6c, 0x6c, 0x54, 0x6f, 0x6f,
+	0x6c, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x12, 0x2d, 0x2e, 0x67,
+	0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31,
+	0x2e, 0x43, 0x61, 0x6c, 0x6c, 0x54, 0x6f, 0x6f, 0x6c, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x53, 0x74,
+	0x72, 0x65, 0x61, 0x6d, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2e, 0x2e, 0x67, 0x69,
+	0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e,
+	0x43, 0x61, 0x6c, 0x6c, 0x54, 0x6f, 0x6f, 0x6c, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x53, 0x74, 0x72,
+	0x65, 0x61, 0x6d, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18,
+	0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70,
+	0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65,
+	0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x30, 0x01, 0x12, 0x81, 0x01, 0x0a, 0x09, 0x4c, 0x69, 0x73,
+	0x74, 0x54, 0x6f, 0x6f, 0x6c, 0x73, 0x12, 0x23, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e,
+	0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x54,
+	0x6f, 0x6f, 0x6c, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x24, 0x2e, 0x67, 0x69,
+	0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e,
+	0x4c, 0x69, 0x73, 0x74, 0x54, 0x6f, 0x6f, 0x6c, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65,
+	0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73,
+	0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x87, 0x01, 0x0a,
+	0x0b, 0x53, 0x65, 0x61, 0x72, 0x63, 0x68, 0x54, 0x6f, 0x6f, 0x6c, 0x73, 0x12, 0x25, 0x2e, 0x67,
+	0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31,
+	0x2e, 0x53, 0x65, 0x61, 0x72, 0x63, 0x68, 0x54, 0x6f, 0x6f, 0x6c, 0x73, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x26, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72,
+	0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65, 0x61, 0x72, 0x63, 0x68, 0x54, 0x6f,
 	0x6f, 0x6c, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18,
 	0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70,
 	0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65,
-	0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0xa5, 0x01, 0x0a, 0x15, 0x4c, 0x4c, 0x4d, 0x43, 0x6f,
-	0x6d, 0x70, 0x6c, 0x65, 0x74, 0x65, 0x53, 0x74, 0x72, 0x75, 0x63, 0x74, 0x75, 0x72, 0x65, 0x64,
-	0x12, 0x2f, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73,
-	0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x4c, 0x4d, 0x43, 0x6f, 0x6d, 0x70, 0x6c, 0x65, 0x74, 0x65,
-	0x53, 0x74, 0x72, 0x75, 0x63, 0x74, 0x75, 0x72, 0x65, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x1a, 0x30, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65,
-	0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x4c, 0x4d, 0x43, 0x6f, 0x6d, 0x70, 0x6c, 0x65, 0x74,
-	0x65, 0x53, 0x74, 0x72, 0x75, 0x63, 0x74, 0x75, 0x72, 0x65, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75,
-	0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73,
-	0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x83,
-	0x01, 0x0a, 0x09, 0x4c, 0x4c, 0x4d, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x12, 0x23, 0x2e, 0x67,
+	0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x8d, 0x01, 0x0a, 0x0d, 0x51, 0x75, 0x65, 0x75, 0x65,
+	0x54, 0x6f, 0x6f, 0x6c, 0x57, 0x6f, 0x72, 0x6b, 0x12, 0x27, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f,
+	0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65,
+	0x75, 0x65, 0x54, 0x6f, 0x6f, 0x6c, 0x57, 0x6f, 0x72, 0x6b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x1a, 0x28, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65,
+	0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x75, 0x65, 0x54, 0x6f, 0x6f, 0x6c, 0x57,
+	0x6f, 0x72, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18,
+	0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70,
+	0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65,
+	0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x89, 0x01, 0x0a, 0x0b, 0x54, 0x6f, 0x6f, 0x6c, 0x52,
+	0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x12, 0x25, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e,
+	0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x6f, 0x6f, 0x6c, 0x52,
+	0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x26, 0x2e,
+	0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76,
+	0x31, 0x2e, 0x54, 0x6f, 0x6f, 0x6c, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e,
+	0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a,
+	0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04,
+	0x30, 0x01, 0x12, 0x87, 0x01, 0x0a, 0x0b, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x6c, 0x75, 0x67,
+	0x69, 0x6e, 0x12, 0x25, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e,
+	0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x6c, 0x75, 0x67,
+	0x69, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x26, 0x2e, 0x67, 0x69, 0x62, 0x73,
+	0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75,
+	0x65, 0x72, 0x79, 0x50, 0x6c, 0x75, 0x67, 0x69, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65,
+	0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73,
+	0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x87, 0x01, 0x0a,
+	0x0b, 0x4c, 0x69, 0x73, 0x74, 0x50, 0x6c, 0x75, 0x67, 0x69, 0x6e, 0x73, 0x12, 0x25, 0x2e, 0x67,
 	0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31,
-	0x2e, 0x4c, 0x4c, 0x4d, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x1a, 0x24, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65,
-	0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x4c, 0x4d, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x52,
+	0x2e, 0x4c, 0x69, 0x73, 0x74, 0x50, 0x6c, 0x75, 0x67, 0x69, 0x6e, 0x73, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x26, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72,
+	0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x50, 0x6c, 0x75, 0x67,
+	0x69, 0x6e, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18,
+	0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70,
+	0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65,
+	0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x93, 0x01, 0x0a, 0x0f, 0x44, 0x65, 0x6c, 0x65, 0x67,
+	0x61, 0x74, 0x65, 0x54, 0x6f, 0x41, 0x67, 0x65, 0x6e, 0x74, 0x12, 0x29, 0x2e, 0x67, 0x69, 0x62,
+	0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x44,
+	0x65, 0x6c, 0x65, 0x67, 0x61, 0x74, 0x65, 0x54, 0x6f, 0x41, 0x67, 0x65, 0x6e, 0x74, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2a, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68,
+	0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x67, 0x61,
+	0x74, 0x65, 0x54, 0x6f, 0x41, 0x67, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65,
+	0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73,
+	0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x84, 0x01, 0x0a,
+	0x0a, 0x4c, 0x69, 0x73, 0x74, 0x41, 0x67, 0x65, 0x6e, 0x74, 0x73, 0x12, 0x24, 0x2e, 0x67, 0x69,
+	0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e,
+	0x4c, 0x69, 0x73, 0x74, 0x41, 0x67, 0x65, 0x6e, 0x74, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x1a, 0x25, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65,
+	0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x41, 0x67, 0x65, 0x6e, 0x74, 0x73,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07,
+	0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65,
+	0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e,
+	0x74, 0x20, 0x04, 0x12, 0x8d, 0x01, 0x0a, 0x0d, 0x53, 0x75, 0x62, 0x6d, 0x69, 0x74, 0x46, 0x69,
+	0x6e, 0x64, 0x69, 0x6e, 0x67, 0x12, 0x27, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68,
+	0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x75, 0x62, 0x6d, 0x69, 0x74,
+	0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x28,
+	0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e,
+	0x76, 0x31, 0x2e, 0x53, 0x75, 0x62, 0x6d, 0x69, 0x74, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07,
+	0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65,
+	0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e,
+	0x74, 0x20, 0x04, 0x12, 0x7b, 0x0a, 0x07, 0x4f, 0x62, 0x73, 0x65, 0x72, 0x76, 0x65, 0x12, 0x21,
+	0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e,
+	0x76, 0x31, 0x2e, 0x4f, 0x62, 0x73, 0x65, 0x72, 0x76, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x1a, 0x22, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65,
+	0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4f, 0x62, 0x73, 0x65, 0x72, 0x76, 0x65, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e,
+	0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a,
+	0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04,
+	0x12, 0x7e, 0x0a, 0x08, 0x50, 0x6c, 0x61, 0x63, 0x65, 0x42, 0x65, 0x74, 0x12, 0x22, 0x2e, 0x67,
+	0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31,
+	0x2e, 0x50, 0x6c, 0x61, 0x63, 0x65, 0x42, 0x65, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x1a, 0x23, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73,
+	0x73, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x6c, 0x61, 0x63, 0x65, 0x42, 0x65, 0x74, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e,
+	0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a,
+	0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04,
+	0x12, 0x87, 0x01, 0x0a, 0x0b, 0x53, 0x75, 0x62, 0x6d, 0x69, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66,
+	0x12, 0x25, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73,
+	0x73, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x75, 0x62, 0x6d, 0x69, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x26, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e,
+	0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x75, 0x62, 0x6d,
+	0x69, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
+	0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09,
+	0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65,
+	0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0xc3, 0x01, 0x0a, 0x1f, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x44, 0x65, 0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x69, 0x76,
+	0x65, 0x41, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x7a, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x39,
+	0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e,
+	0x76, 0x31, 0x2e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x44, 0x65, 0x73, 0x74, 0x72, 0x75,
+	0x63, 0x74, 0x69, 0x76, 0x65, 0x41, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x7a, 0x61, 0x74, 0x69,
+	0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x3a, 0x2e, 0x67, 0x69, 0x62, 0x73,
+	0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x44, 0x65, 0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x69, 0x76, 0x65,
+	0x41, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x7a, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e,
+	0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a,
+	0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04,
+	0x12, 0x81, 0x01, 0x0a, 0x09, 0x57, 0x6f, 0x72, 0x6c, 0x64, 0x56, 0x69, 0x65, 0x77, 0x12, 0x23,
+	0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e,
+	0x76, 0x31, 0x2e, 0x57, 0x6f, 0x72, 0x6c, 0x64, 0x56, 0x69, 0x65, 0x77, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x24, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72,
+	0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x57, 0x6f, 0x72, 0x6c, 0x64, 0x56, 0x69, 0x65,
+	0x77, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a,
+	0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e,
+	0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61,
+	0x6e, 0x74, 0x20, 0x04, 0x12, 0x84, 0x01, 0x0a, 0x0a, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x6f,
+	0x64, 0x65, 0x73, 0x12, 0x24, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72,
+	0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x6f, 0x64,
+	0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x25, 0x2e, 0x67, 0x69, 0x62, 0x73,
+	0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75,
+	0x65, 0x72, 0x79, 0x4e, 0x6f, 0x64, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12,
+	0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74,
+	0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x9c, 0x01, 0x0a, 0x12,
+	0x46, 0x69, 0x6e, 0x64, 0x53, 0x69, 0x6d, 0x69, 0x6c, 0x61, 0x72, 0x41, 0x74, 0x74, 0x61, 0x63,
+	0x6b, 0x73, 0x12, 0x2c, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e,
+	0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x46, 0x69, 0x6e, 0x64, 0x53, 0x69, 0x6d, 0x69, 0x6c,
+	0x61, 0x72, 0x41, 0x74, 0x74, 0x61, 0x63, 0x6b, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x1a, 0x2d, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73,
+	0x73, 0x2e, 0x76, 0x31, 0x2e, 0x46, 0x69, 0x6e, 0x64, 0x53, 0x69, 0x6d, 0x69, 0x6c, 0x61, 0x72,
+	0x41, 0x74, 0x74, 0x61, 0x63, 0x6b, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
+	0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09,
+	0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65,
+	0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x93, 0x01, 0x0a, 0x0f, 0x47,
+	0x65, 0x74, 0x41, 0x74, 0x74, 0x61, 0x63, 0x6b, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x73, 0x12, 0x29,
+	0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e,
+	0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x41, 0x74, 0x74, 0x61, 0x63, 0x6b, 0x43, 0x68, 0x61, 0x69,
+	0x6e, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2a, 0x2e, 0x67, 0x69, 0x62, 0x73,
+	0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65,
+	0x74, 0x41, 0x74, 0x74, 0x61, 0x63, 0x6b, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x73, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e,
+	0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a,
+	0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04,
+	0x12, 0x9f, 0x01, 0x0a, 0x13, 0x46, 0x69, 0x6e, 0x64, 0x53, 0x69, 0x6d, 0x69, 0x6c, 0x61, 0x72,
+	0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73, 0x12, 0x2d, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f,
+	0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x46, 0x69, 0x6e,
+	0x64, 0x53, 0x69, 0x6d, 0x69, 0x6c, 0x61, 0x72, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2e, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e,
+	0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x46, 0x69, 0x6e, 0x64,
+	0x53, 0x69, 0x6d, 0x69, 0x6c, 0x61, 0x72, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73, 0x52,
 	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63,
 	0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e,
 	0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74,
-	0x20, 0x04, 0x30, 0x01, 0x12, 0x8a, 0x01, 0x0a, 0x0c, 0x52, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65,
-	0x4d, 0x6f, 0x64, 0x65, 0x6c, 0x12, 0x26, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68,
-	0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x73, 0x6f, 0x6c, 0x76,
-	0x65, 0x4d, 0x6f, 0x64, 0x65, 0x6c, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x27, 0x2e,
-	0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76,
-	0x31, 0x2e, 0x52, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65, 0x4d, 0x6f, 0x64, 0x65, 0x6c, 0x52, 0x65,
+	0x20, 0x04, 0x12, 0x9c, 0x01, 0x0a, 0x12, 0x47, 0x65, 0x74, 0x52, 0x65, 0x6c, 0x61, 0x74, 0x65,
+	0x64, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73, 0x12, 0x2c, 0x2e, 0x67, 0x69, 0x62, 0x73,
+	0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65,
+	0x74, 0x52, 0x65, 0x6c, 0x61, 0x74, 0x65, 0x64, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2d, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e,
+	0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x52,
+	0x65, 0x6c, 0x61, 0x74, 0x65, 0x64, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x65,
 	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61,
 	0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74,
 	0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20,
-	0x04, 0x12, 0x8d, 0x01, 0x0a, 0x0d, 0x43, 0x61, 0x6c, 0x6c, 0x54, 0x6f, 0x6f, 0x6c, 0x50, 0x72,
-	0x6f, 0x74, 0x6f, 0x12, 0x27, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72,
-	0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x61, 0x6c, 0x6c, 0x54, 0x6f, 0x6f, 0x6c,
-	0x50, 0x72, 0x6f, 0x74, 0x6f, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x28, 0x2e, 0x67,
-	0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31,
-	0x2e, 0x43, 0x61, 0x6c, 0x6c, 0x54, 0x6f, 0x6f, 0x6c, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61,
-	0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74,
-	0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20,
-	0x04, 0x12, 0xa1, 0x01, 0x0a, 0x13, 0x43, 0x61, 0x6c, 0x6c, 0x54, 0x6f, 0x6f, 0x6c, 0x50, 0x72,
-	0x6f, 0x74, 0x6f, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x12, 0x2d, 0x2e, 0x67, 0x69, 0x62, 0x73,
-	0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x61,
-	0x6c, 0x6c, 0x54, 0x6f, 0x6f, 0x6c, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x53, 0x74, 0x72, 0x65, 0x61,
-	0x6d, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2e, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f,
-	0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x61, 0x6c,
-	0x6c, 0x54, 0x6f, 0x6f, 0x6c, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07,
-	0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65,
-	0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e,
-	0x74, 0x20, 0x04, 0x30, 0x01, 0x12, 0x81, 0x01, 0x0a, 0x09, 0x4c, 0x69, 0x73, 0x74, 0x54, 0x6f,
-	0x6f, 0x6c, 0x73, 0x12, 0x23, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72,
-	0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x54, 0x6f, 0x6f, 0x6c,
-	0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x24, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f,
-	0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73,
-	0x74, 0x54, 0x6f, 0x6f, 0x6c, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29,
-	0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63,
-	0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d,
-	0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x87, 0x01, 0x0a, 0x0b, 0x53, 0x65,
-	0x61, 0x72, 0x63, 0x68, 0x54, 0x6f, 0x6f, 0x6c, 0x73, 0x12, 0x25, 0x2e, 0x67, 0x69, 0x62, 0x73,
-	0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65,
-	0x61, 0x72, 0x63, 0x68, 0x54, 0x6f, 0x6f, 0x6c, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x1a, 0x26, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73,
-	0x73, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65, 0x61, 0x72, 0x63, 0x68, 0x54, 0x6f, 0x6f, 0x6c, 0x73,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07,
-	0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65,
-	0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e,
-	0x74, 0x20, 0x04, 0x12, 0x8d, 0x01, 0x0a, 0x0d, 0x51, 0x75, 0x65, 0x75, 0x65, 0x54, 0x6f, 0x6f,
-	0x6c, 0x57, 0x6f, 0x72, 0x6b, 0x12, 0x27, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68,
-	0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x75, 0x65, 0x54,
-	0x6f, 0x6f, 0x6c, 0x57, 0x6f, 0x72, 0x6b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x28,
-	0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e,
-	0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x75, 0x65, 0x54, 0x6f, 0x6f, 0x6c, 0x57, 0x6f, 0x72, 0x6b,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07,
-	0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65,
-	0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e,
-	0x74, 0x20, 0x04, 0x12, 0x89, 0x01, 0x0a, 0x0b, 0x54, 0x6f, 0x6f, 0x6c, 0x52, 0x65, 0x73, 0x75,
-	0x6c, 0x74, 0x73, 0x12, 0x25, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72,
-	0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x6f, 0x6f, 0x6c, 0x52, 0x65, 0x73, 0x75,
-	0x6c, 0x74, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x26, 0x2e, 0x67, 0x69, 0x62,
-	0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x54,
-	0x6f, 0x6f, 0x6c, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x04, 0x12, 0x87, 0x01, 0x0a, 0x0b, 0x47, 0x65, 0x74, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67,
+	0x73, 0x12, 0x25, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65,
+	0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67,
+	0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x26, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f,
+	0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74,
+	0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12,
+	0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74,
+	0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x9f, 0x01, 0x0a, 0x13,
+	0x41, 0x70, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x46, 0x69, 0x6e, 0x64, 0x69,
+	0x6e, 0x67, 0x73, 0x12, 0x2d, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72,
+	0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x41, 0x70, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74,
+	0x69, 0x6f, 0x6e, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x1a, 0x2e, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e,
+	0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x41, 0x70, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x69,
+	0x6f, 0x6e, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
 	0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73,
 	0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79,
-	0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x30, 0x01, 0x12,
-	0x87, 0x01, 0x0a, 0x0b, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x6c, 0x75, 0x67, 0x69, 0x6e, 0x12,
-	0x25, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73,
-	0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x6c, 0x75, 0x67, 0x69, 0x6e, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x26, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e,
-	0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79,
-	0x50, 0x6c, 0x75, 0x67, 0x69, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29,
-	0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63,
-	0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d,
-	0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x87, 0x01, 0x0a, 0x0b, 0x4c, 0x69,
-	0x73, 0x74, 0x50, 0x6c, 0x75, 0x67, 0x69, 0x6e, 0x73, 0x12, 0x25, 0x2e, 0x67, 0x69, 0x62, 0x73,
-	0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69,
-	0x73, 0x74, 0x50, 0x6c, 0x75, 0x67, 0x69, 0x6e, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x1a, 0x26, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73,
-	0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x50, 0x6c, 0x75, 0x67, 0x69, 0x6e, 0x73,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07,
-	0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65,
-	0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e,
-	0x74, 0x20, 0x04, 0x12, 0x93, 0x01, 0x0a, 0x0f, 0x44, 0x65, 0x6c, 0x65, 0x67, 0x61, 0x74, 0x65,
-	0x54, 0x6f, 0x41, 0x67, 0x65, 0x6e, 0x74, 0x12, 0x29, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e,
-	0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x6c, 0x65,
-	0x67, 0x61, 0x74, 0x65, 0x54, 0x6f, 0x41, 0x67, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x1a, 0x2a, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e,
-	0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x67, 0x61, 0x74, 0x65, 0x54,
-	0x6f, 0x41, 0x67, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29,
-	0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63,
-	0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d,
-	0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x84, 0x01, 0x0a, 0x0a, 0x4c, 0x69,
-	0x73, 0x74, 0x41, 0x67, 0x65, 0x6e, 0x74, 0x73, 0x12, 0x24, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f,
-	0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73,
-	0x74, 0x41, 0x67, 0x65, 0x6e, 0x74, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x25,
-	0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e,
-	0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x41, 0x67, 0x65, 0x6e, 0x74, 0x73, 0x52, 0x65, 0x73,
+	0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x90, 0x01,
+	0x0a, 0x0e, 0x47, 0x65, 0x74, 0x52, 0x75, 0x6e, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73,
+	0x12, 0x28, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73,
+	0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x52, 0x75, 0x6e, 0x46, 0x69, 0x6e, 0x64, 0x69,
+	0x6e, 0x67, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x29, 0x2e, 0x67, 0x69, 0x62,
+	0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47,
+	0x65, 0x74, 0x52, 0x75, 0x6e, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x65, 0x73,
 	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e,
 	0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a,
 	0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04,
-	0x12, 0x8d, 0x01, 0x0a, 0x0d, 0x53, 0x75, 0x62, 0x6d, 0x69, 0x74, 0x46, 0x69, 0x6e, 0x64, 0x69,
-	0x6e, 0x67, 0x12, 0x27, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e,
-	0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x75, 0x62, 0x6d, 0x69, 0x74, 0x46, 0x69, 0x6e,
-	0x64, 0x69, 0x6e, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x28, 0x2e, 0x67, 0x69,
-	0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e,
-	0x53, 0x75, 0x62, 0x6d, 0x69, 0x74, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e,
-	0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a,
-	0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04,
-	0x12, 0x7b, 0x0a, 0x07, 0x4f, 0x62, 0x73, 0x65, 0x72, 0x76, 0x65, 0x12, 0x21, 0x2e, 0x67, 0x69,
-	0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e,
-	0x4f, 0x62, 0x73, 0x65, 0x72, 0x76, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x22,
-	0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e,
-	0x76, 0x31, 0x2e, 0x4f, 0x62, 0x73, 0x65, 0x72, 0x76, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
-	0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73,
-	0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79,
-	0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x7e, 0x0a,
-	0x08, 0x50, 0x6c, 0x61, 0x63, 0x65, 0x42, 0x65, 0x74, 0x12, 0x22, 0x2e, 0x67, 0x69, 0x62, 0x73,
-	0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x6c,
-	0x61, 0x63, 0x65, 0x42, 0x65, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x23, 0x2e,
-	0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76,
-	0x31, 0x2e, 0x50, 0x6c, 0x61, 0x63, 0x65, 0x42, 0x65, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
-	0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73,
-	0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79,
-	0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x87, 0x01,
-	0x0a, 0x0b, 0x53, 0x75, 0x62, 0x6d, 0x69, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x12, 0x25, 0x2e,
-	0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76,
-	0x31, 0x2e, 0x53, 0x75, 0x62, 0x6d, 0x69, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x1a, 0x26, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61,
-	0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x75, 0x62, 0x6d, 0x69, 0x74, 0x50,
-	0x72, 0x6f, 0x6f, 0x66, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5,
-	0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d,
-	0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74,
-	0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0xc3, 0x01, 0x0a, 0x1f, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x44, 0x65, 0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x69, 0x76, 0x65, 0x41, 0x75,
-	0x74, 0x68, 0x6f, 0x72, 0x69, 0x7a, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x39, 0x2e, 0x67, 0x69,
-	0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x44, 0x65, 0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x69,
-	0x76, 0x65, 0x41, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x7a, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x3a, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e,
-	0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x44, 0x65, 0x73, 0x74, 0x72, 0x75, 0x63, 0x74, 0x69, 0x76, 0x65, 0x41, 0x75, 0x74,
-	0x68, 0x6f, 0x72, 0x69, 0x7a, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
-	0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73,
-	0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79,
-	0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x81, 0x01,
-	0x0a, 0x09, 0x57, 0x6f, 0x72, 0x6c, 0x64, 0x56, 0x69, 0x65, 0x77, 0x12, 0x23, 0x2e, 0x67, 0x69,
-	0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e,
-	0x57, 0x6f, 0x72, 0x6c, 0x64, 0x56, 0x69, 0x65, 0x77, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x1a, 0x24, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73,
-	0x73, 0x2e, 0x76, 0x31, 0x2e, 0x57, 0x6f, 0x72, 0x6c, 0x64, 0x56, 0x69, 0x65, 0x77, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61,
-	0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74,
-	0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20,
-	0x04, 0x12, 0x84, 0x01, 0x0a, 0x0a, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x6f, 0x64, 0x65, 0x73,
-	0x12, 0x24, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73,
-	0x73, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x6f, 0x64, 0x65, 0x73, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x25, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e,
-	0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79,
-	0x4e, 0x6f, 0x64, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a,
+	0x12, 0xa2, 0x01, 0x0a, 0x14, 0x47, 0x65, 0x74, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x52,
+	0x75, 0x6e, 0x48, 0x69, 0x73, 0x74, 0x6f, 0x72, 0x79, 0x12, 0x2e, 0x2e, 0x67, 0x69, 0x62, 0x73,
+	0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65,
+	0x74, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x75, 0x6e, 0x48, 0x69, 0x73, 0x74, 0x6f,
+	0x72, 0x79, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2f, 0x2e, 0x67, 0x69, 0x62, 0x73,
+	0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65,
+	0x74, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x75, 0x6e, 0x48, 0x69, 0x73, 0x74, 0x6f,
+	0x72, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25,
+	0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f,
+	0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e,
+	0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x90, 0x01, 0x0a, 0x0e, 0x47, 0x65, 0x74, 0x50, 0x6c, 0x61,
+	0x6e, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x12, 0x28, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f,
+	0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74,
+	0x50, 0x6c, 0x61, 0x6e, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x1a, 0x29, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e,
+	0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x50, 0x6c, 0x61, 0x6e, 0x43, 0x6f,
+	0x6e, 0x74, 0x65, 0x78, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a,
 	0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f,
 	0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f,
-	0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x9c, 0x01, 0x0a, 0x12, 0x46, 0x69, 0x6e,
-	0x64, 0x53, 0x69, 0x6d, 0x69, 0x6c, 0x61, 0x72, 0x41, 0x74, 0x74, 0x61, 0x63, 0x6b, 0x73, 0x12,
-	0x2c, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73,
-	0x2e, 0x76, 0x31, 0x2e, 0x46, 0x69, 0x6e, 0x64, 0x53, 0x69, 0x6d, 0x69, 0x6c, 0x61, 0x72, 0x41,
-	0x74, 0x74, 0x61, 0x63, 0x6b, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2d, 0x2e,
+	0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x93, 0x01, 0x0a, 0x0f, 0x52, 0x65, 0x70,
+	0x6f, 0x72, 0x74, 0x53, 0x74, 0x65, 0x70, 0x48, 0x69, 0x6e, 0x74, 0x73, 0x12, 0x29, 0x2e, 0x67,
+	0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31,
+	0x2e, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x53, 0x74, 0x65, 0x70, 0x48, 0x69, 0x6e, 0x74, 0x73,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2a, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e,
+	0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x70, 0x6f,
+	0x72, 0x74, 0x53, 0x74, 0x65, 0x70, 0x48, 0x69, 0x6e, 0x74, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75,
+	0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73,
+	0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x84,
+	0x01, 0x0a, 0x0a, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x53, 0x70, 0x61, 0x6e, 0x12, 0x24, 0x2e,
 	0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76,
-	0x31, 0x2e, 0x46, 0x69, 0x6e, 0x64, 0x53, 0x69, 0x6d, 0x69, 0x6c, 0x61, 0x72, 0x41, 0x74, 0x74,
-	0x61, 0x63, 0x6b, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5,
-	0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d,
-	0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74,
-	0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x93, 0x01, 0x0a, 0x0f, 0x47, 0x65, 0x74, 0x41,
-	0x74, 0x74, 0x61, 0x63, 0x6b, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x73, 0x12, 0x29, 0x2e, 0x67, 0x69,
-	0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e,
-	0x47, 0x65, 0x74, 0x41, 0x74, 0x74, 0x61, 0x63, 0x6b, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x73, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2a, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e,
-	0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x41, 0x74,
-	0x74, 0x61, 0x63, 0x6b, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
-	0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73,
-	0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79,
-	0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x9f, 0x01,
-	0x0a, 0x13, 0x46, 0x69, 0x6e, 0x64, 0x53, 0x69, 0x6d, 0x69, 0x6c, 0x61, 0x72, 0x46, 0x69, 0x6e,
-	0x64, 0x69, 0x6e, 0x67, 0x73, 0x12, 0x2d, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68,
-	0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x46, 0x69, 0x6e, 0x64, 0x53, 0x69,
-	0x6d, 0x69, 0x6c, 0x61, 0x72, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x1a, 0x2e, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61,
-	0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x46, 0x69, 0x6e, 0x64, 0x53, 0x69, 0x6d,
-	0x69, 0x6c, 0x61, 0x72, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x65, 0x73, 0x70,
+	0x31, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x25, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72,
+	0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x53, 0x70,
+	0x61, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25,
+	0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f,
+	0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e,
+	0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x87, 0x01, 0x0a, 0x0b, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64,
+	0x53, 0x70, 0x61, 0x6e, 0x73, 0x12, 0x25, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68,
+	0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64,
+	0x53, 0x70, 0x61, 0x6e, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x26, 0x2e, 0x67,
+	0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31,
+	0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x53, 0x70, 0x61, 0x6e, 0x73, 0x52, 0x65, 0x73, 0x70,
 	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f,
 	0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d,
 	0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12,
-	0x9c, 0x01, 0x0a, 0x12, 0x47, 0x65, 0x74, 0x52, 0x65, 0x6c, 0x61, 0x74, 0x65, 0x64, 0x46, 0x69,
-	0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73, 0x12, 0x2c, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e,
-	0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x52, 0x65,
-	0x6c, 0x61, 0x74, 0x65, 0x64, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x1a, 0x2d, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61,
-	0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x52, 0x65, 0x6c, 0x61,
-	0x74, 0x65, 0x64, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75,
-	0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73,
-	0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x87,
-	0x01, 0x0a, 0x0b, 0x47, 0x65, 0x74, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73, 0x12, 0x25,
+	0x99, 0x01, 0x0a, 0x0d, 0x47, 0x65, 0x74, 0x43, 0x72, 0x65, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x61,
+	0x6c, 0x12, 0x27, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65,
+	0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x43, 0x72, 0x65, 0x64, 0x65, 0x6e, 0x74,
+	0x69, 0x61, 0x6c, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x28, 0x2e, 0x67, 0x69, 0x62,
+	0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47,
+	0x65, 0x74, 0x43, 0x72, 0x65, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x61, 0x6c, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x35, 0x8a, 0xb5, 0x18, 0x31, 0x0a, 0x0b, 0x63, 0x61, 0x6e, 0x5f,
+	0x72, 0x65, 0x73, 0x6f, 0x6c, 0x76, 0x65, 0x12, 0x06, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x1a,
+	0x18, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x5f, 0x61, 0x6e, 0x64, 0x5f, 0x66, 0x69, 0x65, 0x6c,
+	0x64, 0x28, 0x27, 0x4e, 0x61, 0x6d, 0x65, 0x27, 0x29, 0x20, 0x04, 0x12, 0x99, 0x01, 0x0a, 0x11,
+	0x47, 0x65, 0x74, 0x54, 0x61, 0x78, 0x6f, 0x6e, 0x6f, 0x6d, 0x79, 0x53, 0x63, 0x68, 0x65, 0x6d,
+	0x61, 0x12, 0x2b, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65,
+	0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x54, 0x61, 0x78, 0x6f, 0x6e, 0x6f, 0x6d,
+	0x79, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2c,
 	0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e,
-	0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x65,
-	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x26, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68,
-	0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x46, 0x69, 0x6e,
-	0x64, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a,
+	0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x54, 0x61, 0x78, 0x6f, 0x6e, 0x6f, 0x6d, 0x79, 0x53, 0x63,
+	0x68, 0x65, 0x6d, 0x61, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5,
+	0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d,
+	0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74,
+	0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0xae, 0x01, 0x0a, 0x18, 0x50, 0x72, 0x6f, 0x70,
+	0x6f, 0x73, 0x65, 0x4f, 0x6e, 0x74, 0x6f, 0x6c, 0x6f, 0x67, 0x79, 0x45, 0x78, 0x74, 0x65, 0x6e,
+	0x73, 0x69, 0x6f, 0x6e, 0x12, 0x32, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61,
+	0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65,
+	0x4f, 0x6e, 0x74, 0x6f, 0x6c, 0x6f, 0x67, 0x79, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f,
+	0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x33, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f,
+	0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f,
+	0x70, 0x6f, 0x73, 0x65, 0x4f, 0x6e, 0x74, 0x6f, 0x6c, 0x6f, 0x67, 0x79, 0x45, 0x78, 0x74, 0x65,
+	0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a,
 	0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f,
 	0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f,
-	0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x9f, 0x01, 0x0a, 0x13, 0x41, 0x70, 0x70,
-	0x6c, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73,
-	0x12, 0x2d, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73,
-	0x73, 0x2e, 0x76, 0x31, 0x2e, 0x41, 0x70, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e,
-	0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
-	0x2e, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73,
-	0x2e, 0x76, 0x31, 0x2e, 0x41, 0x70, 0x70, 0x6c, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x46,
-	0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
-	0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09,
-	0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65,
-	0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x90, 0x01, 0x0a, 0x0e, 0x47,
-	0x65, 0x74, 0x52, 0x75, 0x6e, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73, 0x12, 0x28, 0x2e,
-	0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76,
-	0x31, 0x2e, 0x47, 0x65, 0x74, 0x52, 0x75, 0x6e, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x29, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e,
-	0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x52,
-	0x75, 0x6e, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x90, 0x01, 0x0a, 0x0e, 0x47, 0x65, 0x6e,
+	0x65, 0x72, 0x61, 0x74, 0x65, 0x4e, 0x6f, 0x64, 0x65, 0x49, 0x44, 0x12, 0x28, 0x2e, 0x67, 0x69,
+	0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e,
+	0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x4e, 0x6f, 0x64, 0x65, 0x49, 0x44, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x29, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68,
+	0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61,
+	0x74, 0x65, 0x4e, 0x6f, 0x64, 0x65, 0x49, 0x44, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12,
+	0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74,
+	0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x93, 0x01, 0x0a, 0x0f,
+	0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x12,
+	0x29, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73,
+	0x2e, 0x76, 0x31, 0x2e, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x46, 0x69, 0x6e, 0x64,
+	0x69, 0x6e, 0x67, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2a, 0x2e, 0x67, 0x69, 0x62,
+	0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x56,
+	0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x52, 0x65,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61,
+	0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74,
+	0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20,
+	0x04, 0x12, 0x99, 0x01, 0x0a, 0x11, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x47, 0x72,
+	0x61, 0x70, 0x68, 0x4e, 0x6f, 0x64, 0x65, 0x12, 0x2b, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e,
+	0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x56, 0x61, 0x6c, 0x69,
+	0x64, 0x61, 0x74, 0x65, 0x47, 0x72, 0x61, 0x70, 0x68, 0x4e, 0x6f, 0x64, 0x65, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x1a, 0x2c, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61,
+	0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74,
+	0x65, 0x47, 0x72, 0x61, 0x70, 0x68, 0x4e, 0x6f, 0x64, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
 	0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73,
 	0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79,
 	0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0xa2, 0x01,
-	0x0a, 0x14, 0x47, 0x65, 0x74, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x75, 0x6e, 0x48,
-	0x69, 0x73, 0x74, 0x6f, 0x72, 0x79, 0x12, 0x2e, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e,
-	0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x4d, 0x69,
-	0x73, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x75, 0x6e, 0x48, 0x69, 0x73, 0x74, 0x6f, 0x72, 0x79, 0x52,
+	0x0a, 0x14, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x52, 0x65, 0x6c, 0x61, 0x74, 0x69,
+	0x6f, 0x6e, 0x73, 0x68, 0x69, 0x70, 0x12, 0x2e, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e,
+	0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x56, 0x61, 0x6c, 0x69, 0x64,
+	0x61, 0x74, 0x65, 0x52, 0x65, 0x6c, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x68, 0x69, 0x70, 0x52,
 	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2f, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e,
-	0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x4d, 0x69,
-	0x73, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x75, 0x6e, 0x48, 0x69, 0x73, 0x74, 0x6f, 0x72, 0x79, 0x52,
+	0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x56, 0x61, 0x6c, 0x69, 0x64,
+	0x61, 0x74, 0x65, 0x52, 0x65, 0x6c, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x68, 0x69, 0x70, 0x52,
 	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63,
 	0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e,
 	0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74,
-	0x20, 0x04, 0x12, 0x90, 0x01, 0x0a, 0x0e, 0x47, 0x65, 0x74, 0x50, 0x6c, 0x61, 0x6e, 0x43, 0x6f,
-	0x6e, 0x74, 0x65, 0x78, 0x74, 0x12, 0x28, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68,
-	0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x50, 0x6c, 0x61,
-	0x6e, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x20, 0x04, 0x12, 0x8d, 0x01, 0x0a, 0x0d, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x4d, 0x69, 0x73,
+	0x73, 0x69, 0x6f, 0x6e, 0x12, 0x27, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61,
+	0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x4d,
+	0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x28, 0x2e,
+	0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76,
+	0x31, 0x2e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63,
+	0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e,
+	0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74,
+	0x20, 0x04, 0x12, 0x84, 0x01, 0x0a, 0x0a, 0x52, 0x75, 0x6e, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f,
+	0x6e, 0x12, 0x24, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65,
+	0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x75, 0x6e, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x25, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e,
+	0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x75, 0x6e, 0x4d,
+	0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29,
+	0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63,
+	0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d,
+	0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x96, 0x01, 0x0a, 0x10, 0x47, 0x65,
+	0x74, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x2a,
+	0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e,
+	0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x53, 0x74, 0x61,
+	0x74, 0x75, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2b, 0x2e, 0x67, 0x69, 0x62,
+	0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47,
+	0x65, 0x74, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63,
+	0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e,
+	0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74,
+	0x20, 0x04, 0x12, 0x90, 0x01, 0x0a, 0x0e, 0x57, 0x61, 0x69, 0x74, 0x46, 0x6f, 0x72, 0x4d, 0x69,
+	0x73, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x28, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68,
+	0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x57, 0x61, 0x69, 0x74, 0x46, 0x6f,
+	0x72, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
 	0x29, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73,
-	0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x50, 0x6c, 0x61, 0x6e, 0x43, 0x6f, 0x6e, 0x74, 0x65,
-	0x78, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25,
-	0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f,
-	0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e,
-	0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x93, 0x01, 0x0a, 0x0f, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74,
-	0x53, 0x74, 0x65, 0x70, 0x48, 0x69, 0x6e, 0x74, 0x73, 0x12, 0x29, 0x2e, 0x67, 0x69, 0x62, 0x73,
-	0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65,
-	0x70, 0x6f, 0x72, 0x74, 0x53, 0x74, 0x65, 0x70, 0x48, 0x69, 0x6e, 0x74, 0x73, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x1a, 0x2a, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61,
-	0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x53,
-	0x74, 0x65, 0x70, 0x48, 0x69, 0x6e, 0x74, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
-	0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12,
-	0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74,
-	0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x84, 0x01, 0x0a, 0x0a,
-	0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x53, 0x70, 0x61, 0x6e, 0x12, 0x24, 0x2e, 0x67, 0x69, 0x62,
-	0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x52,
-	0x65, 0x63, 0x6f, 0x72, 0x64, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x1a, 0x25, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73,
-	0x73, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x53, 0x70, 0x61, 0x6e, 0x52,
-	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63,
-	0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e,
-	0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74,
-	0x20, 0x04, 0x12, 0x87, 0x01, 0x0a, 0x0b, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x53, 0x70, 0x61,
-	0x6e, 0x73, 0x12, 0x25, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e,
-	0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x53, 0x70, 0x61,
-	0x6e, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x26, 0x2e, 0x67, 0x69, 0x62, 0x73,
-	0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65,
-	0x63, 0x6f, 0x72, 0x64, 0x53, 0x70, 0x61, 0x6e, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65,
-	0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73,
-	0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x99, 0x01, 0x0a,
-	0x0d, 0x47, 0x65, 0x74, 0x43, 0x72, 0x65, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x61, 0x6c, 0x12, 0x27,
-	0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e,
-	0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x43, 0x72, 0x65, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x61, 0x6c,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x28, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e,
-	0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x43,
-	0x72, 0x65, 0x64, 0x65, 0x6e, 0x74, 0x69, 0x61, 0x6c, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x22, 0x35, 0x8a, 0xb5, 0x18, 0x31, 0x0a, 0x0b, 0x63, 0x61, 0x6e, 0x5f, 0x72, 0x65, 0x73,
-	0x6f, 0x6c, 0x76, 0x65, 0x12, 0x06, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x1a, 0x18, 0x74, 0x65,
-	0x6e, 0x61, 0x6e, 0x74, 0x5f, 0x61, 0x6e, 0x64, 0x5f, 0x66, 0x69, 0x65, 0x6c, 0x64, 0x28, 0x27,
-	0x4e, 0x61, 0x6d, 0x65, 0x27, 0x29, 0x20, 0x04, 0x12, 0x99, 0x01, 0x0a, 0x11, 0x47, 0x65, 0x74,
-	0x54, 0x61, 0x78, 0x6f, 0x6e, 0x6f, 0x6d, 0x79, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x12, 0x2b,
-	0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e,
-	0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x54, 0x61, 0x78, 0x6f, 0x6e, 0x6f, 0x6d, 0x79, 0x53, 0x63,
-	0x68, 0x65, 0x6d, 0x61, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2c, 0x2e, 0x67, 0x69,
-	0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e,
-	0x47, 0x65, 0x74, 0x54, 0x61, 0x78, 0x6f, 0x6e, 0x6f, 0x6d, 0x79, 0x53, 0x63, 0x68, 0x65, 0x6d,
-	0x61, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a,
-	0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e,
-	0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61,
-	0x6e, 0x74, 0x20, 0x04, 0x12, 0xae, 0x01, 0x0a, 0x18, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65,
-	0x4f, 0x6e, 0x74, 0x6f, 0x6c, 0x6f, 0x67, 0x79, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f,
-	0x6e, 0x12, 0x32, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65,
-	0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x4f, 0x6e, 0x74,
-	0x6f, 0x6c, 0x6f, 0x67, 0x79, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65,
-	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x33, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68,
-	0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73,
-	0x65, 0x4f, 0x6e, 0x74, 0x6f, 0x6c, 0x6f, 0x67, 0x79, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69,
+	0x2e, 0x76, 0x31, 0x2e, 0x57, 0x61, 0x69, 0x74, 0x46, 0x6f, 0x72, 0x4d, 0x69, 0x73, 0x73, 0x69,
 	0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25,
 	0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f,
 	0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e,
-	0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x90, 0x01, 0x0a, 0x0e, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61,
-	0x74, 0x65, 0x4e, 0x6f, 0x64, 0x65, 0x49, 0x44, 0x12, 0x28, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f,
-	0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x6e,
-	0x65, 0x72, 0x61, 0x74, 0x65, 0x4e, 0x6f, 0x64, 0x65, 0x49, 0x44, 0x52, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x1a, 0x29, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e,
-	0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x4e,
-	0x6f, 0x64, 0x65, 0x49, 0x44, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a,
-	0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f,
-	0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f,
-	0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x93, 0x01, 0x0a, 0x0f, 0x56, 0x61, 0x6c,
-	0x69, 0x64, 0x61, 0x74, 0x65, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x12, 0x29, 0x2e, 0x67,
-	0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31,
-	0x2e, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2a, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e,
-	0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x56, 0x61, 0x6c, 0x69,
-	0x64, 0x61, 0x74, 0x65, 0x46, 0x69, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75,
-	0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73,
-	0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x99,
-	0x01, 0x0a, 0x11, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x47, 0x72, 0x61, 0x70, 0x68,
-	0x4e, 0x6f, 0x64, 0x65, 0x12, 0x2b, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61,
-	0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74,
-	0x65, 0x47, 0x72, 0x61, 0x70, 0x68, 0x4e, 0x6f, 0x64, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x1a, 0x2c, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65,
-	0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x47, 0x72,
-	0x61, 0x70, 0x68, 0x4e, 0x6f, 0x64, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
-	0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09,
-	0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65,
-	0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0xa2, 0x01, 0x0a, 0x14, 0x56,
-	0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x52, 0x65, 0x6c, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73,
-	0x68, 0x69, 0x70, 0x12, 0x2e, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72,
-	0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65,
-	0x52, 0x65, 0x6c, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x68, 0x69, 0x70, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x1a, 0x2f, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72,
-	0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65,
-	0x52, 0x65, 0x6c, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x68, 0x69, 0x70, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f,
-	0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d,
-	0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12,
-	0x8d, 0x01, 0x0a, 0x0d, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f,
-	0x6e, 0x12, 0x27, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65,
-	0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x4d, 0x69, 0x73, 0x73,
-	0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x28, 0x2e, 0x67, 0x69, 0x62,
-	0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x43,
-	0x72, 0x65, 0x61, 0x74, 0x65, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f,
-	0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d,
-	0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12,
-	0x84, 0x01, 0x0a, 0x0a, 0x52, 0x75, 0x6e, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x24,
+	0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x8a, 0x01, 0x0a, 0x0c, 0x4c, 0x69, 0x73, 0x74, 0x4d, 0x69,
+	0x73, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x26, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e,
+	0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x4d,
+	0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x27,
 	0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e,
-	0x76, 0x31, 0x2e, 0x52, 0x75, 0x6e, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x1a, 0x25, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61,
-	0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x75, 0x6e, 0x4d, 0x69, 0x73, 0x73,
-	0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18,
-	0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70,
-	0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65,
-	0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x96, 0x01, 0x0a, 0x10, 0x47, 0x65, 0x74, 0x4d, 0x69,
-	0x73, 0x73, 0x69, 0x6f, 0x6e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x2a, 0x2e, 0x67, 0x69,
-	0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e,
-	0x47, 0x65, 0x74, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2b, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e,
-	0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x4d,
-	0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f,
-	0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d,
-	0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12,
-	0x90, 0x01, 0x0a, 0x0e, 0x57, 0x61, 0x69, 0x74, 0x46, 0x6f, 0x72, 0x4d, 0x69, 0x73, 0x73, 0x69,
-	0x6f, 0x6e, 0x12, 0x28, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e,
-	0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x57, 0x61, 0x69, 0x74, 0x46, 0x6f, 0x72, 0x4d, 0x69,
-	0x73, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x29, 0x2e, 0x67,
-	0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31,
-	0x2e, 0x57, 0x61, 0x69, 0x74, 0x46, 0x6f, 0x72, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x52,
+	0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x52,
 	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63,
 	0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e,
 	0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74,
-	0x20, 0x04, 0x12, 0x8a, 0x01, 0x0a, 0x0c, 0x4c, 0x69, 0x73, 0x74, 0x4d, 0x69, 0x73, 0x73, 0x69,
-	0x6f, 0x6e, 0x73, 0x12, 0x26, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72,
-	0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x69, 0x73, 0x74, 0x4d, 0x69, 0x73, 0x73,
-	0x69, 0x6f, 0x6e, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x27, 0x2e, 0x67, 0x69,
-	0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e,
-	0x4c, 0x69, 0x73, 0x74, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f,
-	0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d,
-	0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12,
-	0x8d, 0x01, 0x0a, 0x0d, 0x43, 0x61, 0x6e, 0x63, 0x65, 0x6c, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f,
-	0x6e, 0x12, 0x27, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65,
-	0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x61, 0x6e, 0x63, 0x65, 0x6c, 0x4d, 0x69, 0x73, 0x73,
-	0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x28, 0x2e, 0x67, 0x69, 0x62,
-	0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x43,
-	0x61, 0x6e, 0x63, 0x65, 0x6c, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f,
-	0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d,
-	0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12,
-	0x99, 0x01, 0x0a, 0x11, 0x47, 0x65, 0x74, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65,
-	0x73, 0x75, 0x6c, 0x74, 0x73, 0x12, 0x2b, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68,
+	0x20, 0x04, 0x12, 0x8d, 0x01, 0x0a, 0x0d, 0x43, 0x61, 0x6e, 0x63, 0x65, 0x6c, 0x4d, 0x69, 0x73,
+	0x73, 0x69, 0x6f, 0x6e, 0x12, 0x27, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61,
+	0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x61, 0x6e, 0x63, 0x65, 0x6c, 0x4d,
+	0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x28, 0x2e,
+	0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76,
+	0x31, 0x2e, 0x43, 0x61, 0x6e, 0x63, 0x65, 0x6c, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63,
+	0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e,
+	0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74,
+	0x20, 0x04, 0x12, 0x99, 0x01, 0x0a, 0x11, 0x47, 0x65, 0x74, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f,
+	0x6e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x12, 0x2b, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f,
+	0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74,
+	0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2c, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68,
 	0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x4d, 0x69, 0x73,
-	0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x1a, 0x2c, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e,
-	0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x4d, 0x69, 0x73, 0x73, 0x69, 0x6f,
-	0x6e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x73, 0x69, 0x6f, 0x6e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75,
+	0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73,
+	0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x81,
+	0x01, 0x0a, 0x09, 0x41, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x7a, 0x65, 0x12, 0x23, 0x2e, 0x67,
+	0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31,
+	0x2e, 0x41, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x7a, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x1a, 0x24, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65,
+	0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x41, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x7a, 0x65, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63,
+	0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e,
+	0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74,
+	0x20, 0x04, 0x12, 0x8d, 0x01, 0x0a, 0x0d, 0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65,
+	0x4c, 0x69, 0x73, 0x74, 0x12, 0x27, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61,
+	0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61,
+	0x63, 0x65, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x28, 0x2e,
+	0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76,
+	0x31, 0x2e, 0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x4c, 0x69, 0x73, 0x74, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63,
+	0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e,
+	0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74,
+	0x20, 0x04, 0x12, 0x96, 0x01, 0x0a, 0x10, 0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65,
+	0x47, 0x65, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x2a, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e,
+	0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x57, 0x6f, 0x72, 0x6b,
+	0x73, 0x70, 0x61, 0x63, 0x65, 0x47, 0x65, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x2b, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72,
+	0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63,
+	0x65, 0x47, 0x65, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
 	0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12,
 	0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74,
-	0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x81, 0x01, 0x0a, 0x09,
-	0x41, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x7a, 0x65, 0x12, 0x23, 0x2e, 0x67, 0x69, 0x62, 0x73,
-	0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x41, 0x75,
-	0x74, 0x68, 0x6f, 0x72, 0x69, 0x7a, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x24,
-	0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e,
-	0x76, 0x31, 0x2e, 0x41, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x7a, 0x65, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f,
-	0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d,
-	0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12,
-	0x8d, 0x01, 0x0a, 0x0d, 0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x4c, 0x69, 0x73,
-	0x74, 0x12, 0x27, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65,
-	0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x4c,
-	0x69, 0x73, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x28, 0x2e, 0x67, 0x69, 0x62,
-	0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x57,
-	0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f,
-	0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d,
-	0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12,
-	0x96, 0x01, 0x0a, 0x10, 0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x47, 0x65, 0x74,
-	0x49, 0x6e, 0x66, 0x6f, 0x12, 0x2a, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61,
-	0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61,
-	0x63, 0x65, 0x47, 0x65, 0x74, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x1a, 0x2b, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73,
-	0x73, 0x2e, 0x76, 0x31, 0x2e, 0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x47, 0x65,
-	0x74, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a,
-	0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f,
-	0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f,
-	0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x99, 0x01, 0x0a, 0x11, 0x57, 0x6f, 0x72,
-	0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x52, 0x65, 0x61, 0x64, 0x46, 0x69, 0x6c, 0x65, 0x12, 0x2b,
+	0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x99, 0x01, 0x0a, 0x11,
+	0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x52, 0x65, 0x61, 0x64, 0x46, 0x69, 0x6c,
+	0x65, 0x12, 0x2b, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65,
+	0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x52,
+	0x65, 0x61, 0x64, 0x46, 0x69, 0x6c, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2c,
 	0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e,
 	0x76, 0x31, 0x2e, 0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x52, 0x65, 0x61, 0x64,
-	0x46, 0x69, 0x6c, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2c, 0x2e, 0x67, 0x69,
+	0x46, 0x69, 0x6c, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5,
+	0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d,
+	0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74,
+	0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x9c, 0x01, 0x0a, 0x12, 0x57, 0x6f, 0x72, 0x6b,
+	0x73, 0x70, 0x61, 0x63, 0x65, 0x57, 0x72, 0x69, 0x74, 0x65, 0x46, 0x69, 0x6c, 0x65, 0x12, 0x2c,
+	0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e,
+	0x76, 0x31, 0x2e, 0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x57, 0x72, 0x69, 0x74,
+	0x65, 0x46, 0x69, 0x6c, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2d, 0x2e, 0x67,
+	0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31,
+	0x2e, 0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x57, 0x72, 0x69, 0x74, 0x65, 0x46,
+	0x69, 0x6c, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18,
+	0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70,
+	0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65,
+	0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x9c, 0x01, 0x0a, 0x12, 0x57, 0x6f, 0x72, 0x6b, 0x73,
+	0x70, 0x61, 0x63, 0x65, 0x4c, 0x69, 0x73, 0x74, 0x46, 0x69, 0x6c, 0x65, 0x73, 0x12, 0x2c, 0x2e,
+	0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76,
+	0x31, 0x2e, 0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x4c, 0x69, 0x73, 0x74, 0x46,
+	0x69, 0x6c, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2d, 0x2e, 0x67, 0x69,
 	0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e,
-	0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x52, 0x65, 0x61, 0x64, 0x46, 0x69, 0x6c,
-	0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a,
-	0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e,
-	0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61,
-	0x6e, 0x74, 0x20, 0x04, 0x12, 0x9c, 0x01, 0x0a, 0x12, 0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61,
-	0x63, 0x65, 0x57, 0x72, 0x69, 0x74, 0x65, 0x46, 0x69, 0x6c, 0x65, 0x12, 0x2c, 0x2e, 0x67, 0x69,
-	0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e,
-	0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x57, 0x72, 0x69, 0x74, 0x65, 0x46, 0x69,
-	0x6c, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2d, 0x2e, 0x67, 0x69, 0x62, 0x73,
+	0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x4c, 0x69, 0x73, 0x74, 0x46, 0x69, 0x6c,
+	0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25,
+	0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f,
+	0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e,
+	0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x93, 0x01, 0x0a, 0x0f, 0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70,
+	0x61, 0x63, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x12, 0x29, 0x2e, 0x67, 0x69, 0x62, 0x73,
 	0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x57, 0x6f,
-	0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x57, 0x72, 0x69, 0x74, 0x65, 0x46, 0x69, 0x6c, 0x65,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07,
-	0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65,
-	0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e,
-	0x74, 0x20, 0x04, 0x12, 0x9c, 0x01, 0x0a, 0x12, 0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63,
-	0x65, 0x4c, 0x69, 0x73, 0x74, 0x46, 0x69, 0x6c, 0x65, 0x73, 0x12, 0x2c, 0x2e, 0x67, 0x69, 0x62,
-	0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x57,
-	0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x4c, 0x69, 0x73, 0x74, 0x46, 0x69, 0x6c, 0x65,
-	0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2d, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f,
-	0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x57, 0x6f, 0x72,
-	0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x4c, 0x69, 0x73, 0x74, 0x46, 0x69, 0x6c, 0x65, 0x73, 0x52,
+	0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x1a, 0x2a, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61,
+	0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61,
+	0x63, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12,
+	0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74,
+	0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x8d, 0x01, 0x0a, 0x0d,
+	0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x50, 0x75, 0x73, 0x68, 0x12, 0x27, 0x2e,
+	0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76,
+	0x31, 0x2e, 0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x50, 0x75, 0x73, 0x68, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x28, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e,
+	0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x57, 0x6f, 0x72, 0x6b, 0x73,
+	0x70, 0x61, 0x63, 0x65, 0x50, 0x75, 0x73, 0x68, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12,
+	0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74,
+	0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x86, 0x01, 0x0a, 0x0a,
+	0x44, 0x65, 0x76, 0x62, 0x6f, 0x78, 0x45, 0x78, 0x65, 0x63, 0x12, 0x24, 0x2e, 0x67, 0x69, 0x62,
+	0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x44,
+	0x65, 0x76, 0x62, 0x6f, 0x78, 0x45, 0x78, 0x65, 0x63, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x1a, 0x25, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73,
+	0x73, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x76, 0x62, 0x6f, 0x78, 0x45, 0x78, 0x65, 0x63, 0x52,
 	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63,
 	0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e,
 	0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74,
-	0x20, 0x04, 0x12, 0x93, 0x01, 0x0a, 0x0f, 0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65,
-	0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x12, 0x29, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e,
-	0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x57, 0x6f, 0x72, 0x6b, 0x73,
-	0x70, 0x61, 0x63, 0x65, 0x43, 0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x1a, 0x2a, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65,
-	0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x43,
-	0x6f, 0x6d, 0x6d, 0x69, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a,
-	0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f,
-	0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f,
-	0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x8d, 0x01, 0x0a, 0x0d, 0x57, 0x6f, 0x72,
-	0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x50, 0x75, 0x73, 0x68, 0x12, 0x27, 0x2e, 0x67, 0x69, 0x62,
-	0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x57,
-	0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63, 0x65, 0x50, 0x75, 0x73, 0x68, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x1a, 0x28, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72,
-	0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x57, 0x6f, 0x72, 0x6b, 0x73, 0x70, 0x61, 0x63,
-	0x65, 0x50, 0x75, 0x73, 0x68, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a,
-	0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f,
-	0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f,
-	0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x86, 0x01, 0x0a, 0x0a, 0x44, 0x65, 0x76,
-	0x62, 0x6f, 0x78, 0x45, 0x78, 0x65, 0x63, 0x12, 0x24, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e,
-	0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x76, 0x62,
-	0x6f, 0x78, 0x45, 0x78, 0x65, 0x63, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x25, 0x2e,
-	0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76,
-	0x31, 0x2e, 0x44, 0x65, 0x76, 0x62, 0x6f, 0x78, 0x45, 0x78, 0x65, 0x63, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f,
-	0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d,
-	0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x30,
-	0x01, 0x12, 0x99, 0x01, 0x0a, 0x11, 0x50, 0x75, 0x74, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e,
-	0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x12, 0x2b, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e,
+	0x20, 0x04, 0x30, 0x01, 0x12, 0x99, 0x01, 0x0a, 0x11, 0x50, 0x75, 0x74, 0x53, 0x65, 0x73, 0x73,
+	0x69, 0x6f, 0x6e, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x12, 0x2b, 0x2e, 0x67, 0x69, 0x62,
+	0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x50,
+	0x75, 0x74, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2c, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e,
 	0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x75, 0x74, 0x53,
-	0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x1a, 0x2c, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61,
-	0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x75, 0x74, 0x53, 0x65, 0x73, 0x73,
-	0x69, 0x6f, 0x6e, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
-	0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73,
-	0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79,
-	0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x99, 0x01,
-	0x0a, 0x11, 0x47, 0x65, 0x74, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x43, 0x6f, 0x6e, 0x74,
-	0x65, 0x78, 0x74, 0x12, 0x2b, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72,
+	0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e,
+	0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a,
+	0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04,
+	0x12, 0x99, 0x01, 0x0a, 0x11, 0x47, 0x65, 0x74, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x43,
+	0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x12, 0x2b, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e,
+	0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x53, 0x65,
+	0x73, 0x73, 0x69, 0x6f, 0x6e, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x2c, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72,
 	0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x53, 0x65, 0x73, 0x73, 0x69,
-	0x6f, 0x6e, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x1a, 0x2c, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73,
-	0x73, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x74, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x43,
-	0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29,
-	0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63,
-	0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d,
-	0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0xa2, 0x01, 0x0a, 0x14, 0x44, 0x65,
-	0x6c, 0x65, 0x74, 0x65, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x43, 0x6f, 0x6e, 0x74, 0x65,
-	0x78, 0x74, 0x12, 0x2e, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e,
-	0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x53, 0x65, 0x73,
-	0x73, 0x69, 0x6f, 0x6e, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x1a, 0x2f, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e,
-	0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x53, 0x65, 0x73,
-	0x73, 0x69, 0x6f, 0x6e, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75,
-	0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73,
-	0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x92,
-	0x01, 0x0a, 0x0e, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x49, 0x6e, 0x70, 0x75,
-	0x74, 0x12, 0x28, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65,
-	0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x49,
-	0x6e, 0x70, 0x75, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x29, 0x2e, 0x67, 0x69,
-	0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e,
-	0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x49, 0x6e, 0x70, 0x75, 0x74, 0x52, 0x65,
+	0x6f, 0x6e, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65,
+	0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73,
+	0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0xa2, 0x01, 0x0a,
+	0x14, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x43, 0x6f,
+	0x6e, 0x74, 0x65, 0x78, 0x74, 0x12, 0x2e, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68,
+	0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65,
+	0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2f, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68,
+	0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65,
+	0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x52, 0x65,
 	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61,
 	0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74,
 	0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20,
-	0x04, 0x30, 0x01, 0x12, 0x7b, 0x0a, 0x07, 0x50, 0x75, 0x6c, 0x6c, 0x4a, 0x6f, 0x62, 0x12, 0x21,
+	0x04, 0x12, 0x92, 0x01, 0x0a, 0x0e, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x49,
+	0x6e, 0x70, 0x75, 0x74, 0x12, 0x28, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61,
+	0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69,
+	0x62, 0x65, 0x49, 0x6e, 0x70, 0x75, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x29,
 	0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e,
-	0x76, 0x31, 0x2e, 0x50, 0x75, 0x6c, 0x6c, 0x4a, 0x6f, 0x62, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x1a, 0x22, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65,
-	0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x75, 0x6c, 0x6c, 0x4a, 0x6f, 0x62, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e,
-	0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a,
-	0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04,
-	0x12, 0x90, 0x01, 0x0a, 0x0e, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x4a, 0x6f, 0x62, 0x53, 0x74,
-	0x61, 0x74, 0x65, 0x12, 0x28, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72,
-	0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x4a, 0x6f,
-	0x62, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x29, 0x2e,
-	0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76,
-	0x31, 0x2e, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x4a, 0x6f, 0x62, 0x53, 0x74, 0x61, 0x74, 0x65,
+	0x76, 0x31, 0x2e, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x62, 0x65, 0x49, 0x6e, 0x70, 0x75,
+	0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a,
+	0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e,
+	0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61,
+	0x6e, 0x74, 0x20, 0x04, 0x30, 0x01, 0x12, 0x7b, 0x0a, 0x07, 0x50, 0x75, 0x6c, 0x6c, 0x4a, 0x6f,
+	0x62, 0x12, 0x21, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65,
+	0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x75, 0x6c, 0x6c, 0x4a, 0x6f, 0x62, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x1a, 0x22, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61,
+	0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x75, 0x6c, 0x6c, 0x4a, 0x6f, 0x62,
 	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07,
 	0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65,
 	0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e,
-	0x74, 0x20, 0x04, 0x12, 0x99, 0x01, 0x0a, 0x11, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x44, 0x65,
-	0x6c, 0x69, 0x76, 0x65, 0x72, 0x61, 0x62, 0x6c, 0x65, 0x12, 0x2b, 0x2e, 0x67, 0x69, 0x62, 0x73,
+	0x74, 0x20, 0x04, 0x12, 0x90, 0x01, 0x0a, 0x0e, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x4a, 0x6f,
+	0x62, 0x53, 0x74, 0x61, 0x74, 0x65, 0x12, 0x28, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e,
+	0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x70, 0x6f, 0x72,
+	0x74, 0x4a, 0x6f, 0x62, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x1a, 0x29, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73,
+	0x73, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x4a, 0x6f, 0x62, 0x53, 0x74,
+	0x61, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18,
+	0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70,
+	0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65,
+	0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x99, 0x01, 0x0a, 0x11, 0x52, 0x65, 0x70, 0x6f, 0x72,
+	0x74, 0x44, 0x65, 0x6c, 0x69, 0x76, 0x65, 0x72, 0x61, 0x62, 0x6c, 0x65, 0x12, 0x2b, 0x2e, 0x67,
+	0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31,
+	0x2e, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x44, 0x65, 0x6c, 0x69, 0x76, 0x65, 0x72, 0x61, 0x62,
+	0x6c, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2c, 0x2e, 0x67, 0x69, 0x62, 0x73,
 	0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65,
 	0x70, 0x6f, 0x72, 0x74, 0x44, 0x65, 0x6c, 0x69, 0x76, 0x65, 0x72, 0x61, 0x62, 0x6c, 0x65, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2c, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e,
-	0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x70, 0x6f, 0x72,
-	0x74, 0x44, 0x65, 0x6c, 0x69, 0x76, 0x65, 0x72, 0x61, 0x62, 0x6c, 0x65, 0x52, 0x65, 0x73, 0x70,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63,
+	0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e,
+	0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74,
+	0x20, 0x04, 0x12, 0x7b, 0x0a, 0x07, 0x4f, 0x70, 0x65, 0x6e, 0x4a, 0x6f, 0x62, 0x12, 0x21, 0x2e,
+	0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76,
+	0x31, 0x2e, 0x4f, 0x70, 0x65, 0x6e, 0x4a, 0x6f, 0x62, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x1a, 0x22, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73,
+	0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4f, 0x70, 0x65, 0x6e, 0x4a, 0x6f, 0x62, 0x52, 0x65, 0x73, 0x70,
 	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f,
 	0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d,
 	0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12,
-	0x7b, 0x0a, 0x07, 0x4f, 0x70, 0x65, 0x6e, 0x4a, 0x6f, 0x62, 0x12, 0x21, 0x2e, 0x67, 0x69, 0x62,
-	0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x4f,
-	0x70, 0x65, 0x6e, 0x4a, 0x6f, 0x62, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x22, 0x2e,
+	0x81, 0x01, 0x0a, 0x09, 0x53, 0x65, 0x6e, 0x64, 0x49, 0x6e, 0x70, 0x75, 0x74, 0x12, 0x23, 0x2e,
 	0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76,
-	0x31, 0x2e, 0x4f, 0x70, 0x65, 0x6e, 0x4a, 0x6f, 0x62, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65,
-	0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73,
-	0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x12, 0x81, 0x01, 0x0a,
-	0x09, 0x53, 0x65, 0x6e, 0x64, 0x49, 0x6e, 0x70, 0x75, 0x74, 0x12, 0x23, 0x2e, 0x67, 0x69, 0x62,
-	0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x53,
-	0x65, 0x6e, 0x64, 0x49, 0x6e, 0x70, 0x75, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
-	0x24, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73,
-	0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65, 0x6e, 0x64, 0x49, 0x6e, 0x70, 0x75, 0x74, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e,
-	0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a,
-	0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04,
-	0x12, 0x7e, 0x0a, 0x08, 0x43, 0x6c, 0x6f, 0x73, 0x65, 0x4a, 0x6f, 0x62, 0x12, 0x22, 0x2e, 0x67,
-	0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31,
-	0x2e, 0x43, 0x6c, 0x6f, 0x73, 0x65, 0x4a, 0x6f, 0x62, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x1a, 0x23, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73,
-	0x73, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x6c, 0x6f, 0x73, 0x65, 0x4a, 0x6f, 0x62, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e,
-	0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a,
-	0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04,
-	0x12, 0x81, 0x01, 0x0a, 0x09, 0x43, 0x6c, 0x61, 0x69, 0x6d, 0x46, 0x6f, 0x72, 0x6b, 0x12, 0x23,
-	0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e,
-	0x76, 0x31, 0x2e, 0x43, 0x6c, 0x61, 0x69, 0x6d, 0x46, 0x6f, 0x72, 0x6b, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x1a, 0x24, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72,
-	0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x6c, 0x61, 0x69, 0x6d, 0x46, 0x6f, 0x72,
-	0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a,
-	0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e,
-	0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61,
-	0x6e, 0x74, 0x20, 0x04, 0x42, 0xd3, 0x01, 0x0a, 0x15, 0x63, 0x6f, 0x6d, 0x2e, 0x67, 0x69, 0x62,
-	0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x42, 0x14,
-	0x48, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x43, 0x61, 0x6c, 0x6c, 0x62, 0x61, 0x63, 0x6b, 0x50,
-	0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x3e, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63,
-	0x6f, 0x6d, 0x2f, 0x7a, 0x65, 0x72, 0x6f, 0x72, 0x6f, 0x6f, 0x74, 0x2d, 0x61, 0x69, 0x2f, 0x73,
-	0x64, 0x6b, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x67, 0x69, 0x62, 0x73, 0x6f,
-	0x6e, 0x2f, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2f, 0x76, 0x31, 0x3b, 0x68, 0x61, 0x72,
-	0x6e, 0x65, 0x73, 0x73, 0x70, 0x62, 0xa2, 0x02, 0x03, 0x47, 0x48, 0x58, 0xaa, 0x02, 0x11, 0x47,
-	0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x48, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x56, 0x31,
-	0xca, 0x02, 0x11, 0x47, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x5c, 0x48, 0x61, 0x72, 0x6e, 0x65, 0x73,
-	0x73, 0x5c, 0x56, 0x31, 0xe2, 0x02, 0x1d, 0x47, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x5c, 0x48, 0x61,
-	0x72, 0x6e, 0x65, 0x73, 0x73, 0x5c, 0x56, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61,
-	0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x13, 0x47, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x3a, 0x3a, 0x48,
-	0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x3a, 0x3a, 0x56, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x33,
+	0x31, 0x2e, 0x53, 0x65, 0x6e, 0x64, 0x49, 0x6e, 0x70, 0x75, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x1a, 0x24, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e,
+	0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65, 0x6e, 0x64, 0x49, 0x6e, 0x70, 0x75, 0x74,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07,
+	0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65,
+	0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e,
+	0x74, 0x20, 0x04, 0x12, 0x7e, 0x0a, 0x08, 0x43, 0x6c, 0x6f, 0x73, 0x65, 0x4a, 0x6f, 0x62, 0x12,
+	0x22, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73,
+	0x2e, 0x76, 0x31, 0x2e, 0x43, 0x6c, 0x6f, 0x73, 0x65, 0x4a, 0x6f, 0x62, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x23, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72,
+	0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x6c, 0x6f, 0x73, 0x65, 0x4a, 0x6f, 0x62,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5, 0x18, 0x25, 0x0a, 0x07,
+	0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d, 0x70, 0x6f, 0x6e, 0x65,
+	0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e,
+	0x74, 0x20, 0x04, 0x12, 0x81, 0x01, 0x0a, 0x09, 0x43, 0x6c, 0x61, 0x69, 0x6d, 0x46, 0x6f, 0x72,
+	0x6b, 0x12, 0x23, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65,
+	0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x6c, 0x61, 0x69, 0x6d, 0x46, 0x6f, 0x72, 0x6b, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x24, 0x2e, 0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e,
+	0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x6c, 0x61, 0x69, 0x6d,
+	0x46, 0x6f, 0x72, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x8a, 0xb5,
+	0x18, 0x25, 0x0a, 0x07, 0x63, 0x61, 0x6e, 0x5f, 0x75, 0x73, 0x65, 0x12, 0x09, 0x63, 0x6f, 0x6d,
+	0x70, 0x6f, 0x6e, 0x65, 0x6e, 0x74, 0x1a, 0x0d, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x5f, 0x74,
+	0x65, 0x6e, 0x61, 0x6e, 0x74, 0x20, 0x04, 0x42, 0xd3, 0x01, 0x0a, 0x15, 0x63, 0x6f, 0x6d, 0x2e,
+	0x67, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2e, 0x76,
+	0x31, 0x42, 0x14, 0x48, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x43, 0x61, 0x6c, 0x6c, 0x62, 0x61,
+	0x63, 0x6b, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x3e, 0x67, 0x69, 0x74, 0x68, 0x75,
+	0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x7a, 0x65, 0x72, 0x6f, 0x72, 0x6f, 0x6f, 0x74, 0x2d, 0x61,
+	0x69, 0x2f, 0x73, 0x64, 0x6b, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x67, 0x69,
+	0x62, 0x73, 0x6f, 0x6e, 0x2f, 0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x2f, 0x76, 0x31, 0x3b,
+	0x68, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x70, 0x62, 0xa2, 0x02, 0x03, 0x47, 0x48, 0x58, 0xaa,
+	0x02, 0x11, 0x47, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x2e, 0x48, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73,
+	0x2e, 0x56, 0x31, 0xca, 0x02, 0x11, 0x47, 0x69, 0x62, 0x73, 0x6f, 0x6e, 0x5c, 0x48, 0x61, 0x72,
+	0x6e, 0x65, 0x73, 0x73, 0x5c, 0x56, 0x31, 0xe2, 0x02, 0x1d, 0x47, 0x69, 0x62, 0x73, 0x6f, 0x6e,
+	0x5c, 0x48, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x5c, 0x56, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d,
+	0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x13, 0x47, 0x69, 0x62, 0x73, 0x6f, 0x6e,
+	0x3a, 0x3a, 0x48, 0x61, 0x72, 0x6e, 0x65, 0x73, 0x73, 0x3a, 0x3a, 0x56, 0x31, 0x62, 0x06, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -17674,7 +16515,7 @@ func file_gibson_harness_v1_harness_callback_proto_rawDescGZIP() []byte {
 }
 
 var file_gibson_harness_v1_harness_callback_proto_enumTypes = make([]protoimpl.EnumInfo, 10)
-var file_gibson_harness_v1_harness_callback_proto_msgTypes = make([]protoimpl.MessageInfo, 217)
+var file_gibson_harness_v1_harness_callback_proto_msgTypes = make([]protoimpl.MessageInfo, 204)
 var file_gibson_harness_v1_harness_callback_proto_goTypes = []any{
 	(RunScope)(0),                                   // 0: gibson.harness.v1.RunScope
 	(SettlementOutcome)(0),                          // 1: gibson.harness.v1.SettlementOutcome
@@ -17688,664 +16529,619 @@ var file_gibson_harness_v1_harness_callback_proto_goTypes = []any{
 	(OriginationStart)(0),                           // 9: gibson.harness.v1.OriginationStart
 	(*HarnessError)(nil),                            // 10: gibson.harness.v1.HarnessError
 	(*ContextInfo)(nil),                             // 11: gibson.harness.v1.ContextInfo
-	(*TokenUsage)(nil),                              // 12: gibson.harness.v1.TokenUsage
-	(*ResolveModelRequest)(nil),                     // 13: gibson.harness.v1.ResolveModelRequest
-	(*ResolveModelResponse)(nil),                    // 14: gibson.harness.v1.ResolveModelResponse
-	(*LLMMessage)(nil),                              // 15: gibson.harness.v1.LLMMessage
-	(*ToolCall)(nil),                                // 16: gibson.harness.v1.ToolCall
-	(*ToolResult)(nil),                              // 17: gibson.harness.v1.ToolResult
-	(*ToolDef)(nil),                                 // 18: gibson.harness.v1.ToolDef
-	(*LLMCompleteRequest)(nil),                      // 19: gibson.harness.v1.LLMCompleteRequest
-	(*LLMCompleteWithToolsRequest)(nil),             // 20: gibson.harness.v1.LLMCompleteWithToolsRequest
-	(*LLMCompleteStructuredRequest)(nil),            // 21: gibson.harness.v1.LLMCompleteStructuredRequest
-	(*LLMCompleteStructuredResponse)(nil),           // 22: gibson.harness.v1.LLMCompleteStructuredResponse
-	(*LLMCompleteResponse)(nil),                     // 23: gibson.harness.v1.LLMCompleteResponse
-	(*LLMCompleteWithToolsResponse)(nil),            // 24: gibson.harness.v1.LLMCompleteWithToolsResponse
-	(*LLMStreamRequest)(nil),                        // 25: gibson.harness.v1.LLMStreamRequest
-	(*LLMStreamResponse)(nil),                       // 26: gibson.harness.v1.LLMStreamResponse
-	(*CallToolProtoRequest)(nil),                    // 27: gibson.harness.v1.CallToolProtoRequest
-	(*CallToolProtoResponse)(nil),                   // 28: gibson.harness.v1.CallToolProtoResponse
-	(*CallToolProtoStreamRequest)(nil),              // 29: gibson.harness.v1.CallToolProtoStreamRequest
-	(*CallToolProtoStreamResponse)(nil),             // 30: gibson.harness.v1.CallToolProtoStreamResponse
-	(*ToolProgressEvent)(nil),                       // 31: gibson.harness.v1.ToolProgressEvent
-	(*ToolPartialResultEvent)(nil),                  // 32: gibson.harness.v1.ToolPartialResultEvent
-	(*ToolWarningEvent)(nil),                        // 33: gibson.harness.v1.ToolWarningEvent
-	(*ToolCompleteEvent)(nil),                       // 34: gibson.harness.v1.ToolCompleteEvent
-	(*ToolErrorEvent)(nil),                          // 35: gibson.harness.v1.ToolErrorEvent
-	(*ListToolsRequest)(nil),                        // 36: gibson.harness.v1.ListToolsRequest
-	(*ListToolsResponse)(nil),                       // 37: gibson.harness.v1.ListToolsResponse
-	(*HarnessToolDescriptor)(nil),                   // 38: gibson.harness.v1.HarnessToolDescriptor
-	(*SearchToolsRequest)(nil),                      // 39: gibson.harness.v1.SearchToolsRequest
-	(*SearchToolsResponse)(nil),                     // 40: gibson.harness.v1.SearchToolsResponse
-	(*SearchToolsCandidate)(nil),                    // 41: gibson.harness.v1.SearchToolsCandidate
-	(*QueueToolWorkRequest)(nil),                    // 42: gibson.harness.v1.QueueToolWorkRequest
-	(*QueueToolWorkResponse)(nil),                   // 43: gibson.harness.v1.QueueToolWorkResponse
-	(*ToolResultsRequest)(nil),                      // 44: gibson.harness.v1.ToolResultsRequest
-	(*ToolResultsResponse)(nil),                     // 45: gibson.harness.v1.ToolResultsResponse
-	(*JSONSchemaNode)(nil),                          // 46: gibson.harness.v1.JSONSchemaNode
-	(*TaxonomyMapping)(nil),                         // 47: gibson.harness.v1.TaxonomyMapping
-	(*PropertyMapping)(nil),                         // 48: gibson.harness.v1.PropertyMapping
-	(*NodeReference)(nil),                           // 49: gibson.harness.v1.NodeReference
-	(*RelationshipMapping)(nil),                     // 50: gibson.harness.v1.RelationshipMapping
-	(*QueryPluginRequest)(nil),                      // 51: gibson.harness.v1.QueryPluginRequest
-	(*QueryPluginResponse)(nil),                     // 52: gibson.harness.v1.QueryPluginResponse
-	(*ListPluginsRequest)(nil),                      // 53: gibson.harness.v1.ListPluginsRequest
-	(*ListPluginsResponse)(nil),                     // 54: gibson.harness.v1.ListPluginsResponse
-	(*HarnessPluginDescriptor)(nil),                 // 55: gibson.harness.v1.HarnessPluginDescriptor
-	(*DelegateToAgentRequest)(nil),                  // 56: gibson.harness.v1.DelegateToAgentRequest
-	(*DelegateToAgentResponse)(nil),                 // 57: gibson.harness.v1.DelegateToAgentResponse
-	(*ListAgentsRequest)(nil),                       // 58: gibson.harness.v1.ListAgentsRequest
-	(*ListAgentsResponse)(nil),                      // 59: gibson.harness.v1.ListAgentsResponse
-	(*HarnessAgentDescriptor)(nil),                  // 60: gibson.harness.v1.HarnessAgentDescriptor
-	(*SubmitFindingRequest)(nil),                    // 61: gibson.harness.v1.SubmitFindingRequest
-	(*SubmitFindingResponse)(nil),                   // 62: gibson.harness.v1.SubmitFindingResponse
-	(*FindingFilter)(nil),                           // 63: gibson.harness.v1.FindingFilter
-	(*QueryNodesRequest)(nil),                       // 64: gibson.harness.v1.QueryNodesRequest
-	(*QueryNodesResponse)(nil),                      // 65: gibson.harness.v1.QueryNodesResponse
-	(*FindSimilarAttacksRequest)(nil),               // 66: gibson.harness.v1.FindSimilarAttacksRequest
-	(*FindSimilarAttacksResponse)(nil),              // 67: gibson.harness.v1.FindSimilarAttacksResponse
-	(*GetAttackChainsRequest)(nil),                  // 68: gibson.harness.v1.GetAttackChainsRequest
-	(*GetAttackChainsResponse)(nil),                 // 69: gibson.harness.v1.GetAttackChainsResponse
-	(*FindSimilarFindingsRequest)(nil),              // 70: gibson.harness.v1.FindSimilarFindingsRequest
-	(*FindSimilarFindingsResponse)(nil),             // 71: gibson.harness.v1.FindSimilarFindingsResponse
-	(*GetRelatedFindingsRequest)(nil),               // 72: gibson.harness.v1.GetRelatedFindingsRequest
-	(*GetRelatedFindingsResponse)(nil),              // 73: gibson.harness.v1.GetRelatedFindingsResponse
-	(*GetFindingsRequest)(nil),                      // 74: gibson.harness.v1.GetFindingsRequest
-	(*GetFindingsResponse)(nil),                     // 75: gibson.harness.v1.GetFindingsResponse
-	(*ApplicationFindingsRequest)(nil),              // 76: gibson.harness.v1.ApplicationFindingsRequest
-	(*ApplicationFinding)(nil),                      // 77: gibson.harness.v1.ApplicationFinding
-	(*ApplicationFindingsResponse)(nil),             // 78: gibson.harness.v1.ApplicationFindingsResponse
-	(*GetRunFindingsRequest)(nil),                   // 79: gibson.harness.v1.GetRunFindingsRequest
-	(*GetRunFindingsResponse)(nil),                  // 80: gibson.harness.v1.GetRunFindingsResponse
-	(*GetMissionRunHistoryRequest)(nil),             // 81: gibson.harness.v1.GetMissionRunHistoryRequest
-	(*GetMissionRunHistoryResponse)(nil),            // 82: gibson.harness.v1.GetMissionRunHistoryResponse
-	(*ObserveRequest)(nil),                          // 83: gibson.harness.v1.ObserveRequest
-	(*LifecycleEntityObservation)(nil),              // 84: gibson.harness.v1.LifecycleEntityObservation
-	(*LifecycleEntityEdge)(nil),                     // 85: gibson.harness.v1.LifecycleEntityEdge
-	(*HostObservation)(nil),                         // 86: gibson.harness.v1.HostObservation
-	(*PortObservation)(nil),                         // 87: gibson.harness.v1.PortObservation
-	(*EndpointObservation)(nil),                     // 88: gibson.harness.v1.EndpointObservation
-	(*TechnologyObservation)(nil),                   // 89: gibson.harness.v1.TechnologyObservation
-	(*CertificateObservation)(nil),                  // 90: gibson.harness.v1.CertificateObservation
-	(*DomainObservation)(nil),                       // 91: gibson.harness.v1.DomainObservation
-	(*SubdomainObservation)(nil),                    // 92: gibson.harness.v1.SubdomainObservation
-	(*CredentialObservation)(nil),                   // 93: gibson.harness.v1.CredentialObservation
-	(*AccountObservation)(nil),                      // 94: gibson.harness.v1.AccountObservation
-	(*MemoryObservation)(nil),                       // 95: gibson.harness.v1.MemoryObservation
-	(*HypothesisObservation)(nil),                   // 96: gibson.harness.v1.HypothesisObservation
-	(*ReferencedEntity)(nil),                        // 97: gibson.harness.v1.ReferencedEntity
-	(*ReasoningStepObservation)(nil),                // 98: gibson.harness.v1.ReasoningStepObservation
-	(*AnalysisObservation)(nil),                     // 99: gibson.harness.v1.AnalysisObservation
-	(*ObserveResponse)(nil),                         // 100: gibson.harness.v1.ObserveResponse
-	(*PlaceBetRequest)(nil),                         // 101: gibson.harness.v1.PlaceBetRequest
-	(*Bet)(nil),                                     // 102: gibson.harness.v1.Bet
-	(*PlaceBetResponse)(nil),                        // 103: gibson.harness.v1.PlaceBetResponse
-	(*SubmitProofRequest)(nil),                      // 104: gibson.harness.v1.SubmitProofRequest
-	(*SubmitProofResponse)(nil),                     // 105: gibson.harness.v1.SubmitProofResponse
-	(*RequestDestructiveAuthorizationRequest)(nil),  // 106: gibson.harness.v1.RequestDestructiveAuthorizationRequest
-	(*RequestDestructiveAuthorizationResponse)(nil), // 107: gibson.harness.v1.RequestDestructiveAuthorizationResponse
-	(*WorldViewRequest)(nil),                        // 108: gibson.harness.v1.WorldViewRequest
-	(*WorldViewResponse)(nil),                       // 109: gibson.harness.v1.WorldViewResponse
-	(*WorldEntity)(nil),                             // 110: gibson.harness.v1.WorldEntity
-	(*GetPlanContextRequest)(nil),                   // 111: gibson.harness.v1.GetPlanContextRequest
-	(*GetPlanContextResponse)(nil),                  // 112: gibson.harness.v1.GetPlanContextResponse
-	(*ReportStepHintsRequest)(nil),                  // 113: gibson.harness.v1.ReportStepHintsRequest
-	(*ReportStepHintsResponse)(nil),                 // 114: gibson.harness.v1.ReportStepHintsResponse
-	(*StepHints)(nil),                               // 115: gibson.harness.v1.StepHints
-	(*AnyValue)(nil),                                // 116: gibson.harness.v1.AnyValue
-	(*KeyValue)(nil),                                // 117: gibson.harness.v1.KeyValue
-	(*SpanEvent)(nil),                               // 118: gibson.harness.v1.SpanEvent
-	(*Span)(nil),                                    // 119: gibson.harness.v1.Span
-	(*RecordSpanRequest)(nil),                       // 120: gibson.harness.v1.RecordSpanRequest
-	(*RecordSpanResponse)(nil),                      // 121: gibson.harness.v1.RecordSpanResponse
-	(*RecordSpansRequest)(nil),                      // 122: gibson.harness.v1.RecordSpansRequest
-	(*RecordSpansResponse)(nil),                     // 123: gibson.harness.v1.RecordSpansResponse
-	(*GetCredentialRequest)(nil),                    // 124: gibson.harness.v1.GetCredentialRequest
-	(*GetCredentialResponse)(nil),                   // 125: gibson.harness.v1.GetCredentialResponse
-	(*Credential)(nil),                              // 126: gibson.harness.v1.Credential
-	(*BasicAuth)(nil),                               // 127: gibson.harness.v1.BasicAuth
-	(*OAuthCredential)(nil),                         // 128: gibson.harness.v1.OAuthCredential
-	(*GetTaxonomySchemaRequest)(nil),                // 129: gibson.harness.v1.GetTaxonomySchemaRequest
-	(*GetTaxonomySchemaResponse)(nil),               // 130: gibson.harness.v1.GetTaxonomySchemaResponse
-	(*TaxonomyNodeType)(nil),                        // 131: gibson.harness.v1.TaxonomyNodeType
-	(*TaxonomyRelationshipType)(nil),                // 132: gibson.harness.v1.TaxonomyRelationshipType
-	(*TaxonomyTechnique)(nil),                       // 133: gibson.harness.v1.TaxonomyTechnique
-	(*TaxonomyTargetType)(nil),                      // 134: gibson.harness.v1.TaxonomyTargetType
-	(*TaxonomyTechniqueType)(nil),                   // 135: gibson.harness.v1.TaxonomyTechniqueType
-	(*TaxonomyCapability)(nil),                      // 136: gibson.harness.v1.TaxonomyCapability
-	(*TaxonomyProperty)(nil),                        // 137: gibson.harness.v1.TaxonomyProperty
-	(*ProposeOntologyExtensionRequest)(nil),         // 138: gibson.harness.v1.ProposeOntologyExtensionRequest
-	(*ProposeOntologyExtensionResponse)(nil),        // 139: gibson.harness.v1.ProposeOntologyExtensionResponse
-	(*GenerateNodeIDRequest)(nil),                   // 140: gibson.harness.v1.GenerateNodeIDRequest
-	(*GenerateNodeIDResponse)(nil),                  // 141: gibson.harness.v1.GenerateNodeIDResponse
-	(*ValidateFindingRequest)(nil),                  // 142: gibson.harness.v1.ValidateFindingRequest
-	(*ValidateGraphNodeRequest)(nil),                // 143: gibson.harness.v1.ValidateGraphNodeRequest
-	(*ValidateRelationshipRequest)(nil),             // 144: gibson.harness.v1.ValidateRelationshipRequest
-	(*ValidateFindingResponse)(nil),                 // 145: gibson.harness.v1.ValidateFindingResponse
-	(*ValidateGraphNodeResponse)(nil),               // 146: gibson.harness.v1.ValidateGraphNodeResponse
-	(*ValidateRelationshipResponse)(nil),            // 147: gibson.harness.v1.ValidateRelationshipResponse
-	(*ValidationError)(nil),                         // 148: gibson.harness.v1.ValidationError
-	(*MissionMetrics)(nil),                          // 149: gibson.harness.v1.MissionMetrics
-	(*MissionInfo)(nil),                             // 150: gibson.harness.v1.MissionInfo
-	(*MissionStatusInfo)(nil),                       // 151: gibson.harness.v1.MissionStatusInfo
-	(*MissionResult)(nil),                           // 152: gibson.harness.v1.MissionResult
-	(*MissionFilter)(nil),                           // 153: gibson.harness.v1.MissionFilter
-	(*CreateMissionRequest)(nil),                    // 154: gibson.harness.v1.CreateMissionRequest
-	(*CreateMissionResponse)(nil),                   // 155: gibson.harness.v1.CreateMissionResponse
-	(*RunMissionRequest)(nil),                       // 156: gibson.harness.v1.RunMissionRequest
-	(*RunMissionResponse)(nil),                      // 157: gibson.harness.v1.RunMissionResponse
-	(*GetMissionStatusRequest)(nil),                 // 158: gibson.harness.v1.GetMissionStatusRequest
-	(*GetMissionStatusResponse)(nil),                // 159: gibson.harness.v1.GetMissionStatusResponse
-	(*WaitForMissionRequest)(nil),                   // 160: gibson.harness.v1.WaitForMissionRequest
-	(*WaitForMissionResponse)(nil),                  // 161: gibson.harness.v1.WaitForMissionResponse
-	(*ListMissionsRequest)(nil),                     // 162: gibson.harness.v1.ListMissionsRequest
-	(*ListMissionsResponse)(nil),                    // 163: gibson.harness.v1.ListMissionsResponse
-	(*CancelMissionRequest)(nil),                    // 164: gibson.harness.v1.CancelMissionRequest
-	(*CancelMissionResponse)(nil),                   // 165: gibson.harness.v1.CancelMissionResponse
-	(*GetMissionResultsRequest)(nil),                // 166: gibson.harness.v1.GetMissionResultsRequest
-	(*GetMissionResultsResponse)(nil),               // 167: gibson.harness.v1.GetMissionResultsResponse
-	(*AuthorizeRequest)(nil),                        // 168: gibson.harness.v1.AuthorizeRequest
-	(*AuthorizeResponse)(nil),                       // 169: gibson.harness.v1.AuthorizeResponse
-	(*WorkspaceInfo)(nil),                           // 170: gibson.harness.v1.WorkspaceInfo
-	(*WorkspaceListRequest)(nil),                    // 171: gibson.harness.v1.WorkspaceListRequest
-	(*WorkspaceListResponse)(nil),                   // 172: gibson.harness.v1.WorkspaceListResponse
-	(*WorkspaceGetInfoRequest)(nil),                 // 173: gibson.harness.v1.WorkspaceGetInfoRequest
-	(*WorkspaceGetInfoResponse)(nil),                // 174: gibson.harness.v1.WorkspaceGetInfoResponse
-	(*WorkspaceReadFileRequest)(nil),                // 175: gibson.harness.v1.WorkspaceReadFileRequest
-	(*WorkspaceReadFileResponse)(nil),               // 176: gibson.harness.v1.WorkspaceReadFileResponse
-	(*WorkspaceWriteFileRequest)(nil),               // 177: gibson.harness.v1.WorkspaceWriteFileRequest
-	(*WorkspaceWriteFileResponse)(nil),              // 178: gibson.harness.v1.WorkspaceWriteFileResponse
-	(*WorkspaceListFilesRequest)(nil),               // 179: gibson.harness.v1.WorkspaceListFilesRequest
-	(*WorkspaceListFilesResponse)(nil),              // 180: gibson.harness.v1.WorkspaceListFilesResponse
-	(*WorkspaceCommitRequest)(nil),                  // 181: gibson.harness.v1.WorkspaceCommitRequest
-	(*WorkspaceCommitResponse)(nil),                 // 182: gibson.harness.v1.WorkspaceCommitResponse
-	(*WorkspacePushRequest)(nil),                    // 183: gibson.harness.v1.WorkspacePushRequest
-	(*WorkspacePushResponse)(nil),                   // 184: gibson.harness.v1.WorkspacePushResponse
-	(*DevboxExecRequest)(nil),                       // 185: gibson.harness.v1.DevboxExecRequest
-	(*DevboxExecResponse)(nil),                      // 186: gibson.harness.v1.DevboxExecResponse
-	(*DevboxExecExit)(nil),                          // 187: gibson.harness.v1.DevboxExecExit
-	(*PutSessionContextRequest)(nil),                // 188: gibson.harness.v1.PutSessionContextRequest
-	(*PutSessionContextResponse)(nil),               // 189: gibson.harness.v1.PutSessionContextResponse
-	(*GetSessionContextRequest)(nil),                // 190: gibson.harness.v1.GetSessionContextRequest
-	(*GetSessionContextResponse)(nil),               // 191: gibson.harness.v1.GetSessionContextResponse
-	(*DeleteSessionContextRequest)(nil),             // 192: gibson.harness.v1.DeleteSessionContextRequest
-	(*DeleteSessionContextResponse)(nil),            // 193: gibson.harness.v1.DeleteSessionContextResponse
-	(*SubscribeInputRequest)(nil),                   // 194: gibson.harness.v1.SubscribeInputRequest
-	(*SubscribeInputResponse)(nil),                  // 195: gibson.harness.v1.SubscribeInputResponse
-	(*PullJobRequest)(nil),                          // 196: gibson.harness.v1.PullJobRequest
-	(*PullJobResponse)(nil),                         // 197: gibson.harness.v1.PullJobResponse
-	(*ReportJobStateRequest)(nil),                   // 198: gibson.harness.v1.ReportJobStateRequest
-	(*ReportJobStateResponse)(nil),                  // 199: gibson.harness.v1.ReportJobStateResponse
-	(*ReportDeliverableRequest)(nil),                // 200: gibson.harness.v1.ReportDeliverableRequest
-	(*ReportDeliverableResponse)(nil),               // 201: gibson.harness.v1.ReportDeliverableResponse
-	(*OpenJobRequest)(nil),                          // 202: gibson.harness.v1.OpenJobRequest
-	(*OpenJobResponse)(nil),                         // 203: gibson.harness.v1.OpenJobResponse
-	(*SendInputRequest)(nil),                        // 204: gibson.harness.v1.SendInputRequest
-	(*SendInputResponse)(nil),                       // 205: gibson.harness.v1.SendInputResponse
-	(*CloseJobRequest)(nil),                         // 206: gibson.harness.v1.CloseJobRequest
-	(*CloseJobResponse)(nil),                        // 207: gibson.harness.v1.CloseJobResponse
-	(*ClaimForkRequest)(nil),                        // 208: gibson.harness.v1.ClaimForkRequest
-	(*ClaimForkResponse)(nil),                       // 209: gibson.harness.v1.ClaimForkResponse
-	nil,                                             // 210: gibson.harness.v1.ResolveModelResponse.RouteHeadersEntry
-	nil,                                             // 211: gibson.harness.v1.JSONSchemaNode.PropertiesEntry
-	nil,                                             // 212: gibson.harness.v1.NodeReference.PropertiesEntry
-	nil,                                             // 213: gibson.harness.v1.QueryPluginRequest.ParamsEntry
-	nil,                                             // 214: gibson.harness.v1.LifecycleEntityObservation.IdPropertiesEntry
-	nil,                                             // 215: gibson.harness.v1.LifecycleEntityObservation.PropertiesEntry
-	nil,                                             // 216: gibson.harness.v1.LifecycleEntityEdge.TargetIdPropertiesEntry
-	nil,                                             // 217: gibson.harness.v1.ReferencedEntity.IdPropertiesEntry
-	nil,                                             // 218: gibson.harness.v1.WorldEntity.AttributesEntry
-	nil,                                             // 219: gibson.harness.v1.Credential.MetadataEntry
-	nil,                                             // 220: gibson.harness.v1.GenerateNodeIDRequest.PropertiesEntry
-	nil,                                             // 221: gibson.harness.v1.ValidateGraphNodeRequest.PropertiesEntry
-	nil,                                             // 222: gibson.harness.v1.ValidateRelationshipRequest.PropertiesEntry
-	nil,                                             // 223: gibson.harness.v1.MissionStatusInfo.FindingCountsEntry
-	nil,                                             // 224: gibson.harness.v1.MissionResult.OutputEntry
-	nil,                                             // 225: gibson.harness.v1.CreateMissionRequest.MetadataEntry
-	nil,                                             // 226: gibson.harness.v1.CreateMissionRequest.CatalogParamsEntry
-	(v1.ErrorCode)(0),                               // 227: gibson.common.v1.ErrorCode
-	(*v1.TypedValue)(nil),                           // 228: gibson.common.v1.TypedValue
-	(*v11.Task)(nil),                                // 229: gibson.types.v1.Task
-	(*v11.Result)(nil),                              // 230: gibson.types.v1.Result
-	(*v11.Finding)(nil),                             // 231: gibson.types.v1.Finding
-	(v11.FindingSeverity)(0),                        // 232: gibson.types.v1.FindingSeverity
-	(v11.FindingStatus)(0),                          // 233: gibson.types.v1.FindingStatus
-	(*v12.GraphQuery)(nil),                          // 234: gibson.graphrag.v1.GraphQuery
-	(*v12.QueryResult)(nil),                         // 235: gibson.graphrag.v1.QueryResult
-	(*v12.AttackPattern)(nil),                       // 236: gibson.graphrag.v1.AttackPattern
-	(*v12.AttackChain)(nil),                         // 237: gibson.graphrag.v1.AttackChain
-	(*v12.FindingNode)(nil),                         // 238: gibson.graphrag.v1.FindingNode
-	(*v11.MissionRunSummary)(nil),                   // 239: gibson.types.v1.MissionRunSummary
-	(*v11.Evidence)(nil),                            // 240: gibson.types.v1.Evidence
-	(*v13.MissionConstraints)(nil),                  // 241: gibson.mission.v1.MissionConstraints
-	(*v14.Input)(nil),                               // 242: gibson.job.v1.Input
-	(*v14.Job)(nil),                                 // 243: gibson.job.v1.Job
-	(v14.JobState)(0),                               // 244: gibson.job.v1.JobState
-	(*v14.Deliverable)(nil),                         // 245: gibson.job.v1.Deliverable
-	(*v14.JobSpec)(nil),                             // 246: gibson.job.v1.JobSpec
-	(v14.InputKind)(0),                              // 247: gibson.job.v1.InputKind
-	(v14.JobVerdict)(0),                             // 248: gibson.job.v1.JobVerdict
+	(*ResolveModelRequest)(nil),                     // 12: gibson.harness.v1.ResolveModelRequest
+	(*ResolveModelResponse)(nil),                    // 13: gibson.harness.v1.ResolveModelResponse
+	(*CallToolProtoRequest)(nil),                    // 14: gibson.harness.v1.CallToolProtoRequest
+	(*CallToolProtoResponse)(nil),                   // 15: gibson.harness.v1.CallToolProtoResponse
+	(*CallToolProtoStreamRequest)(nil),              // 16: gibson.harness.v1.CallToolProtoStreamRequest
+	(*CallToolProtoStreamResponse)(nil),             // 17: gibson.harness.v1.CallToolProtoStreamResponse
+	(*ToolProgressEvent)(nil),                       // 18: gibson.harness.v1.ToolProgressEvent
+	(*ToolPartialResultEvent)(nil),                  // 19: gibson.harness.v1.ToolPartialResultEvent
+	(*ToolWarningEvent)(nil),                        // 20: gibson.harness.v1.ToolWarningEvent
+	(*ToolCompleteEvent)(nil),                       // 21: gibson.harness.v1.ToolCompleteEvent
+	(*ToolErrorEvent)(nil),                          // 22: gibson.harness.v1.ToolErrorEvent
+	(*ListToolsRequest)(nil),                        // 23: gibson.harness.v1.ListToolsRequest
+	(*ListToolsResponse)(nil),                       // 24: gibson.harness.v1.ListToolsResponse
+	(*HarnessToolDescriptor)(nil),                   // 25: gibson.harness.v1.HarnessToolDescriptor
+	(*SearchToolsRequest)(nil),                      // 26: gibson.harness.v1.SearchToolsRequest
+	(*SearchToolsResponse)(nil),                     // 27: gibson.harness.v1.SearchToolsResponse
+	(*SearchToolsCandidate)(nil),                    // 28: gibson.harness.v1.SearchToolsCandidate
+	(*QueueToolWorkRequest)(nil),                    // 29: gibson.harness.v1.QueueToolWorkRequest
+	(*QueueToolWorkResponse)(nil),                   // 30: gibson.harness.v1.QueueToolWorkResponse
+	(*ToolResultsRequest)(nil),                      // 31: gibson.harness.v1.ToolResultsRequest
+	(*ToolResultsResponse)(nil),                     // 32: gibson.harness.v1.ToolResultsResponse
+	(*JSONSchemaNode)(nil),                          // 33: gibson.harness.v1.JSONSchemaNode
+	(*TaxonomyMapping)(nil),                         // 34: gibson.harness.v1.TaxonomyMapping
+	(*PropertyMapping)(nil),                         // 35: gibson.harness.v1.PropertyMapping
+	(*NodeReference)(nil),                           // 36: gibson.harness.v1.NodeReference
+	(*RelationshipMapping)(nil),                     // 37: gibson.harness.v1.RelationshipMapping
+	(*QueryPluginRequest)(nil),                      // 38: gibson.harness.v1.QueryPluginRequest
+	(*QueryPluginResponse)(nil),                     // 39: gibson.harness.v1.QueryPluginResponse
+	(*ListPluginsRequest)(nil),                      // 40: gibson.harness.v1.ListPluginsRequest
+	(*ListPluginsResponse)(nil),                     // 41: gibson.harness.v1.ListPluginsResponse
+	(*HarnessPluginDescriptor)(nil),                 // 42: gibson.harness.v1.HarnessPluginDescriptor
+	(*DelegateToAgentRequest)(nil),                  // 43: gibson.harness.v1.DelegateToAgentRequest
+	(*DelegateToAgentResponse)(nil),                 // 44: gibson.harness.v1.DelegateToAgentResponse
+	(*ListAgentsRequest)(nil),                       // 45: gibson.harness.v1.ListAgentsRequest
+	(*ListAgentsResponse)(nil),                      // 46: gibson.harness.v1.ListAgentsResponse
+	(*HarnessAgentDescriptor)(nil),                  // 47: gibson.harness.v1.HarnessAgentDescriptor
+	(*SubmitFindingRequest)(nil),                    // 48: gibson.harness.v1.SubmitFindingRequest
+	(*SubmitFindingResponse)(nil),                   // 49: gibson.harness.v1.SubmitFindingResponse
+	(*FindingFilter)(nil),                           // 50: gibson.harness.v1.FindingFilter
+	(*QueryNodesRequest)(nil),                       // 51: gibson.harness.v1.QueryNodesRequest
+	(*QueryNodesResponse)(nil),                      // 52: gibson.harness.v1.QueryNodesResponse
+	(*FindSimilarAttacksRequest)(nil),               // 53: gibson.harness.v1.FindSimilarAttacksRequest
+	(*FindSimilarAttacksResponse)(nil),              // 54: gibson.harness.v1.FindSimilarAttacksResponse
+	(*GetAttackChainsRequest)(nil),                  // 55: gibson.harness.v1.GetAttackChainsRequest
+	(*GetAttackChainsResponse)(nil),                 // 56: gibson.harness.v1.GetAttackChainsResponse
+	(*FindSimilarFindingsRequest)(nil),              // 57: gibson.harness.v1.FindSimilarFindingsRequest
+	(*FindSimilarFindingsResponse)(nil),             // 58: gibson.harness.v1.FindSimilarFindingsResponse
+	(*GetRelatedFindingsRequest)(nil),               // 59: gibson.harness.v1.GetRelatedFindingsRequest
+	(*GetRelatedFindingsResponse)(nil),              // 60: gibson.harness.v1.GetRelatedFindingsResponse
+	(*GetFindingsRequest)(nil),                      // 61: gibson.harness.v1.GetFindingsRequest
+	(*GetFindingsResponse)(nil),                     // 62: gibson.harness.v1.GetFindingsResponse
+	(*ApplicationFindingsRequest)(nil),              // 63: gibson.harness.v1.ApplicationFindingsRequest
+	(*ApplicationFinding)(nil),                      // 64: gibson.harness.v1.ApplicationFinding
+	(*ApplicationFindingsResponse)(nil),             // 65: gibson.harness.v1.ApplicationFindingsResponse
+	(*GetRunFindingsRequest)(nil),                   // 66: gibson.harness.v1.GetRunFindingsRequest
+	(*GetRunFindingsResponse)(nil),                  // 67: gibson.harness.v1.GetRunFindingsResponse
+	(*GetMissionRunHistoryRequest)(nil),             // 68: gibson.harness.v1.GetMissionRunHistoryRequest
+	(*GetMissionRunHistoryResponse)(nil),            // 69: gibson.harness.v1.GetMissionRunHistoryResponse
+	(*ObserveRequest)(nil),                          // 70: gibson.harness.v1.ObserveRequest
+	(*LifecycleEntityObservation)(nil),              // 71: gibson.harness.v1.LifecycleEntityObservation
+	(*LifecycleEntityEdge)(nil),                     // 72: gibson.harness.v1.LifecycleEntityEdge
+	(*HostObservation)(nil),                         // 73: gibson.harness.v1.HostObservation
+	(*PortObservation)(nil),                         // 74: gibson.harness.v1.PortObservation
+	(*EndpointObservation)(nil),                     // 75: gibson.harness.v1.EndpointObservation
+	(*TechnologyObservation)(nil),                   // 76: gibson.harness.v1.TechnologyObservation
+	(*CertificateObservation)(nil),                  // 77: gibson.harness.v1.CertificateObservation
+	(*DomainObservation)(nil),                       // 78: gibson.harness.v1.DomainObservation
+	(*SubdomainObservation)(nil),                    // 79: gibson.harness.v1.SubdomainObservation
+	(*CredentialObservation)(nil),                   // 80: gibson.harness.v1.CredentialObservation
+	(*AccountObservation)(nil),                      // 81: gibson.harness.v1.AccountObservation
+	(*MemoryObservation)(nil),                       // 82: gibson.harness.v1.MemoryObservation
+	(*HypothesisObservation)(nil),                   // 83: gibson.harness.v1.HypothesisObservation
+	(*ReferencedEntity)(nil),                        // 84: gibson.harness.v1.ReferencedEntity
+	(*ReasoningStepObservation)(nil),                // 85: gibson.harness.v1.ReasoningStepObservation
+	(*AnalysisObservation)(nil),                     // 86: gibson.harness.v1.AnalysisObservation
+	(*ObserveResponse)(nil),                         // 87: gibson.harness.v1.ObserveResponse
+	(*PlaceBetRequest)(nil),                         // 88: gibson.harness.v1.PlaceBetRequest
+	(*Bet)(nil),                                     // 89: gibson.harness.v1.Bet
+	(*PlaceBetResponse)(nil),                        // 90: gibson.harness.v1.PlaceBetResponse
+	(*SubmitProofRequest)(nil),                      // 91: gibson.harness.v1.SubmitProofRequest
+	(*SubmitProofResponse)(nil),                     // 92: gibson.harness.v1.SubmitProofResponse
+	(*RequestDestructiveAuthorizationRequest)(nil),  // 93: gibson.harness.v1.RequestDestructiveAuthorizationRequest
+	(*RequestDestructiveAuthorizationResponse)(nil), // 94: gibson.harness.v1.RequestDestructiveAuthorizationResponse
+	(*WorldViewRequest)(nil),                        // 95: gibson.harness.v1.WorldViewRequest
+	(*WorldViewResponse)(nil),                       // 96: gibson.harness.v1.WorldViewResponse
+	(*WorldEntity)(nil),                             // 97: gibson.harness.v1.WorldEntity
+	(*GetPlanContextRequest)(nil),                   // 98: gibson.harness.v1.GetPlanContextRequest
+	(*GetPlanContextResponse)(nil),                  // 99: gibson.harness.v1.GetPlanContextResponse
+	(*ReportStepHintsRequest)(nil),                  // 100: gibson.harness.v1.ReportStepHintsRequest
+	(*ReportStepHintsResponse)(nil),                 // 101: gibson.harness.v1.ReportStepHintsResponse
+	(*StepHints)(nil),                               // 102: gibson.harness.v1.StepHints
+	(*AnyValue)(nil),                                // 103: gibson.harness.v1.AnyValue
+	(*KeyValue)(nil),                                // 104: gibson.harness.v1.KeyValue
+	(*SpanEvent)(nil),                               // 105: gibson.harness.v1.SpanEvent
+	(*Span)(nil),                                    // 106: gibson.harness.v1.Span
+	(*RecordSpanRequest)(nil),                       // 107: gibson.harness.v1.RecordSpanRequest
+	(*RecordSpanResponse)(nil),                      // 108: gibson.harness.v1.RecordSpanResponse
+	(*RecordSpansRequest)(nil),                      // 109: gibson.harness.v1.RecordSpansRequest
+	(*RecordSpansResponse)(nil),                     // 110: gibson.harness.v1.RecordSpansResponse
+	(*GetCredentialRequest)(nil),                    // 111: gibson.harness.v1.GetCredentialRequest
+	(*GetCredentialResponse)(nil),                   // 112: gibson.harness.v1.GetCredentialResponse
+	(*Credential)(nil),                              // 113: gibson.harness.v1.Credential
+	(*BasicAuth)(nil),                               // 114: gibson.harness.v1.BasicAuth
+	(*OAuthCredential)(nil),                         // 115: gibson.harness.v1.OAuthCredential
+	(*GetTaxonomySchemaRequest)(nil),                // 116: gibson.harness.v1.GetTaxonomySchemaRequest
+	(*GetTaxonomySchemaResponse)(nil),               // 117: gibson.harness.v1.GetTaxonomySchemaResponse
+	(*TaxonomyNodeType)(nil),                        // 118: gibson.harness.v1.TaxonomyNodeType
+	(*TaxonomyRelationshipType)(nil),                // 119: gibson.harness.v1.TaxonomyRelationshipType
+	(*TaxonomyTechnique)(nil),                       // 120: gibson.harness.v1.TaxonomyTechnique
+	(*TaxonomyTargetType)(nil),                      // 121: gibson.harness.v1.TaxonomyTargetType
+	(*TaxonomyTechniqueType)(nil),                   // 122: gibson.harness.v1.TaxonomyTechniqueType
+	(*TaxonomyCapability)(nil),                      // 123: gibson.harness.v1.TaxonomyCapability
+	(*TaxonomyProperty)(nil),                        // 124: gibson.harness.v1.TaxonomyProperty
+	(*ProposeOntologyExtensionRequest)(nil),         // 125: gibson.harness.v1.ProposeOntologyExtensionRequest
+	(*ProposeOntologyExtensionResponse)(nil),        // 126: gibson.harness.v1.ProposeOntologyExtensionResponse
+	(*GenerateNodeIDRequest)(nil),                   // 127: gibson.harness.v1.GenerateNodeIDRequest
+	(*GenerateNodeIDResponse)(nil),                  // 128: gibson.harness.v1.GenerateNodeIDResponse
+	(*ValidateFindingRequest)(nil),                  // 129: gibson.harness.v1.ValidateFindingRequest
+	(*ValidateGraphNodeRequest)(nil),                // 130: gibson.harness.v1.ValidateGraphNodeRequest
+	(*ValidateRelationshipRequest)(nil),             // 131: gibson.harness.v1.ValidateRelationshipRequest
+	(*ValidateFindingResponse)(nil),                 // 132: gibson.harness.v1.ValidateFindingResponse
+	(*ValidateGraphNodeResponse)(nil),               // 133: gibson.harness.v1.ValidateGraphNodeResponse
+	(*ValidateRelationshipResponse)(nil),            // 134: gibson.harness.v1.ValidateRelationshipResponse
+	(*ValidationError)(nil),                         // 135: gibson.harness.v1.ValidationError
+	(*MissionMetrics)(nil),                          // 136: gibson.harness.v1.MissionMetrics
+	(*MissionInfo)(nil),                             // 137: gibson.harness.v1.MissionInfo
+	(*MissionStatusInfo)(nil),                       // 138: gibson.harness.v1.MissionStatusInfo
+	(*MissionResult)(nil),                           // 139: gibson.harness.v1.MissionResult
+	(*MissionFilter)(nil),                           // 140: gibson.harness.v1.MissionFilter
+	(*CreateMissionRequest)(nil),                    // 141: gibson.harness.v1.CreateMissionRequest
+	(*CreateMissionResponse)(nil),                   // 142: gibson.harness.v1.CreateMissionResponse
+	(*RunMissionRequest)(nil),                       // 143: gibson.harness.v1.RunMissionRequest
+	(*RunMissionResponse)(nil),                      // 144: gibson.harness.v1.RunMissionResponse
+	(*GetMissionStatusRequest)(nil),                 // 145: gibson.harness.v1.GetMissionStatusRequest
+	(*GetMissionStatusResponse)(nil),                // 146: gibson.harness.v1.GetMissionStatusResponse
+	(*WaitForMissionRequest)(nil),                   // 147: gibson.harness.v1.WaitForMissionRequest
+	(*WaitForMissionResponse)(nil),                  // 148: gibson.harness.v1.WaitForMissionResponse
+	(*ListMissionsRequest)(nil),                     // 149: gibson.harness.v1.ListMissionsRequest
+	(*ListMissionsResponse)(nil),                    // 150: gibson.harness.v1.ListMissionsResponse
+	(*CancelMissionRequest)(nil),                    // 151: gibson.harness.v1.CancelMissionRequest
+	(*CancelMissionResponse)(nil),                   // 152: gibson.harness.v1.CancelMissionResponse
+	(*GetMissionResultsRequest)(nil),                // 153: gibson.harness.v1.GetMissionResultsRequest
+	(*GetMissionResultsResponse)(nil),               // 154: gibson.harness.v1.GetMissionResultsResponse
+	(*AuthorizeRequest)(nil),                        // 155: gibson.harness.v1.AuthorizeRequest
+	(*AuthorizeResponse)(nil),                       // 156: gibson.harness.v1.AuthorizeResponse
+	(*WorkspaceInfo)(nil),                           // 157: gibson.harness.v1.WorkspaceInfo
+	(*WorkspaceListRequest)(nil),                    // 158: gibson.harness.v1.WorkspaceListRequest
+	(*WorkspaceListResponse)(nil),                   // 159: gibson.harness.v1.WorkspaceListResponse
+	(*WorkspaceGetInfoRequest)(nil),                 // 160: gibson.harness.v1.WorkspaceGetInfoRequest
+	(*WorkspaceGetInfoResponse)(nil),                // 161: gibson.harness.v1.WorkspaceGetInfoResponse
+	(*WorkspaceReadFileRequest)(nil),                // 162: gibson.harness.v1.WorkspaceReadFileRequest
+	(*WorkspaceReadFileResponse)(nil),               // 163: gibson.harness.v1.WorkspaceReadFileResponse
+	(*WorkspaceWriteFileRequest)(nil),               // 164: gibson.harness.v1.WorkspaceWriteFileRequest
+	(*WorkspaceWriteFileResponse)(nil),              // 165: gibson.harness.v1.WorkspaceWriteFileResponse
+	(*WorkspaceListFilesRequest)(nil),               // 166: gibson.harness.v1.WorkspaceListFilesRequest
+	(*WorkspaceListFilesResponse)(nil),              // 167: gibson.harness.v1.WorkspaceListFilesResponse
+	(*WorkspaceCommitRequest)(nil),                  // 168: gibson.harness.v1.WorkspaceCommitRequest
+	(*WorkspaceCommitResponse)(nil),                 // 169: gibson.harness.v1.WorkspaceCommitResponse
+	(*WorkspacePushRequest)(nil),                    // 170: gibson.harness.v1.WorkspacePushRequest
+	(*WorkspacePushResponse)(nil),                   // 171: gibson.harness.v1.WorkspacePushResponse
+	(*DevboxExecRequest)(nil),                       // 172: gibson.harness.v1.DevboxExecRequest
+	(*DevboxExecResponse)(nil),                      // 173: gibson.harness.v1.DevboxExecResponse
+	(*DevboxExecExit)(nil),                          // 174: gibson.harness.v1.DevboxExecExit
+	(*PutSessionContextRequest)(nil),                // 175: gibson.harness.v1.PutSessionContextRequest
+	(*PutSessionContextResponse)(nil),               // 176: gibson.harness.v1.PutSessionContextResponse
+	(*GetSessionContextRequest)(nil),                // 177: gibson.harness.v1.GetSessionContextRequest
+	(*GetSessionContextResponse)(nil),               // 178: gibson.harness.v1.GetSessionContextResponse
+	(*DeleteSessionContextRequest)(nil),             // 179: gibson.harness.v1.DeleteSessionContextRequest
+	(*DeleteSessionContextResponse)(nil),            // 180: gibson.harness.v1.DeleteSessionContextResponse
+	(*SubscribeInputRequest)(nil),                   // 181: gibson.harness.v1.SubscribeInputRequest
+	(*SubscribeInputResponse)(nil),                  // 182: gibson.harness.v1.SubscribeInputResponse
+	(*PullJobRequest)(nil),                          // 183: gibson.harness.v1.PullJobRequest
+	(*PullJobResponse)(nil),                         // 184: gibson.harness.v1.PullJobResponse
+	(*ReportJobStateRequest)(nil),                   // 185: gibson.harness.v1.ReportJobStateRequest
+	(*ReportJobStateResponse)(nil),                  // 186: gibson.harness.v1.ReportJobStateResponse
+	(*ReportDeliverableRequest)(nil),                // 187: gibson.harness.v1.ReportDeliverableRequest
+	(*ReportDeliverableResponse)(nil),               // 188: gibson.harness.v1.ReportDeliverableResponse
+	(*OpenJobRequest)(nil),                          // 189: gibson.harness.v1.OpenJobRequest
+	(*OpenJobResponse)(nil),                         // 190: gibson.harness.v1.OpenJobResponse
+	(*SendInputRequest)(nil),                        // 191: gibson.harness.v1.SendInputRequest
+	(*SendInputResponse)(nil),                       // 192: gibson.harness.v1.SendInputResponse
+	(*CloseJobRequest)(nil),                         // 193: gibson.harness.v1.CloseJobRequest
+	(*CloseJobResponse)(nil),                        // 194: gibson.harness.v1.CloseJobResponse
+	(*ClaimForkRequest)(nil),                        // 195: gibson.harness.v1.ClaimForkRequest
+	(*ClaimForkResponse)(nil),                       // 196: gibson.harness.v1.ClaimForkResponse
+	nil,                                             // 197: gibson.harness.v1.ResolveModelResponse.RouteHeadersEntry
+	nil,                                             // 198: gibson.harness.v1.JSONSchemaNode.PropertiesEntry
+	nil,                                             // 199: gibson.harness.v1.NodeReference.PropertiesEntry
+	nil,                                             // 200: gibson.harness.v1.QueryPluginRequest.ParamsEntry
+	nil,                                             // 201: gibson.harness.v1.LifecycleEntityObservation.IdPropertiesEntry
+	nil,                                             // 202: gibson.harness.v1.LifecycleEntityObservation.PropertiesEntry
+	nil,                                             // 203: gibson.harness.v1.LifecycleEntityEdge.TargetIdPropertiesEntry
+	nil,                                             // 204: gibson.harness.v1.ReferencedEntity.IdPropertiesEntry
+	nil,                                             // 205: gibson.harness.v1.WorldEntity.AttributesEntry
+	nil,                                             // 206: gibson.harness.v1.Credential.MetadataEntry
+	nil,                                             // 207: gibson.harness.v1.GenerateNodeIDRequest.PropertiesEntry
+	nil,                                             // 208: gibson.harness.v1.ValidateGraphNodeRequest.PropertiesEntry
+	nil,                                             // 209: gibson.harness.v1.ValidateRelationshipRequest.PropertiesEntry
+	nil,                                             // 210: gibson.harness.v1.MissionStatusInfo.FindingCountsEntry
+	nil,                                             // 211: gibson.harness.v1.MissionResult.OutputEntry
+	nil,                                             // 212: gibson.harness.v1.CreateMissionRequest.MetadataEntry
+	nil,                                             // 213: gibson.harness.v1.CreateMissionRequest.CatalogParamsEntry
+	(v1.ErrorCode)(0),                               // 214: gibson.common.v1.ErrorCode
+	(*v1.TypedValue)(nil),                           // 215: gibson.common.v1.TypedValue
+	(*v11.Task)(nil),                                // 216: gibson.types.v1.Task
+	(*v11.Result)(nil),                              // 217: gibson.types.v1.Result
+	(*v11.Finding)(nil),                             // 218: gibson.types.v1.Finding
+	(v11.FindingSeverity)(0),                        // 219: gibson.types.v1.FindingSeverity
+	(v11.FindingStatus)(0),                          // 220: gibson.types.v1.FindingStatus
+	(*v12.GraphQuery)(nil),                          // 221: gibson.graphrag.v1.GraphQuery
+	(*v12.QueryResult)(nil),                         // 222: gibson.graphrag.v1.QueryResult
+	(*v12.AttackPattern)(nil),                       // 223: gibson.graphrag.v1.AttackPattern
+	(*v12.AttackChain)(nil),                         // 224: gibson.graphrag.v1.AttackChain
+	(*v12.FindingNode)(nil),                         // 225: gibson.graphrag.v1.FindingNode
+	(*v11.MissionRunSummary)(nil),                   // 226: gibson.types.v1.MissionRunSummary
+	(*v11.Evidence)(nil),                            // 227: gibson.types.v1.Evidence
+	(*v13.MissionConstraints)(nil),                  // 228: gibson.mission.v1.MissionConstraints
+	(*v14.Input)(nil),                               // 229: gibson.job.v1.Input
+	(*v14.Job)(nil),                                 // 230: gibson.job.v1.Job
+	(v14.JobState)(0),                               // 231: gibson.job.v1.JobState
+	(*v14.Deliverable)(nil),                         // 232: gibson.job.v1.Deliverable
+	(*v14.JobSpec)(nil),                             // 233: gibson.job.v1.JobSpec
+	(v14.InputKind)(0),                              // 234: gibson.job.v1.InputKind
+	(v14.JobVerdict)(0),                             // 235: gibson.job.v1.JobVerdict
 }
 var file_gibson_harness_v1_harness_callback_proto_depIdxs = []int32{
-	227, // 0: gibson.harness.v1.HarnessError.code:type_name -> gibson.common.v1.ErrorCode
+	214, // 0: gibson.harness.v1.HarnessError.code:type_name -> gibson.common.v1.ErrorCode
 	11,  // 1: gibson.harness.v1.ResolveModelRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	210, // 2: gibson.harness.v1.ResolveModelResponse.route_headers:type_name -> gibson.harness.v1.ResolveModelResponse.RouteHeadersEntry
-	16,  // 3: gibson.harness.v1.LLMMessage.tool_calls:type_name -> gibson.harness.v1.ToolCall
-	17,  // 4: gibson.harness.v1.LLMMessage.tool_results:type_name -> gibson.harness.v1.ToolResult
-	46,  // 5: gibson.harness.v1.ToolDef.parameters:type_name -> gibson.harness.v1.JSONSchemaNode
-	11,  // 6: gibson.harness.v1.LLMCompleteRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	15,  // 7: gibson.harness.v1.LLMCompleteRequest.messages:type_name -> gibson.harness.v1.LLMMessage
-	11,  // 8: gibson.harness.v1.LLMCompleteWithToolsRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	15,  // 9: gibson.harness.v1.LLMCompleteWithToolsRequest.messages:type_name -> gibson.harness.v1.LLMMessage
-	18,  // 10: gibson.harness.v1.LLMCompleteWithToolsRequest.tools:type_name -> gibson.harness.v1.ToolDef
-	11,  // 11: gibson.harness.v1.LLMCompleteStructuredRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	15,  // 12: gibson.harness.v1.LLMCompleteStructuredRequest.messages:type_name -> gibson.harness.v1.LLMMessage
-	228, // 13: gibson.harness.v1.LLMCompleteStructuredResponse.result:type_name -> gibson.common.v1.TypedValue
-	12,  // 14: gibson.harness.v1.LLMCompleteStructuredResponse.usage:type_name -> gibson.harness.v1.TokenUsage
-	10,  // 15: gibson.harness.v1.LLMCompleteStructuredResponse.error:type_name -> gibson.harness.v1.HarnessError
-	16,  // 16: gibson.harness.v1.LLMCompleteResponse.tool_calls:type_name -> gibson.harness.v1.ToolCall
-	12,  // 17: gibson.harness.v1.LLMCompleteResponse.usage:type_name -> gibson.harness.v1.TokenUsage
-	10,  // 18: gibson.harness.v1.LLMCompleteResponse.error:type_name -> gibson.harness.v1.HarnessError
-	16,  // 19: gibson.harness.v1.LLMCompleteWithToolsResponse.tool_calls:type_name -> gibson.harness.v1.ToolCall
-	12,  // 20: gibson.harness.v1.LLMCompleteWithToolsResponse.usage:type_name -> gibson.harness.v1.TokenUsage
-	10,  // 21: gibson.harness.v1.LLMCompleteWithToolsResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 22: gibson.harness.v1.LLMStreamRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	15,  // 23: gibson.harness.v1.LLMStreamRequest.messages:type_name -> gibson.harness.v1.LLMMessage
-	16,  // 24: gibson.harness.v1.LLMStreamResponse.tool_calls:type_name -> gibson.harness.v1.ToolCall
-	12,  // 25: gibson.harness.v1.LLMStreamResponse.usage:type_name -> gibson.harness.v1.TokenUsage
-	10,  // 26: gibson.harness.v1.LLMStreamResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 27: gibson.harness.v1.CallToolProtoRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	10,  // 28: gibson.harness.v1.CallToolProtoResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 29: gibson.harness.v1.CallToolProtoStreamRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	31,  // 30: gibson.harness.v1.CallToolProtoStreamResponse.progress:type_name -> gibson.harness.v1.ToolProgressEvent
-	32,  // 31: gibson.harness.v1.CallToolProtoStreamResponse.partial:type_name -> gibson.harness.v1.ToolPartialResultEvent
-	33,  // 32: gibson.harness.v1.CallToolProtoStreamResponse.warning:type_name -> gibson.harness.v1.ToolWarningEvent
-	34,  // 33: gibson.harness.v1.CallToolProtoStreamResponse.complete:type_name -> gibson.harness.v1.ToolCompleteEvent
-	35,  // 34: gibson.harness.v1.CallToolProtoStreamResponse.error:type_name -> gibson.harness.v1.ToolErrorEvent
-	10,  // 35: gibson.harness.v1.ToolErrorEvent.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 36: gibson.harness.v1.ListToolsRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	38,  // 37: gibson.harness.v1.ListToolsResponse.tools:type_name -> gibson.harness.v1.HarnessToolDescriptor
-	10,  // 38: gibson.harness.v1.ListToolsResponse.error:type_name -> gibson.harness.v1.HarnessError
-	46,  // 39: gibson.harness.v1.HarnessToolDescriptor.input_schema:type_name -> gibson.harness.v1.JSONSchemaNode
-	11,  // 40: gibson.harness.v1.SearchToolsRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	41,  // 41: gibson.harness.v1.SearchToolsResponse.candidates:type_name -> gibson.harness.v1.SearchToolsCandidate
-	10,  // 42: gibson.harness.v1.SearchToolsResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 43: gibson.harness.v1.QueueToolWorkRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	10,  // 44: gibson.harness.v1.QueueToolWorkResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 45: gibson.harness.v1.ToolResultsRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	10,  // 46: gibson.harness.v1.ToolResultsResponse.error:type_name -> gibson.harness.v1.HarnessError
-	211, // 47: gibson.harness.v1.JSONSchemaNode.properties:type_name -> gibson.harness.v1.JSONSchemaNode.PropertiesEntry
-	46,  // 48: gibson.harness.v1.JSONSchemaNode.items:type_name -> gibson.harness.v1.JSONSchemaNode
-	47,  // 49: gibson.harness.v1.JSONSchemaNode.taxonomy:type_name -> gibson.harness.v1.TaxonomyMapping
-	48,  // 50: gibson.harness.v1.TaxonomyMapping.properties:type_name -> gibson.harness.v1.PropertyMapping
-	50,  // 51: gibson.harness.v1.TaxonomyMapping.relationships:type_name -> gibson.harness.v1.RelationshipMapping
-	212, // 52: gibson.harness.v1.NodeReference.properties:type_name -> gibson.harness.v1.NodeReference.PropertiesEntry
-	49,  // 53: gibson.harness.v1.RelationshipMapping.from:type_name -> gibson.harness.v1.NodeReference
-	49,  // 54: gibson.harness.v1.RelationshipMapping.to:type_name -> gibson.harness.v1.NodeReference
-	11,  // 55: gibson.harness.v1.QueryPluginRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	213, // 56: gibson.harness.v1.QueryPluginRequest.params:type_name -> gibson.harness.v1.QueryPluginRequest.ParamsEntry
-	228, // 57: gibson.harness.v1.QueryPluginResponse.result:type_name -> gibson.common.v1.TypedValue
-	10,  // 58: gibson.harness.v1.QueryPluginResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 59: gibson.harness.v1.ListPluginsRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	55,  // 60: gibson.harness.v1.ListPluginsResponse.plugins:type_name -> gibson.harness.v1.HarnessPluginDescriptor
-	10,  // 61: gibson.harness.v1.ListPluginsResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 62: gibson.harness.v1.DelegateToAgentRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	229, // 63: gibson.harness.v1.DelegateToAgentRequest.task:type_name -> gibson.types.v1.Task
-	230, // 64: gibson.harness.v1.DelegateToAgentResponse.result:type_name -> gibson.types.v1.Result
-	10,  // 65: gibson.harness.v1.DelegateToAgentResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 66: gibson.harness.v1.ListAgentsRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	60,  // 67: gibson.harness.v1.ListAgentsResponse.agents:type_name -> gibson.harness.v1.HarnessAgentDescriptor
-	10,  // 68: gibson.harness.v1.ListAgentsResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 69: gibson.harness.v1.SubmitFindingRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	231, // 70: gibson.harness.v1.SubmitFindingRequest.finding:type_name -> gibson.types.v1.Finding
-	10,  // 71: gibson.harness.v1.SubmitFindingResponse.error:type_name -> gibson.harness.v1.HarnessError
-	232, // 72: gibson.harness.v1.FindingFilter.severity:type_name -> gibson.types.v1.FindingSeverity
-	233, // 73: gibson.harness.v1.FindingFilter.status:type_name -> gibson.types.v1.FindingStatus
-	11,  // 74: gibson.harness.v1.QueryNodesRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	234, // 75: gibson.harness.v1.QueryNodesRequest.query:type_name -> gibson.graphrag.v1.GraphQuery
-	235, // 76: gibson.harness.v1.QueryNodesResponse.results:type_name -> gibson.graphrag.v1.QueryResult
-	10,  // 77: gibson.harness.v1.QueryNodesResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 78: gibson.harness.v1.FindSimilarAttacksRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	236, // 79: gibson.harness.v1.FindSimilarAttacksResponse.results:type_name -> gibson.graphrag.v1.AttackPattern
-	10,  // 80: gibson.harness.v1.FindSimilarAttacksResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 81: gibson.harness.v1.GetAttackChainsRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	237, // 82: gibson.harness.v1.GetAttackChainsResponse.results:type_name -> gibson.graphrag.v1.AttackChain
-	10,  // 83: gibson.harness.v1.GetAttackChainsResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 84: gibson.harness.v1.FindSimilarFindingsRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	238, // 85: gibson.harness.v1.FindSimilarFindingsResponse.results:type_name -> gibson.graphrag.v1.FindingNode
-	10,  // 86: gibson.harness.v1.FindSimilarFindingsResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 87: gibson.harness.v1.GetRelatedFindingsRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	238, // 88: gibson.harness.v1.GetRelatedFindingsResponse.results:type_name -> gibson.graphrag.v1.FindingNode
-	10,  // 89: gibson.harness.v1.GetRelatedFindingsResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 90: gibson.harness.v1.GetFindingsRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	63,  // 91: gibson.harness.v1.GetFindingsRequest.filter:type_name -> gibson.harness.v1.FindingFilter
-	231, // 92: gibson.harness.v1.GetFindingsResponse.findings:type_name -> gibson.types.v1.Finding
-	10,  // 93: gibson.harness.v1.GetFindingsResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 94: gibson.harness.v1.ApplicationFindingsRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	77,  // 95: gibson.harness.v1.ApplicationFindingsResponse.findings:type_name -> gibson.harness.v1.ApplicationFinding
-	10,  // 96: gibson.harness.v1.ApplicationFindingsResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 97: gibson.harness.v1.GetRunFindingsRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	0,   // 98: gibson.harness.v1.GetRunFindingsRequest.scope:type_name -> gibson.harness.v1.RunScope
-	63,  // 99: gibson.harness.v1.GetRunFindingsRequest.filter:type_name -> gibson.harness.v1.FindingFilter
-	231, // 100: gibson.harness.v1.GetRunFindingsResponse.findings:type_name -> gibson.types.v1.Finding
-	10,  // 101: gibson.harness.v1.GetRunFindingsResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 102: gibson.harness.v1.GetMissionRunHistoryRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	239, // 103: gibson.harness.v1.GetMissionRunHistoryResponse.runs:type_name -> gibson.types.v1.MissionRunSummary
-	10,  // 104: gibson.harness.v1.GetMissionRunHistoryResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 105: gibson.harness.v1.ObserveRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	86,  // 106: gibson.harness.v1.ObserveRequest.host:type_name -> gibson.harness.v1.HostObservation
-	91,  // 107: gibson.harness.v1.ObserveRequest.domain:type_name -> gibson.harness.v1.DomainObservation
-	92,  // 108: gibson.harness.v1.ObserveRequest.subdomain:type_name -> gibson.harness.v1.SubdomainObservation
-	93,  // 109: gibson.harness.v1.ObserveRequest.credential:type_name -> gibson.harness.v1.CredentialObservation
-	94,  // 110: gibson.harness.v1.ObserveRequest.account:type_name -> gibson.harness.v1.AccountObservation
-	95,  // 111: gibson.harness.v1.ObserveRequest.memory:type_name -> gibson.harness.v1.MemoryObservation
-	84,  // 112: gibson.harness.v1.ObserveRequest.lifecycle_entity:type_name -> gibson.harness.v1.LifecycleEntityObservation
-	96,  // 113: gibson.harness.v1.ObserveRequest.hypothesis:type_name -> gibson.harness.v1.HypothesisObservation
-	98,  // 114: gibson.harness.v1.ObserveRequest.reasoning_step:type_name -> gibson.harness.v1.ReasoningStepObservation
-	99,  // 115: gibson.harness.v1.ObserveRequest.analysis:type_name -> gibson.harness.v1.AnalysisObservation
-	214, // 116: gibson.harness.v1.LifecycleEntityObservation.id_properties:type_name -> gibson.harness.v1.LifecycleEntityObservation.IdPropertiesEntry
-	215, // 117: gibson.harness.v1.LifecycleEntityObservation.properties:type_name -> gibson.harness.v1.LifecycleEntityObservation.PropertiesEntry
-	85,  // 118: gibson.harness.v1.LifecycleEntityObservation.edges:type_name -> gibson.harness.v1.LifecycleEntityEdge
-	216, // 119: gibson.harness.v1.LifecycleEntityEdge.target_id_properties:type_name -> gibson.harness.v1.LifecycleEntityEdge.TargetIdPropertiesEntry
-	87,  // 120: gibson.harness.v1.HostObservation.ports:type_name -> gibson.harness.v1.PortObservation
-	88,  // 121: gibson.harness.v1.PortObservation.endpoints:type_name -> gibson.harness.v1.EndpointObservation
-	89,  // 122: gibson.harness.v1.PortObservation.technologies:type_name -> gibson.harness.v1.TechnologyObservation
-	90,  // 123: gibson.harness.v1.PortObservation.certificate:type_name -> gibson.harness.v1.CertificateObservation
-	97,  // 124: gibson.harness.v1.HypothesisObservation.references:type_name -> gibson.harness.v1.ReferencedEntity
-	217, // 125: gibson.harness.v1.ReferencedEntity.id_properties:type_name -> gibson.harness.v1.ReferencedEntity.IdPropertiesEntry
-	97,  // 126: gibson.harness.v1.ReasoningStepObservation.references:type_name -> gibson.harness.v1.ReferencedEntity
-	97,  // 127: gibson.harness.v1.AnalysisObservation.evidence:type_name -> gibson.harness.v1.ReferencedEntity
-	10,  // 128: gibson.harness.v1.ObserveResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 129: gibson.harness.v1.PlaceBetRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	102, // 130: gibson.harness.v1.PlaceBetRequest.bet:type_name -> gibson.harness.v1.Bet
-	10,  // 131: gibson.harness.v1.PlaceBetResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 132: gibson.harness.v1.SubmitProofRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	240, // 133: gibson.harness.v1.SubmitProofRequest.evidence:type_name -> gibson.types.v1.Evidence
-	1,   // 134: gibson.harness.v1.SubmitProofResponse.outcome:type_name -> gibson.harness.v1.SettlementOutcome
-	10,  // 135: gibson.harness.v1.SubmitProofResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 136: gibson.harness.v1.RequestDestructiveAuthorizationRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	2,   // 137: gibson.harness.v1.RequestDestructiveAuthorizationRequest.reversibility:type_name -> gibson.harness.v1.Reversibility
-	10,  // 138: gibson.harness.v1.RequestDestructiveAuthorizationResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 139: gibson.harness.v1.WorldViewRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	10,  // 140: gibson.harness.v1.WorldViewResponse.error:type_name -> gibson.harness.v1.HarnessError
-	110, // 141: gibson.harness.v1.WorldViewResponse.entities:type_name -> gibson.harness.v1.WorldEntity
-	3,   // 142: gibson.harness.v1.WorldEntity.kind:type_name -> gibson.harness.v1.WorldEntityKind
-	218, // 143: gibson.harness.v1.WorldEntity.attributes:type_name -> gibson.harness.v1.WorldEntity.AttributesEntry
-	11,  // 144: gibson.harness.v1.GetPlanContextRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	10,  // 145: gibson.harness.v1.GetPlanContextResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 146: gibson.harness.v1.ReportStepHintsRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	115, // 147: gibson.harness.v1.ReportStepHintsRequest.hints:type_name -> gibson.harness.v1.StepHints
-	10,  // 148: gibson.harness.v1.ReportStepHintsResponse.error:type_name -> gibson.harness.v1.HarnessError
-	116, // 149: gibson.harness.v1.KeyValue.value:type_name -> gibson.harness.v1.AnyValue
-	117, // 150: gibson.harness.v1.SpanEvent.attributes:type_name -> gibson.harness.v1.KeyValue
-	4,   // 151: gibson.harness.v1.Span.kind:type_name -> gibson.harness.v1.SpanKind
-	5,   // 152: gibson.harness.v1.Span.status_code:type_name -> gibson.harness.v1.StatusCode
-	117, // 153: gibson.harness.v1.Span.attributes:type_name -> gibson.harness.v1.KeyValue
-	118, // 154: gibson.harness.v1.Span.events:type_name -> gibson.harness.v1.SpanEvent
-	11,  // 155: gibson.harness.v1.RecordSpanRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	119, // 156: gibson.harness.v1.RecordSpanRequest.span:type_name -> gibson.harness.v1.Span
-	10,  // 157: gibson.harness.v1.RecordSpanResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 158: gibson.harness.v1.RecordSpansRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	119, // 159: gibson.harness.v1.RecordSpansRequest.spans:type_name -> gibson.harness.v1.Span
-	10,  // 160: gibson.harness.v1.RecordSpansResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 161: gibson.harness.v1.GetCredentialRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	126, // 162: gibson.harness.v1.GetCredentialResponse.credential:type_name -> gibson.harness.v1.Credential
-	10,  // 163: gibson.harness.v1.GetCredentialResponse.error:type_name -> gibson.harness.v1.HarnessError
-	6,   // 164: gibson.harness.v1.Credential.type:type_name -> gibson.harness.v1.CredentialType
-	127, // 165: gibson.harness.v1.Credential.basic:type_name -> gibson.harness.v1.BasicAuth
-	128, // 166: gibson.harness.v1.Credential.oauth:type_name -> gibson.harness.v1.OAuthCredential
-	219, // 167: gibson.harness.v1.Credential.metadata:type_name -> gibson.harness.v1.Credential.MetadataEntry
-	11,  // 168: gibson.harness.v1.GetTaxonomySchemaRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	131, // 169: gibson.harness.v1.GetTaxonomySchemaResponse.node_types:type_name -> gibson.harness.v1.TaxonomyNodeType
-	132, // 170: gibson.harness.v1.GetTaxonomySchemaResponse.relationship_types:type_name -> gibson.harness.v1.TaxonomyRelationshipType
-	133, // 171: gibson.harness.v1.GetTaxonomySchemaResponse.techniques:type_name -> gibson.harness.v1.TaxonomyTechnique
-	134, // 172: gibson.harness.v1.GetTaxonomySchemaResponse.target_types:type_name -> gibson.harness.v1.TaxonomyTargetType
-	135, // 173: gibson.harness.v1.GetTaxonomySchemaResponse.technique_types:type_name -> gibson.harness.v1.TaxonomyTechniqueType
-	136, // 174: gibson.harness.v1.GetTaxonomySchemaResponse.capabilities:type_name -> gibson.harness.v1.TaxonomyCapability
-	10,  // 175: gibson.harness.v1.GetTaxonomySchemaResponse.error:type_name -> gibson.harness.v1.HarnessError
-	137, // 176: gibson.harness.v1.TaxonomyNodeType.properties:type_name -> gibson.harness.v1.TaxonomyProperty
-	137, // 177: gibson.harness.v1.TaxonomyRelationshipType.properties:type_name -> gibson.harness.v1.TaxonomyProperty
-	11,  // 178: gibson.harness.v1.ProposeOntologyExtensionRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	7,   // 179: gibson.harness.v1.ProposeOntologyExtensionRequest.kind:type_name -> gibson.harness.v1.OntologyExtensionKind
-	10,  // 180: gibson.harness.v1.ProposeOntologyExtensionResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 181: gibson.harness.v1.GenerateNodeIDRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	220, // 182: gibson.harness.v1.GenerateNodeIDRequest.properties:type_name -> gibson.harness.v1.GenerateNodeIDRequest.PropertiesEntry
-	10,  // 183: gibson.harness.v1.GenerateNodeIDResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 184: gibson.harness.v1.ValidateFindingRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	231, // 185: gibson.harness.v1.ValidateFindingRequest.finding:type_name -> gibson.types.v1.Finding
-	11,  // 186: gibson.harness.v1.ValidateGraphNodeRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	221, // 187: gibson.harness.v1.ValidateGraphNodeRequest.properties:type_name -> gibson.harness.v1.ValidateGraphNodeRequest.PropertiesEntry
-	11,  // 188: gibson.harness.v1.ValidateRelationshipRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	222, // 189: gibson.harness.v1.ValidateRelationshipRequest.properties:type_name -> gibson.harness.v1.ValidateRelationshipRequest.PropertiesEntry
-	148, // 190: gibson.harness.v1.ValidateFindingResponse.errors:type_name -> gibson.harness.v1.ValidationError
-	10,  // 191: gibson.harness.v1.ValidateFindingResponse.error:type_name -> gibson.harness.v1.HarnessError
-	148, // 192: gibson.harness.v1.ValidateGraphNodeResponse.errors:type_name -> gibson.harness.v1.ValidationError
-	10,  // 193: gibson.harness.v1.ValidateGraphNodeResponse.error:type_name -> gibson.harness.v1.HarnessError
-	148, // 194: gibson.harness.v1.ValidateRelationshipResponse.errors:type_name -> gibson.harness.v1.ValidationError
-	10,  // 195: gibson.harness.v1.ValidateRelationshipResponse.error:type_name -> gibson.harness.v1.HarnessError
-	8,   // 196: gibson.harness.v1.MissionInfo.status:type_name -> gibson.harness.v1.MissionStatus
-	8,   // 197: gibson.harness.v1.MissionStatusInfo.status:type_name -> gibson.harness.v1.MissionStatus
-	223, // 198: gibson.harness.v1.MissionStatusInfo.finding_counts:type_name -> gibson.harness.v1.MissionStatusInfo.FindingCountsEntry
-	8,   // 199: gibson.harness.v1.MissionResult.status:type_name -> gibson.harness.v1.MissionStatus
-	231, // 200: gibson.harness.v1.MissionResult.findings:type_name -> gibson.types.v1.Finding
-	224, // 201: gibson.harness.v1.MissionResult.output:type_name -> gibson.harness.v1.MissionResult.OutputEntry
-	149, // 202: gibson.harness.v1.MissionResult.metrics:type_name -> gibson.harness.v1.MissionMetrics
-	8,   // 203: gibson.harness.v1.MissionFilter.status:type_name -> gibson.harness.v1.MissionStatus
-	11,  // 204: gibson.harness.v1.CreateMissionRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	225, // 205: gibson.harness.v1.CreateMissionRequest.metadata:type_name -> gibson.harness.v1.CreateMissionRequest.MetadataEntry
-	241, // 206: gibson.harness.v1.CreateMissionRequest.canonical_constraints:type_name -> gibson.mission.v1.MissionConstraints
-	226, // 207: gibson.harness.v1.CreateMissionRequest.catalog_params:type_name -> gibson.harness.v1.CreateMissionRequest.CatalogParamsEntry
-	9,   // 208: gibson.harness.v1.CreateMissionRequest.starts_from:type_name -> gibson.harness.v1.OriginationStart
-	150, // 209: gibson.harness.v1.CreateMissionResponse.mission:type_name -> gibson.harness.v1.MissionInfo
-	10,  // 210: gibson.harness.v1.CreateMissionResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 211: gibson.harness.v1.RunMissionRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	10,  // 212: gibson.harness.v1.RunMissionResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 213: gibson.harness.v1.GetMissionStatusRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	151, // 214: gibson.harness.v1.GetMissionStatusResponse.status:type_name -> gibson.harness.v1.MissionStatusInfo
-	10,  // 215: gibson.harness.v1.GetMissionStatusResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 216: gibson.harness.v1.WaitForMissionRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	152, // 217: gibson.harness.v1.WaitForMissionResponse.result:type_name -> gibson.harness.v1.MissionResult
-	10,  // 218: gibson.harness.v1.WaitForMissionResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 219: gibson.harness.v1.ListMissionsRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	153, // 220: gibson.harness.v1.ListMissionsRequest.filter:type_name -> gibson.harness.v1.MissionFilter
-	150, // 221: gibson.harness.v1.ListMissionsResponse.missions:type_name -> gibson.harness.v1.MissionInfo
-	10,  // 222: gibson.harness.v1.ListMissionsResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 223: gibson.harness.v1.CancelMissionRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	10,  // 224: gibson.harness.v1.CancelMissionResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 225: gibson.harness.v1.GetMissionResultsRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	152, // 226: gibson.harness.v1.GetMissionResultsResponse.result:type_name -> gibson.harness.v1.MissionResult
-	10,  // 227: gibson.harness.v1.GetMissionResultsResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 228: gibson.harness.v1.WorkspaceListRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	170, // 229: gibson.harness.v1.WorkspaceListResponse.workspaces:type_name -> gibson.harness.v1.WorkspaceInfo
-	11,  // 230: gibson.harness.v1.WorkspaceGetInfoRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	170, // 231: gibson.harness.v1.WorkspaceGetInfoResponse.workspace:type_name -> gibson.harness.v1.WorkspaceInfo
-	11,  // 232: gibson.harness.v1.WorkspaceReadFileRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	11,  // 233: gibson.harness.v1.WorkspaceWriteFileRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	11,  // 234: gibson.harness.v1.WorkspaceListFilesRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	11,  // 235: gibson.harness.v1.WorkspaceCommitRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	11,  // 236: gibson.harness.v1.WorkspacePushRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	11,  // 237: gibson.harness.v1.DevboxExecRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	187, // 238: gibson.harness.v1.DevboxExecResponse.exit:type_name -> gibson.harness.v1.DevboxExecExit
-	10,  // 239: gibson.harness.v1.DevboxExecResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 240: gibson.harness.v1.PutSessionContextRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	10,  // 241: gibson.harness.v1.PutSessionContextResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 242: gibson.harness.v1.GetSessionContextRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	10,  // 243: gibson.harness.v1.GetSessionContextResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 244: gibson.harness.v1.DeleteSessionContextRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	10,  // 245: gibson.harness.v1.DeleteSessionContextResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 246: gibson.harness.v1.SubscribeInputRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	242, // 247: gibson.harness.v1.SubscribeInputResponse.input:type_name -> gibson.job.v1.Input
-	11,  // 248: gibson.harness.v1.PullJobRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	243, // 249: gibson.harness.v1.PullJobResponse.job:type_name -> gibson.job.v1.Job
-	10,  // 250: gibson.harness.v1.PullJobResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 251: gibson.harness.v1.ReportJobStateRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	244, // 252: gibson.harness.v1.ReportJobStateRequest.state:type_name -> gibson.job.v1.JobState
-	10,  // 253: gibson.harness.v1.ReportJobStateResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 254: gibson.harness.v1.ReportDeliverableRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	245, // 255: gibson.harness.v1.ReportDeliverableRequest.deliverable:type_name -> gibson.job.v1.Deliverable
-	10,  // 256: gibson.harness.v1.ReportDeliverableResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 257: gibson.harness.v1.OpenJobRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	246, // 258: gibson.harness.v1.OpenJobRequest.spec:type_name -> gibson.job.v1.JobSpec
-	243, // 259: gibson.harness.v1.OpenJobResponse.job:type_name -> gibson.job.v1.Job
-	10,  // 260: gibson.harness.v1.OpenJobResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 261: gibson.harness.v1.SendInputRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	247, // 262: gibson.harness.v1.SendInputRequest.kind:type_name -> gibson.job.v1.InputKind
-	242, // 263: gibson.harness.v1.SendInputResponse.input:type_name -> gibson.job.v1.Input
-	10,  // 264: gibson.harness.v1.SendInputResponse.error:type_name -> gibson.harness.v1.HarnessError
-	11,  // 265: gibson.harness.v1.CloseJobRequest.context:type_name -> gibson.harness.v1.ContextInfo
-	248, // 266: gibson.harness.v1.CloseJobRequest.verdict:type_name -> gibson.job.v1.JobVerdict
-	243, // 267: gibson.harness.v1.CloseJobResponse.job:type_name -> gibson.job.v1.Job
-	10,  // 268: gibson.harness.v1.CloseJobResponse.error:type_name -> gibson.harness.v1.HarnessError
-	229, // 269: gibson.harness.v1.ClaimForkResponse.task:type_name -> gibson.types.v1.Task
-	46,  // 270: gibson.harness.v1.JSONSchemaNode.PropertiesEntry.value:type_name -> gibson.harness.v1.JSONSchemaNode
-	228, // 271: gibson.harness.v1.QueryPluginRequest.ParamsEntry.value:type_name -> gibson.common.v1.TypedValue
-	228, // 272: gibson.harness.v1.Credential.MetadataEntry.value:type_name -> gibson.common.v1.TypedValue
-	228, // 273: gibson.harness.v1.GenerateNodeIDRequest.PropertiesEntry.value:type_name -> gibson.common.v1.TypedValue
-	228, // 274: gibson.harness.v1.ValidateGraphNodeRequest.PropertiesEntry.value:type_name -> gibson.common.v1.TypedValue
-	228, // 275: gibson.harness.v1.ValidateRelationshipRequest.PropertiesEntry.value:type_name -> gibson.common.v1.TypedValue
-	228, // 276: gibson.harness.v1.MissionResult.OutputEntry.value:type_name -> gibson.common.v1.TypedValue
-	228, // 277: gibson.harness.v1.CreateMissionRequest.MetadataEntry.value:type_name -> gibson.common.v1.TypedValue
-	19,  // 278: gibson.harness.v1.HarnessCallbackService.LLMComplete:input_type -> gibson.harness.v1.LLMCompleteRequest
-	20,  // 279: gibson.harness.v1.HarnessCallbackService.LLMCompleteWithTools:input_type -> gibson.harness.v1.LLMCompleteWithToolsRequest
-	21,  // 280: gibson.harness.v1.HarnessCallbackService.LLMCompleteStructured:input_type -> gibson.harness.v1.LLMCompleteStructuredRequest
-	25,  // 281: gibson.harness.v1.HarnessCallbackService.LLMStream:input_type -> gibson.harness.v1.LLMStreamRequest
-	13,  // 282: gibson.harness.v1.HarnessCallbackService.ResolveModel:input_type -> gibson.harness.v1.ResolveModelRequest
-	27,  // 283: gibson.harness.v1.HarnessCallbackService.CallToolProto:input_type -> gibson.harness.v1.CallToolProtoRequest
-	29,  // 284: gibson.harness.v1.HarnessCallbackService.CallToolProtoStream:input_type -> gibson.harness.v1.CallToolProtoStreamRequest
-	36,  // 285: gibson.harness.v1.HarnessCallbackService.ListTools:input_type -> gibson.harness.v1.ListToolsRequest
-	39,  // 286: gibson.harness.v1.HarnessCallbackService.SearchTools:input_type -> gibson.harness.v1.SearchToolsRequest
-	42,  // 287: gibson.harness.v1.HarnessCallbackService.QueueToolWork:input_type -> gibson.harness.v1.QueueToolWorkRequest
-	44,  // 288: gibson.harness.v1.HarnessCallbackService.ToolResults:input_type -> gibson.harness.v1.ToolResultsRequest
-	51,  // 289: gibson.harness.v1.HarnessCallbackService.QueryPlugin:input_type -> gibson.harness.v1.QueryPluginRequest
-	53,  // 290: gibson.harness.v1.HarnessCallbackService.ListPlugins:input_type -> gibson.harness.v1.ListPluginsRequest
-	56,  // 291: gibson.harness.v1.HarnessCallbackService.DelegateToAgent:input_type -> gibson.harness.v1.DelegateToAgentRequest
-	58,  // 292: gibson.harness.v1.HarnessCallbackService.ListAgents:input_type -> gibson.harness.v1.ListAgentsRequest
-	61,  // 293: gibson.harness.v1.HarnessCallbackService.SubmitFinding:input_type -> gibson.harness.v1.SubmitFindingRequest
-	83,  // 294: gibson.harness.v1.HarnessCallbackService.Observe:input_type -> gibson.harness.v1.ObserveRequest
-	101, // 295: gibson.harness.v1.HarnessCallbackService.PlaceBet:input_type -> gibson.harness.v1.PlaceBetRequest
-	104, // 296: gibson.harness.v1.HarnessCallbackService.SubmitProof:input_type -> gibson.harness.v1.SubmitProofRequest
-	106, // 297: gibson.harness.v1.HarnessCallbackService.RequestDestructiveAuthorization:input_type -> gibson.harness.v1.RequestDestructiveAuthorizationRequest
-	108, // 298: gibson.harness.v1.HarnessCallbackService.WorldView:input_type -> gibson.harness.v1.WorldViewRequest
-	64,  // 299: gibson.harness.v1.HarnessCallbackService.QueryNodes:input_type -> gibson.harness.v1.QueryNodesRequest
-	66,  // 300: gibson.harness.v1.HarnessCallbackService.FindSimilarAttacks:input_type -> gibson.harness.v1.FindSimilarAttacksRequest
-	68,  // 301: gibson.harness.v1.HarnessCallbackService.GetAttackChains:input_type -> gibson.harness.v1.GetAttackChainsRequest
-	70,  // 302: gibson.harness.v1.HarnessCallbackService.FindSimilarFindings:input_type -> gibson.harness.v1.FindSimilarFindingsRequest
-	72,  // 303: gibson.harness.v1.HarnessCallbackService.GetRelatedFindings:input_type -> gibson.harness.v1.GetRelatedFindingsRequest
-	74,  // 304: gibson.harness.v1.HarnessCallbackService.GetFindings:input_type -> gibson.harness.v1.GetFindingsRequest
-	76,  // 305: gibson.harness.v1.HarnessCallbackService.ApplicationFindings:input_type -> gibson.harness.v1.ApplicationFindingsRequest
-	79,  // 306: gibson.harness.v1.HarnessCallbackService.GetRunFindings:input_type -> gibson.harness.v1.GetRunFindingsRequest
-	81,  // 307: gibson.harness.v1.HarnessCallbackService.GetMissionRunHistory:input_type -> gibson.harness.v1.GetMissionRunHistoryRequest
-	111, // 308: gibson.harness.v1.HarnessCallbackService.GetPlanContext:input_type -> gibson.harness.v1.GetPlanContextRequest
-	113, // 309: gibson.harness.v1.HarnessCallbackService.ReportStepHints:input_type -> gibson.harness.v1.ReportStepHintsRequest
-	120, // 310: gibson.harness.v1.HarnessCallbackService.RecordSpan:input_type -> gibson.harness.v1.RecordSpanRequest
-	122, // 311: gibson.harness.v1.HarnessCallbackService.RecordSpans:input_type -> gibson.harness.v1.RecordSpansRequest
-	124, // 312: gibson.harness.v1.HarnessCallbackService.GetCredential:input_type -> gibson.harness.v1.GetCredentialRequest
-	129, // 313: gibson.harness.v1.HarnessCallbackService.GetTaxonomySchema:input_type -> gibson.harness.v1.GetTaxonomySchemaRequest
-	138, // 314: gibson.harness.v1.HarnessCallbackService.ProposeOntologyExtension:input_type -> gibson.harness.v1.ProposeOntologyExtensionRequest
-	140, // 315: gibson.harness.v1.HarnessCallbackService.GenerateNodeID:input_type -> gibson.harness.v1.GenerateNodeIDRequest
-	142, // 316: gibson.harness.v1.HarnessCallbackService.ValidateFinding:input_type -> gibson.harness.v1.ValidateFindingRequest
-	143, // 317: gibson.harness.v1.HarnessCallbackService.ValidateGraphNode:input_type -> gibson.harness.v1.ValidateGraphNodeRequest
-	144, // 318: gibson.harness.v1.HarnessCallbackService.ValidateRelationship:input_type -> gibson.harness.v1.ValidateRelationshipRequest
-	154, // 319: gibson.harness.v1.HarnessCallbackService.CreateMission:input_type -> gibson.harness.v1.CreateMissionRequest
-	156, // 320: gibson.harness.v1.HarnessCallbackService.RunMission:input_type -> gibson.harness.v1.RunMissionRequest
-	158, // 321: gibson.harness.v1.HarnessCallbackService.GetMissionStatus:input_type -> gibson.harness.v1.GetMissionStatusRequest
-	160, // 322: gibson.harness.v1.HarnessCallbackService.WaitForMission:input_type -> gibson.harness.v1.WaitForMissionRequest
-	162, // 323: gibson.harness.v1.HarnessCallbackService.ListMissions:input_type -> gibson.harness.v1.ListMissionsRequest
-	164, // 324: gibson.harness.v1.HarnessCallbackService.CancelMission:input_type -> gibson.harness.v1.CancelMissionRequest
-	166, // 325: gibson.harness.v1.HarnessCallbackService.GetMissionResults:input_type -> gibson.harness.v1.GetMissionResultsRequest
-	168, // 326: gibson.harness.v1.HarnessCallbackService.Authorize:input_type -> gibson.harness.v1.AuthorizeRequest
-	171, // 327: gibson.harness.v1.HarnessCallbackService.WorkspaceList:input_type -> gibson.harness.v1.WorkspaceListRequest
-	173, // 328: gibson.harness.v1.HarnessCallbackService.WorkspaceGetInfo:input_type -> gibson.harness.v1.WorkspaceGetInfoRequest
-	175, // 329: gibson.harness.v1.HarnessCallbackService.WorkspaceReadFile:input_type -> gibson.harness.v1.WorkspaceReadFileRequest
-	177, // 330: gibson.harness.v1.HarnessCallbackService.WorkspaceWriteFile:input_type -> gibson.harness.v1.WorkspaceWriteFileRequest
-	179, // 331: gibson.harness.v1.HarnessCallbackService.WorkspaceListFiles:input_type -> gibson.harness.v1.WorkspaceListFilesRequest
-	181, // 332: gibson.harness.v1.HarnessCallbackService.WorkspaceCommit:input_type -> gibson.harness.v1.WorkspaceCommitRequest
-	183, // 333: gibson.harness.v1.HarnessCallbackService.WorkspacePush:input_type -> gibson.harness.v1.WorkspacePushRequest
-	185, // 334: gibson.harness.v1.HarnessCallbackService.DevboxExec:input_type -> gibson.harness.v1.DevboxExecRequest
-	188, // 335: gibson.harness.v1.HarnessCallbackService.PutSessionContext:input_type -> gibson.harness.v1.PutSessionContextRequest
-	190, // 336: gibson.harness.v1.HarnessCallbackService.GetSessionContext:input_type -> gibson.harness.v1.GetSessionContextRequest
-	192, // 337: gibson.harness.v1.HarnessCallbackService.DeleteSessionContext:input_type -> gibson.harness.v1.DeleteSessionContextRequest
-	194, // 338: gibson.harness.v1.HarnessCallbackService.SubscribeInput:input_type -> gibson.harness.v1.SubscribeInputRequest
-	196, // 339: gibson.harness.v1.HarnessCallbackService.PullJob:input_type -> gibson.harness.v1.PullJobRequest
-	198, // 340: gibson.harness.v1.HarnessCallbackService.ReportJobState:input_type -> gibson.harness.v1.ReportJobStateRequest
-	200, // 341: gibson.harness.v1.HarnessCallbackService.ReportDeliverable:input_type -> gibson.harness.v1.ReportDeliverableRequest
-	202, // 342: gibson.harness.v1.HarnessCallbackService.OpenJob:input_type -> gibson.harness.v1.OpenJobRequest
-	204, // 343: gibson.harness.v1.HarnessCallbackService.SendInput:input_type -> gibson.harness.v1.SendInputRequest
-	206, // 344: gibson.harness.v1.HarnessCallbackService.CloseJob:input_type -> gibson.harness.v1.CloseJobRequest
-	208, // 345: gibson.harness.v1.HarnessCallbackService.ClaimFork:input_type -> gibson.harness.v1.ClaimForkRequest
-	23,  // 346: gibson.harness.v1.HarnessCallbackService.LLMComplete:output_type -> gibson.harness.v1.LLMCompleteResponse
-	24,  // 347: gibson.harness.v1.HarnessCallbackService.LLMCompleteWithTools:output_type -> gibson.harness.v1.LLMCompleteWithToolsResponse
-	22,  // 348: gibson.harness.v1.HarnessCallbackService.LLMCompleteStructured:output_type -> gibson.harness.v1.LLMCompleteStructuredResponse
-	26,  // 349: gibson.harness.v1.HarnessCallbackService.LLMStream:output_type -> gibson.harness.v1.LLMStreamResponse
-	14,  // 350: gibson.harness.v1.HarnessCallbackService.ResolveModel:output_type -> gibson.harness.v1.ResolveModelResponse
-	28,  // 351: gibson.harness.v1.HarnessCallbackService.CallToolProto:output_type -> gibson.harness.v1.CallToolProtoResponse
-	30,  // 352: gibson.harness.v1.HarnessCallbackService.CallToolProtoStream:output_type -> gibson.harness.v1.CallToolProtoStreamResponse
-	37,  // 353: gibson.harness.v1.HarnessCallbackService.ListTools:output_type -> gibson.harness.v1.ListToolsResponse
-	40,  // 354: gibson.harness.v1.HarnessCallbackService.SearchTools:output_type -> gibson.harness.v1.SearchToolsResponse
-	43,  // 355: gibson.harness.v1.HarnessCallbackService.QueueToolWork:output_type -> gibson.harness.v1.QueueToolWorkResponse
-	45,  // 356: gibson.harness.v1.HarnessCallbackService.ToolResults:output_type -> gibson.harness.v1.ToolResultsResponse
-	52,  // 357: gibson.harness.v1.HarnessCallbackService.QueryPlugin:output_type -> gibson.harness.v1.QueryPluginResponse
-	54,  // 358: gibson.harness.v1.HarnessCallbackService.ListPlugins:output_type -> gibson.harness.v1.ListPluginsResponse
-	57,  // 359: gibson.harness.v1.HarnessCallbackService.DelegateToAgent:output_type -> gibson.harness.v1.DelegateToAgentResponse
-	59,  // 360: gibson.harness.v1.HarnessCallbackService.ListAgents:output_type -> gibson.harness.v1.ListAgentsResponse
-	62,  // 361: gibson.harness.v1.HarnessCallbackService.SubmitFinding:output_type -> gibson.harness.v1.SubmitFindingResponse
-	100, // 362: gibson.harness.v1.HarnessCallbackService.Observe:output_type -> gibson.harness.v1.ObserveResponse
-	103, // 363: gibson.harness.v1.HarnessCallbackService.PlaceBet:output_type -> gibson.harness.v1.PlaceBetResponse
-	105, // 364: gibson.harness.v1.HarnessCallbackService.SubmitProof:output_type -> gibson.harness.v1.SubmitProofResponse
-	107, // 365: gibson.harness.v1.HarnessCallbackService.RequestDestructiveAuthorization:output_type -> gibson.harness.v1.RequestDestructiveAuthorizationResponse
-	109, // 366: gibson.harness.v1.HarnessCallbackService.WorldView:output_type -> gibson.harness.v1.WorldViewResponse
-	65,  // 367: gibson.harness.v1.HarnessCallbackService.QueryNodes:output_type -> gibson.harness.v1.QueryNodesResponse
-	67,  // 368: gibson.harness.v1.HarnessCallbackService.FindSimilarAttacks:output_type -> gibson.harness.v1.FindSimilarAttacksResponse
-	69,  // 369: gibson.harness.v1.HarnessCallbackService.GetAttackChains:output_type -> gibson.harness.v1.GetAttackChainsResponse
-	71,  // 370: gibson.harness.v1.HarnessCallbackService.FindSimilarFindings:output_type -> gibson.harness.v1.FindSimilarFindingsResponse
-	73,  // 371: gibson.harness.v1.HarnessCallbackService.GetRelatedFindings:output_type -> gibson.harness.v1.GetRelatedFindingsResponse
-	75,  // 372: gibson.harness.v1.HarnessCallbackService.GetFindings:output_type -> gibson.harness.v1.GetFindingsResponse
-	78,  // 373: gibson.harness.v1.HarnessCallbackService.ApplicationFindings:output_type -> gibson.harness.v1.ApplicationFindingsResponse
-	80,  // 374: gibson.harness.v1.HarnessCallbackService.GetRunFindings:output_type -> gibson.harness.v1.GetRunFindingsResponse
-	82,  // 375: gibson.harness.v1.HarnessCallbackService.GetMissionRunHistory:output_type -> gibson.harness.v1.GetMissionRunHistoryResponse
-	112, // 376: gibson.harness.v1.HarnessCallbackService.GetPlanContext:output_type -> gibson.harness.v1.GetPlanContextResponse
-	114, // 377: gibson.harness.v1.HarnessCallbackService.ReportStepHints:output_type -> gibson.harness.v1.ReportStepHintsResponse
-	121, // 378: gibson.harness.v1.HarnessCallbackService.RecordSpan:output_type -> gibson.harness.v1.RecordSpanResponse
-	123, // 379: gibson.harness.v1.HarnessCallbackService.RecordSpans:output_type -> gibson.harness.v1.RecordSpansResponse
-	125, // 380: gibson.harness.v1.HarnessCallbackService.GetCredential:output_type -> gibson.harness.v1.GetCredentialResponse
-	130, // 381: gibson.harness.v1.HarnessCallbackService.GetTaxonomySchema:output_type -> gibson.harness.v1.GetTaxonomySchemaResponse
-	139, // 382: gibson.harness.v1.HarnessCallbackService.ProposeOntologyExtension:output_type -> gibson.harness.v1.ProposeOntologyExtensionResponse
-	141, // 383: gibson.harness.v1.HarnessCallbackService.GenerateNodeID:output_type -> gibson.harness.v1.GenerateNodeIDResponse
-	145, // 384: gibson.harness.v1.HarnessCallbackService.ValidateFinding:output_type -> gibson.harness.v1.ValidateFindingResponse
-	146, // 385: gibson.harness.v1.HarnessCallbackService.ValidateGraphNode:output_type -> gibson.harness.v1.ValidateGraphNodeResponse
-	147, // 386: gibson.harness.v1.HarnessCallbackService.ValidateRelationship:output_type -> gibson.harness.v1.ValidateRelationshipResponse
-	155, // 387: gibson.harness.v1.HarnessCallbackService.CreateMission:output_type -> gibson.harness.v1.CreateMissionResponse
-	157, // 388: gibson.harness.v1.HarnessCallbackService.RunMission:output_type -> gibson.harness.v1.RunMissionResponse
-	159, // 389: gibson.harness.v1.HarnessCallbackService.GetMissionStatus:output_type -> gibson.harness.v1.GetMissionStatusResponse
-	161, // 390: gibson.harness.v1.HarnessCallbackService.WaitForMission:output_type -> gibson.harness.v1.WaitForMissionResponse
-	163, // 391: gibson.harness.v1.HarnessCallbackService.ListMissions:output_type -> gibson.harness.v1.ListMissionsResponse
-	165, // 392: gibson.harness.v1.HarnessCallbackService.CancelMission:output_type -> gibson.harness.v1.CancelMissionResponse
-	167, // 393: gibson.harness.v1.HarnessCallbackService.GetMissionResults:output_type -> gibson.harness.v1.GetMissionResultsResponse
-	169, // 394: gibson.harness.v1.HarnessCallbackService.Authorize:output_type -> gibson.harness.v1.AuthorizeResponse
-	172, // 395: gibson.harness.v1.HarnessCallbackService.WorkspaceList:output_type -> gibson.harness.v1.WorkspaceListResponse
-	174, // 396: gibson.harness.v1.HarnessCallbackService.WorkspaceGetInfo:output_type -> gibson.harness.v1.WorkspaceGetInfoResponse
-	176, // 397: gibson.harness.v1.HarnessCallbackService.WorkspaceReadFile:output_type -> gibson.harness.v1.WorkspaceReadFileResponse
-	178, // 398: gibson.harness.v1.HarnessCallbackService.WorkspaceWriteFile:output_type -> gibson.harness.v1.WorkspaceWriteFileResponse
-	180, // 399: gibson.harness.v1.HarnessCallbackService.WorkspaceListFiles:output_type -> gibson.harness.v1.WorkspaceListFilesResponse
-	182, // 400: gibson.harness.v1.HarnessCallbackService.WorkspaceCommit:output_type -> gibson.harness.v1.WorkspaceCommitResponse
-	184, // 401: gibson.harness.v1.HarnessCallbackService.WorkspacePush:output_type -> gibson.harness.v1.WorkspacePushResponse
-	186, // 402: gibson.harness.v1.HarnessCallbackService.DevboxExec:output_type -> gibson.harness.v1.DevboxExecResponse
-	189, // 403: gibson.harness.v1.HarnessCallbackService.PutSessionContext:output_type -> gibson.harness.v1.PutSessionContextResponse
-	191, // 404: gibson.harness.v1.HarnessCallbackService.GetSessionContext:output_type -> gibson.harness.v1.GetSessionContextResponse
-	193, // 405: gibson.harness.v1.HarnessCallbackService.DeleteSessionContext:output_type -> gibson.harness.v1.DeleteSessionContextResponse
-	195, // 406: gibson.harness.v1.HarnessCallbackService.SubscribeInput:output_type -> gibson.harness.v1.SubscribeInputResponse
-	197, // 407: gibson.harness.v1.HarnessCallbackService.PullJob:output_type -> gibson.harness.v1.PullJobResponse
-	199, // 408: gibson.harness.v1.HarnessCallbackService.ReportJobState:output_type -> gibson.harness.v1.ReportJobStateResponse
-	201, // 409: gibson.harness.v1.HarnessCallbackService.ReportDeliverable:output_type -> gibson.harness.v1.ReportDeliverableResponse
-	203, // 410: gibson.harness.v1.HarnessCallbackService.OpenJob:output_type -> gibson.harness.v1.OpenJobResponse
-	205, // 411: gibson.harness.v1.HarnessCallbackService.SendInput:output_type -> gibson.harness.v1.SendInputResponse
-	207, // 412: gibson.harness.v1.HarnessCallbackService.CloseJob:output_type -> gibson.harness.v1.CloseJobResponse
-	209, // 413: gibson.harness.v1.HarnessCallbackService.ClaimFork:output_type -> gibson.harness.v1.ClaimForkResponse
-	346, // [346:414] is the sub-list for method output_type
-	278, // [278:346] is the sub-list for method input_type
-	278, // [278:278] is the sub-list for extension type_name
-	278, // [278:278] is the sub-list for extension extendee
-	0,   // [0:278] is the sub-list for field type_name
+	197, // 2: gibson.harness.v1.ResolveModelResponse.route_headers:type_name -> gibson.harness.v1.ResolveModelResponse.RouteHeadersEntry
+	11,  // 3: gibson.harness.v1.CallToolProtoRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	10,  // 4: gibson.harness.v1.CallToolProtoResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 5: gibson.harness.v1.CallToolProtoStreamRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	18,  // 6: gibson.harness.v1.CallToolProtoStreamResponse.progress:type_name -> gibson.harness.v1.ToolProgressEvent
+	19,  // 7: gibson.harness.v1.CallToolProtoStreamResponse.partial:type_name -> gibson.harness.v1.ToolPartialResultEvent
+	20,  // 8: gibson.harness.v1.CallToolProtoStreamResponse.warning:type_name -> gibson.harness.v1.ToolWarningEvent
+	21,  // 9: gibson.harness.v1.CallToolProtoStreamResponse.complete:type_name -> gibson.harness.v1.ToolCompleteEvent
+	22,  // 10: gibson.harness.v1.CallToolProtoStreamResponse.error:type_name -> gibson.harness.v1.ToolErrorEvent
+	10,  // 11: gibson.harness.v1.ToolErrorEvent.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 12: gibson.harness.v1.ListToolsRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	25,  // 13: gibson.harness.v1.ListToolsResponse.tools:type_name -> gibson.harness.v1.HarnessToolDescriptor
+	10,  // 14: gibson.harness.v1.ListToolsResponse.error:type_name -> gibson.harness.v1.HarnessError
+	33,  // 15: gibson.harness.v1.HarnessToolDescriptor.input_schema:type_name -> gibson.harness.v1.JSONSchemaNode
+	11,  // 16: gibson.harness.v1.SearchToolsRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	28,  // 17: gibson.harness.v1.SearchToolsResponse.candidates:type_name -> gibson.harness.v1.SearchToolsCandidate
+	10,  // 18: gibson.harness.v1.SearchToolsResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 19: gibson.harness.v1.QueueToolWorkRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	10,  // 20: gibson.harness.v1.QueueToolWorkResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 21: gibson.harness.v1.ToolResultsRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	10,  // 22: gibson.harness.v1.ToolResultsResponse.error:type_name -> gibson.harness.v1.HarnessError
+	198, // 23: gibson.harness.v1.JSONSchemaNode.properties:type_name -> gibson.harness.v1.JSONSchemaNode.PropertiesEntry
+	33,  // 24: gibson.harness.v1.JSONSchemaNode.items:type_name -> gibson.harness.v1.JSONSchemaNode
+	34,  // 25: gibson.harness.v1.JSONSchemaNode.taxonomy:type_name -> gibson.harness.v1.TaxonomyMapping
+	35,  // 26: gibson.harness.v1.TaxonomyMapping.properties:type_name -> gibson.harness.v1.PropertyMapping
+	37,  // 27: gibson.harness.v1.TaxonomyMapping.relationships:type_name -> gibson.harness.v1.RelationshipMapping
+	199, // 28: gibson.harness.v1.NodeReference.properties:type_name -> gibson.harness.v1.NodeReference.PropertiesEntry
+	36,  // 29: gibson.harness.v1.RelationshipMapping.from:type_name -> gibson.harness.v1.NodeReference
+	36,  // 30: gibson.harness.v1.RelationshipMapping.to:type_name -> gibson.harness.v1.NodeReference
+	11,  // 31: gibson.harness.v1.QueryPluginRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	200, // 32: gibson.harness.v1.QueryPluginRequest.params:type_name -> gibson.harness.v1.QueryPluginRequest.ParamsEntry
+	215, // 33: gibson.harness.v1.QueryPluginResponse.result:type_name -> gibson.common.v1.TypedValue
+	10,  // 34: gibson.harness.v1.QueryPluginResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 35: gibson.harness.v1.ListPluginsRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	42,  // 36: gibson.harness.v1.ListPluginsResponse.plugins:type_name -> gibson.harness.v1.HarnessPluginDescriptor
+	10,  // 37: gibson.harness.v1.ListPluginsResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 38: gibson.harness.v1.DelegateToAgentRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	216, // 39: gibson.harness.v1.DelegateToAgentRequest.task:type_name -> gibson.types.v1.Task
+	217, // 40: gibson.harness.v1.DelegateToAgentResponse.result:type_name -> gibson.types.v1.Result
+	10,  // 41: gibson.harness.v1.DelegateToAgentResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 42: gibson.harness.v1.ListAgentsRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	47,  // 43: gibson.harness.v1.ListAgentsResponse.agents:type_name -> gibson.harness.v1.HarnessAgentDescriptor
+	10,  // 44: gibson.harness.v1.ListAgentsResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 45: gibson.harness.v1.SubmitFindingRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	218, // 46: gibson.harness.v1.SubmitFindingRequest.finding:type_name -> gibson.types.v1.Finding
+	10,  // 47: gibson.harness.v1.SubmitFindingResponse.error:type_name -> gibson.harness.v1.HarnessError
+	219, // 48: gibson.harness.v1.FindingFilter.severity:type_name -> gibson.types.v1.FindingSeverity
+	220, // 49: gibson.harness.v1.FindingFilter.status:type_name -> gibson.types.v1.FindingStatus
+	11,  // 50: gibson.harness.v1.QueryNodesRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	221, // 51: gibson.harness.v1.QueryNodesRequest.query:type_name -> gibson.graphrag.v1.GraphQuery
+	222, // 52: gibson.harness.v1.QueryNodesResponse.results:type_name -> gibson.graphrag.v1.QueryResult
+	10,  // 53: gibson.harness.v1.QueryNodesResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 54: gibson.harness.v1.FindSimilarAttacksRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	223, // 55: gibson.harness.v1.FindSimilarAttacksResponse.results:type_name -> gibson.graphrag.v1.AttackPattern
+	10,  // 56: gibson.harness.v1.FindSimilarAttacksResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 57: gibson.harness.v1.GetAttackChainsRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	224, // 58: gibson.harness.v1.GetAttackChainsResponse.results:type_name -> gibson.graphrag.v1.AttackChain
+	10,  // 59: gibson.harness.v1.GetAttackChainsResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 60: gibson.harness.v1.FindSimilarFindingsRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	225, // 61: gibson.harness.v1.FindSimilarFindingsResponse.results:type_name -> gibson.graphrag.v1.FindingNode
+	10,  // 62: gibson.harness.v1.FindSimilarFindingsResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 63: gibson.harness.v1.GetRelatedFindingsRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	225, // 64: gibson.harness.v1.GetRelatedFindingsResponse.results:type_name -> gibson.graphrag.v1.FindingNode
+	10,  // 65: gibson.harness.v1.GetRelatedFindingsResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 66: gibson.harness.v1.GetFindingsRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	50,  // 67: gibson.harness.v1.GetFindingsRequest.filter:type_name -> gibson.harness.v1.FindingFilter
+	218, // 68: gibson.harness.v1.GetFindingsResponse.findings:type_name -> gibson.types.v1.Finding
+	10,  // 69: gibson.harness.v1.GetFindingsResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 70: gibson.harness.v1.ApplicationFindingsRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	64,  // 71: gibson.harness.v1.ApplicationFindingsResponse.findings:type_name -> gibson.harness.v1.ApplicationFinding
+	10,  // 72: gibson.harness.v1.ApplicationFindingsResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 73: gibson.harness.v1.GetRunFindingsRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	0,   // 74: gibson.harness.v1.GetRunFindingsRequest.scope:type_name -> gibson.harness.v1.RunScope
+	50,  // 75: gibson.harness.v1.GetRunFindingsRequest.filter:type_name -> gibson.harness.v1.FindingFilter
+	218, // 76: gibson.harness.v1.GetRunFindingsResponse.findings:type_name -> gibson.types.v1.Finding
+	10,  // 77: gibson.harness.v1.GetRunFindingsResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 78: gibson.harness.v1.GetMissionRunHistoryRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	226, // 79: gibson.harness.v1.GetMissionRunHistoryResponse.runs:type_name -> gibson.types.v1.MissionRunSummary
+	10,  // 80: gibson.harness.v1.GetMissionRunHistoryResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 81: gibson.harness.v1.ObserveRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	73,  // 82: gibson.harness.v1.ObserveRequest.host:type_name -> gibson.harness.v1.HostObservation
+	78,  // 83: gibson.harness.v1.ObserveRequest.domain:type_name -> gibson.harness.v1.DomainObservation
+	79,  // 84: gibson.harness.v1.ObserveRequest.subdomain:type_name -> gibson.harness.v1.SubdomainObservation
+	80,  // 85: gibson.harness.v1.ObserveRequest.credential:type_name -> gibson.harness.v1.CredentialObservation
+	81,  // 86: gibson.harness.v1.ObserveRequest.account:type_name -> gibson.harness.v1.AccountObservation
+	82,  // 87: gibson.harness.v1.ObserveRequest.memory:type_name -> gibson.harness.v1.MemoryObservation
+	71,  // 88: gibson.harness.v1.ObserveRequest.lifecycle_entity:type_name -> gibson.harness.v1.LifecycleEntityObservation
+	83,  // 89: gibson.harness.v1.ObserveRequest.hypothesis:type_name -> gibson.harness.v1.HypothesisObservation
+	85,  // 90: gibson.harness.v1.ObserveRequest.reasoning_step:type_name -> gibson.harness.v1.ReasoningStepObservation
+	86,  // 91: gibson.harness.v1.ObserveRequest.analysis:type_name -> gibson.harness.v1.AnalysisObservation
+	201, // 92: gibson.harness.v1.LifecycleEntityObservation.id_properties:type_name -> gibson.harness.v1.LifecycleEntityObservation.IdPropertiesEntry
+	202, // 93: gibson.harness.v1.LifecycleEntityObservation.properties:type_name -> gibson.harness.v1.LifecycleEntityObservation.PropertiesEntry
+	72,  // 94: gibson.harness.v1.LifecycleEntityObservation.edges:type_name -> gibson.harness.v1.LifecycleEntityEdge
+	203, // 95: gibson.harness.v1.LifecycleEntityEdge.target_id_properties:type_name -> gibson.harness.v1.LifecycleEntityEdge.TargetIdPropertiesEntry
+	74,  // 96: gibson.harness.v1.HostObservation.ports:type_name -> gibson.harness.v1.PortObservation
+	75,  // 97: gibson.harness.v1.PortObservation.endpoints:type_name -> gibson.harness.v1.EndpointObservation
+	76,  // 98: gibson.harness.v1.PortObservation.technologies:type_name -> gibson.harness.v1.TechnologyObservation
+	77,  // 99: gibson.harness.v1.PortObservation.certificate:type_name -> gibson.harness.v1.CertificateObservation
+	84,  // 100: gibson.harness.v1.HypothesisObservation.references:type_name -> gibson.harness.v1.ReferencedEntity
+	204, // 101: gibson.harness.v1.ReferencedEntity.id_properties:type_name -> gibson.harness.v1.ReferencedEntity.IdPropertiesEntry
+	84,  // 102: gibson.harness.v1.ReasoningStepObservation.references:type_name -> gibson.harness.v1.ReferencedEntity
+	84,  // 103: gibson.harness.v1.AnalysisObservation.evidence:type_name -> gibson.harness.v1.ReferencedEntity
+	10,  // 104: gibson.harness.v1.ObserveResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 105: gibson.harness.v1.PlaceBetRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	89,  // 106: gibson.harness.v1.PlaceBetRequest.bet:type_name -> gibson.harness.v1.Bet
+	10,  // 107: gibson.harness.v1.PlaceBetResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 108: gibson.harness.v1.SubmitProofRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	227, // 109: gibson.harness.v1.SubmitProofRequest.evidence:type_name -> gibson.types.v1.Evidence
+	1,   // 110: gibson.harness.v1.SubmitProofResponse.outcome:type_name -> gibson.harness.v1.SettlementOutcome
+	10,  // 111: gibson.harness.v1.SubmitProofResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 112: gibson.harness.v1.RequestDestructiveAuthorizationRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	2,   // 113: gibson.harness.v1.RequestDestructiveAuthorizationRequest.reversibility:type_name -> gibson.harness.v1.Reversibility
+	10,  // 114: gibson.harness.v1.RequestDestructiveAuthorizationResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 115: gibson.harness.v1.WorldViewRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	10,  // 116: gibson.harness.v1.WorldViewResponse.error:type_name -> gibson.harness.v1.HarnessError
+	97,  // 117: gibson.harness.v1.WorldViewResponse.entities:type_name -> gibson.harness.v1.WorldEntity
+	3,   // 118: gibson.harness.v1.WorldEntity.kind:type_name -> gibson.harness.v1.WorldEntityKind
+	205, // 119: gibson.harness.v1.WorldEntity.attributes:type_name -> gibson.harness.v1.WorldEntity.AttributesEntry
+	11,  // 120: gibson.harness.v1.GetPlanContextRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	10,  // 121: gibson.harness.v1.GetPlanContextResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 122: gibson.harness.v1.ReportStepHintsRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	102, // 123: gibson.harness.v1.ReportStepHintsRequest.hints:type_name -> gibson.harness.v1.StepHints
+	10,  // 124: gibson.harness.v1.ReportStepHintsResponse.error:type_name -> gibson.harness.v1.HarnessError
+	103, // 125: gibson.harness.v1.KeyValue.value:type_name -> gibson.harness.v1.AnyValue
+	104, // 126: gibson.harness.v1.SpanEvent.attributes:type_name -> gibson.harness.v1.KeyValue
+	4,   // 127: gibson.harness.v1.Span.kind:type_name -> gibson.harness.v1.SpanKind
+	5,   // 128: gibson.harness.v1.Span.status_code:type_name -> gibson.harness.v1.StatusCode
+	104, // 129: gibson.harness.v1.Span.attributes:type_name -> gibson.harness.v1.KeyValue
+	105, // 130: gibson.harness.v1.Span.events:type_name -> gibson.harness.v1.SpanEvent
+	11,  // 131: gibson.harness.v1.RecordSpanRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	106, // 132: gibson.harness.v1.RecordSpanRequest.span:type_name -> gibson.harness.v1.Span
+	10,  // 133: gibson.harness.v1.RecordSpanResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 134: gibson.harness.v1.RecordSpansRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	106, // 135: gibson.harness.v1.RecordSpansRequest.spans:type_name -> gibson.harness.v1.Span
+	10,  // 136: gibson.harness.v1.RecordSpansResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 137: gibson.harness.v1.GetCredentialRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	113, // 138: gibson.harness.v1.GetCredentialResponse.credential:type_name -> gibson.harness.v1.Credential
+	10,  // 139: gibson.harness.v1.GetCredentialResponse.error:type_name -> gibson.harness.v1.HarnessError
+	6,   // 140: gibson.harness.v1.Credential.type:type_name -> gibson.harness.v1.CredentialType
+	114, // 141: gibson.harness.v1.Credential.basic:type_name -> gibson.harness.v1.BasicAuth
+	115, // 142: gibson.harness.v1.Credential.oauth:type_name -> gibson.harness.v1.OAuthCredential
+	206, // 143: gibson.harness.v1.Credential.metadata:type_name -> gibson.harness.v1.Credential.MetadataEntry
+	11,  // 144: gibson.harness.v1.GetTaxonomySchemaRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	118, // 145: gibson.harness.v1.GetTaxonomySchemaResponse.node_types:type_name -> gibson.harness.v1.TaxonomyNodeType
+	119, // 146: gibson.harness.v1.GetTaxonomySchemaResponse.relationship_types:type_name -> gibson.harness.v1.TaxonomyRelationshipType
+	120, // 147: gibson.harness.v1.GetTaxonomySchemaResponse.techniques:type_name -> gibson.harness.v1.TaxonomyTechnique
+	121, // 148: gibson.harness.v1.GetTaxonomySchemaResponse.target_types:type_name -> gibson.harness.v1.TaxonomyTargetType
+	122, // 149: gibson.harness.v1.GetTaxonomySchemaResponse.technique_types:type_name -> gibson.harness.v1.TaxonomyTechniqueType
+	123, // 150: gibson.harness.v1.GetTaxonomySchemaResponse.capabilities:type_name -> gibson.harness.v1.TaxonomyCapability
+	10,  // 151: gibson.harness.v1.GetTaxonomySchemaResponse.error:type_name -> gibson.harness.v1.HarnessError
+	124, // 152: gibson.harness.v1.TaxonomyNodeType.properties:type_name -> gibson.harness.v1.TaxonomyProperty
+	124, // 153: gibson.harness.v1.TaxonomyRelationshipType.properties:type_name -> gibson.harness.v1.TaxonomyProperty
+	11,  // 154: gibson.harness.v1.ProposeOntologyExtensionRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	7,   // 155: gibson.harness.v1.ProposeOntologyExtensionRequest.kind:type_name -> gibson.harness.v1.OntologyExtensionKind
+	10,  // 156: gibson.harness.v1.ProposeOntologyExtensionResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 157: gibson.harness.v1.GenerateNodeIDRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	207, // 158: gibson.harness.v1.GenerateNodeIDRequest.properties:type_name -> gibson.harness.v1.GenerateNodeIDRequest.PropertiesEntry
+	10,  // 159: gibson.harness.v1.GenerateNodeIDResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 160: gibson.harness.v1.ValidateFindingRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	218, // 161: gibson.harness.v1.ValidateFindingRequest.finding:type_name -> gibson.types.v1.Finding
+	11,  // 162: gibson.harness.v1.ValidateGraphNodeRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	208, // 163: gibson.harness.v1.ValidateGraphNodeRequest.properties:type_name -> gibson.harness.v1.ValidateGraphNodeRequest.PropertiesEntry
+	11,  // 164: gibson.harness.v1.ValidateRelationshipRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	209, // 165: gibson.harness.v1.ValidateRelationshipRequest.properties:type_name -> gibson.harness.v1.ValidateRelationshipRequest.PropertiesEntry
+	135, // 166: gibson.harness.v1.ValidateFindingResponse.errors:type_name -> gibson.harness.v1.ValidationError
+	10,  // 167: gibson.harness.v1.ValidateFindingResponse.error:type_name -> gibson.harness.v1.HarnessError
+	135, // 168: gibson.harness.v1.ValidateGraphNodeResponse.errors:type_name -> gibson.harness.v1.ValidationError
+	10,  // 169: gibson.harness.v1.ValidateGraphNodeResponse.error:type_name -> gibson.harness.v1.HarnessError
+	135, // 170: gibson.harness.v1.ValidateRelationshipResponse.errors:type_name -> gibson.harness.v1.ValidationError
+	10,  // 171: gibson.harness.v1.ValidateRelationshipResponse.error:type_name -> gibson.harness.v1.HarnessError
+	8,   // 172: gibson.harness.v1.MissionInfo.status:type_name -> gibson.harness.v1.MissionStatus
+	8,   // 173: gibson.harness.v1.MissionStatusInfo.status:type_name -> gibson.harness.v1.MissionStatus
+	210, // 174: gibson.harness.v1.MissionStatusInfo.finding_counts:type_name -> gibson.harness.v1.MissionStatusInfo.FindingCountsEntry
+	8,   // 175: gibson.harness.v1.MissionResult.status:type_name -> gibson.harness.v1.MissionStatus
+	218, // 176: gibson.harness.v1.MissionResult.findings:type_name -> gibson.types.v1.Finding
+	211, // 177: gibson.harness.v1.MissionResult.output:type_name -> gibson.harness.v1.MissionResult.OutputEntry
+	136, // 178: gibson.harness.v1.MissionResult.metrics:type_name -> gibson.harness.v1.MissionMetrics
+	8,   // 179: gibson.harness.v1.MissionFilter.status:type_name -> gibson.harness.v1.MissionStatus
+	11,  // 180: gibson.harness.v1.CreateMissionRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	212, // 181: gibson.harness.v1.CreateMissionRequest.metadata:type_name -> gibson.harness.v1.CreateMissionRequest.MetadataEntry
+	228, // 182: gibson.harness.v1.CreateMissionRequest.canonical_constraints:type_name -> gibson.mission.v1.MissionConstraints
+	213, // 183: gibson.harness.v1.CreateMissionRequest.catalog_params:type_name -> gibson.harness.v1.CreateMissionRequest.CatalogParamsEntry
+	9,   // 184: gibson.harness.v1.CreateMissionRequest.starts_from:type_name -> gibson.harness.v1.OriginationStart
+	137, // 185: gibson.harness.v1.CreateMissionResponse.mission:type_name -> gibson.harness.v1.MissionInfo
+	10,  // 186: gibson.harness.v1.CreateMissionResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 187: gibson.harness.v1.RunMissionRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	10,  // 188: gibson.harness.v1.RunMissionResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 189: gibson.harness.v1.GetMissionStatusRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	138, // 190: gibson.harness.v1.GetMissionStatusResponse.status:type_name -> gibson.harness.v1.MissionStatusInfo
+	10,  // 191: gibson.harness.v1.GetMissionStatusResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 192: gibson.harness.v1.WaitForMissionRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	139, // 193: gibson.harness.v1.WaitForMissionResponse.result:type_name -> gibson.harness.v1.MissionResult
+	10,  // 194: gibson.harness.v1.WaitForMissionResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 195: gibson.harness.v1.ListMissionsRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	140, // 196: gibson.harness.v1.ListMissionsRequest.filter:type_name -> gibson.harness.v1.MissionFilter
+	137, // 197: gibson.harness.v1.ListMissionsResponse.missions:type_name -> gibson.harness.v1.MissionInfo
+	10,  // 198: gibson.harness.v1.ListMissionsResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 199: gibson.harness.v1.CancelMissionRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	10,  // 200: gibson.harness.v1.CancelMissionResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 201: gibson.harness.v1.GetMissionResultsRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	139, // 202: gibson.harness.v1.GetMissionResultsResponse.result:type_name -> gibson.harness.v1.MissionResult
+	10,  // 203: gibson.harness.v1.GetMissionResultsResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 204: gibson.harness.v1.WorkspaceListRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	157, // 205: gibson.harness.v1.WorkspaceListResponse.workspaces:type_name -> gibson.harness.v1.WorkspaceInfo
+	11,  // 206: gibson.harness.v1.WorkspaceGetInfoRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	157, // 207: gibson.harness.v1.WorkspaceGetInfoResponse.workspace:type_name -> gibson.harness.v1.WorkspaceInfo
+	11,  // 208: gibson.harness.v1.WorkspaceReadFileRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	11,  // 209: gibson.harness.v1.WorkspaceWriteFileRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	11,  // 210: gibson.harness.v1.WorkspaceListFilesRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	11,  // 211: gibson.harness.v1.WorkspaceCommitRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	11,  // 212: gibson.harness.v1.WorkspacePushRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	11,  // 213: gibson.harness.v1.DevboxExecRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	174, // 214: gibson.harness.v1.DevboxExecResponse.exit:type_name -> gibson.harness.v1.DevboxExecExit
+	10,  // 215: gibson.harness.v1.DevboxExecResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 216: gibson.harness.v1.PutSessionContextRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	10,  // 217: gibson.harness.v1.PutSessionContextResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 218: gibson.harness.v1.GetSessionContextRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	10,  // 219: gibson.harness.v1.GetSessionContextResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 220: gibson.harness.v1.DeleteSessionContextRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	10,  // 221: gibson.harness.v1.DeleteSessionContextResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 222: gibson.harness.v1.SubscribeInputRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	229, // 223: gibson.harness.v1.SubscribeInputResponse.input:type_name -> gibson.job.v1.Input
+	11,  // 224: gibson.harness.v1.PullJobRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	230, // 225: gibson.harness.v1.PullJobResponse.job:type_name -> gibson.job.v1.Job
+	10,  // 226: gibson.harness.v1.PullJobResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 227: gibson.harness.v1.ReportJobStateRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	231, // 228: gibson.harness.v1.ReportJobStateRequest.state:type_name -> gibson.job.v1.JobState
+	10,  // 229: gibson.harness.v1.ReportJobStateResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 230: gibson.harness.v1.ReportDeliverableRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	232, // 231: gibson.harness.v1.ReportDeliverableRequest.deliverable:type_name -> gibson.job.v1.Deliverable
+	10,  // 232: gibson.harness.v1.ReportDeliverableResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 233: gibson.harness.v1.OpenJobRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	233, // 234: gibson.harness.v1.OpenJobRequest.spec:type_name -> gibson.job.v1.JobSpec
+	230, // 235: gibson.harness.v1.OpenJobResponse.job:type_name -> gibson.job.v1.Job
+	10,  // 236: gibson.harness.v1.OpenJobResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 237: gibson.harness.v1.SendInputRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	234, // 238: gibson.harness.v1.SendInputRequest.kind:type_name -> gibson.job.v1.InputKind
+	229, // 239: gibson.harness.v1.SendInputResponse.input:type_name -> gibson.job.v1.Input
+	10,  // 240: gibson.harness.v1.SendInputResponse.error:type_name -> gibson.harness.v1.HarnessError
+	11,  // 241: gibson.harness.v1.CloseJobRequest.context:type_name -> gibson.harness.v1.ContextInfo
+	235, // 242: gibson.harness.v1.CloseJobRequest.verdict:type_name -> gibson.job.v1.JobVerdict
+	230, // 243: gibson.harness.v1.CloseJobResponse.job:type_name -> gibson.job.v1.Job
+	10,  // 244: gibson.harness.v1.CloseJobResponse.error:type_name -> gibson.harness.v1.HarnessError
+	216, // 245: gibson.harness.v1.ClaimForkResponse.task:type_name -> gibson.types.v1.Task
+	33,  // 246: gibson.harness.v1.JSONSchemaNode.PropertiesEntry.value:type_name -> gibson.harness.v1.JSONSchemaNode
+	215, // 247: gibson.harness.v1.QueryPluginRequest.ParamsEntry.value:type_name -> gibson.common.v1.TypedValue
+	215, // 248: gibson.harness.v1.Credential.MetadataEntry.value:type_name -> gibson.common.v1.TypedValue
+	215, // 249: gibson.harness.v1.GenerateNodeIDRequest.PropertiesEntry.value:type_name -> gibson.common.v1.TypedValue
+	215, // 250: gibson.harness.v1.ValidateGraphNodeRequest.PropertiesEntry.value:type_name -> gibson.common.v1.TypedValue
+	215, // 251: gibson.harness.v1.ValidateRelationshipRequest.PropertiesEntry.value:type_name -> gibson.common.v1.TypedValue
+	215, // 252: gibson.harness.v1.MissionResult.OutputEntry.value:type_name -> gibson.common.v1.TypedValue
+	215, // 253: gibson.harness.v1.CreateMissionRequest.MetadataEntry.value:type_name -> gibson.common.v1.TypedValue
+	12,  // 254: gibson.harness.v1.HarnessCallbackService.ResolveModel:input_type -> gibson.harness.v1.ResolveModelRequest
+	14,  // 255: gibson.harness.v1.HarnessCallbackService.CallToolProto:input_type -> gibson.harness.v1.CallToolProtoRequest
+	16,  // 256: gibson.harness.v1.HarnessCallbackService.CallToolProtoStream:input_type -> gibson.harness.v1.CallToolProtoStreamRequest
+	23,  // 257: gibson.harness.v1.HarnessCallbackService.ListTools:input_type -> gibson.harness.v1.ListToolsRequest
+	26,  // 258: gibson.harness.v1.HarnessCallbackService.SearchTools:input_type -> gibson.harness.v1.SearchToolsRequest
+	29,  // 259: gibson.harness.v1.HarnessCallbackService.QueueToolWork:input_type -> gibson.harness.v1.QueueToolWorkRequest
+	31,  // 260: gibson.harness.v1.HarnessCallbackService.ToolResults:input_type -> gibson.harness.v1.ToolResultsRequest
+	38,  // 261: gibson.harness.v1.HarnessCallbackService.QueryPlugin:input_type -> gibson.harness.v1.QueryPluginRequest
+	40,  // 262: gibson.harness.v1.HarnessCallbackService.ListPlugins:input_type -> gibson.harness.v1.ListPluginsRequest
+	43,  // 263: gibson.harness.v1.HarnessCallbackService.DelegateToAgent:input_type -> gibson.harness.v1.DelegateToAgentRequest
+	45,  // 264: gibson.harness.v1.HarnessCallbackService.ListAgents:input_type -> gibson.harness.v1.ListAgentsRequest
+	48,  // 265: gibson.harness.v1.HarnessCallbackService.SubmitFinding:input_type -> gibson.harness.v1.SubmitFindingRequest
+	70,  // 266: gibson.harness.v1.HarnessCallbackService.Observe:input_type -> gibson.harness.v1.ObserveRequest
+	88,  // 267: gibson.harness.v1.HarnessCallbackService.PlaceBet:input_type -> gibson.harness.v1.PlaceBetRequest
+	91,  // 268: gibson.harness.v1.HarnessCallbackService.SubmitProof:input_type -> gibson.harness.v1.SubmitProofRequest
+	93,  // 269: gibson.harness.v1.HarnessCallbackService.RequestDestructiveAuthorization:input_type -> gibson.harness.v1.RequestDestructiveAuthorizationRequest
+	95,  // 270: gibson.harness.v1.HarnessCallbackService.WorldView:input_type -> gibson.harness.v1.WorldViewRequest
+	51,  // 271: gibson.harness.v1.HarnessCallbackService.QueryNodes:input_type -> gibson.harness.v1.QueryNodesRequest
+	53,  // 272: gibson.harness.v1.HarnessCallbackService.FindSimilarAttacks:input_type -> gibson.harness.v1.FindSimilarAttacksRequest
+	55,  // 273: gibson.harness.v1.HarnessCallbackService.GetAttackChains:input_type -> gibson.harness.v1.GetAttackChainsRequest
+	57,  // 274: gibson.harness.v1.HarnessCallbackService.FindSimilarFindings:input_type -> gibson.harness.v1.FindSimilarFindingsRequest
+	59,  // 275: gibson.harness.v1.HarnessCallbackService.GetRelatedFindings:input_type -> gibson.harness.v1.GetRelatedFindingsRequest
+	61,  // 276: gibson.harness.v1.HarnessCallbackService.GetFindings:input_type -> gibson.harness.v1.GetFindingsRequest
+	63,  // 277: gibson.harness.v1.HarnessCallbackService.ApplicationFindings:input_type -> gibson.harness.v1.ApplicationFindingsRequest
+	66,  // 278: gibson.harness.v1.HarnessCallbackService.GetRunFindings:input_type -> gibson.harness.v1.GetRunFindingsRequest
+	68,  // 279: gibson.harness.v1.HarnessCallbackService.GetMissionRunHistory:input_type -> gibson.harness.v1.GetMissionRunHistoryRequest
+	98,  // 280: gibson.harness.v1.HarnessCallbackService.GetPlanContext:input_type -> gibson.harness.v1.GetPlanContextRequest
+	100, // 281: gibson.harness.v1.HarnessCallbackService.ReportStepHints:input_type -> gibson.harness.v1.ReportStepHintsRequest
+	107, // 282: gibson.harness.v1.HarnessCallbackService.RecordSpan:input_type -> gibson.harness.v1.RecordSpanRequest
+	109, // 283: gibson.harness.v1.HarnessCallbackService.RecordSpans:input_type -> gibson.harness.v1.RecordSpansRequest
+	111, // 284: gibson.harness.v1.HarnessCallbackService.GetCredential:input_type -> gibson.harness.v1.GetCredentialRequest
+	116, // 285: gibson.harness.v1.HarnessCallbackService.GetTaxonomySchema:input_type -> gibson.harness.v1.GetTaxonomySchemaRequest
+	125, // 286: gibson.harness.v1.HarnessCallbackService.ProposeOntologyExtension:input_type -> gibson.harness.v1.ProposeOntologyExtensionRequest
+	127, // 287: gibson.harness.v1.HarnessCallbackService.GenerateNodeID:input_type -> gibson.harness.v1.GenerateNodeIDRequest
+	129, // 288: gibson.harness.v1.HarnessCallbackService.ValidateFinding:input_type -> gibson.harness.v1.ValidateFindingRequest
+	130, // 289: gibson.harness.v1.HarnessCallbackService.ValidateGraphNode:input_type -> gibson.harness.v1.ValidateGraphNodeRequest
+	131, // 290: gibson.harness.v1.HarnessCallbackService.ValidateRelationship:input_type -> gibson.harness.v1.ValidateRelationshipRequest
+	141, // 291: gibson.harness.v1.HarnessCallbackService.CreateMission:input_type -> gibson.harness.v1.CreateMissionRequest
+	143, // 292: gibson.harness.v1.HarnessCallbackService.RunMission:input_type -> gibson.harness.v1.RunMissionRequest
+	145, // 293: gibson.harness.v1.HarnessCallbackService.GetMissionStatus:input_type -> gibson.harness.v1.GetMissionStatusRequest
+	147, // 294: gibson.harness.v1.HarnessCallbackService.WaitForMission:input_type -> gibson.harness.v1.WaitForMissionRequest
+	149, // 295: gibson.harness.v1.HarnessCallbackService.ListMissions:input_type -> gibson.harness.v1.ListMissionsRequest
+	151, // 296: gibson.harness.v1.HarnessCallbackService.CancelMission:input_type -> gibson.harness.v1.CancelMissionRequest
+	153, // 297: gibson.harness.v1.HarnessCallbackService.GetMissionResults:input_type -> gibson.harness.v1.GetMissionResultsRequest
+	155, // 298: gibson.harness.v1.HarnessCallbackService.Authorize:input_type -> gibson.harness.v1.AuthorizeRequest
+	158, // 299: gibson.harness.v1.HarnessCallbackService.WorkspaceList:input_type -> gibson.harness.v1.WorkspaceListRequest
+	160, // 300: gibson.harness.v1.HarnessCallbackService.WorkspaceGetInfo:input_type -> gibson.harness.v1.WorkspaceGetInfoRequest
+	162, // 301: gibson.harness.v1.HarnessCallbackService.WorkspaceReadFile:input_type -> gibson.harness.v1.WorkspaceReadFileRequest
+	164, // 302: gibson.harness.v1.HarnessCallbackService.WorkspaceWriteFile:input_type -> gibson.harness.v1.WorkspaceWriteFileRequest
+	166, // 303: gibson.harness.v1.HarnessCallbackService.WorkspaceListFiles:input_type -> gibson.harness.v1.WorkspaceListFilesRequest
+	168, // 304: gibson.harness.v1.HarnessCallbackService.WorkspaceCommit:input_type -> gibson.harness.v1.WorkspaceCommitRequest
+	170, // 305: gibson.harness.v1.HarnessCallbackService.WorkspacePush:input_type -> gibson.harness.v1.WorkspacePushRequest
+	172, // 306: gibson.harness.v1.HarnessCallbackService.DevboxExec:input_type -> gibson.harness.v1.DevboxExecRequest
+	175, // 307: gibson.harness.v1.HarnessCallbackService.PutSessionContext:input_type -> gibson.harness.v1.PutSessionContextRequest
+	177, // 308: gibson.harness.v1.HarnessCallbackService.GetSessionContext:input_type -> gibson.harness.v1.GetSessionContextRequest
+	179, // 309: gibson.harness.v1.HarnessCallbackService.DeleteSessionContext:input_type -> gibson.harness.v1.DeleteSessionContextRequest
+	181, // 310: gibson.harness.v1.HarnessCallbackService.SubscribeInput:input_type -> gibson.harness.v1.SubscribeInputRequest
+	183, // 311: gibson.harness.v1.HarnessCallbackService.PullJob:input_type -> gibson.harness.v1.PullJobRequest
+	185, // 312: gibson.harness.v1.HarnessCallbackService.ReportJobState:input_type -> gibson.harness.v1.ReportJobStateRequest
+	187, // 313: gibson.harness.v1.HarnessCallbackService.ReportDeliverable:input_type -> gibson.harness.v1.ReportDeliverableRequest
+	189, // 314: gibson.harness.v1.HarnessCallbackService.OpenJob:input_type -> gibson.harness.v1.OpenJobRequest
+	191, // 315: gibson.harness.v1.HarnessCallbackService.SendInput:input_type -> gibson.harness.v1.SendInputRequest
+	193, // 316: gibson.harness.v1.HarnessCallbackService.CloseJob:input_type -> gibson.harness.v1.CloseJobRequest
+	195, // 317: gibson.harness.v1.HarnessCallbackService.ClaimFork:input_type -> gibson.harness.v1.ClaimForkRequest
+	13,  // 318: gibson.harness.v1.HarnessCallbackService.ResolveModel:output_type -> gibson.harness.v1.ResolveModelResponse
+	15,  // 319: gibson.harness.v1.HarnessCallbackService.CallToolProto:output_type -> gibson.harness.v1.CallToolProtoResponse
+	17,  // 320: gibson.harness.v1.HarnessCallbackService.CallToolProtoStream:output_type -> gibson.harness.v1.CallToolProtoStreamResponse
+	24,  // 321: gibson.harness.v1.HarnessCallbackService.ListTools:output_type -> gibson.harness.v1.ListToolsResponse
+	27,  // 322: gibson.harness.v1.HarnessCallbackService.SearchTools:output_type -> gibson.harness.v1.SearchToolsResponse
+	30,  // 323: gibson.harness.v1.HarnessCallbackService.QueueToolWork:output_type -> gibson.harness.v1.QueueToolWorkResponse
+	32,  // 324: gibson.harness.v1.HarnessCallbackService.ToolResults:output_type -> gibson.harness.v1.ToolResultsResponse
+	39,  // 325: gibson.harness.v1.HarnessCallbackService.QueryPlugin:output_type -> gibson.harness.v1.QueryPluginResponse
+	41,  // 326: gibson.harness.v1.HarnessCallbackService.ListPlugins:output_type -> gibson.harness.v1.ListPluginsResponse
+	44,  // 327: gibson.harness.v1.HarnessCallbackService.DelegateToAgent:output_type -> gibson.harness.v1.DelegateToAgentResponse
+	46,  // 328: gibson.harness.v1.HarnessCallbackService.ListAgents:output_type -> gibson.harness.v1.ListAgentsResponse
+	49,  // 329: gibson.harness.v1.HarnessCallbackService.SubmitFinding:output_type -> gibson.harness.v1.SubmitFindingResponse
+	87,  // 330: gibson.harness.v1.HarnessCallbackService.Observe:output_type -> gibson.harness.v1.ObserveResponse
+	90,  // 331: gibson.harness.v1.HarnessCallbackService.PlaceBet:output_type -> gibson.harness.v1.PlaceBetResponse
+	92,  // 332: gibson.harness.v1.HarnessCallbackService.SubmitProof:output_type -> gibson.harness.v1.SubmitProofResponse
+	94,  // 333: gibson.harness.v1.HarnessCallbackService.RequestDestructiveAuthorization:output_type -> gibson.harness.v1.RequestDestructiveAuthorizationResponse
+	96,  // 334: gibson.harness.v1.HarnessCallbackService.WorldView:output_type -> gibson.harness.v1.WorldViewResponse
+	52,  // 335: gibson.harness.v1.HarnessCallbackService.QueryNodes:output_type -> gibson.harness.v1.QueryNodesResponse
+	54,  // 336: gibson.harness.v1.HarnessCallbackService.FindSimilarAttacks:output_type -> gibson.harness.v1.FindSimilarAttacksResponse
+	56,  // 337: gibson.harness.v1.HarnessCallbackService.GetAttackChains:output_type -> gibson.harness.v1.GetAttackChainsResponse
+	58,  // 338: gibson.harness.v1.HarnessCallbackService.FindSimilarFindings:output_type -> gibson.harness.v1.FindSimilarFindingsResponse
+	60,  // 339: gibson.harness.v1.HarnessCallbackService.GetRelatedFindings:output_type -> gibson.harness.v1.GetRelatedFindingsResponse
+	62,  // 340: gibson.harness.v1.HarnessCallbackService.GetFindings:output_type -> gibson.harness.v1.GetFindingsResponse
+	65,  // 341: gibson.harness.v1.HarnessCallbackService.ApplicationFindings:output_type -> gibson.harness.v1.ApplicationFindingsResponse
+	67,  // 342: gibson.harness.v1.HarnessCallbackService.GetRunFindings:output_type -> gibson.harness.v1.GetRunFindingsResponse
+	69,  // 343: gibson.harness.v1.HarnessCallbackService.GetMissionRunHistory:output_type -> gibson.harness.v1.GetMissionRunHistoryResponse
+	99,  // 344: gibson.harness.v1.HarnessCallbackService.GetPlanContext:output_type -> gibson.harness.v1.GetPlanContextResponse
+	101, // 345: gibson.harness.v1.HarnessCallbackService.ReportStepHints:output_type -> gibson.harness.v1.ReportStepHintsResponse
+	108, // 346: gibson.harness.v1.HarnessCallbackService.RecordSpan:output_type -> gibson.harness.v1.RecordSpanResponse
+	110, // 347: gibson.harness.v1.HarnessCallbackService.RecordSpans:output_type -> gibson.harness.v1.RecordSpansResponse
+	112, // 348: gibson.harness.v1.HarnessCallbackService.GetCredential:output_type -> gibson.harness.v1.GetCredentialResponse
+	117, // 349: gibson.harness.v1.HarnessCallbackService.GetTaxonomySchema:output_type -> gibson.harness.v1.GetTaxonomySchemaResponse
+	126, // 350: gibson.harness.v1.HarnessCallbackService.ProposeOntologyExtension:output_type -> gibson.harness.v1.ProposeOntologyExtensionResponse
+	128, // 351: gibson.harness.v1.HarnessCallbackService.GenerateNodeID:output_type -> gibson.harness.v1.GenerateNodeIDResponse
+	132, // 352: gibson.harness.v1.HarnessCallbackService.ValidateFinding:output_type -> gibson.harness.v1.ValidateFindingResponse
+	133, // 353: gibson.harness.v1.HarnessCallbackService.ValidateGraphNode:output_type -> gibson.harness.v1.ValidateGraphNodeResponse
+	134, // 354: gibson.harness.v1.HarnessCallbackService.ValidateRelationship:output_type -> gibson.harness.v1.ValidateRelationshipResponse
+	142, // 355: gibson.harness.v1.HarnessCallbackService.CreateMission:output_type -> gibson.harness.v1.CreateMissionResponse
+	144, // 356: gibson.harness.v1.HarnessCallbackService.RunMission:output_type -> gibson.harness.v1.RunMissionResponse
+	146, // 357: gibson.harness.v1.HarnessCallbackService.GetMissionStatus:output_type -> gibson.harness.v1.GetMissionStatusResponse
+	148, // 358: gibson.harness.v1.HarnessCallbackService.WaitForMission:output_type -> gibson.harness.v1.WaitForMissionResponse
+	150, // 359: gibson.harness.v1.HarnessCallbackService.ListMissions:output_type -> gibson.harness.v1.ListMissionsResponse
+	152, // 360: gibson.harness.v1.HarnessCallbackService.CancelMission:output_type -> gibson.harness.v1.CancelMissionResponse
+	154, // 361: gibson.harness.v1.HarnessCallbackService.GetMissionResults:output_type -> gibson.harness.v1.GetMissionResultsResponse
+	156, // 362: gibson.harness.v1.HarnessCallbackService.Authorize:output_type -> gibson.harness.v1.AuthorizeResponse
+	159, // 363: gibson.harness.v1.HarnessCallbackService.WorkspaceList:output_type -> gibson.harness.v1.WorkspaceListResponse
+	161, // 364: gibson.harness.v1.HarnessCallbackService.WorkspaceGetInfo:output_type -> gibson.harness.v1.WorkspaceGetInfoResponse
+	163, // 365: gibson.harness.v1.HarnessCallbackService.WorkspaceReadFile:output_type -> gibson.harness.v1.WorkspaceReadFileResponse
+	165, // 366: gibson.harness.v1.HarnessCallbackService.WorkspaceWriteFile:output_type -> gibson.harness.v1.WorkspaceWriteFileResponse
+	167, // 367: gibson.harness.v1.HarnessCallbackService.WorkspaceListFiles:output_type -> gibson.harness.v1.WorkspaceListFilesResponse
+	169, // 368: gibson.harness.v1.HarnessCallbackService.WorkspaceCommit:output_type -> gibson.harness.v1.WorkspaceCommitResponse
+	171, // 369: gibson.harness.v1.HarnessCallbackService.WorkspacePush:output_type -> gibson.harness.v1.WorkspacePushResponse
+	173, // 370: gibson.harness.v1.HarnessCallbackService.DevboxExec:output_type -> gibson.harness.v1.DevboxExecResponse
+	176, // 371: gibson.harness.v1.HarnessCallbackService.PutSessionContext:output_type -> gibson.harness.v1.PutSessionContextResponse
+	178, // 372: gibson.harness.v1.HarnessCallbackService.GetSessionContext:output_type -> gibson.harness.v1.GetSessionContextResponse
+	180, // 373: gibson.harness.v1.HarnessCallbackService.DeleteSessionContext:output_type -> gibson.harness.v1.DeleteSessionContextResponse
+	182, // 374: gibson.harness.v1.HarnessCallbackService.SubscribeInput:output_type -> gibson.harness.v1.SubscribeInputResponse
+	184, // 375: gibson.harness.v1.HarnessCallbackService.PullJob:output_type -> gibson.harness.v1.PullJobResponse
+	186, // 376: gibson.harness.v1.HarnessCallbackService.ReportJobState:output_type -> gibson.harness.v1.ReportJobStateResponse
+	188, // 377: gibson.harness.v1.HarnessCallbackService.ReportDeliverable:output_type -> gibson.harness.v1.ReportDeliverableResponse
+	190, // 378: gibson.harness.v1.HarnessCallbackService.OpenJob:output_type -> gibson.harness.v1.OpenJobResponse
+	192, // 379: gibson.harness.v1.HarnessCallbackService.SendInput:output_type -> gibson.harness.v1.SendInputResponse
+	194, // 380: gibson.harness.v1.HarnessCallbackService.CloseJob:output_type -> gibson.harness.v1.CloseJobResponse
+	196, // 381: gibson.harness.v1.HarnessCallbackService.ClaimFork:output_type -> gibson.harness.v1.ClaimForkResponse
+	318, // [318:382] is the sub-list for method output_type
+	254, // [254:318] is the sub-list for method input_type
+	254, // [254:254] is the sub-list for extension type_name
+	254, // [254:254] is the sub-list for extension extendee
+	0,   // [0:254] is the sub-list for field type_name
 }
 
 func init() { file_gibson_harness_v1_harness_callback_proto_init() }
@@ -18379,18 +17175,6 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 			}
 		}
 		file_gibson_harness_v1_harness_callback_proto_msgTypes[2].Exporter = func(v any, i int) any {
-			switch v := v.(*TokenUsage); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[3].Exporter = func(v any, i int) any {
 			switch v := v.(*ResolveModelRequest); i {
 			case 0:
 				return &v.state
@@ -18402,7 +17186,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[4].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[3].Exporter = func(v any, i int) any {
 			switch v := v.(*ResolveModelResponse); i {
 			case 0:
 				return &v.state
@@ -18414,151 +17198,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[5].Exporter = func(v any, i int) any {
-			switch v := v.(*LLMMessage); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[6].Exporter = func(v any, i int) any {
-			switch v := v.(*ToolCall); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[7].Exporter = func(v any, i int) any {
-			switch v := v.(*ToolResult); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[8].Exporter = func(v any, i int) any {
-			switch v := v.(*ToolDef); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[9].Exporter = func(v any, i int) any {
-			switch v := v.(*LLMCompleteRequest); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[10].Exporter = func(v any, i int) any {
-			switch v := v.(*LLMCompleteWithToolsRequest); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[11].Exporter = func(v any, i int) any {
-			switch v := v.(*LLMCompleteStructuredRequest); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[12].Exporter = func(v any, i int) any {
-			switch v := v.(*LLMCompleteStructuredResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[13].Exporter = func(v any, i int) any {
-			switch v := v.(*LLMCompleteResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[14].Exporter = func(v any, i int) any {
-			switch v := v.(*LLMCompleteWithToolsResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[15].Exporter = func(v any, i int) any {
-			switch v := v.(*LLMStreamRequest); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[16].Exporter = func(v any, i int) any {
-			switch v := v.(*LLMStreamResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[17].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[4].Exporter = func(v any, i int) any {
 			switch v := v.(*CallToolProtoRequest); i {
 			case 0:
 				return &v.state
@@ -18570,7 +17210,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[18].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[5].Exporter = func(v any, i int) any {
 			switch v := v.(*CallToolProtoResponse); i {
 			case 0:
 				return &v.state
@@ -18582,7 +17222,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[19].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[6].Exporter = func(v any, i int) any {
 			switch v := v.(*CallToolProtoStreamRequest); i {
 			case 0:
 				return &v.state
@@ -18594,7 +17234,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[20].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[7].Exporter = func(v any, i int) any {
 			switch v := v.(*CallToolProtoStreamResponse); i {
 			case 0:
 				return &v.state
@@ -18606,7 +17246,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[21].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[8].Exporter = func(v any, i int) any {
 			switch v := v.(*ToolProgressEvent); i {
 			case 0:
 				return &v.state
@@ -18618,7 +17258,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[22].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[9].Exporter = func(v any, i int) any {
 			switch v := v.(*ToolPartialResultEvent); i {
 			case 0:
 				return &v.state
@@ -18630,7 +17270,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[23].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[10].Exporter = func(v any, i int) any {
 			switch v := v.(*ToolWarningEvent); i {
 			case 0:
 				return &v.state
@@ -18642,7 +17282,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[24].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[11].Exporter = func(v any, i int) any {
 			switch v := v.(*ToolCompleteEvent); i {
 			case 0:
 				return &v.state
@@ -18654,7 +17294,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[25].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[12].Exporter = func(v any, i int) any {
 			switch v := v.(*ToolErrorEvent); i {
 			case 0:
 				return &v.state
@@ -18666,7 +17306,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[26].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[13].Exporter = func(v any, i int) any {
 			switch v := v.(*ListToolsRequest); i {
 			case 0:
 				return &v.state
@@ -18678,7 +17318,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[27].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[14].Exporter = func(v any, i int) any {
 			switch v := v.(*ListToolsResponse); i {
 			case 0:
 				return &v.state
@@ -18690,7 +17330,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[28].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[15].Exporter = func(v any, i int) any {
 			switch v := v.(*HarnessToolDescriptor); i {
 			case 0:
 				return &v.state
@@ -18702,7 +17342,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[29].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[16].Exporter = func(v any, i int) any {
 			switch v := v.(*SearchToolsRequest); i {
 			case 0:
 				return &v.state
@@ -18714,7 +17354,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[30].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[17].Exporter = func(v any, i int) any {
 			switch v := v.(*SearchToolsResponse); i {
 			case 0:
 				return &v.state
@@ -18726,7 +17366,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[31].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[18].Exporter = func(v any, i int) any {
 			switch v := v.(*SearchToolsCandidate); i {
 			case 0:
 				return &v.state
@@ -18738,7 +17378,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[32].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[19].Exporter = func(v any, i int) any {
 			switch v := v.(*QueueToolWorkRequest); i {
 			case 0:
 				return &v.state
@@ -18750,7 +17390,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[33].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[20].Exporter = func(v any, i int) any {
 			switch v := v.(*QueueToolWorkResponse); i {
 			case 0:
 				return &v.state
@@ -18762,7 +17402,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[34].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[21].Exporter = func(v any, i int) any {
 			switch v := v.(*ToolResultsRequest); i {
 			case 0:
 				return &v.state
@@ -18774,7 +17414,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[35].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[22].Exporter = func(v any, i int) any {
 			switch v := v.(*ToolResultsResponse); i {
 			case 0:
 				return &v.state
@@ -18786,7 +17426,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[36].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[23].Exporter = func(v any, i int) any {
 			switch v := v.(*JSONSchemaNode); i {
 			case 0:
 				return &v.state
@@ -18798,7 +17438,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[37].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[24].Exporter = func(v any, i int) any {
 			switch v := v.(*TaxonomyMapping); i {
 			case 0:
 				return &v.state
@@ -18810,7 +17450,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[38].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[25].Exporter = func(v any, i int) any {
 			switch v := v.(*PropertyMapping); i {
 			case 0:
 				return &v.state
@@ -18822,7 +17462,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[39].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[26].Exporter = func(v any, i int) any {
 			switch v := v.(*NodeReference); i {
 			case 0:
 				return &v.state
@@ -18834,7 +17474,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[40].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[27].Exporter = func(v any, i int) any {
 			switch v := v.(*RelationshipMapping); i {
 			case 0:
 				return &v.state
@@ -18846,7 +17486,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[41].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[28].Exporter = func(v any, i int) any {
 			switch v := v.(*QueryPluginRequest); i {
 			case 0:
 				return &v.state
@@ -18858,7 +17498,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[42].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[29].Exporter = func(v any, i int) any {
 			switch v := v.(*QueryPluginResponse); i {
 			case 0:
 				return &v.state
@@ -18870,7 +17510,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[43].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[30].Exporter = func(v any, i int) any {
 			switch v := v.(*ListPluginsRequest); i {
 			case 0:
 				return &v.state
@@ -18882,7 +17522,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[44].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[31].Exporter = func(v any, i int) any {
 			switch v := v.(*ListPluginsResponse); i {
 			case 0:
 				return &v.state
@@ -18894,7 +17534,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[45].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[32].Exporter = func(v any, i int) any {
 			switch v := v.(*HarnessPluginDescriptor); i {
 			case 0:
 				return &v.state
@@ -18906,7 +17546,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[46].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[33].Exporter = func(v any, i int) any {
 			switch v := v.(*DelegateToAgentRequest); i {
 			case 0:
 				return &v.state
@@ -18918,7 +17558,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[47].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[34].Exporter = func(v any, i int) any {
 			switch v := v.(*DelegateToAgentResponse); i {
 			case 0:
 				return &v.state
@@ -18930,7 +17570,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[48].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[35].Exporter = func(v any, i int) any {
 			switch v := v.(*ListAgentsRequest); i {
 			case 0:
 				return &v.state
@@ -18942,7 +17582,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[49].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[36].Exporter = func(v any, i int) any {
 			switch v := v.(*ListAgentsResponse); i {
 			case 0:
 				return &v.state
@@ -18954,7 +17594,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[50].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[37].Exporter = func(v any, i int) any {
 			switch v := v.(*HarnessAgentDescriptor); i {
 			case 0:
 				return &v.state
@@ -18966,7 +17606,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[51].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[38].Exporter = func(v any, i int) any {
 			switch v := v.(*SubmitFindingRequest); i {
 			case 0:
 				return &v.state
@@ -18978,7 +17618,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[52].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[39].Exporter = func(v any, i int) any {
 			switch v := v.(*SubmitFindingResponse); i {
 			case 0:
 				return &v.state
@@ -18990,7 +17630,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[53].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[40].Exporter = func(v any, i int) any {
 			switch v := v.(*FindingFilter); i {
 			case 0:
 				return &v.state
@@ -19002,7 +17642,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[54].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[41].Exporter = func(v any, i int) any {
 			switch v := v.(*QueryNodesRequest); i {
 			case 0:
 				return &v.state
@@ -19014,7 +17654,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[55].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[42].Exporter = func(v any, i int) any {
 			switch v := v.(*QueryNodesResponse); i {
 			case 0:
 				return &v.state
@@ -19026,7 +17666,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[56].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[43].Exporter = func(v any, i int) any {
 			switch v := v.(*FindSimilarAttacksRequest); i {
 			case 0:
 				return &v.state
@@ -19038,7 +17678,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[57].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[44].Exporter = func(v any, i int) any {
 			switch v := v.(*FindSimilarAttacksResponse); i {
 			case 0:
 				return &v.state
@@ -19050,7 +17690,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[58].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[45].Exporter = func(v any, i int) any {
 			switch v := v.(*GetAttackChainsRequest); i {
 			case 0:
 				return &v.state
@@ -19062,7 +17702,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[59].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[46].Exporter = func(v any, i int) any {
 			switch v := v.(*GetAttackChainsResponse); i {
 			case 0:
 				return &v.state
@@ -19074,7 +17714,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[60].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[47].Exporter = func(v any, i int) any {
 			switch v := v.(*FindSimilarFindingsRequest); i {
 			case 0:
 				return &v.state
@@ -19086,7 +17726,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[61].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[48].Exporter = func(v any, i int) any {
 			switch v := v.(*FindSimilarFindingsResponse); i {
 			case 0:
 				return &v.state
@@ -19098,7 +17738,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[62].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[49].Exporter = func(v any, i int) any {
 			switch v := v.(*GetRelatedFindingsRequest); i {
 			case 0:
 				return &v.state
@@ -19110,7 +17750,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[63].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[50].Exporter = func(v any, i int) any {
 			switch v := v.(*GetRelatedFindingsResponse); i {
 			case 0:
 				return &v.state
@@ -19122,7 +17762,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[64].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[51].Exporter = func(v any, i int) any {
 			switch v := v.(*GetFindingsRequest); i {
 			case 0:
 				return &v.state
@@ -19134,7 +17774,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[65].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[52].Exporter = func(v any, i int) any {
 			switch v := v.(*GetFindingsResponse); i {
 			case 0:
 				return &v.state
@@ -19146,7 +17786,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[66].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[53].Exporter = func(v any, i int) any {
 			switch v := v.(*ApplicationFindingsRequest); i {
 			case 0:
 				return &v.state
@@ -19158,7 +17798,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[67].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[54].Exporter = func(v any, i int) any {
 			switch v := v.(*ApplicationFinding); i {
 			case 0:
 				return &v.state
@@ -19170,7 +17810,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[68].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[55].Exporter = func(v any, i int) any {
 			switch v := v.(*ApplicationFindingsResponse); i {
 			case 0:
 				return &v.state
@@ -19182,7 +17822,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[69].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[56].Exporter = func(v any, i int) any {
 			switch v := v.(*GetRunFindingsRequest); i {
 			case 0:
 				return &v.state
@@ -19194,7 +17834,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[70].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[57].Exporter = func(v any, i int) any {
 			switch v := v.(*GetRunFindingsResponse); i {
 			case 0:
 				return &v.state
@@ -19206,7 +17846,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[71].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[58].Exporter = func(v any, i int) any {
 			switch v := v.(*GetMissionRunHistoryRequest); i {
 			case 0:
 				return &v.state
@@ -19218,7 +17858,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[72].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[59].Exporter = func(v any, i int) any {
 			switch v := v.(*GetMissionRunHistoryResponse); i {
 			case 0:
 				return &v.state
@@ -19230,7 +17870,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[73].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[60].Exporter = func(v any, i int) any {
 			switch v := v.(*ObserveRequest); i {
 			case 0:
 				return &v.state
@@ -19242,7 +17882,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[74].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[61].Exporter = func(v any, i int) any {
 			switch v := v.(*LifecycleEntityObservation); i {
 			case 0:
 				return &v.state
@@ -19254,7 +17894,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[75].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[62].Exporter = func(v any, i int) any {
 			switch v := v.(*LifecycleEntityEdge); i {
 			case 0:
 				return &v.state
@@ -19266,7 +17906,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[76].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[63].Exporter = func(v any, i int) any {
 			switch v := v.(*HostObservation); i {
 			case 0:
 				return &v.state
@@ -19278,7 +17918,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[77].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[64].Exporter = func(v any, i int) any {
 			switch v := v.(*PortObservation); i {
 			case 0:
 				return &v.state
@@ -19290,7 +17930,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[78].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[65].Exporter = func(v any, i int) any {
 			switch v := v.(*EndpointObservation); i {
 			case 0:
 				return &v.state
@@ -19302,7 +17942,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[79].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[66].Exporter = func(v any, i int) any {
 			switch v := v.(*TechnologyObservation); i {
 			case 0:
 				return &v.state
@@ -19314,7 +17954,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[80].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[67].Exporter = func(v any, i int) any {
 			switch v := v.(*CertificateObservation); i {
 			case 0:
 				return &v.state
@@ -19326,7 +17966,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[81].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[68].Exporter = func(v any, i int) any {
 			switch v := v.(*DomainObservation); i {
 			case 0:
 				return &v.state
@@ -19338,7 +17978,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[82].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[69].Exporter = func(v any, i int) any {
 			switch v := v.(*SubdomainObservation); i {
 			case 0:
 				return &v.state
@@ -19350,7 +17990,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[83].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[70].Exporter = func(v any, i int) any {
 			switch v := v.(*CredentialObservation); i {
 			case 0:
 				return &v.state
@@ -19362,7 +18002,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[84].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[71].Exporter = func(v any, i int) any {
 			switch v := v.(*AccountObservation); i {
 			case 0:
 				return &v.state
@@ -19374,7 +18014,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[85].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[72].Exporter = func(v any, i int) any {
 			switch v := v.(*MemoryObservation); i {
 			case 0:
 				return &v.state
@@ -19386,7 +18026,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[86].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[73].Exporter = func(v any, i int) any {
 			switch v := v.(*HypothesisObservation); i {
 			case 0:
 				return &v.state
@@ -19398,7 +18038,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[87].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[74].Exporter = func(v any, i int) any {
 			switch v := v.(*ReferencedEntity); i {
 			case 0:
 				return &v.state
@@ -19410,7 +18050,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[88].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[75].Exporter = func(v any, i int) any {
 			switch v := v.(*ReasoningStepObservation); i {
 			case 0:
 				return &v.state
@@ -19422,7 +18062,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[89].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[76].Exporter = func(v any, i int) any {
 			switch v := v.(*AnalysisObservation); i {
 			case 0:
 				return &v.state
@@ -19434,7 +18074,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[90].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[77].Exporter = func(v any, i int) any {
 			switch v := v.(*ObserveResponse); i {
 			case 0:
 				return &v.state
@@ -19446,7 +18086,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[91].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[78].Exporter = func(v any, i int) any {
 			switch v := v.(*PlaceBetRequest); i {
 			case 0:
 				return &v.state
@@ -19458,7 +18098,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[92].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[79].Exporter = func(v any, i int) any {
 			switch v := v.(*Bet); i {
 			case 0:
 				return &v.state
@@ -19470,7 +18110,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[93].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[80].Exporter = func(v any, i int) any {
 			switch v := v.(*PlaceBetResponse); i {
 			case 0:
 				return &v.state
@@ -19482,7 +18122,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[94].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[81].Exporter = func(v any, i int) any {
 			switch v := v.(*SubmitProofRequest); i {
 			case 0:
 				return &v.state
@@ -19494,7 +18134,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[95].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[82].Exporter = func(v any, i int) any {
 			switch v := v.(*SubmitProofResponse); i {
 			case 0:
 				return &v.state
@@ -19506,7 +18146,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[96].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[83].Exporter = func(v any, i int) any {
 			switch v := v.(*RequestDestructiveAuthorizationRequest); i {
 			case 0:
 				return &v.state
@@ -19518,7 +18158,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[97].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[84].Exporter = func(v any, i int) any {
 			switch v := v.(*RequestDestructiveAuthorizationResponse); i {
 			case 0:
 				return &v.state
@@ -19530,7 +18170,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[98].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[85].Exporter = func(v any, i int) any {
 			switch v := v.(*WorldViewRequest); i {
 			case 0:
 				return &v.state
@@ -19542,7 +18182,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[99].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[86].Exporter = func(v any, i int) any {
 			switch v := v.(*WorldViewResponse); i {
 			case 0:
 				return &v.state
@@ -19554,7 +18194,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[100].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[87].Exporter = func(v any, i int) any {
 			switch v := v.(*WorldEntity); i {
 			case 0:
 				return &v.state
@@ -19566,7 +18206,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[101].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[88].Exporter = func(v any, i int) any {
 			switch v := v.(*GetPlanContextRequest); i {
 			case 0:
 				return &v.state
@@ -19578,7 +18218,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[102].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[89].Exporter = func(v any, i int) any {
 			switch v := v.(*GetPlanContextResponse); i {
 			case 0:
 				return &v.state
@@ -19590,7 +18230,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[103].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[90].Exporter = func(v any, i int) any {
 			switch v := v.(*ReportStepHintsRequest); i {
 			case 0:
 				return &v.state
@@ -19602,7 +18242,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[104].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[91].Exporter = func(v any, i int) any {
 			switch v := v.(*ReportStepHintsResponse); i {
 			case 0:
 				return &v.state
@@ -19614,7 +18254,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[105].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[92].Exporter = func(v any, i int) any {
 			switch v := v.(*StepHints); i {
 			case 0:
 				return &v.state
@@ -19626,7 +18266,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[106].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[93].Exporter = func(v any, i int) any {
 			switch v := v.(*AnyValue); i {
 			case 0:
 				return &v.state
@@ -19638,7 +18278,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[107].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[94].Exporter = func(v any, i int) any {
 			switch v := v.(*KeyValue); i {
 			case 0:
 				return &v.state
@@ -19650,7 +18290,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[108].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[95].Exporter = func(v any, i int) any {
 			switch v := v.(*SpanEvent); i {
 			case 0:
 				return &v.state
@@ -19662,7 +18302,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[109].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[96].Exporter = func(v any, i int) any {
 			switch v := v.(*Span); i {
 			case 0:
 				return &v.state
@@ -19674,7 +18314,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[110].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[97].Exporter = func(v any, i int) any {
 			switch v := v.(*RecordSpanRequest); i {
 			case 0:
 				return &v.state
@@ -19686,7 +18326,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[111].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[98].Exporter = func(v any, i int) any {
 			switch v := v.(*RecordSpanResponse); i {
 			case 0:
 				return &v.state
@@ -19698,7 +18338,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[112].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[99].Exporter = func(v any, i int) any {
 			switch v := v.(*RecordSpansRequest); i {
 			case 0:
 				return &v.state
@@ -19710,7 +18350,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[113].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[100].Exporter = func(v any, i int) any {
 			switch v := v.(*RecordSpansResponse); i {
 			case 0:
 				return &v.state
@@ -19722,7 +18362,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[114].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[101].Exporter = func(v any, i int) any {
 			switch v := v.(*GetCredentialRequest); i {
 			case 0:
 				return &v.state
@@ -19734,7 +18374,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[115].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[102].Exporter = func(v any, i int) any {
 			switch v := v.(*GetCredentialResponse); i {
 			case 0:
 				return &v.state
@@ -19746,7 +18386,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[116].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[103].Exporter = func(v any, i int) any {
 			switch v := v.(*Credential); i {
 			case 0:
 				return &v.state
@@ -19758,7 +18398,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[117].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[104].Exporter = func(v any, i int) any {
 			switch v := v.(*BasicAuth); i {
 			case 0:
 				return &v.state
@@ -19770,7 +18410,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[118].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[105].Exporter = func(v any, i int) any {
 			switch v := v.(*OAuthCredential); i {
 			case 0:
 				return &v.state
@@ -19782,7 +18422,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[119].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[106].Exporter = func(v any, i int) any {
 			switch v := v.(*GetTaxonomySchemaRequest); i {
 			case 0:
 				return &v.state
@@ -19794,7 +18434,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[120].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[107].Exporter = func(v any, i int) any {
 			switch v := v.(*GetTaxonomySchemaResponse); i {
 			case 0:
 				return &v.state
@@ -19806,7 +18446,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[121].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[108].Exporter = func(v any, i int) any {
 			switch v := v.(*TaxonomyNodeType); i {
 			case 0:
 				return &v.state
@@ -19818,7 +18458,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[122].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[109].Exporter = func(v any, i int) any {
 			switch v := v.(*TaxonomyRelationshipType); i {
 			case 0:
 				return &v.state
@@ -19830,7 +18470,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[123].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[110].Exporter = func(v any, i int) any {
 			switch v := v.(*TaxonomyTechnique); i {
 			case 0:
 				return &v.state
@@ -19842,7 +18482,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[124].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[111].Exporter = func(v any, i int) any {
 			switch v := v.(*TaxonomyTargetType); i {
 			case 0:
 				return &v.state
@@ -19854,7 +18494,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[125].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[112].Exporter = func(v any, i int) any {
 			switch v := v.(*TaxonomyTechniqueType); i {
 			case 0:
 				return &v.state
@@ -19866,7 +18506,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[126].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[113].Exporter = func(v any, i int) any {
 			switch v := v.(*TaxonomyCapability); i {
 			case 0:
 				return &v.state
@@ -19878,7 +18518,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[127].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[114].Exporter = func(v any, i int) any {
 			switch v := v.(*TaxonomyProperty); i {
 			case 0:
 				return &v.state
@@ -19890,7 +18530,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[128].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[115].Exporter = func(v any, i int) any {
 			switch v := v.(*ProposeOntologyExtensionRequest); i {
 			case 0:
 				return &v.state
@@ -19902,7 +18542,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[129].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[116].Exporter = func(v any, i int) any {
 			switch v := v.(*ProposeOntologyExtensionResponse); i {
 			case 0:
 				return &v.state
@@ -19914,7 +18554,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[130].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[117].Exporter = func(v any, i int) any {
 			switch v := v.(*GenerateNodeIDRequest); i {
 			case 0:
 				return &v.state
@@ -19926,7 +18566,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[131].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[118].Exporter = func(v any, i int) any {
 			switch v := v.(*GenerateNodeIDResponse); i {
 			case 0:
 				return &v.state
@@ -19938,7 +18578,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[132].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[119].Exporter = func(v any, i int) any {
 			switch v := v.(*ValidateFindingRequest); i {
 			case 0:
 				return &v.state
@@ -19950,7 +18590,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[133].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[120].Exporter = func(v any, i int) any {
 			switch v := v.(*ValidateGraphNodeRequest); i {
 			case 0:
 				return &v.state
@@ -19962,7 +18602,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[134].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[121].Exporter = func(v any, i int) any {
 			switch v := v.(*ValidateRelationshipRequest); i {
 			case 0:
 				return &v.state
@@ -19974,7 +18614,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[135].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[122].Exporter = func(v any, i int) any {
 			switch v := v.(*ValidateFindingResponse); i {
 			case 0:
 				return &v.state
@@ -19986,7 +18626,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[136].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[123].Exporter = func(v any, i int) any {
 			switch v := v.(*ValidateGraphNodeResponse); i {
 			case 0:
 				return &v.state
@@ -19998,7 +18638,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[137].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[124].Exporter = func(v any, i int) any {
 			switch v := v.(*ValidateRelationshipResponse); i {
 			case 0:
 				return &v.state
@@ -20010,7 +18650,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[138].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[125].Exporter = func(v any, i int) any {
 			switch v := v.(*ValidationError); i {
 			case 0:
 				return &v.state
@@ -20022,7 +18662,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[139].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[126].Exporter = func(v any, i int) any {
 			switch v := v.(*MissionMetrics); i {
 			case 0:
 				return &v.state
@@ -20034,7 +18674,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[140].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[127].Exporter = func(v any, i int) any {
 			switch v := v.(*MissionInfo); i {
 			case 0:
 				return &v.state
@@ -20046,7 +18686,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[141].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[128].Exporter = func(v any, i int) any {
 			switch v := v.(*MissionStatusInfo); i {
 			case 0:
 				return &v.state
@@ -20058,7 +18698,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[142].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[129].Exporter = func(v any, i int) any {
 			switch v := v.(*MissionResult); i {
 			case 0:
 				return &v.state
@@ -20070,7 +18710,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[143].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[130].Exporter = func(v any, i int) any {
 			switch v := v.(*MissionFilter); i {
 			case 0:
 				return &v.state
@@ -20082,7 +18722,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[144].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[131].Exporter = func(v any, i int) any {
 			switch v := v.(*CreateMissionRequest); i {
 			case 0:
 				return &v.state
@@ -20094,7 +18734,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[145].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[132].Exporter = func(v any, i int) any {
 			switch v := v.(*CreateMissionResponse); i {
 			case 0:
 				return &v.state
@@ -20106,7 +18746,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[146].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[133].Exporter = func(v any, i int) any {
 			switch v := v.(*RunMissionRequest); i {
 			case 0:
 				return &v.state
@@ -20118,7 +18758,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[147].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[134].Exporter = func(v any, i int) any {
 			switch v := v.(*RunMissionResponse); i {
 			case 0:
 				return &v.state
@@ -20130,7 +18770,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[148].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[135].Exporter = func(v any, i int) any {
 			switch v := v.(*GetMissionStatusRequest); i {
 			case 0:
 				return &v.state
@@ -20142,7 +18782,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[149].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[136].Exporter = func(v any, i int) any {
 			switch v := v.(*GetMissionStatusResponse); i {
 			case 0:
 				return &v.state
@@ -20154,7 +18794,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[150].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[137].Exporter = func(v any, i int) any {
 			switch v := v.(*WaitForMissionRequest); i {
 			case 0:
 				return &v.state
@@ -20166,7 +18806,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[151].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[138].Exporter = func(v any, i int) any {
 			switch v := v.(*WaitForMissionResponse); i {
 			case 0:
 				return &v.state
@@ -20178,7 +18818,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[152].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[139].Exporter = func(v any, i int) any {
 			switch v := v.(*ListMissionsRequest); i {
 			case 0:
 				return &v.state
@@ -20190,7 +18830,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[153].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[140].Exporter = func(v any, i int) any {
 			switch v := v.(*ListMissionsResponse); i {
 			case 0:
 				return &v.state
@@ -20202,7 +18842,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[154].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[141].Exporter = func(v any, i int) any {
 			switch v := v.(*CancelMissionRequest); i {
 			case 0:
 				return &v.state
@@ -20214,7 +18854,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[155].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[142].Exporter = func(v any, i int) any {
 			switch v := v.(*CancelMissionResponse); i {
 			case 0:
 				return &v.state
@@ -20226,7 +18866,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[156].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[143].Exporter = func(v any, i int) any {
 			switch v := v.(*GetMissionResultsRequest); i {
 			case 0:
 				return &v.state
@@ -20238,7 +18878,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[157].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[144].Exporter = func(v any, i int) any {
 			switch v := v.(*GetMissionResultsResponse); i {
 			case 0:
 				return &v.state
@@ -20250,7 +18890,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[158].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[145].Exporter = func(v any, i int) any {
 			switch v := v.(*AuthorizeRequest); i {
 			case 0:
 				return &v.state
@@ -20262,7 +18902,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[159].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[146].Exporter = func(v any, i int) any {
 			switch v := v.(*AuthorizeResponse); i {
 			case 0:
 				return &v.state
@@ -20274,7 +18914,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[160].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[147].Exporter = func(v any, i int) any {
 			switch v := v.(*WorkspaceInfo); i {
 			case 0:
 				return &v.state
@@ -20286,7 +18926,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[161].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[148].Exporter = func(v any, i int) any {
 			switch v := v.(*WorkspaceListRequest); i {
 			case 0:
 				return &v.state
@@ -20298,7 +18938,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[162].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[149].Exporter = func(v any, i int) any {
 			switch v := v.(*WorkspaceListResponse); i {
 			case 0:
 				return &v.state
@@ -20310,7 +18950,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[163].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[150].Exporter = func(v any, i int) any {
 			switch v := v.(*WorkspaceGetInfoRequest); i {
 			case 0:
 				return &v.state
@@ -20322,7 +18962,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[164].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[151].Exporter = func(v any, i int) any {
 			switch v := v.(*WorkspaceGetInfoResponse); i {
 			case 0:
 				return &v.state
@@ -20334,7 +18974,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[165].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[152].Exporter = func(v any, i int) any {
 			switch v := v.(*WorkspaceReadFileRequest); i {
 			case 0:
 				return &v.state
@@ -20346,7 +18986,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[166].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[153].Exporter = func(v any, i int) any {
 			switch v := v.(*WorkspaceReadFileResponse); i {
 			case 0:
 				return &v.state
@@ -20358,7 +18998,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[167].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[154].Exporter = func(v any, i int) any {
 			switch v := v.(*WorkspaceWriteFileRequest); i {
 			case 0:
 				return &v.state
@@ -20370,7 +19010,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[168].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[155].Exporter = func(v any, i int) any {
 			switch v := v.(*WorkspaceWriteFileResponse); i {
 			case 0:
 				return &v.state
@@ -20382,7 +19022,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[169].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[156].Exporter = func(v any, i int) any {
 			switch v := v.(*WorkspaceListFilesRequest); i {
 			case 0:
 				return &v.state
@@ -20394,7 +19034,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[170].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[157].Exporter = func(v any, i int) any {
 			switch v := v.(*WorkspaceListFilesResponse); i {
 			case 0:
 				return &v.state
@@ -20406,7 +19046,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[171].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[158].Exporter = func(v any, i int) any {
 			switch v := v.(*WorkspaceCommitRequest); i {
 			case 0:
 				return &v.state
@@ -20418,7 +19058,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[172].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[159].Exporter = func(v any, i int) any {
 			switch v := v.(*WorkspaceCommitResponse); i {
 			case 0:
 				return &v.state
@@ -20430,7 +19070,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[173].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[160].Exporter = func(v any, i int) any {
 			switch v := v.(*WorkspacePushRequest); i {
 			case 0:
 				return &v.state
@@ -20442,7 +19082,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[174].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[161].Exporter = func(v any, i int) any {
 			switch v := v.(*WorkspacePushResponse); i {
 			case 0:
 				return &v.state
@@ -20454,7 +19094,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[175].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[162].Exporter = func(v any, i int) any {
 			switch v := v.(*DevboxExecRequest); i {
 			case 0:
 				return &v.state
@@ -20466,7 +19106,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[176].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[163].Exporter = func(v any, i int) any {
 			switch v := v.(*DevboxExecResponse); i {
 			case 0:
 				return &v.state
@@ -20478,7 +19118,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[177].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[164].Exporter = func(v any, i int) any {
 			switch v := v.(*DevboxExecExit); i {
 			case 0:
 				return &v.state
@@ -20490,7 +19130,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[178].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[165].Exporter = func(v any, i int) any {
 			switch v := v.(*PutSessionContextRequest); i {
 			case 0:
 				return &v.state
@@ -20502,7 +19142,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[179].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[166].Exporter = func(v any, i int) any {
 			switch v := v.(*PutSessionContextResponse); i {
 			case 0:
 				return &v.state
@@ -20514,7 +19154,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[180].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[167].Exporter = func(v any, i int) any {
 			switch v := v.(*GetSessionContextRequest); i {
 			case 0:
 				return &v.state
@@ -20526,7 +19166,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[181].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[168].Exporter = func(v any, i int) any {
 			switch v := v.(*GetSessionContextResponse); i {
 			case 0:
 				return &v.state
@@ -20538,7 +19178,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[182].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[169].Exporter = func(v any, i int) any {
 			switch v := v.(*DeleteSessionContextRequest); i {
 			case 0:
 				return &v.state
@@ -20550,7 +19190,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[183].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[170].Exporter = func(v any, i int) any {
 			switch v := v.(*DeleteSessionContextResponse); i {
 			case 0:
 				return &v.state
@@ -20562,7 +19202,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[184].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[171].Exporter = func(v any, i int) any {
 			switch v := v.(*SubscribeInputRequest); i {
 			case 0:
 				return &v.state
@@ -20574,7 +19214,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[185].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[172].Exporter = func(v any, i int) any {
 			switch v := v.(*SubscribeInputResponse); i {
 			case 0:
 				return &v.state
@@ -20586,7 +19226,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[186].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[173].Exporter = func(v any, i int) any {
 			switch v := v.(*PullJobRequest); i {
 			case 0:
 				return &v.state
@@ -20598,7 +19238,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[187].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[174].Exporter = func(v any, i int) any {
 			switch v := v.(*PullJobResponse); i {
 			case 0:
 				return &v.state
@@ -20610,7 +19250,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[188].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[175].Exporter = func(v any, i int) any {
 			switch v := v.(*ReportJobStateRequest); i {
 			case 0:
 				return &v.state
@@ -20622,7 +19262,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[189].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[176].Exporter = func(v any, i int) any {
 			switch v := v.(*ReportJobStateResponse); i {
 			case 0:
 				return &v.state
@@ -20634,7 +19274,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[190].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[177].Exporter = func(v any, i int) any {
 			switch v := v.(*ReportDeliverableRequest); i {
 			case 0:
 				return &v.state
@@ -20646,7 +19286,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[191].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[178].Exporter = func(v any, i int) any {
 			switch v := v.(*ReportDeliverableResponse); i {
 			case 0:
 				return &v.state
@@ -20658,7 +19298,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[192].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[179].Exporter = func(v any, i int) any {
 			switch v := v.(*OpenJobRequest); i {
 			case 0:
 				return &v.state
@@ -20670,7 +19310,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[193].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[180].Exporter = func(v any, i int) any {
 			switch v := v.(*OpenJobResponse); i {
 			case 0:
 				return &v.state
@@ -20682,7 +19322,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[194].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[181].Exporter = func(v any, i int) any {
 			switch v := v.(*SendInputRequest); i {
 			case 0:
 				return &v.state
@@ -20694,7 +19334,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[195].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[182].Exporter = func(v any, i int) any {
 			switch v := v.(*SendInputResponse); i {
 			case 0:
 				return &v.state
@@ -20706,7 +19346,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[196].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[183].Exporter = func(v any, i int) any {
 			switch v := v.(*CloseJobRequest); i {
 			case 0:
 				return &v.state
@@ -20718,7 +19358,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[197].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[184].Exporter = func(v any, i int) any {
 			switch v := v.(*CloseJobResponse); i {
 			case 0:
 				return &v.state
@@ -20730,7 +19370,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[198].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[185].Exporter = func(v any, i int) any {
 			switch v := v.(*ClaimForkRequest); i {
 			case 0:
 				return &v.state
@@ -20742,7 +19382,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 				return nil
 			}
 		}
-		file_gibson_harness_v1_harness_callback_proto_msgTypes[199].Exporter = func(v any, i int) any {
+		file_gibson_harness_v1_harness_callback_proto_msgTypes[186].Exporter = func(v any, i int) any {
 			switch v := v.(*ClaimForkResponse); i {
 			case 0:
 				return &v.state
@@ -20755,22 +19395,20 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 			}
 		}
 	}
-	file_gibson_harness_v1_harness_callback_proto_msgTypes[9].OneofWrappers = []any{}
-	file_gibson_harness_v1_harness_callback_proto_msgTypes[15].OneofWrappers = []any{}
-	file_gibson_harness_v1_harness_callback_proto_msgTypes[20].OneofWrappers = []any{
+	file_gibson_harness_v1_harness_callback_proto_msgTypes[7].OneofWrappers = []any{
 		(*CallToolProtoStreamResponse_Progress)(nil),
 		(*CallToolProtoStreamResponse_Partial)(nil),
 		(*CallToolProtoStreamResponse_Warning)(nil),
 		(*CallToolProtoStreamResponse_Complete)(nil),
 		(*CallToolProtoStreamResponse_Error)(nil),
 	}
-	file_gibson_harness_v1_harness_callback_proto_msgTypes[36].OneofWrappers = []any{}
-	file_gibson_harness_v1_harness_callback_proto_msgTypes[46].OneofWrappers = []any{
+	file_gibson_harness_v1_harness_callback_proto_msgTypes[23].OneofWrappers = []any{}
+	file_gibson_harness_v1_harness_callback_proto_msgTypes[33].OneofWrappers = []any{
 		(*DelegateToAgentRequest_Ephemeral)(nil),
 		(*DelegateToAgentRequest_BankId)(nil),
 		(*DelegateToAgentRequest_JobId)(nil),
 	}
-	file_gibson_harness_v1_harness_callback_proto_msgTypes[73].OneofWrappers = []any{
+	file_gibson_harness_v1_harness_callback_proto_msgTypes[60].OneofWrappers = []any{
 		(*ObserveRequest_Host)(nil),
 		(*ObserveRequest_Domain)(nil),
 		(*ObserveRequest_Subdomain)(nil),
@@ -20782,21 +19420,21 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 		(*ObserveRequest_ReasoningStep)(nil),
 		(*ObserveRequest_Analysis)(nil),
 	}
-	file_gibson_harness_v1_harness_callback_proto_msgTypes[106].OneofWrappers = []any{
+	file_gibson_harness_v1_harness_callback_proto_msgTypes[93].OneofWrappers = []any{
 		(*AnyValue_StringValue)(nil),
 		(*AnyValue_BoolValue)(nil),
 		(*AnyValue_IntValue)(nil),
 		(*AnyValue_DoubleValue)(nil),
 		(*AnyValue_BytesValue)(nil),
 	}
-	file_gibson_harness_v1_harness_callback_proto_msgTypes[116].OneofWrappers = []any{
+	file_gibson_harness_v1_harness_callback_proto_msgTypes[103].OneofWrappers = []any{
 		(*Credential_ApiKey)(nil),
 		(*Credential_BearerToken)(nil),
 		(*Credential_Basic)(nil),
 		(*Credential_Oauth)(nil),
 		(*Credential_CustomSecret)(nil),
 	}
-	file_gibson_harness_v1_harness_callback_proto_msgTypes[176].OneofWrappers = []any{
+	file_gibson_harness_v1_harness_callback_proto_msgTypes[163].OneofWrappers = []any{
 		(*DevboxExecResponse_Stdout)(nil),
 		(*DevboxExecResponse_Stderr)(nil),
 		(*DevboxExecResponse_Exit)(nil),
@@ -20808,7 +19446,7 @@ func file_gibson_harness_v1_harness_callback_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_gibson_harness_v1_harness_callback_proto_rawDesc,
 			NumEnums:      10,
-			NumMessages:   217,
+			NumMessages:   204,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -195,22 +195,9 @@ type MissionManager interface {
 	GetMissionResults(ctx context.Context, missionID string) (*mission.MissionResult, error)
 }
 
-// ── Harness capability groups ───────────────────────────────────────────────
-//
-// Harness is composed of these rather than carrying 27 methods flat. The
-// grouping is not cosmetic. Before it, the groups existed only as section
-// comments and they had drifted: DelegateToAgent, ListAgents and SubmitFinding
-// sat under "Plugin Access Methods", Observe and WorldView under "Context
-// Access", and the five LLM methods had no header at all. Comments do not
-// compile. MissionManager was the one group already expressed as a type, and
-// the one that had not rotted.
-//
-// Groups also let a caller ask for exactly the capability it needs, so a
-// function that only reads cannot emit.
-//
-// See ADR-0162.
-
-// LLMCaller is the model-facing surface: one completion call per shape an agent needs.
+// LLMCaller is the model-facing surface. The agent gets one client that calls the
+// model gateway with Open Responses items. It holds the items of its conversation
+// from the first message to the last tool result.
 type LLMCaller interface {
 	// LLM Access Methods
 	//
@@ -223,36 +210,6 @@ type LLMCaller interface {
 	// task grant of the agent and adds its token counts to TokenUsage. Keep
 	// the client for the run. Each call to Model asks the daemon again.
 	Model(ctx context.Context, slot string) (*openresponses.Client, error)
-
-	// Complete performs a single LLM completion request.
-	// The slot parameter identifies which LLM to use (e.g., "primary", "vision").
-	// Options can be provided to customize temperature, max tokens, etc.
-	Complete(ctx context.Context, slot string, messages []llm.Message, opts ...llm.CompletionOption) (*llm.CompletionResponse, error)
-
-	// CompleteWithTools performs a completion with tool calling enabled.
-	// The LLM can request to invoke tools and will receive tool results in subsequent turns.
-	CompleteWithTools(ctx context.Context, slot string, messages []llm.Message, tools []llm.ToolDef) (*llm.CompletionResponse, error)
-
-	// Stream performs a streaming completion request.
-	// Returns a channel that yields incremental chunks as they arrive.
-	// The channel will be closed when the stream completes or an error occurs.
-	Stream(ctx context.Context, slot string, messages []llm.Message) (<-chan llm.StreamChunk, error)
-
-	// CompleteStructured performs a completion with provider-native structured output.
-	// The response schema is derived from the provided struct type.
-	// For Anthropic: uses tool_use pattern (schema becomes a tool definition)
-	// For OpenAI: uses response_format with json_schema
-	// The prompt should be natural language - no JSON instructions needed.
-	// The schema parameter should be an instance of the struct type (e.g., MyStruct{}).
-	// The harness derives the JSON Schema from that type, so a ready-made
-	// schema (a map or a schema.JSON value) is not passed through.
-	// It returns the decoded JSON value, not the struct: a map[string]any for
-	// a struct schema. To get the struct, marshal the value and unmarshal it
-	// into the struct type.
-	CompleteStructured(ctx context.Context, slot string, messages []llm.Message, schema any) (any, error)
-
-	// CompleteStructuredAny is an alias for CompleteStructured for compatibility.
-	CompleteStructuredAny(ctx context.Context, slot string, messages []llm.Message, schema any) (any, error)
 }
 
 // ToolCaller is dispatching tools and reading their results.

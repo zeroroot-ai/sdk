@@ -140,26 +140,6 @@ service ComponentService {
       };
     }
 
-    // Complete proxies an LLM completion request through the agent harness.
-    rpc Complete(CompleteRequest) returns (CompleteResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "can_execute"
-        object_type: "component"
-        object_deriver: "system_tenant"
-        allowed_identities: 4  // COMPONENT
-      };
-    }
-
-    // CompleteStream proxies a streaming LLM completion request through the agent harness.
-    rpc CompleteStream(CompleteStreamRequest) returns (stream CompleteStreamResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "can_execute"
-        object_type: "component"
-        object_deriver: "system_tenant"
-        allowed_identities: 4  // COMPONENT
-      };
-    }
-
     // CallTool proxies a tool execution request through the agent harness.
     rpc CallTool(CallToolRequest) returns (CallToolResponse) {
       option (gibson.auth.v1.authz) = {
@@ -280,30 +260,8 @@ service ComponentService {
     }
 
     // =========================================================================
-    // Harness Proxy — LLM (extended)
+    // Harness Proxy — Model
     // =========================================================================
-
-    // CompleteWithTools proxies an LLM completion with tool definitions for
-    // function-calling support. Returns the response including any tool calls.
-    rpc CompleteWithTools(CompleteWithToolsRequest) returns (CompleteWithToolsResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "can_execute"
-        object_type: "component"
-        object_deriver: "system_tenant"
-        allowed_identities: 4  // COMPONENT
-      };
-    }
-
-    // CompleteStructured proxies an LLM completion requesting JSON output
-    // conforming to the supplied schema.
-    rpc CompleteStructured(CompleteStructuredRequest) returns (CompleteStructuredResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "can_execute"
-        object_type: "component"
-        object_deriver: "system_tenant"
-        allowed_identities: 4  // COMPONENT
-      };
-    }
 
     // ResolveModel turns a slot into one exact model name (ADR-0172). The agent
     // then calls the model gateway with the Open Responses client of the SDK.
@@ -761,79 +719,6 @@ message SubmitResultRequest {
 // SubmitResultResponse is returned after a result is accepted.
 message SubmitResultResponse {}
 
-// CompleteRequest is a harness proxy request for a non-streaming LLM completion.
-message CompleteRequest {
-    // work_id ties this request to the active work item for authorization and billing.
-    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
-    // slot is the named LLM slot defined by the agent (e.g. "primary").
-    string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
-    repeated LLMMessage messages = 3;
-    // timeout_ms is the maximum time to wait for the completion.
-    int64 timeout_ms = 4;
-}
-
-// LLMMessage represents a single message in an LLM conversation.
-//
-// Tool-call round trips are represented with two message shapes so a
-// multi-turn conversation can replay the full tool history structurally
-// (instead of flattening it into `content` text):
-//
-//   1. An assistant turn that requested tool calls sets `role` to
-//      "assistant" and carries the calls in `tool_calls` (typically copied
-//      verbatim from a prior `CompleteWithToolsResponse.tool_calls`).
-//      `content` holds any accompanying assistant text and may be empty.
-//   2. A tool-result turn sets `role` to "tool", `tool_call_id` to the
-//      `ToolCallResult.id` it answers, and `content` to the tool's output.
-//      One message per tool call; a turn with N tool calls is followed by
-//      N tool-result messages.
-//
-// Both fields are optional: plain role+content messages are unchanged.
-message LLMMessage {
-    // role is "system", "user", "assistant", or "tool".
-    string role = 1;
-    string content = 2;
-    // tool_calls carries the tool calls an assistant turn requested.
-    // Set only when role is "assistant"; empty for all other roles.
-    repeated ToolCallResult tool_calls = 3;
-    // tool_call_id identifies which requested tool call this message
-    // answers. Set only when role is "tool", in which case `content`
-    // carries the tool's output and this matches the `ToolCallResult.id`
-    // of the corresponding entry in the preceding assistant turn's
-    // `tool_calls`. Empty for all other roles.
-    string tool_call_id = 4;
-}
-
-// CompleteResponse carries the LLM's reply to a non-streaming completion.
-message CompleteResponse {
-    LLMMessage response = 1;
-    TokenUsage usage = 2;
-}
-
-// CompleteStreamRequest is a harness proxy request for a streaming LLM completion.
-message CompleteStreamRequest {
-    // work_id ties this request to the active work item for authorization and billing.
-    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
-    // slot is the named LLM slot defined by the agent (e.g. "primary").
-    string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
-    repeated LLMMessage messages = 3;
-    // timeout_ms is the maximum time to wait for the completion.
-    int64 timeout_ms = 4;
-}
-
-// CompleteStreamResponse is a single chunk in a streaming LLM completion response.
-message CompleteStreamResponse {
-    string content = 1;
-    // done is true on the final chunk; usage is only populated on the final chunk.
-    bool done = 2;
-    TokenUsage usage = 3;
-}
-
-// TokenUsage reports token consumption for an LLM call.
-message TokenUsage {
-    int32 input_tokens = 1;
-    int32 output_tokens = 2;
-}
-
 // CallToolRequest is a harness proxy request to execute a tool.
 message CallToolRequest {
     string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
@@ -1068,58 +953,8 @@ message PluginAccessProto {
 }
 
 // =============================================================================
-// LLM Extended Messages
+// Model Messages
 // =============================================================================
-
-// ToolDefinition describes a tool available for LLM function calling.
-message ToolDefinition {
-    string name = 1;
-    string description = 2;
-    // input_schema is a JSON Schema describing the tool's input parameters.
-    string input_schema_json = 3;
-}
-
-// ToolCallResult represents a tool call made by the LLM.
-message ToolCallResult {
-    string id = 1;
-    string name = 2;
-    // arguments is the JSON-encoded arguments the LLM generated for this tool call.
-    string arguments_json = 3;
-}
-
-// CompleteWithToolsRequest is a harness proxy request for LLM completion with tool definitions.
-message CompleteWithToolsRequest {
-    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
-    string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
-    repeated LLMMessage messages = 3;
-    repeated ToolDefinition tools = 4;
-    int64 timeout_ms = 5;
-}
-
-// CompleteWithToolsResponse carries the LLM's reply including any tool calls.
-message CompleteWithToolsResponse {
-    LLMMessage response = 1;
-    TokenUsage usage = 2;
-    repeated ToolCallResult tool_calls = 3;
-    string finish_reason = 4;
-}
-
-// CompleteStructuredRequest is a harness proxy request for structured JSON output.
-message CompleteStructuredRequest {
-    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
-    string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
-    repeated LLMMessage messages = 3;
-    // schema_json is a JSON Schema the LLM output must conform to.
-    string schema_json = 4 [(buf.validate.field).string = { max_len: 16777216 }];
-    int64 timeout_ms = 5;
-}
-
-// CompleteStructuredResponse carries the validated structured output.
-message CompleteStructuredResponse {
-    // result_json is the JSON output conforming to the requested schema.
-    string result_json = 1;
-    TokenUsage usage = 2;
-}
 
 // ResolveModelRequest asks the daemon for the model of a slot.
 message ResolveModelRequest {
@@ -1146,6 +981,11 @@ message ResolveModelResponse {
     int32 context_window = 5;
     // max_output_tokens is the output limit of the model in tokens. 0 means unknown.
     int32 max_output_tokens = 6;
+    // gateway_ca_pem is the PEM bundle of the private CA that signed the
+    // certificate of the model gateway. The agent trusts exactly this bundle
+    // for calls to gateway_url, which must use https. Empty means the system
+    // roots.
+    string gateway_ca_pem = 7;
 }
 
 // =============================================================================

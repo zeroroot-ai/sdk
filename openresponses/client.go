@@ -6,12 +6,15 @@ package openresponses
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 )
 
 // ResponsesPath is the route of a model call. It is also the method name that
@@ -43,8 +46,18 @@ type Client struct {
 	Provider        string
 	ContextWindow   int
 	MaxOutputTokens int
-	// HTTPClient makes the call. The default is http.DefaultClient.
+	// CAPEM is the PEM bundle of the CA that signed the certificate of the
+	// gateway. When it is set, the client trusts exactly this bundle for the
+	// gateway, and BaseURL must use https. When it is empty, the client uses
+	// the system roots. The client has no option to skip verification.
+	CAPEM string
+	// HTTPClient makes the call. The default is http.DefaultClient. Do not
+	// set it together with CAPEM.
 	HTTPClient *http.Client
+
+	tlsOnce   sync.Once
+	tlsClient *http.Client
+	tlsErr    error
 }
 
 // APIError is an error reply of the gateway.
@@ -64,6 +77,9 @@ func (e *APIError) Error() string {
 func (c *Client) newRequest(ctx context.Context, req *Request, stream bool) (*http.Request, error) {
 	if c.BaseURL == "" {
 		return nil, errors.New("openresponses: client has no base URL")
+	}
+	if c.CAPEM != "" && !strings.HasPrefix(c.BaseURL, "https://") {
+		return nil, errors.New("openresponses: a client with CAPEM needs an https base URL")
 	}
 	r := *req
 	if r.Model == "" {
@@ -104,9 +120,9 @@ func (c *Client) newRequest(ctx context.Context, req *Request, stream bool) (*ht
 }
 
 func (c *Client) do(hr *http.Request) (*http.Response, error) {
-	hc := c.HTTPClient
-	if hc == nil {
-		hc = http.DefaultClient
+	hc, err := c.httpClient()
+	if err != nil {
+		return nil, err
 	}
 	resp, err := hc.Do(hr)
 	if err != nil {
@@ -117,6 +133,32 @@ func (c *Client) do(hr *http.Request) (*http.Response, error) {
 		return nil, parseAPIError(resp)
 	}
 	return resp, nil
+}
+
+// httpClient returns the client for the call. With CAPEM it is a client that
+// trusts only that bundle.
+func (c *Client) httpClient() (*http.Client, error) {
+	if c.CAPEM == "" {
+		if c.HTTPClient != nil {
+			return c.HTTPClient, nil
+		}
+		return http.DefaultClient, nil
+	}
+	if c.HTTPClient != nil {
+		return nil, errors.New("openresponses: set CAPEM or HTTPClient, not both")
+	}
+	c.tlsOnce.Do(func() {
+		pool := x509.NewCertPool()
+		if !pool.AppendCertsFromPEM([]byte(c.CAPEM)) {
+			c.tlsErr = errors.New("openresponses: CAPEM holds no certificate")
+			return
+		}
+		c.tlsClient = &http.Client{Transport: &http.Transport{
+			Proxy:           http.ProxyFromEnvironment,
+			TLSClientConfig: &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12},
+		}}
+	})
+	return c.tlsClient, c.tlsErr
 }
 
 func parseAPIError(resp *http.Response) error {

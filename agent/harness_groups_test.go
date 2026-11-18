@@ -41,7 +41,7 @@ func TestHarnessMethodSetUnchanged(t *testing.T) {
 		"CallToolProto", "CallToolProtoStream", "ListTools", "QueueToolWork", "ToolResults",
 		"CancelMission", "CreateMission", "GetMissionResults", "GetMissionStatus",
 		"ListMissions", "RunMission", "WaitForMission",
-		"Complete", "CompleteStructured", "CompleteStructuredAny", "CompleteWithTools", "Stream",
+		"Model",
 		"DelegateToAgent", "ListAgents",
 		"ListPlugins", "QueryPlugin",
 		"Logger", "Mission", "Target", "TokenUsage", "Tracer",
