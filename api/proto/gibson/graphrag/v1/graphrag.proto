@@ -125,7 +125,12 @@ message DiscoveryResult {
 
   // Security findings
   repeated Finding findings = 9;
-  repeated Evidence evidence = 10;
+
+  // Field 10 was `evidence`, a list of graphrag.v1.Evidence. No code wrote it.
+  // The one evidence shape is gibson.types.v1.Evidence (gibson#1365). The
+  // field number and name are reserved so they are never reused.
+  reserved 10;
+  reserved "evidence";
 
   // Custom extensions
   repeated CustomNode custom_nodes = 20;
@@ -264,15 +269,6 @@ message Finding {
   reserved "cvss_score";
   reserved 11;
   reserved "parent_type";
-}
-
-// Evidence for a finding.
-message Evidence {
-  optional string id = 1;  // Agent-generated UUID for this evidence
-  string finding_id = 2;  // Parent Finding UUID
-  string type = 3;
-  optional string content = 4;
-  optional string url = 5;
 }
 
 // CustomNode for entities not in standard taxonomy.
