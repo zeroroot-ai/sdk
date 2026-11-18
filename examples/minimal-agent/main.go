@@ -6,9 +6,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/a2aproject/a2a-go/v2/a2a"
 	"log"
 
+	"github.com/a2aproject/a2a-go/v2/a2a"
 	sdk "github.com/zeroroot-ai/sdk"
 	"github.com/zeroroot-ai/sdk/agent"
 	"github.com/zeroroot-ai/sdk/openresponses"
@@ -87,10 +87,12 @@ func executeAgent(ctx context.Context, h agent.Harness, task agent.Task) (agent.
 		}, nil
 	}
 
-	fmt.Printf("  LLM Response: %s\n", resp.Text())
+	tokens := 0
 	if resp.Usage != nil {
-		fmt.Printf("  Tokens used: %d\n", resp.Usage.TotalTokens)
+		tokens = resp.Usage.TotalTokens
 	}
+	fmt.Printf("  LLM Response: %s\n", resp.Text())
+	fmt.Printf("  Tokens used: %d\n", tokens)
 
 	// Example: List available tools
 	// In a real agent, you might use tools to interact with the target system
@@ -128,7 +130,7 @@ func executeAgent(ctx context.Context, h agent.Harness, task agent.Task) (agent.
 	mission := h.Mission()
 	target := h.Target()
 	fmt.Printf("  Mission: %s\n", mission.Name)
-	fmt.Printf("  Target: %s\n", target.URL)
+	fmt.Printf("  Target: %s\n", target.URL())
 
 	// Example: Report a finding
 	// In a real agent, you would discover actual vulnerabilities
@@ -151,17 +153,17 @@ func executeAgent(ctx context.Context, h agent.Harness, task agent.Task) (agent.
 	logger := h.Logger()
 	logger.Info("Task execution completed",
 		"task_id", task.ID,
-		"tokens", completion.Usage.TotalTokens)
+		"tokens", tokens)
 
 	// Return a successful result
 	return agent.Result{
 		Status: a2a.TaskStateCompleted,
 		Output: "Task completed successfully. Agent is operational.",
 		Metadata: map[string]any{
-			"tokens_used": completion.Usage.TotalTokens,
-			"response":    completion.Content,
+			"tokens_used": tokens,
+			"response":    resp.Text(),
 			"mission":     mission.Name,
-			"target":      target.URL,
+			"target":      target.URL(),
 		},
 	}, nil
 }
