@@ -8,6 +8,8 @@ option go_package = "github.com/zeroroot-ai/sdk/api/gen/gibson/graphrag/v1;graph
 option java_multiple_files = true;
 option csharp_namespace = "Gibson.Graphrag";
 
+import "gibson/types/v1/types.proto";
+
 // GraphQuery represents a query against the knowledge graph using proto-canonical types.
 message GraphQuery {
   string text = 1;
@@ -132,6 +134,13 @@ message DiscoveryResult {
   reserved 10;
   reserved "evidence";
 
+  // finding_evidence is evidence that a parser read from tool output, for a
+  // finding of this result. Each item names its finding by finding_id. A parser
+  // fills the type, the title, the content and the metadata of the evidence. It
+  // never sets the tier or the tool call id: the daemon sets both. The number 10
+  // stays reserved. This is a new field with a new number.
+  repeated FindingEvidence finding_evidence = 23;
+
   // Custom extensions
   repeated CustomNode custom_nodes = 20;
   repeated ExplicitRelationship explicit_relationships = 21;
@@ -145,6 +154,17 @@ message DiscoveryResult {
   // ADR-0097).
   reserved 22;
   reserved "compliance_signals";
+}
+
+// FindingEvidence ties one evidence item to a finding of the same
+// DiscoveryResult. The evidence shape is gibson.types.v1.Evidence, the one
+// evidence shape (gibson#1365).
+message FindingEvidence {
+  // finding_id is the id of an entry of DiscoveryResult.findings.
+  string finding_id = 1;
+  // evidence is the item. The tier and the tool_call_id of it are set by the
+  // daemon, and the daemon ignores a value that a parser sends.
+  gibson.types.v1.Evidence evidence = 2;
 }
 
 // Host discovered by a tool.
