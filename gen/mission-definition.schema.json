@@ -811,6 +811,13 @@
           },
           "description": "",
           "type": "object"
+        },
+        "pinnedSkills": {
+          "description": "pinned_skills lists the Agent Skills that the mission pins for this task, as canonical ids of the form skill:\u003cname\u003e (gibson#1375). Before its first model call, the SDK loads each one with invoke_tool and puts the result at the start of the conversation. A skill that fails to load stops the run.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         }
       },
       "type": "object"
