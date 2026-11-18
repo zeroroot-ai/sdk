@@ -1574,27 +1574,14 @@ func boundedInt32(n int) int32 {
 func (h *CallbackHarness) Delegate(
 	ctx context.Context, name string, msg *a2a.Message, opts ...agent.DelegateOption,
 ) (*a2a.Task, error) {
-	ctx, span := h.tracer.Start(ctx, "gibson.agent.delegate",
-		trace.WithSpanKind(trace.SpanKindClient),
-		trace.WithAttributes(attribute.String("gibson.agent.name", name)),
-	)
-	defer span.End()
-
-	resp, err := h.client.ResolveAgent(ctx, name, agent.ApplyDelegateOptions(opts).BankID)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("CallbackHarness.Delegate: %w", err)
-	}
-	task, err := delegate(ctx, &resolvedAgent{
-		gatewayURL: resp.GetGatewayUrl(), routeHeaders: resp.GetRouteHeaders(),
-		gatewayCAPEM: resp.GetGatewayCaPem(), cardURL: resp.GetAgentCardUrl(),
+	bankID := agent.ApplyDelegateOptions(opts).BankID
+	return delegateVia(ctx, h.tracer, "CallbackHarness", name, func(ctx context.Context) (*resolvedAgent, error) {
+		resp, err := h.client.ResolveAgent(ctx, name, bankID)
+		if err != nil {
+			return nil, err
+		}
+		return &resolvedAgent{
+			gatewayURL: resp.GetGatewayUrl(), routeHeaders: resp.GetRouteHeaders(), gatewayCAPEM: resp.GetGatewayCaPem(),
+		}, nil
 	}, h.client.grantHeaders(), msg)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("CallbackHarness.Delegate: %w", err)
-	}
-	span.SetAttributes(attribute.String("a2a.task.state", string(task.Status.State)))
-	return task, nil
 }

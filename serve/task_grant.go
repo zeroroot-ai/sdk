@@ -52,13 +52,13 @@ func (g *taskGrant) get(ctx context.Context) (string, error) {
 		return g.token, nil
 	}
 	fresh, err := g.renew(ctx, g.token)
-	if err != nil {
-		// A grant that has not ended yet still works. One that has ended does not.
-		if g.now().Before(claims.ExpiresAt) {
-			return g.token, nil
-		}
-		return "", fmt.Errorf("the task grant has ended and the renewal failed: %w", err)
+	if err == nil {
+		g.token = fresh
+		return g.token, nil
 	}
-	g.token = fresh
-	return g.token, nil
+	// A grant that has not ended yet still works. One that has ended does not.
+	if g.now().Before(claims.ExpiresAt) {
+		return g.token, nil
+	}
+	return "", fmt.Errorf("the task grant has ended and the renewal failed: %w", err)
 }

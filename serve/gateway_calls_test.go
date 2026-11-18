@@ -5,6 +5,7 @@ package serve
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -30,14 +31,14 @@ func (r *resolverComponent) ResolveAgent(
 	_ context.Context, req *componentpb.ResolveAgentRequest,
 ) (*componentpb.ResolveAgentResponse, error) {
 	if r.fail {
-		return nil, status.Error(codes.NotFound, "no such agent")
+		return nil, fmt.Errorf("resolve: %w", status.Error(codes.NotFound, "no such agent"))
 	}
 	r.bank = req.BankId
 	return &componentpb.ResolveAgentResponse{GatewayUrl: r.agentURL, AgentCardUrl: r.agentURL + "/card"}, nil
 }
 
 func (r *resolverComponent) ResolveModel(context.Context, *componentpb.ResolveModelRequest) (*componentpb.ResolveModelResponse, error) {
-	return nil, status.Error(codes.PermissionDenied, "no")
+	return nil, fmt.Errorf("resolve: %w", status.Error(codes.PermissionDenied, "no"))
 }
 
 func TestPlatformHarnessDelegate(t *testing.T) {

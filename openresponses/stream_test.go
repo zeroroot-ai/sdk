@@ -5,7 +5,6 @@ package openresponses
 
 import (
 	"context"
-	"errors"
 	"io"
 	"strings"
 	"testing"
@@ -22,7 +21,7 @@ func TestStreamSkipsCommentsAndReadsDone(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, EventOutputTextDelta, ev.Type, "the event line names the type when the data has none")
 	_, err = s.Recv()
-	assert.ErrorIs(t, err, io.EOF)
+	require.ErrorIs(t, err, io.EOF)
 	require.NoError(t, s.Close())
 }
 
@@ -33,7 +32,7 @@ func TestStreamLastEventWithoutBlankLine(t *testing.T) {
 	assert.Equal(t, EventCompleted, ev.Type)
 	assert.Equal(t, "completed", s.Response().Status)
 	_, err = s.Recv()
-	assert.ErrorIs(t, err, io.EOF)
+	require.ErrorIs(t, err, io.EOF)
 }
 
 func TestStreamErrorEvents(t *testing.T) {
@@ -115,7 +114,7 @@ func TestStructuredEmptyAndFailed(t *testing.T) {
 	srv2, _ := newGateway(t, 500, "application/json", `{}`)
 	_, err = testClient(srv2).CreateStructured(context.Background(), &Request{Input: []Item{NewUserMessage("x")}}, "n", map[string]any{}, &out)
 	require.Error(t, err)
-	assert.False(t, errors.Is(err, io.EOF))
+	require.NotErrorIs(t, err, io.EOF)
 }
 
 func TestFailedResponseWithoutError(t *testing.T) {

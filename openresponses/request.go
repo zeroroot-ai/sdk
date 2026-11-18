@@ -205,7 +205,7 @@ func (r *Response) Text() string {
 
 // FunctionCalls returns the function calls of the response in order.
 func (r *Response) FunctionCalls() []FunctionCall {
-	var out []FunctionCall
+	out := make([]FunctionCall, 0, len(r.Output))
 	for _, it := range r.Output {
 		if c, ok := it.(FunctionCall); ok {
 			out = append(out, c)

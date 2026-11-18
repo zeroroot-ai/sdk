@@ -129,7 +129,7 @@ func (c *Client) do(hr *http.Request) (*http.Response, error) {
 		return nil, fmt.Errorf("openresponses: call gateway: %w", err)
 	}
 	if resp.StatusCode/100 != 2 {
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		return nil, parseAPIError(resp)
 	}
 	return resp, nil
@@ -189,7 +189,7 @@ func (c *Client) Create(ctx context.Context, req *Request) (*Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	var out Response
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
 		return nil, fmt.Errorf("openresponses: decode response: %w", err)

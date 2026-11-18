@@ -5,6 +5,7 @@ package serve
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"testing"
 
@@ -84,9 +85,14 @@ func (toolCallComponent) CallToolStream(
 	_ *componentpb.CallToolStreamRequest, s grpc.ServerStreamingServer[componentpb.CallToolStreamResponse],
 ) error {
 	if err := s.Send(&componentpb.CallToolStreamResponse{EventType: "progress", PayloadJson: `{"percent":1}`}); err != nil {
-		return err
+		return fmt.Errorf("send: %w", err)
 	}
-	return s.Send(&componentpb.CallToolStreamResponse{EventType: "result", PayloadJson: `"done"`, Done: true, ToolCallId: "tc-s"})
+	if err := s.Send(&componentpb.CallToolStreamResponse{
+		EventType: "result", PayloadJson: `"done"`, Done: true, ToolCallId: "tc-s",
+	}); err != nil {
+		return fmt.Errorf("send: %w", err)
+	}
+	return nil
 }
 
 func TestPlatformToolCallIDs(t *testing.T) {

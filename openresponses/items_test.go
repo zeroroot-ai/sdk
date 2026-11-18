@@ -66,7 +66,7 @@ func TestUnmarshalItemErrors(t *testing.T) {
 		"bad reasoning": `{"type":"reasoning","summary":5}`,
 	} {
 		_, err := UnmarshalItem([]byte(in))
-		assert.Error(t, err, name)
+		require.Error(t, err, name)
 	}
 	it, err := UnmarshalItem([]byte(`{"type":"message","role":"assistant"}`))
 	require.NoError(t, err)

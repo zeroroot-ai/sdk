@@ -91,5 +91,9 @@ func (r *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 			req.Header.Set(k, v)
 		}
 	}
-	return r.next.RoundTrip(req)
+	resp, err := r.next.RoundTrip(req)
+	if err != nil {
+		return nil, fmt.Errorf("gateway round trip: %w", err)
+	}
+	return resp, nil
 }

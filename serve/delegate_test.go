@@ -117,7 +117,7 @@ func TestDelegateRefusesAnUnknownCA(t *testing.T) {
 
 // rpcServer is a hand-made A2A JSON-RPC server. send answers SendMessage and
 // get answers GetTask.
-func rpcServer(t *testing.T, send func() any, get func() any) (*httptest.Server, *int) {
+func rpcServer(t *testing.T, send, get func() any) (*httptest.Server, *int) {
 	t.Helper()
 	gets := new(int)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -177,7 +177,7 @@ func TestDelegateStopsOnInputRequiredAndOnAFailedTask(t *testing.T) {
 		task, err := delegate(context.Background(), &resolvedAgent{gatewayURL: srv.URL}, testGrantHeaders, userMessage("x"))
 		require.NoError(t, err, state)
 		assert.Equal(t, state, task.Status.State)
-		assert.Zero(t, *gets, "no poll for %s", state)
+		assert.Zerof(t, *gets, "no poll for %s", state)
 	}
 }
 
@@ -240,7 +240,7 @@ func TestDelegateWithABank(t *testing.T) {
 		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) { return lis.Dial() }),
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	cc := &CallbackClient{conn: conn, client: harnesspb.NewHarnessCallbackServiceClient(conn), connected: true, token: "task-grant"}
 	h := &CallbackHarness{client: cc, tokenTracker: NewCallbackTokenTracker(), tracer: defaultNoopTracer()}
 

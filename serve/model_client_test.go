@@ -12,6 +12,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"io"
 	"math/big"
 	"net"
@@ -63,7 +64,7 @@ func (f *fakeHarnessCallback) ResolveModel(
 ) (*harnesspb.ResolveModelResponse, error) {
 	f.gotSlot = req.GetSlot()
 	if req.GetSlot() == "missing" {
-		return nil, status.Error(codes.NotFound, "no model for slot")
+		return nil, fmt.Errorf("resolve: %w", status.Error(codes.NotFound, "no model for slot"))
 	}
 	return &harnesspb.ResolveModelResponse{
 		Model: "claude-exact-1", Provider: "prov", GatewayUrl: f.gatewayURL, GatewayCaPem: f.caPEM,
@@ -96,7 +97,7 @@ func TestCallbackHarnessModelEndToEnd(t *testing.T) {
 		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) { return lis.Dial() }),
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	cc := &CallbackClient{
 		conn: conn, client: harnesspb.NewHarnessCallbackServiceClient(conn), connected: true, token: "task-grant",
@@ -135,7 +136,7 @@ func (fakeComponent) ResolveModel(
 	_ context.Context, req *componentpb.ResolveModelRequest,
 ) (*componentpb.ResolveModelResponse, error) {
 	if req.GetWorkId() != "work-001" {
-		return nil, status.Error(codes.PermissionDenied, "wrong work item")
+		return nil, fmt.Errorf("resolve: %w", status.Error(codes.PermissionDenied, "wrong work item"))
 	}
 	return &componentpb.ResolveModelResponse{
 		Model: "m-exact", GatewayUrl: "http://gw", RouteHeaders: map[string]string{"x-gibson-tenant": "t"},

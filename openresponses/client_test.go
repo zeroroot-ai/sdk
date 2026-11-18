@@ -61,7 +61,7 @@ func assertGolden(t *testing.T, name string, got []byte) {
 		require.NoError(t, err)
 		require.NoError(t, os.WriteFile(path, append(pretty, '\n'), 0o600))
 	}
-	want, err := os.ReadFile(path)
+	want, err := os.ReadFile(path) //nolint:gosec // reads a golden file under testdata
 	require.NoError(t, err)
 	assert.JSONEq(t, string(want), string(got))
 }
@@ -86,12 +86,12 @@ const plainReply = `{"id":"resp_1","object":"response","status":"completed","mod
 func TestCreatePlain(t *testing.T) {
 	srv, c := newGateway(t, 200, "application/json", plainReply)
 	temp := 0.2
-	max := 100
+	maxTokens := 100
 	resp, err := testClient(srv).Create(context.Background(), &Request{
 		Instructions:    "Be brief.",
 		Input:           []Item{NewUserMessage("say hello")},
 		Temperature:     &temp,
-		MaxOutputTokens: &max,
+		MaxOutputTokens: &maxTokens,
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "hello", resp.Text())
@@ -192,7 +192,7 @@ func TestStream(t *testing.T) {
 	srv, c := newGateway(t, 200, "text/event-stream", streamReply)
 	s, err := testClient(srv).Stream(context.Background(), &Request{Input: []Item{NewUserMessage("hi")}})
 	require.NoError(t, err)
-	defer s.Close()
+	t.Cleanup(func() { _ = s.Close() })
 
 	var deltas []string
 	resp, err := s.Collect(func(d string) { deltas = append(deltas, d) })
@@ -208,7 +208,7 @@ func TestStreamEvents(t *testing.T) {
 	srv, _ := newGateway(t, 200, "text/event-stream", streamReply)
 	s, err := testClient(srv).Stream(context.Background(), &Request{Input: []Item{NewUserMessage("hi")}})
 	require.NoError(t, err)
-	defer s.Close()
+	t.Cleanup(func() { _ = s.Close() })
 	var types []string
 	for {
 		ev, err := s.Recv()
@@ -237,7 +237,7 @@ data: {"type":"response.completed","sequence_number":3,"response":{"status":"com
 	srv, _ := newGateway(t, 200, "text/event-stream", reply)
 	s, err := testClient(srv).Stream(context.Background(), &Request{Input: []Item{NewUserMessage("x")}})
 	require.NoError(t, err)
-	defer s.Close()
+	t.Cleanup(func() { _ = s.Close() })
 	resp, err := s.Collect(nil)
 	require.NoError(t, err)
 	require.Len(t, resp.FunctionCalls(), 1)
@@ -251,7 +251,7 @@ func TestStreamFailed(t *testing.T) {
 	srv, _ := newGateway(t, 200, "text/event-stream", reply)
 	s, err := testClient(srv).Stream(context.Background(), &Request{Input: []Item{NewUserMessage("x")}})
 	require.NoError(t, err)
-	defer s.Close()
+	t.Cleanup(func() { _ = s.Close() })
 	_, err = s.Collect(nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "boom")
@@ -348,7 +348,7 @@ func TestOnUsage(t *testing.T) {
 	cl2.OnUsage = func(u Usage) { got = append(got, u) }
 	s, err := cl2.Stream(context.Background(), &Request{Input: []Item{NewUserMessage("x")}})
 	require.NoError(t, err)
-	defer s.Close()
+	t.Cleanup(func() { _ = s.Close() })
 	_, err = s.Collect(nil)
 	require.NoError(t, err)
 	require.Len(t, got, 2)

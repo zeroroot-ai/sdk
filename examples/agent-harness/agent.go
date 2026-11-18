@@ -172,7 +172,7 @@ func callLLM(ctx context.Context, h agent.Harness, task agent.Task, rep *Report)
 		rep.add(Step{Call: "Stream", Err: err})
 		return
 	}
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 	var text strings.Builder
 	final, err := st.Collect(func(d string) { text.WriteString(d) })
 	if err != nil {

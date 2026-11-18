@@ -11,6 +11,9 @@ import (
 
 	"github.com/a2aproject/a2a-go/v2/a2a"
 	"github.com/a2aproject/a2a-go/v2/a2aclient"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/zeroroot-ai/sdk/internal/gwhttp"
 )
@@ -26,7 +29,34 @@ type resolvedAgent struct {
 	gatewayURL   string
 	routeHeaders map[string]string
 	gatewayCAPEM string
-	cardURL      string
+}
+
+// delegateVia resolves an agent with resolve, then sends the message to it
+// under one span. Both harnesses use it, so that a delegation has one code path.
+func delegateVia(
+	ctx context.Context, tracer trace.Tracer, harness, name string,
+	resolve func(context.Context) (*resolvedAgent, error), headers gwhttp.HeaderFunc, msg *a2a.Message,
+) (*a2a.Task, error) {
+	ctx, span := tracer.Start(ctx, "gibson.agent.delegate",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(attribute.String("gibson.agent.name", name)),
+	)
+	defer span.End()
+
+	ra, err := resolve(ctx)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, fmt.Errorf("%s.Delegate: %w", harness, err)
+	}
+	task, err := delegate(ctx, ra, headers, msg)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, fmt.Errorf("%s.Delegate: %w", harness, err)
+	}
+	span.SetAttributes(attribute.String("a2a.task.state", string(task.Status.State)))
+	return task, nil
 }
 
 // delegate sends one A2A message to an agent through the Agent gateway

@@ -138,7 +138,8 @@ func TestCallbackHarness_EveryCallReachesTheDaemon(t *testing.T) {
 		assert.Equal(t, "verdict", format["name"])
 		assert.Contains(t, mustStep(t, rep, "CreateStructured").Summary, "Safe:true")
 
-		assert.Equal(t, true, reqs[3].body["stream"])
+		streaming, _ := reqs[3].body["stream"].(bool)
+		assert.True(t, streaming)
 		s := value[streamed](t, rep, "Stream")
 		assert.Equal(t, "hello", s.Text)
 		assert.Equal(t, "completed", s.Status)
@@ -472,7 +473,7 @@ func TestPlatformHarness_EveryCallReachesTheDaemon(t *testing.T) {
 	assert.Equal(t, "model=model-exact provider=prov", mustStep(t, rep, "Model").Summary)
 	// This test client has no capability grant, so each call to the gateway stops before it is sent.
 	for _, call := range []string{"Create", "CreateWithTools", "CreateStructured", "Stream"} {
-		assert.ErrorContains(t, mustStep(t, rep, call).Err, "no task grant", call)
+		require.ErrorContains(t, mustStep(t, rep, call).Err, "no task grant", call)
 	}
 
 	assert.Equal(t, "pong", value[string](t, rep, "CallToolProto"))
@@ -491,7 +492,7 @@ func TestPlatformHarness_EveryCallReachesTheDaemon(t *testing.T) {
 	assert.Equal(t, []int{0, 1}, []int{results[0].Index, results[1].Index})
 	assert.Equal(t, map[string]any{"open": true}, value[any](t, rep, "QueryPlugin"))
 	assert.Empty(t, value[[]plugin.Descriptor](t, rep, "ListPlugins"))
-	assert.ErrorContains(t, mustStep(t, rep, "Delegate").Err, "no task grant")
+	require.ErrorContains(t, mustStep(t, rep, "Delegate").Err, "no task grant")
 	assert.Equal(t, "child-1", value[*mission.MissionInfo](t, rep, "CreateMission").ID)
 	assert.Equal(t, "scan", value[*mission.MissionStatusInfo](t, rep, "GetMissionStatus").Phase)
 	assert.Equal(t, mission.MissionStatusCompleted, value[*mission.MissionResult](t, rep, "WaitForMission").Status)

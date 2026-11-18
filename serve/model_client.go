@@ -65,7 +65,7 @@ func grantHeaders(source func(ctx context.Context) (string, error)) openresponse
 	return func(ctx context.Context, _ string) (map[string]string, error) {
 		g, err := source(ctx)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("get the task grant: %w", err)
 		}
 		return map[string]string{capabilitygrant.MetadataHeaderCapabilityGrant: g}, nil
 	}

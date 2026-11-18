@@ -186,10 +186,9 @@ func ResultToTask(t Task, r Result) (*a2a.Task, error) {
 		if err != nil {
 			return nil, err
 		}
-		switch state {
-		case a2a.TaskStateInputRequired, a2a.TaskStateAuthRequired:
+		if state == a2a.TaskStateInputRequired || state == a2a.TaskStateAuthRequired {
 			out.Status.Message = a2a.NewMessageForTask(a2a.MessageRoleAgent, out, part)
-		default:
+		} else {
 			out.Artifacts = append(out.Artifacts, &a2a.Artifact{
 				ID: a2a.NewArtifactID(), Name: "output", Parts: a2a.ContentParts{part},
 			})
