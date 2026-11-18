@@ -2320,12 +2320,13 @@ message ValidationError {
 // MissionStatus represents the current state of a mission.
 enum MissionStatus {
     MISSION_STATUS_UNSPECIFIED = 0;
-    MISSION_STATUS_PENDING = 1;
-    MISSION_STATUS_RUNNING = 2;
+    MISSION_STATUS_SUBMITTED = 1;
+    MISSION_STATUS_WORKING = 2;
     MISSION_STATUS_PAUSED = 3;
     MISSION_STATUS_COMPLETED = 4;
     MISSION_STATUS_FAILED = 5;
-    MISSION_STATUS_CANCELLED = 6;
+    MISSION_STATUS_CANCELED = 6;
+    MISSION_STATUS_INPUT_REQUIRED = 7;
 }
 
 // MissionMetrics aggregates execution statistics.

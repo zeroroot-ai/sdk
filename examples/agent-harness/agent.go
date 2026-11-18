@@ -424,7 +424,7 @@ func callMissions(ctx context.Context, h agent.Harness, rep *Report) {
 	waited, err := h.WaitForMission(ctx, info.ID, 5*time.Second)
 	record(rep, "WaitForMission", waited, err, describeMissionResult)
 
-	pending := mission.MissionStatusRunning
+	pending := mission.MissionStatusWorking
 	list, err := h.ListMissions(ctx, &mission.MissionFilter{Status: &pending, Tags: []string{"d86"}, Limit: 5})
 	record(rep, "ListMissions", list, err, func(ms []*mission.MissionInfo) string {
 		out := make([]string, 0, len(ms))

@@ -40,8 +40,8 @@ func TestCallbackHarnessConversions(t *testing.T) {
 
 func TestStatusAndScopeConversions(t *testing.T) {
 	for _, s := range []mission.MissionStatus{
-		mission.MissionStatusPending, mission.MissionStatusRunning, mission.MissionStatusPaused,
-		mission.MissionStatusCompleted, mission.MissionStatusFailed, mission.MissionStatusCancelled, "other",
+		mission.MissionStatusSubmitted, mission.MissionStatusWorking, mission.MissionStatusPaused,
+		mission.MissionStatusCompleted, mission.MissionStatusFailed, mission.MissionStatusCanceled, mission.MissionStatusInputRequired, "other",
 	} {
 		_ = missionStatusToProto(s)
 	}

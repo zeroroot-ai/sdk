@@ -264,7 +264,7 @@ func TestCallbackHarness_EveryCallReachesTheDaemon(t *testing.T) {
 		assert.JSONEq(t, `{"name":"child"}`, string(cm.GetMissionDefinitionJson()))
 		info := value[*mission.MissionInfo](t, rep, "CreateMission")
 		assert.Equal(t, "child-1", info.ID)
-		assert.Equal(t, mission.MissionStatusRunning, info.Status)
+		assert.Equal(t, mission.MissionStatusWorking, info.Status)
 
 		rm := only[*harnesspb.RunMissionRequest](t, &d.recorder, "RunMission")
 		assert.Equal(t, "child-1", rm.GetMissionId())
@@ -284,7 +284,7 @@ func TestCallbackHarness_EveryCallReachesTheDaemon(t *testing.T) {
 		assert.Equal(t, "Child finding", waited.Findings[0].Title)
 
 		lm := only[*harnesspb.ListMissionsRequest](t, &d.recorder, "ListMissions")
-		assert.Equal(t, harnesspb.MissionStatus_MISSION_STATUS_RUNNING, lm.GetFilter().GetStatus())
+		assert.Equal(t, harnesspb.MissionStatus_MISSION_STATUS_WORKING, lm.GetFilter().GetStatus())
 		assert.Equal(t, []string{"d86"}, lm.GetFilter().GetTags())
 		assert.Equal(t, int32(5), lm.GetPageSize())
 		assert.Len(t, value[[]*mission.MissionInfo](t, rep, "ListMissions"), 1)

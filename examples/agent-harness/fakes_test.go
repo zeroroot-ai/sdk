@@ -391,7 +391,7 @@ func (d *callbackDaemon) CreateMission(context.Context, *harnesspb.CreateMission
 
 func missionInfo() *harnesspb.MissionInfo {
 	return &harnesspb.MissionInfo{
-		Id: "child-1", Name: "child", Status: harnesspb.MissionStatus_MISSION_STATUS_RUNNING,
+		Id: "child-1", Name: "child", Status: harnesspb.MissionStatus_MISSION_STATUS_WORKING,
 		TargetId: "target-1", ParentMissionId: "m-1", CreatedAt: 5000, Tags: []string{"d86"},
 	}
 }
@@ -411,7 +411,7 @@ func (d *callbackDaemon) RunMission(context.Context, *harnesspb.RunMissionReques
 
 func (d *callbackDaemon) GetMissionStatus(context.Context, *harnesspb.GetMissionStatusRequest) (*harnesspb.GetMissionStatusResponse, error) {
 	return &harnesspb.GetMissionStatusResponse{Status: &harnesspb.MissionStatusInfo{
-		Status: harnesspb.MissionStatus_MISSION_STATUS_RUNNING, Progress: 0.5, Phase: "scan",
+		Status: harnesspb.MissionStatus_MISSION_STATUS_WORKING, Progress: 0.5, Phase: "scan",
 		FindingCounts: map[string]int32{"high": 2}, TokenUsage: 42, DurationMs: 2500,
 	}}, nil
 }
@@ -634,7 +634,7 @@ func jsonOf(t any) []byte {
 
 func (d *componentDaemon) CreateMission(context.Context, *componentpb.CreateMissionRequest) (*componentpb.CreateMissionResponse, error) {
 	return &componentpb.CreateMissionResponse{MissionJson: jsonOf(mission.MissionInfo{
-		ID: "child-1", Name: "child", Status: mission.MissionStatusRunning, TargetID: "target-1", Tags: []string{"d86"},
+		ID: "child-1", Name: "child", Status: mission.MissionStatusWorking, TargetID: "target-1", Tags: []string{"d86"},
 	})}, nil
 }
 
@@ -644,7 +644,7 @@ func (d *componentDaemon) RunMission(context.Context, *componentpb.RunMissionReq
 
 func (d *componentDaemon) GetMissionStatus(context.Context, *componentpb.GetMissionStatusRequest) (*componentpb.GetMissionStatusResponse, error) {
 	return &componentpb.GetMissionStatusResponse{StatusJson: jsonOf(mission.MissionStatusInfo{
-		Status: mission.MissionStatusRunning, Progress: 0.5, Phase: "scan", TokenUsage: 42,
+		Status: mission.MissionStatusWorking, Progress: 0.5, Phase: "scan", TokenUsage: 42,
 	})}, nil
 }
 

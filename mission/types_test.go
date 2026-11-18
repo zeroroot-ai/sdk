@@ -187,7 +187,7 @@ func TestMissionInfo(t *testing.T) {
 		info := MissionInfo{
 			ID:              "mission-123",
 			Name:            "test-mission",
-			Status:          MissionStatusPending,
+			Status:          MissionStatusSubmitted,
 			TargetID:        "target-456",
 			ParentMissionID: "parent-789",
 			CreatedAt:       now,
@@ -197,7 +197,7 @@ func TestMissionInfo(t *testing.T) {
 		if info.ID != "mission-123" {
 			t.Errorf("expected ID 'mission-123', got %s", info.ID)
 		}
-		if info.Status != MissionStatusPending {
+		if info.Status != MissionStatusSubmitted {
 			t.Errorf("expected status pending, got %s", info.Status)
 		}
 		if info.ParentMissionID != "parent-789" {
@@ -209,7 +209,7 @@ func TestMissionInfo(t *testing.T) {
 		info := MissionInfo{
 			ID:              "mission-123",
 			Name:            "root-mission",
-			Status:          MissionStatusRunning,
+			Status:          MissionStatusWorking,
 			TargetID:        "target-456",
 			ParentMissionID: "",
 			CreatedAt:       time.Now(),
@@ -228,7 +228,7 @@ func TestMissionInfoJSON(t *testing.T) {
 		original := MissionInfo{
 			ID:              "mission-abc",
 			Name:            "json-test",
-			Status:          MissionStatusRunning,
+			Status:          MissionStatusWorking,
 			TargetID:        "target-xyz",
 			ParentMissionID: "parent-123",
 			CreatedAt:       now,
@@ -260,13 +260,13 @@ func TestMissionInfoJSON(t *testing.T) {
 // TestMissionStatusJSON tests JSON marshaling of MissionStatus
 func TestMissionStatusJSON(t *testing.T) {
 	t.Run("marshal valid status", func(t *testing.T) {
-		status := MissionStatusRunning
+		status := MissionStatusWorking
 		data, err := json.Marshal(status)
 		if err != nil {
 			t.Fatalf("failed to marshal: %v", err)
 		}
 
-		expected := `"running"`
+		expected := `"working"`
 		if string(data) != expected {
 			t.Errorf("expected %s, got %s", expected, string(data))
 		}
@@ -286,7 +286,7 @@ func TestMissionStatusJSON(t *testing.T) {
 func TestMissionStatusInfo(t *testing.T) {
 	t.Run("in-progress mission", func(t *testing.T) {
 		info := MissionStatusInfo{
-			Status:   MissionStatusRunning,
+			Status:   MissionStatusWorking,
 			Progress: 0.45,
 			Phase:    "reconnaissance",
 			FindingCounts: map[string]int{
@@ -298,7 +298,7 @@ func TestMissionStatusInfo(t *testing.T) {
 			Duration:   2 * time.Minute,
 		}
 
-		if info.Status != MissionStatusRunning {
+		if info.Status != MissionStatusWorking {
 			t.Errorf("expected running status, got %s", info.Status)
 		}
 		if info.Progress != 0.45 {
@@ -332,7 +332,7 @@ func TestMissionStatusInfo(t *testing.T) {
 func TestMissionStatusInfoJSON(t *testing.T) {
 	t.Run("marshal and unmarshal", func(t *testing.T) {
 		original := MissionStatusInfo{
-			Status:   MissionStatusRunning,
+			Status:   MissionStatusWorking,
 			Progress: 0.67,
 			Phase:    "scanning",
 			FindingCounts: map[string]int{
@@ -616,7 +616,7 @@ func TestMissionFilter(t *testing.T) {
 // TestMissionFilterJSON tests JSON marshaling of MissionFilter
 func TestMissionFilterJSON(t *testing.T) {
 	t.Run("marshal and unmarshal", func(t *testing.T) {
-		status := MissionStatusRunning
+		status := MissionStatusWorking
 		targetID := "target-xyz"
 		parentID := "parent-abc"
 		now := time.Now().Truncate(time.Second)
@@ -688,7 +688,7 @@ func TestJSONRoundTrip(t *testing.T) {
 			},
 			MissionInfo{
 				ID:        "id",
-				Status:    MissionStatusRunning,
+				Status:    MissionStatusWorking,
 				CreatedAt: time.Now().Truncate(time.Second),
 			},
 			MissionStatusInfo{
@@ -788,7 +788,7 @@ func TestEdgeCases(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				info := MissionStatusInfo{
-					Status:   MissionStatusRunning,
+					Status:   MissionStatusWorking,
 					Progress: tt.progress,
 				}
 

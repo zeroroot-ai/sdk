@@ -87,7 +87,7 @@
 // Query missions using MissionFilter:
 //
 //	// Find all running child missions
-//	running := mission.MissionStatusRunning
+//	running := mission.MissionStatusWorking
 //	missions, err := mm.ListMissions(ctx, &mission.MissionFilter{
 //	    Status:          &running,
 //	    ParentMissionID: &parentID,

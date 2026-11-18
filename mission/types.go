@@ -103,11 +103,11 @@ type MissionInfo struct {
 type MissionStatus string
 
 const (
-	// MissionStatusPending indicates the mission is queued but not yet running.
-	MissionStatusPending MissionStatus = "pending"
+	// MissionStatusSubmitted indicates the mission is queued but not yet working.
+	MissionStatusSubmitted MissionStatus = "submitted"
 
-	// MissionStatusRunning indicates the mission is currently executing.
-	MissionStatusRunning MissionStatus = "running"
+	// MissionStatusWorking indicates the mission is currently executing.
+	MissionStatusWorking MissionStatus = "working"
 
 	// MissionStatusPaused indicates the mission is temporarily suspended.
 	MissionStatusPaused MissionStatus = "paused"
@@ -118,8 +118,13 @@ const (
 	// MissionStatusFailed indicates the mission encountered an error.
 	MissionStatusFailed MissionStatus = "failed"
 
-	// MissionStatusCancelled indicates the mission was cancelled by a user or agent.
-	MissionStatusCancelled MissionStatus = "cancelled"
+	// MissionStatusCanceled indicates the mission was canceled by a user or agent.
+	// It is a terminal state.
+	MissionStatusCanceled MissionStatus = "canceled"
+
+	// MissionStatusInputRequired indicates the mission waits for input. It is
+	// not a terminal state.
+	MissionStatusInputRequired MissionStatus = "input_required"
 )
 
 // MissionStatusInfo provides detailed status information about a running mission.

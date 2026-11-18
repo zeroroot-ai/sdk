@@ -1374,38 +1374,42 @@ func protoToMissionInfo(p *harnesspb.MissionInfo) *mission.MissionInfo {
 // protoToMissionStatus converts proto MissionStatus to SDK mission.MissionStatus.
 func protoToMissionStatus(p harnesspb.MissionStatus) mission.MissionStatus {
 	switch p {
-	case harnesspb.MissionStatus_MISSION_STATUS_PENDING:
-		return mission.MissionStatusPending
-	case harnesspb.MissionStatus_MISSION_STATUS_RUNNING:
-		return mission.MissionStatusRunning
+	case harnesspb.MissionStatus_MISSION_STATUS_SUBMITTED:
+		return mission.MissionStatusSubmitted
+	case harnesspb.MissionStatus_MISSION_STATUS_WORKING:
+		return mission.MissionStatusWorking
 	case harnesspb.MissionStatus_MISSION_STATUS_PAUSED:
 		return mission.MissionStatusPaused
 	case harnesspb.MissionStatus_MISSION_STATUS_COMPLETED:
 		return mission.MissionStatusCompleted
 	case harnesspb.MissionStatus_MISSION_STATUS_FAILED:
 		return mission.MissionStatusFailed
-	case harnesspb.MissionStatus_MISSION_STATUS_CANCELLED:
-		return mission.MissionStatusCancelled
+	case harnesspb.MissionStatus_MISSION_STATUS_CANCELED:
+		return mission.MissionStatusCanceled
+	case harnesspb.MissionStatus_MISSION_STATUS_INPUT_REQUIRED:
+		return mission.MissionStatusInputRequired
 	default:
-		return mission.MissionStatusPending
+		return mission.MissionStatusSubmitted
 	}
 }
 
 // missionStatusToProto converts SDK mission.MissionStatus to proto MissionStatus.
 func missionStatusToProto(s mission.MissionStatus) harnesspb.MissionStatus {
 	switch s {
-	case mission.MissionStatusPending:
-		return harnesspb.MissionStatus_MISSION_STATUS_PENDING
-	case mission.MissionStatusRunning:
-		return harnesspb.MissionStatus_MISSION_STATUS_RUNNING
+	case mission.MissionStatusSubmitted:
+		return harnesspb.MissionStatus_MISSION_STATUS_SUBMITTED
+	case mission.MissionStatusWorking:
+		return harnesspb.MissionStatus_MISSION_STATUS_WORKING
 	case mission.MissionStatusPaused:
 		return harnesspb.MissionStatus_MISSION_STATUS_PAUSED
 	case mission.MissionStatusCompleted:
 		return harnesspb.MissionStatus_MISSION_STATUS_COMPLETED
 	case mission.MissionStatusFailed:
 		return harnesspb.MissionStatus_MISSION_STATUS_FAILED
-	case mission.MissionStatusCancelled:
-		return harnesspb.MissionStatus_MISSION_STATUS_CANCELLED
+	case mission.MissionStatusCanceled:
+		return harnesspb.MissionStatus_MISSION_STATUS_CANCELED
+	case mission.MissionStatusInputRequired:
+		return harnesspb.MissionStatus_MISSION_STATUS_INPUT_REQUIRED
 	default:
 		return harnesspb.MissionStatus_MISSION_STATUS_UNSPECIFIED
 	}
