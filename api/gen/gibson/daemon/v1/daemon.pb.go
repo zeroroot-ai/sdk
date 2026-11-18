@@ -52,13 +52,9 @@ const (
 	MissionStatus_MISSION_STATUS_COMPLETED      MissionStatus = 4
 	MissionStatus_MISSION_STATUS_FAILED         MissionStatus = 5
 	MissionStatus_MISSION_STATUS_INPUT_REQUIRED MissionStatus = 7
-	// The A2A Task states. The old values 1 (PENDING), 2 (RUNNING) and
-	// 6 (CANCELLED) are deleted, and their numbers and names are reserved. The
-	// wire contract is append-only (ADR-0028), so the renamed states have new
-	// numbers.
-	MissionStatus_MISSION_STATUS_SUBMITTED MissionStatus = 8
-	MissionStatus_MISSION_STATUS_WORKING   MissionStatus = 9
-	MissionStatus_MISSION_STATUS_CANCELED  MissionStatus = 10
+	MissionStatus_MISSION_STATUS_SUBMITTED      MissionStatus = 8
+	MissionStatus_MISSION_STATUS_WORKING        MissionStatus = 9
+	MissionStatus_MISSION_STATUS_CANCELED       MissionStatus = 10
 )
 
 // Enum value maps for MissionStatus.

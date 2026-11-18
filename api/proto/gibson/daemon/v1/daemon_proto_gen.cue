@@ -131,14 +131,9 @@ import (
 #MISSION_STATUS_COMPLETED:      4
 #MISSION_STATUS_FAILED:         5
 #MISSION_STATUS_INPUT_REQUIRED: 7
-
-// The A2A Task states. The old values 1 (PENDING), 2 (RUNNING) and
-// 6 (CANCELLED) are deleted, and their numbers and names are reserved. The
-// wire contract is append-only (ADR-0028), so the renamed states have new
-// numbers.
-#MISSION_STATUS_SUBMITTED: 8
-#MISSION_STATUS_WORKING:   9
-#MISSION_STATUS_CANCELED:  10
+#MISSION_STATUS_SUBMITTED:      8
+#MISSION_STATUS_WORKING:        9
+#MISSION_STATUS_CANCELED:       10
 
 #MissionStatus_value: {
 	MISSION_STATUS_UNSPECIFIED:    0
