@@ -29,6 +29,14 @@ func WithPlatformWorkID(id string) PlatformHarnessOption {
 	}
 }
 
+// WithPlatformTaskGrant sets the task grant of the work item. The harness sends
+// it to the gateways and renews it. Without it, a gateway call fails.
+func WithPlatformTaskGrant(token string) PlatformHarnessOption {
+	return func(h *PlatformHarness) {
+		h.grant = newTaskGrant(token, nil)
+	}
+}
+
 // WithPlatformMission sets the mission context for the platform harness.
 func WithPlatformMission(m types.MissionContext) PlatformHarnessOption {
 	return func(h *PlatformHarness) {

@@ -729,6 +729,13 @@ message PollWorkResponse {
     map<string, string> context = 4;
     // timeout_ms is the maximum time allowed to complete and submit the result.
     int64 timeout_ms = 5;
+    // task_grant is the task grant of this work item (the compact JWT that the
+    // daemon mints for the task, with the tenant, mission and task claims). The
+    // agent sends it in the header x-capability-grant on each call to a gateway:
+    // the model gateway and the Agent gateway. It is a secret. Empty means the
+    // work item has no grant, and the agent then cannot call a gateway. The
+    // agent renews it with DaemonService.RenewCapabilityGrant before it expires.
+    string task_grant = 6;
 }
 
 // SubmitResultRequest delivers the outcome of a completed work item back to Gibson.
@@ -1100,6 +1107,10 @@ message ResolveAgentRequest {
     string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
     // name is the name of the agent.
     string name = 2 [(buf.validate.field).string = { max_len: 1024 }];
+    // bank_id names a bank of always-on agents. When it is set, the route is
+    // the route of a member of that bank, and name is the agent that the bank
+    // runs. Unset means an ephemeral agent.
+    optional string bank_id = 3 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // ResolveAgentResponse holds what the caller needs to send an A2A message to

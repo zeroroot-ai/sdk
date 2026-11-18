@@ -512,30 +512,6 @@ func (a *capabilityGrantCredentials) GetRequestMetadata(ctx context.Context, _ .
 	return perRPCMetadata(key, hostID, agentID, scope, method)
 }
 
-// SignForMethod signs a fresh agent+jwt bound to a method name that is not a
-// gRPC method, for example the model route "/v1/responses". The caller sends
-// the token in the header x-capability-grant.
-func (a *capabilityGrantCredentials) SignForMethod(method string) (string, error) {
-	a.client.mu.RLock()
-	hostID := a.client.hostID
-	agentID := a.client.agentID
-	key := a.client.agentKey
-	scope := a.client.componentScope
-	a.client.mu.RUnlock()
-
-	md, err := perRPCMetadata(key, hostID, agentID, scope, method)
-	if err != nil {
-		return "", err
-	}
-	return md[MetadataHeaderCapabilityGrant], nil
-}
-
-// MethodSigner signs a grant for a method name. The per-RPC credentials of
-// this package implement it. Use it for a call that is not gRPC.
-type MethodSigner interface {
-	SignForMethod(method string) (string, error)
-}
-
 // RequireTransportSecurity returns false to allow use over both TLS and
 // plaintext connections (e.g., in tests). Production deployments should use TLS.
 func (a *capabilityGrantCredentials) RequireTransportSecurity() bool { return false }

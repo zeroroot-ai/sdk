@@ -358,15 +358,15 @@ func (c *CallbackClient) ResolveModel(ctx context.Context, slot string) (*harnes
 	return resp, nil
 }
 
-// grantHeaders returns the HeaderFunc that sends the grant of this client to
-// the model gateway.
+// grantHeaders returns the HeaderFunc that sends the task grant of this client
+// to a gateway. The grant is the static token of the client.
 func (c *CallbackClient) grantHeaders() openresponses.HeaderFunc {
-	c.mu.RLock()
-	token := c.token
-	creds := c.perRPCCreds
-	c.mu.RUnlock()
-	signer, _ := creds.(capabilitygrant.MethodSigner)
-	return grantHeaders(token, signer)
+	return grantHeaders(func(ctx context.Context) (string, error) {
+		c.mu.RLock()
+		token := c.token
+		c.mu.RUnlock()
+		return staticGrant(token)(ctx)
+	})
 }
 
 // CallToolProto invokes a tool via the orchestrator using proto-serialized JSON.
@@ -1117,12 +1117,18 @@ func firstNonEmpty(values ...string) string {
 }
 
 // ResolveAgent asks the orchestrator for the Agent gateway route of an agent.
-func (c *CallbackClient) ResolveAgent(ctx context.Context, name string) (*harnesspb.ResolveAgentResponse, error) {
+func (c *CallbackClient) ResolveAgent(
+	ctx context.Context, name, bankID string,
+) (*harnesspb.ResolveAgentResponse, error) {
 	if !c.IsConnected() {
 		return nil, errors.New("ResolveAgent: client not connected")
 	}
 	ctx = c.contextWithMetadata(ctx)
-	resp, err := c.client.ResolveAgent(ctx, &harnesspb.ResolveAgentRequest{Context: c.contextInfo(), Name: name})
+	req := &harnesspb.ResolveAgentRequest{Context: c.contextInfo(), Name: name}
+	if bankID != "" {
+		req.BankId = &bankID
+	}
+	resp, err := c.client.ResolveAgent(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("ResolveAgent: %w", err)
 	}

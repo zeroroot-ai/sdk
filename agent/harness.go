@@ -334,7 +334,8 @@ type Delegator interface {
 	// The call sends the task grant of the agent in the header
 	// x-capability-grant. The daemon resolves the route of the agent. An agent
 	// finds other agents through the Agent Cards that the daemon serves.
-	Delegate(ctx context.Context, name string, msg *a2a.Message) (*a2a.Task, error)
+	// WithBank sends the message to a bank of always-on agents.
+	Delegate(ctx context.Context, name string, msg *a2a.Message, opts ...DelegateOption) (*a2a.Task, error)
 }
 
 // WorldEmitter is emitting into the tenant World.

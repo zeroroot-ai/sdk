@@ -22,9 +22,9 @@ import (
 
 	"github.com/zeroroot-ai/sdk/agent"
 	componentpb "github.com/zeroroot-ai/sdk/api/gen/gibson/component/v1"
+	daemonpb "github.com/zeroroot-ai/sdk/api/gen/gibson/daemon/v1"
 	"github.com/zeroroot-ai/sdk/capabilitygrant"
 	"github.com/zeroroot-ai/sdk/graphrag"
-	"github.com/zeroroot-ai/sdk/openresponses"
 )
 
 // ComponentInfo carries registration metadata sent in RegisterComponent.
@@ -84,6 +84,9 @@ type WorkItem struct {
 	Context map[string]string
 	// TimeoutMs is the maximum allowed time to complete and submit the result.
 	TimeoutMs int64
+	// TaskGrant is the task grant of this work item. It is a secret. Empty
+	// means the daemon gave none, and the agent then cannot call a gateway.
+	TaskGrant string
 }
 
 // WorkError represents a structured error outcome for a failed work item.
@@ -502,6 +505,7 @@ func (pc *PlatformClient) PollWork(ctx context.Context) (*WorkItem, error) {
 		Payload:   resp.Payload,
 		Context:   resp.Context,
 		TimeoutMs: resp.TimeoutMs,
+		TaskGrant: resp.TaskGrant,
 	}
 
 	return item, nil
@@ -589,7 +593,9 @@ func (pc *PlatformClient) ResolveModel(ctx context.Context, workID, slot string)
 }
 
 // ResolveAgent asks the platform for the Agent gateway route of an agent.
-func (pc *PlatformClient) ResolveAgent(ctx context.Context, workID, name string) (*componentpb.ResolveAgentResponse, error) {
+func (pc *PlatformClient) ResolveAgent(
+	ctx context.Context, workID, name, bankID string,
+) (*componentpb.ResolveAgentResponse, error) {
 	if err := pc.ensureConnected("ResolveAgent"); err != nil {
 		return nil, err
 	}
@@ -599,24 +605,48 @@ func (pc *PlatformClient) ResolveAgent(ctx context.Context, workID, name string)
 	if name == "" {
 		return nil, errors.New("ResolveAgent: name cannot be empty")
 	}
-	resp, err := pc.service.ResolveAgent(ctx, &componentpb.ResolveAgentRequest{WorkId: workID, Name: name})
+	req := &componentpb.ResolveAgentRequest{WorkId: workID, Name: name}
+	if bankID != "" {
+		req.BankId = &bankID
+	}
+	resp, err := pc.service.ResolveAgent(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("ResolveAgent: %w", err)
 	}
 	return resp, nil
 }
 
-// grantHeaders returns the HeaderFunc that sends a grant of this client to a
-// gateway.
-func (pc *PlatformClient) grantHeaders() openresponses.HeaderFunc {
-	pc.mu.RLock()
-	cg := pc.capabilityGrantClient
-	pc.mu.RUnlock()
-	if cg == nil {
-		return grantHeaders("", nil)
+// grantCreds sends a task grant in x-capability-grant. A call option with it
+// replaces the per-RPC grant of the connection for one call.
+type grantCreds struct{ token string }
+
+func (g grantCreds) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
+	return map[string]string{capabilitygrant.MetadataHeaderCapabilityGrant: g.token}, nil
+}
+
+func (grantCreds) RequireTransportSecurity() bool { return false }
+
+// RenewTaskGrant asks the daemon for a new task grant of a task. It presents
+// the current grant, as the call needs. It returns the new grant.
+func (pc *PlatformClient) RenewTaskGrant(ctx context.Context, current string) (string, error) {
+	if err := pc.ensureConnected("RenewTaskGrant"); err != nil {
+		return "", err
 	}
-	signer, _ := cg.GRPCPerRPCCredentials().(capabilitygrant.MethodSigner)
-	return grantHeaders("", signer)
+	claims, err := capabilitygrant.ClaimsOf(current)
+	if err != nil {
+		return "", fmt.Errorf("RenewTaskGrant: %w", err)
+	}
+	resp, err := daemonpb.NewDaemonServiceClient(pc.conn).RenewCapabilityGrant(ctx,
+		&daemonpb.RenewCapabilityGrantRequest{
+			AgentId: claims.Subject, MissionId: claims.MissionID, TaskId: claims.TaskID,
+		}, grpc.PerRPCCredentials(grantCreds{token: current}))
+	if err != nil {
+		return "", fmt.Errorf("RenewTaskGrant: %w", err)
+	}
+	if resp.GetCapabilityGrant() == "" {
+		return "", errors.New("RenewTaskGrant: the daemon returned no grant")
+	}
+	return resp.GetCapabilityGrant(), nil
 }
 
 // CallTool proxies a tool execution request through the agent harness.

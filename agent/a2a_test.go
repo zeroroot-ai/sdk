@@ -217,3 +217,28 @@ func TestCardOf(t *testing.T) {
 	assert.Equal(t, DefaultCardModes, in)
 	assert.Equal(t, DefaultCardModes, out)
 }
+
+func TestResultToTaskCarriesDeliverablesAndSession(t *testing.T) {
+	got, err := ResultToTask(Task{ID: "t", ContextID: "c"}, Result{
+		Deliverables: []*jobpb.Deliverable{{
+			Kind: jobpb.DeliverableKind_DELIVERABLE_KIND_MERGE_REQUEST, Ref: "!12", Url: "https://gitlab.example/mr/12",
+		}},
+		ClaudeSessionID: "sess-1",
+	})
+	require.NoError(t, err)
+	raw, err := json.Marshal(got.Metadata[ExtensionKey])
+	require.NoError(t, err)
+	var env ResultEnvelope
+	require.NoError(t, json.Unmarshal(raw, &env))
+	assert.Equal(t, "sess-1", env.ClaudeSessionID)
+	require.Len(t, env.Deliverables, 1)
+	var d jobpb.Deliverable
+	require.NoError(t, protojson.Unmarshal(env.Deliverables[0], &d))
+	assert.Equal(t, "!12", d.GetRef())
+	assert.Equal(t, jobpb.DeliverableKind_DELIVERABLE_KIND_MERGE_REQUEST, d.GetKind())
+
+	// A run with none of them has no extension key.
+	plain, err := ResultToTask(Task{ID: "t", ContextID: "c"}, Result{})
+	require.NoError(t, err)
+	assert.NotContains(t, plain.Metadata, ExtensionKey)
+}

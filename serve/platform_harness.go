@@ -50,6 +50,9 @@ type PlatformHarness struct {
 	logger  *slog.Logger
 	tracer  trace.Tracer
 
+	// grant is the task grant of the work item. Gateway calls send it.
+	grant *taskGrant
+
 	// tokenTracker accumulates token usage from the model client.
 	tokenTracker *CallbackTokenTracker
 }
@@ -68,6 +71,10 @@ func NewPlatformHarness(client *PlatformClient, opts ...PlatformHarnessOption) *
 	}
 	for _, opt := range opts {
 		opt(h)
+	}
+	// The harness renews the grant through its own platform client.
+	if h.grant != nil && h.grant.renew == nil {
+		h.grant.renew = client.RenewTaskGrant
 	}
 	return h
 }
@@ -99,7 +106,7 @@ func (h *PlatformHarness) Model(ctx context.Context, slot string) (*openresponse
 		model: resp.GetModel(), provider: resp.GetProvider(), gatewayURL: resp.GetGatewayUrl(),
 		routeHeaders: resp.GetRouteHeaders(), contextWindow: int(resp.GetContextWindow()),
 		maxOutputTokens: int(resp.GetMaxOutputTokens()), gatewayCAPEM: resp.GetGatewayCaPem(),
-	}, h.client.grantHeaders(), h.tokenTracker)
+	}, grantHeaders(h.grant.get), h.tokenTracker)
 }
 
 // CallToolProto invokes a tool by name, marshaling the request proto to JSON
@@ -784,14 +791,16 @@ func (h *PlatformHarness) GetMissionRunHistory(context.Context) ([]types.Mission
 
 // Delegate sends an A2A message to another agent through the Agent gateway and
 // waits for the A2A Task to end. The platform resolves the route of the agent.
-func (h *PlatformHarness) Delegate(ctx context.Context, name string, msg *a2a.Message) (*a2a.Task, error) {
+func (h *PlatformHarness) Delegate(
+	ctx context.Context, name string, msg *a2a.Message, opts ...agent.DelegateOption,
+) (*a2a.Task, error) {
 	ctx, span := h.tracer.Start(ctx, "gibson.agent.delegate",
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(attribute.String("gibson.agent.name", name)),
 	)
 	defer span.End()
 
-	resp, err := h.client.ResolveAgent(ctx, h.workID, name)
+	resp, err := h.client.ResolveAgent(ctx, h.workID, name, agent.ApplyDelegateOptions(opts).BankID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -800,7 +809,7 @@ func (h *PlatformHarness) Delegate(ctx context.Context, name string, msg *a2a.Me
 	task, err := delegate(ctx, &resolvedAgent{
 		gatewayURL: resp.GetGatewayUrl(), routeHeaders: resp.GetRouteHeaders(),
 		gatewayCAPEM: resp.GetGatewayCaPem(), cardURL: resp.GetAgentCardUrl(),
-	}, h.client.grantHeaders(), msg)
+	}, grantHeaders(h.grant.get), msg)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())

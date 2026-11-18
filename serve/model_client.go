@@ -58,21 +58,28 @@ func newModelClient(
 }
 
 // grantHeaders returns a HeaderFunc that sends one grant in the header
-// x-capability-grant. A static token is the task grant of the agent. A signer
-// makes a new grant for each route.
-func grantHeaders(token string, signer capabilitygrant.MethodSigner) openresponses.HeaderFunc {
-	return func(_ context.Context, route string) (map[string]string, error) {
-		switch {
-		case signer != nil:
-			g, err := signer.SignForMethod(route)
-			if err != nil {
-				return nil, fmt.Errorf("sign grant for %s: %w", route, err)
-			}
-			return map[string]string{capabilitygrant.MetadataHeaderCapabilityGrant: g}, nil
-		case token != "":
-			return map[string]string{capabilitygrant.MetadataHeaderCapabilityGrant: token}, nil
-		default:
-			return nil, errors.New("the agent has no task grant to send to the model gateway")
+// x-capability-grant. The source gives the task grant of the agent. There is
+// no self-signed token for a gateway call: ext-authz needs the tenant, the
+// mission and the task of the grant.
+func grantHeaders(source func(ctx context.Context) (string, error)) openresponses.HeaderFunc {
+	return func(ctx context.Context, _ string) (map[string]string, error) {
+		g, err := source(ctx)
+		if err != nil {
+			return nil, err
 		}
+		return map[string]string{capabilitygrant.MetadataHeaderCapabilityGrant: g}, nil
 	}
 }
+
+// staticGrant returns a source for a grant that never changes.
+func staticGrant(token string) func(context.Context) (string, error) {
+	return func(context.Context) (string, error) {
+		if token == "" {
+			return "", errNoTaskGrant
+		}
+		return token, nil
+	}
+}
+
+// errNoTaskGrant is the error of a gateway call with no task grant.
+var errNoTaskGrant = errors.New("no task grant: the agent has no task grant to send to the gateway")

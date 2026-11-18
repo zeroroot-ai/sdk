@@ -307,6 +307,7 @@ func executePlatformAgentWork(ctx context.Context, client *PlatformClient, a age
 	// LLM completion, tools, plugins, and findings through the platform RPCs.
 	harness := NewPlatformHarness(client,
 		WithPlatformWorkID(work.WorkID),
+		WithPlatformTaskGrant(work.TaskGrant),
 		WithPlatformMission(missionContextFromWorkItem(work)),
 		WithPlatformTarget(targetInfoFromWorkItem(work)),
 		WithPlatformLogger(slog.Default().With("agent", a.Name(), "work_id", work.WorkID)),

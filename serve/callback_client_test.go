@@ -285,7 +285,7 @@ func TestCallbackClientNotConnectedErrorMessages(t *testing.T) {
 		{
 			name: "ResolveAgent",
 			call: func() error {
-				_, err := client.ResolveAgent(ctx, "helper")
+				_, err := client.ResolveAgent(ctx, "helper", "")
 				return err
 			},
 			expectedMsg: "ResolveAgent: client not connected",

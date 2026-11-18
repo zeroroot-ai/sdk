@@ -67,3 +67,29 @@ func derivedCardSkills(a Agent) []CardSkill {
 	}
 	return out
 }
+
+// DelegateOptions are the options of Harness.Delegate.
+type DelegateOptions struct {
+	// BankID names a bank of always-on agents. Empty means an ephemeral agent.
+	BankID string
+}
+
+// DelegateOption sets an option of Harness.Delegate.
+type DelegateOption func(*DelegateOptions)
+
+// WithBank sends the delegation to a bank of always-on agents. The daemon picks
+// the route of a member of that bank.
+func WithBank(bankID string) DelegateOption {
+	return func(o *DelegateOptions) { o.BankID = bankID }
+}
+
+// ApplyDelegateOptions returns the options that opts set.
+func ApplyDelegateOptions(opts []DelegateOption) DelegateOptions {
+	var o DelegateOptions
+	for _, opt := range opts {
+		if opt != nil {
+			opt(&o)
+		}
+	}
+	return o
+}

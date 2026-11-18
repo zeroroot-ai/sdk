@@ -33,28 +33,15 @@ import (
 	"github.com/zeroroot-ai/sdk/openresponses"
 )
 
-type fakeSigner struct{ methods []string }
-
-func (f *fakeSigner) SignForMethod(m string) (string, error) {
-	f.methods = append(f.methods, m)
-	return "signed:" + m, nil
-}
-
 func TestGrantHeaders(t *testing.T) {
 	ctx := context.Background()
 
-	h, err := grantHeaders("task-grant", nil)(ctx, "/v1/responses")
+	h, err := grantHeaders(staticGrant("task-grant"))(ctx, "/v1/responses")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]string{"x-capability-grant": "task-grant"}, h)
 
-	s := &fakeSigner{}
-	h, err = grantHeaders("ignored", s)(ctx, "/v1/responses")
-	require.NoError(t, err)
-	assert.Equal(t, "signed:/v1/responses", h["x-capability-grant"])
-	assert.Equal(t, []string{"/v1/responses"}, s.methods)
-
-	_, err = grantHeaders("", nil)(ctx, "/v1/responses")
-	require.Error(t, err)
+	_, err = grantHeaders(staticGrant(""))(ctx, "/v1/responses")
+	require.ErrorContains(t, err, "no task grant")
 }
 
 func TestNewModelClientNeedsModelAndURL(t *testing.T) {

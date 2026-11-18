@@ -112,6 +112,16 @@ type Result struct {
 	// This can include execution time, resource usage, intermediate results, etc.
 	Metadata map[string]any
 
+	// Deliverables lists what left the sandbox during the run: a pushed
+	// branch, an opened merge request. The SDK puts them in the extension
+	// metadata of the A2A Task. Empty when nothing left.
+	Deliverables []*jobpb.Deliverable
+
+	// ClaudeSessionID is the coding-agent session that ran this task, so a
+	// later turn resumes the same conversation. Empty for an agent that holds
+	// no session.
+	ClaudeSessionID string
+
 	// Error contains error information if the task failed.
 	// This should be nil for successful tasks.
 	// This field is not serialized to JSON - use ErrorInfo instead for serialization.

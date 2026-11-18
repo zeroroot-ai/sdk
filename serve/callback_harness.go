@@ -1556,14 +1556,16 @@ func boundedInt32(n int) int32 {
 
 // Delegate sends an A2A message to another agent through the Agent gateway and
 // waits for the A2A Task to end. The platform resolves the route of the agent.
-func (h *CallbackHarness) Delegate(ctx context.Context, name string, msg *a2a.Message) (*a2a.Task, error) {
+func (h *CallbackHarness) Delegate(
+	ctx context.Context, name string, msg *a2a.Message, opts ...agent.DelegateOption,
+) (*a2a.Task, error) {
 	ctx, span := h.tracer.Start(ctx, "gibson.agent.delegate",
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(attribute.String("gibson.agent.name", name)),
 	)
 	defer span.End()
 
-	resp, err := h.client.ResolveAgent(ctx, name)
+	resp, err := h.client.ResolveAgent(ctx, name, agent.ApplyDelegateOptions(opts).BankID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())

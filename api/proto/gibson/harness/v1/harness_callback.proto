@@ -1063,6 +1063,10 @@ message ResolveAgentRequest {
     ContextInfo context = 1;
     // name is the name of the agent.
     string name = 2 [(buf.validate.field).string = { max_len: 1024 }];
+    // bank_id names a bank of always-on agents. When it is set, the route is
+    // the route of a member of that bank, and name is the agent that the bank
+    // runs. Unset means an ephemeral agent.
+    optional string bank_id = 3 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
 // ResolveAgentResponse holds what the caller needs to send an A2A message to

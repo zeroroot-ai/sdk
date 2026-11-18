@@ -9,6 +9,7 @@ import (
 	"encoding/pem"
 	"io"
 	"iter"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -19,14 +20,16 @@ import (
 	"github.com/a2aproject/a2a-go/v2/a2asrv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/test/bufconn"
+
+	"github.com/zeroroot-ai/sdk/agent"
+	harnesspb "github.com/zeroroot-ai/sdk/api/gen/gibson/harness/v1"
 )
 
-func grantFor(route string) map[string]string {
-	return map[string]string{"x-capability-grant": "grant:" + route}
-}
-
 func testGrantHeaders(_ context.Context, route string) (map[string]string, error) {
-	return grantFor(route), nil
+	return map[string]string{"x-capability-grant": "grant:" + route}, nil
 }
 
 // seenHeaders keeps the headers of each request that reaches a test gateway.
@@ -207,6 +210,47 @@ func TestDelegateStopsWhenTheContextEnds(t *testing.T) {
 
 func TestDelegateGrantError(t *testing.T) {
 	srv, _ := rpcServer(t, func() any { return nil }, func() any { return nil })
-	_, err := delegate(context.Background(), &resolvedAgent{gatewayURL: srv.URL}, grantHeaders("", nil), userMessage("x"))
+	_, err := delegate(context.Background(), &resolvedAgent{gatewayURL: srv.URL}, grantHeaders(staticGrant("")), userMessage("x"))
 	require.ErrorContains(t, err, "no task grant")
+}
+
+type agentResolver struct {
+	harnesspb.UnimplementedHarnessCallbackServiceServer
+	url string
+	req *harnesspb.ResolveAgentRequest
+}
+
+func (a *agentResolver) ResolveAgent(
+	_ context.Context, req *harnesspb.ResolveAgentRequest,
+) (*harnesspb.ResolveAgentResponse, error) {
+	a.req = req
+	return &harnesspb.ResolveAgentResponse{GatewayUrl: a.url}, nil
+}
+
+func TestDelegateWithABank(t *testing.T) {
+	srv, _ := rpcServer(t, func() any { return map[string]any{"task": taskJSON(a2a.TaskStateCompleted)} }, func() any { return nil })
+	res := &agentResolver{url: srv.URL}
+	lis := bufconn.Listen(1 << 20)
+	gs := grpc.NewServer()
+	harnesspb.RegisterHarnessCallbackServiceServer(gs, res)
+	go func() { _ = gs.Serve(lis) }()
+	defer gs.Stop()
+	//nolint:staticcheck
+	conn, err := grpc.DialContext(context.Background(), "bufnet",
+		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) { return lis.Dial() }),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, err)
+	defer conn.Close()
+	cc := &CallbackClient{conn: conn, client: harnesspb.NewHarnessCallbackServiceClient(conn), connected: true, token: "task-grant"}
+	h := &CallbackHarness{client: cc, tokenTracker: NewCallbackTokenTracker(), tracer: defaultNoopTracer()}
+
+	task, err := h.Delegate(context.Background(), "worker", userMessage("go"), agent.WithBank("bank-1"))
+	require.NoError(t, err)
+	assert.Equal(t, a2a.TaskStateCompleted, task.Status.State)
+	assert.Equal(t, "worker", res.req.GetName())
+	assert.Equal(t, "bank-1", res.req.GetBankId())
+
+	_, err = h.Delegate(context.Background(), "worker", userMessage("go"))
+	require.NoError(t, err)
+	assert.Nil(t, res.req.BankId, "no bank option: the field stays unset")
 }

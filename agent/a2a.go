@@ -73,6 +73,11 @@ type ResultEnvelope struct {
 	Metadata map[string]any `json:"metadata,omitempty"`
 	// Error is the structured error of a failed run.
 	Error *ResultError `json:"error,omitempty"`
+	// Deliverables are the gibson.job.v1.Deliverable messages of the run, each
+	// in protojson form. They list what left the sandbox.
+	Deliverables []json.RawMessage `json:"deliverables,omitempty"`
+	// ClaudeSessionID is the coding-agent session of the run.
+	ClaudeSessionID string `json:"claude_session_id,omitempty"`
 }
 
 // TaskFromMessage builds the Task of an agent author from the A2A message of a
@@ -190,8 +195,19 @@ func ResultToTask(t Task, r Result) (*a2a.Task, error) {
 			})
 		}
 	}
-	if len(r.Findings) > 0 || len(r.Metadata) > 0 || r.ErrorInfo != nil {
-		out.SetMeta(ExtensionKey, ResultEnvelope{FindingIDs: r.Findings, Metadata: r.Metadata, Error: r.ErrorInfo})
+	env := ResultEnvelope{
+		FindingIDs: r.Findings, Metadata: r.Metadata, Error: r.ErrorInfo, ClaudeSessionID: r.ClaudeSessionID,
+	}
+	for _, d := range r.Deliverables {
+		raw, err := protojson.Marshal(d)
+		if err != nil {
+			return nil, fmt.Errorf("encode a deliverable of the result: %w", err)
+		}
+		env.Deliverables = append(env.Deliverables, raw)
+	}
+	if len(env.FindingIDs) > 0 || len(env.Metadata) > 0 || env.Error != nil ||
+		len(env.Deliverables) > 0 || env.ClaudeSessionID != "" {
+		out.SetMeta(ExtensionKey, env)
 	}
 	return out, nil
 }
