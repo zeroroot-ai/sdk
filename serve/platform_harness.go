@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/a2aproject/a2a-go/v2/a2a"
 	"log/slog"
 	"time"
 
@@ -394,70 +395,6 @@ func (h *PlatformHarness) ListPlugins(_ context.Context) ([]plugin.Descriptor, e
 	return []plugin.Descriptor{}, nil
 }
 
-// DelegateToAgent dispatches a task to another agent identified by name. The
-// task is marshaled to JSON and sent via the platform's DelegateToAgent RPC;
-// the JSON result is unmarshaled back to agent.Result.
-func (h *PlatformHarness) DelegateToAgent(ctx context.Context, name string, task agent.Task) (agent.Result, error) {
-	ctx, span := h.tracer.Start(ctx, "gibson.agent.delegate",
-		trace.WithSpanKind(trace.SpanKindClient),
-		trace.WithAttributes(
-			attribute.String("gibson.agent.name", name),
-			attribute.String("gibson.task.id", task.ID),
-		),
-	)
-	defer span.End()
-
-	taskJSON, err := json.Marshal(task)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to marshal task to JSON")
-		return agent.Result{}, fmt.Errorf("PlatformHarness.DelegateToAgent: marshal task: %w", err)
-	}
-
-	resultBytes, err := h.client.DelegateToAgent(ctx, h.workID, name, taskJSON)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return agent.Result{}, fmt.Errorf("PlatformHarness.DelegateToAgent: %w", err)
-	}
-
-	var result agent.Result
-	if err := json.Unmarshal(resultBytes, &result); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to unmarshal agent result")
-		return agent.Result{}, fmt.Errorf("PlatformHarness.DelegateToAgent: unmarshal result: %w", err)
-	}
-
-	return result, nil
-}
-
-// ListAgents returns descriptors for all available agents by querying the platform.
-func (h *PlatformHarness) ListAgents(ctx context.Context) ([]agent.Descriptor, error) {
-	ctx, span := h.tracer.Start(ctx, "gibson.agent.list",
-		trace.WithSpanKind(trace.SpanKindClient),
-	)
-	defer span.End()
-
-	protos, err := h.client.ListAgents(ctx, h.workID)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("PlatformHarness.ListAgents: %w", err)
-	}
-
-	descs := make([]agent.Descriptor, len(protos))
-	for i, p := range protos {
-		descs[i] = agent.Descriptor{
-			Name:         p.Name,
-			Version:      p.Version,
-			Description:  p.Description,
-			Capabilities: p.Capabilities,
-			TargetTypes:  p.TargetTypes,
-		}
-	}
-	return descs, nil
-}
-
 // SubmitFinding serializes the finding and submits it to the platform via the
 // SubmitFinding RPC tied to the current work item.
 func (h *PlatformHarness) SubmitFinding(ctx context.Context, f *finding.Finding) error {
@@ -843,4 +780,32 @@ func (h *PlatformHarness) ApplicationFindings(context.Context, string, []string,
 // GetMissionRunHistory is not wired in platform pull-mode; it reports ErrKnowledgeUnavailable.
 func (h *PlatformHarness) GetMissionRunHistory(context.Context) ([]types.MissionRunSummary, error) {
 	return nil, fmt.Errorf("GetMissionRunHistory in platform pull-mode: %w", agent.ErrKnowledgeUnavailable)
+}
+
+// Delegate sends an A2A message to another agent through the Agent gateway and
+// waits for the A2A Task to end. The platform resolves the route of the agent.
+func (h *PlatformHarness) Delegate(ctx context.Context, name string, msg *a2a.Message) (*a2a.Task, error) {
+	ctx, span := h.tracer.Start(ctx, "gibson.agent.delegate",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(attribute.String("gibson.agent.name", name)),
+	)
+	defer span.End()
+
+	resp, err := h.client.ResolveAgent(ctx, h.workID, name)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, fmt.Errorf("PlatformHarness.Delegate: %w", err)
+	}
+	task, err := delegate(ctx, &resolvedAgent{
+		gatewayURL: resp.GetGatewayUrl(), routeHeaders: resp.GetRouteHeaders(),
+		gatewayCAPEM: resp.GetGatewayCaPem(), cardURL: resp.GetAgentCardUrl(),
+	}, h.client.grantHeaders(), msg)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, fmt.Errorf("PlatformHarness.Delegate: %w", err)
+	}
+	span.SetAttributes(attribute.String("a2a.task.state", string(task.Status.State)))
+	return task, nil
 }

@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/a2aproject/a2a-go/v2/a2a"
+	"github.com/a2aproject/a2a-go/v2/a2asrv"
+	"iter"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -139,6 +141,8 @@ type callbackDaemon struct {
 
 	// gw is the fake model gateway that ResolveModel points to.
 	gw *testGateway
+	// a2a is the fake A2A agent that ResolveAgent points to.
+	a2a *httptest.Server
 
 	// claims is the answer of ClaimFork, in order. The last one repeats.
 	noAuthorize bool
@@ -149,7 +153,7 @@ type callbackDaemon struct {
 
 func startCallbackDaemon(t *testing.T, extra ...grpc.ServerOption) (d *callbackDaemon, addr string) {
 	t.Helper()
-	d = &callbackDaemon{gw: startGateway(t)}
+	d = &callbackDaemon{gw: startGateway(t), a2a: startA2AAgent(t)}
 	addr = d.serve(t, func(s *grpc.Server) { harnesspb.RegisterHarnessCallbackServiceServer(s, d) }, extra...)
 	return d, addr
 }
@@ -213,21 +217,6 @@ func (d *callbackDaemon) ListPlugins(context.Context, *harnesspb.ListPluginsRequ
 	return &harnesspb.ListPluginsResponse{Plugins: []*harnesspb.HarnessPluginDescriptor{
 		{Name: "scanner", Version: "2.0", Description: "Scans", Methods: []string{"probe"}},
 	}}, nil
-}
-
-func (d *callbackDaemon) DelegateToAgent(context.Context, *harnesspb.DelegateToAgentRequest) (*harnesspb.DelegateToAgentResponse, error) {
-	return &harnesspb.DelegateToAgentResponse{Result: &typespb.Result{
-		Status: typespb.ResultStatus_RESULT_STATUS_PARTIAL,
-		Output: serve.ToTypedValue("helped"),
-		Error:  &typespb.ResultError{Message: "half done"},
-	}}, nil
-}
-
-func (d *callbackDaemon) ListAgents(context.Context, *harnesspb.ListAgentsRequest) (*harnesspb.ListAgentsResponse, error) {
-	return &harnesspb.ListAgentsResponse{Agents: []*harnesspb.HarnessAgentDescriptor{{
-		Name: "helper", Version: "3.1", Description: "Helps", Capabilities: []string{"web"},
-		TargetTypes: []string{"llm_chat"}, TechniqueTypes: []string{"T1190"},
-	}}}, nil
 }
 
 func (d *callbackDaemon) SubmitFinding(context.Context, *harnesspb.SubmitFindingRequest) (*harnesspb.SubmitFindingResponse, error) {
@@ -511,20 +500,6 @@ func (d *componentDaemon) QueryPlugin(context.Context, *componentpb.QueryPluginR
 	return &componentpb.QueryPluginResponse{ResultJson: `{"open":true}`}, nil
 }
 
-func (d *componentDaemon) DelegateToAgent(context.Context, *componentpb.DelegateToAgentRequest) (*componentpb.DelegateToAgentResponse, error) {
-	b, err := json.Marshal(map[string]any{"Status": a2a.TaskStateCompleted, "Output": "helped", "Findings": []string{"f-1"}})
-	if err != nil {
-		return nil, fmt.Errorf("marshal: %w", err)
-	}
-	return &componentpb.DelegateToAgentResponse{ResultJson: b}, nil
-}
-
-func (d *componentDaemon) ListAgents(context.Context, *componentpb.ListAgentsRequest) (*componentpb.ListAgentsResponse, error) {
-	return &componentpb.ListAgentsResponse{Agents: []*componentpb.AgentDescriptorProto{{
-		Name: "helper", Version: "3.1", Description: "Helps", Capabilities: []string{"web"}, TargetTypes: []string{"llm_chat"},
-	}}}, nil
-}
-
 func (d *componentDaemon) SubmitFinding(context.Context, *componentpb.SubmitFindingRequest) (*componentpb.SubmitFindingResponse, error) {
 	return &componentpb.SubmitFindingResponse{FindingId: "f-new"}, nil
 }
@@ -646,10 +621,6 @@ func (h *host) read() (string, error) {
 	return h.name, nil
 }
 
-// ---------------------------------------------------------------------------
-// The fake model gateway: POST /v1/responses (Open Responses)
-// ---------------------------------------------------------------------------
-
 // gatewayReq is one request that reached the fake gateway.
 type gatewayReq struct {
 	header http.Header
@@ -727,4 +698,42 @@ func (d *componentDaemon) ResolveModel(
 		Model: "model-exact", Provider: "prov", GatewayUrl: "http://gateway.invalid",
 		RouteHeaders: map[string]string{"x-gibson-tenant": "t1"},
 	}, nil
+}
+
+// ---------------------------------------------------------------------------
+// The fake Agent gateway: an A2A agent that echoes the goal as an artifact
+// ---------------------------------------------------------------------------
+
+func startA2AAgent(t *testing.T) *httptest.Server {
+	t.Helper()
+	exec := a2asrv.AgentExecutorFunc(func(_ context.Context, ec *a2asrv.ExecutorContext) iter.Seq2[a2a.Event, error] {
+		return func(yield func(a2a.Event, error) bool) {
+			if !yield(a2a.NewSubmittedTask(ec, ec.Message), nil) {
+				return
+			}
+			if !yield(a2a.NewArtifactEvent(ec, a2a.NewTextPart("helped: "+ec.Message.Parts[0].Text())), nil) {
+				return
+			}
+			yield(a2a.NewStatusUpdateEvent(ec, a2a.TaskStateCompleted, nil), nil)
+		}
+	})
+	srv := httptest.NewServer(a2asrv.NewJSONRPCHandler(a2asrv.NewHandler(exec)))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func (d *callbackDaemon) ResolveAgent(
+	_ context.Context, _ *harnesspb.ResolveAgentRequest,
+) (*harnesspb.ResolveAgentResponse, error) {
+	return &harnesspb.ResolveAgentResponse{
+		GatewayUrl:   d.a2a.URL,
+		RouteHeaders: map[string]string{"x-gibson-tenant": "t1", "x-gibson-agent": "helper"},
+		AgentCardUrl: d.a2a.URL + "/.well-known/agent-card.json",
+	}, nil
+}
+
+func (d *componentDaemon) ResolveAgent(
+	_ context.Context, _ *componentpb.ResolveAgentRequest,
+) (*componentpb.ResolveAgentResponse, error) {
+	return &componentpb.ResolveAgentResponse{GatewayUrl: "http://agents.invalid"}, nil
 }

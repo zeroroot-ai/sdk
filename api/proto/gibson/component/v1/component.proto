@@ -326,21 +326,19 @@ service ComponentService {
     }
 
     // =========================================================================
-    // Harness Proxy — Agent Delegation
+    // Harness Proxy — Agent Delegation (A2A)
     // =========================================================================
 
-    // DelegateToAgent dispatches a sub-task to another agent and returns its result.
-    rpc DelegateToAgent(DelegateToAgentRequest) returns (DelegateToAgentResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "can_execute"
-        object_type: "component"
-        object_deriver: "system_tenant"
-        allowed_identities: 4  // COMPONENT
-      };
-    }
-
-    // ListAgents returns descriptors for all agents visible to the caller's tenant.
-    rpc ListAgents(ListAgentsRequest) returns (ListAgentsResponse) {
+    // ResolveAgent finds the route of an agent on the Agent gateway (A2A). The
+    // caller then sends an A2A SendMessage (JSON-RPC binding) to gateway_url
+    // with the A2A client of the SDK. It sends the task grant in the header
+    // x-capability-grant and each route header of the response unchanged.
+    // This is the same call as HarnessCallbackService.ResolveAgent, for an
+    // agent that polls for work. It replaces DelegateToAgent and ListAgents.
+    //
+    // Errors: NotFound (no agent of this name), PermissionDenied (the grant
+    // does not allow the delegation), InvalidArgument.
+    rpc ResolveAgent(ResolveAgentRequest) returns (ResolveAgentResponse) {
       option (gibson.auth.v1.authz) = {
         relation: "can_execute"
         object_type: "component"
@@ -1093,40 +1091,32 @@ message ListToolsResponse {
 }
 
 // =============================================================================
-// Agent Delegation Messages
+// Agent Delegation Messages (A2A)
 // =============================================================================
 
-// DelegateToAgentRequest dispatches a sub-task to another agent.
-message DelegateToAgentRequest {
+// ResolveAgentRequest asks the daemon for the Agent gateway route of an agent.
+message ResolveAgentRequest {
+    // work_id ties this request to the active work item for authorization.
     string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
-    string agent_name = 2 [(buf.validate.field).string = { max_len: 1024 }];
-    // task_json is the JSON-encoded agent.Task to delegate.
-    bytes task_json = 3;
+    // name is the name of the agent.
+    string name = 2 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
-// DelegateToAgentResponse carries the delegated agent's result.
-message DelegateToAgentResponse {
-    // result_json is the JSON-encoded agent.Result.
-    bytes result_json = 1;
-}
-
-// ListAgentsRequest requests descriptors for all available agents.
-message ListAgentsRequest {
-    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
-}
-
-// AgentDescriptorProto describes a registered agent.
-message AgentDescriptorProto {
-    string name = 1;
-    string version = 2;
-    string description = 3;
-    repeated string capabilities = 4;
-    repeated string target_types = 5;
-}
-
-// ListAgentsResponse carries all agent descriptors visible to the caller.
-message ListAgentsResponse {
-    repeated AgentDescriptorProto agents = 1;
+// ResolveAgentResponse holds what the caller needs to send an A2A message to
+// an agent through the Agent gateway.
+message ResolveAgentResponse {
+    // gateway_url is the JSON-RPC interface URL of the agent on the Agent
+    // gateway. The caller sends A2A SendMessage to this URL.
+    string gateway_url = 1;
+    // route_headers are the headers that the gateway route matches on. The
+    // caller sends each one unchanged.
+    map<string, string> route_headers = 2;
+    // gateway_ca_pem is the PEM bundle of the private CA of the Agent gateway.
+    // The caller trusts exactly this bundle for gateway_url, which must use
+    // https. Empty means the system roots.
+    string gateway_ca_pem = 3;
+    // agent_card_url is the URL of the Agent Card of the agent on the gateway.
+    string agent_card_url = 4;
 }
 
 // =============================================================================

@@ -23,7 +23,6 @@ gibson.component.v1.ComponentService/CallTool
 gibson.component.v1.ComponentService/CallToolStream
 gibson.component.v1.ComponentService/CancelMission
 gibson.component.v1.ComponentService/CreateMission
-gibson.component.v1.ComponentService/DelegateToAgent
 gibson.component.v1.ComponentService/DisablePlugin
 gibson.component.v1.ComponentService/EnablePlugin
 gibson.component.v1.ComponentService/EnrollComponent
@@ -40,7 +39,6 @@ gibson.component.v1.ComponentService/GetRelatedFindings
 gibson.component.v1.ComponentService/GetRunFindings
 gibson.component.v1.ComponentService/GetTaxonomySchema
 gibson.component.v1.ComponentService/Heartbeat
-gibson.component.v1.ComponentService/ListAgents
 gibson.component.v1.ComponentService/ListAvailablePlugins
 gibson.component.v1.ComponentService/ListMissions
 gibson.component.v1.ComponentService/ListTenantPlugins
@@ -52,6 +50,7 @@ gibson.component.v1.ComponentService/QueueToolWork
 gibson.component.v1.ComponentService/RegisterComponent
 gibson.component.v1.ComponentService/ReportStepHints
 gibson.component.v1.ComponentService/ResolveModel
+gibson.component.v1.ComponentService/ResolveAgent
 gibson.component.v1.ComponentService/RunMission
 gibson.component.v1.ComponentService/SubmitFinding
 gibson.component.v1.ComponentService/SubmitResult
@@ -121,7 +120,6 @@ gibson.harness.v1.HarnessCallbackService/CancelMission
 gibson.harness.v1.HarnessCallbackService/ClaimFork
 gibson.harness.v1.HarnessCallbackService/CloseJob
 gibson.harness.v1.HarnessCallbackService/CreateMission
-gibson.harness.v1.HarnessCallbackService/DelegateToAgent
 gibson.harness.v1.HarnessCallbackService/DeleteSessionContext
 gibson.harness.v1.HarnessCallbackService/DevboxExec
 gibson.harness.v1.HarnessCallbackService/FindSimilarAttacks
@@ -138,7 +136,6 @@ gibson.harness.v1.HarnessCallbackService/GetRelatedFindings
 gibson.harness.v1.HarnessCallbackService/GetRunFindings
 gibson.harness.v1.HarnessCallbackService/GetSessionContext
 gibson.harness.v1.HarnessCallbackService/GetTaxonomySchema
-gibson.harness.v1.HarnessCallbackService/ListAgents
 gibson.harness.v1.HarnessCallbackService/ListMissions
 gibson.harness.v1.HarnessCallbackService/ListPlugins
 gibson.harness.v1.HarnessCallbackService/ListTools
@@ -158,6 +155,7 @@ gibson.harness.v1.HarnessCallbackService/ReportJobState
 gibson.harness.v1.HarnessCallbackService/ReportStepHints
 gibson.harness.v1.HarnessCallbackService/RequestDestructiveAuthorization
 gibson.harness.v1.HarnessCallbackService/ResolveModel
+gibson.harness.v1.HarnessCallbackService/ResolveAgent
 gibson.harness.v1.HarnessCallbackService/RunMission
 gibson.harness.v1.HarnessCallbackService/SearchTools
 gibson.harness.v1.HarnessCallbackService/SendInput

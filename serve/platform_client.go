@@ -588,8 +588,26 @@ func (pc *PlatformClient) ResolveModel(ctx context.Context, workID, slot string)
 	return resp, nil
 }
 
-// grantHeaders returns the HeaderFunc that sends a grant of this client to the
-// model gateway.
+// ResolveAgent asks the platform for the Agent gateway route of an agent.
+func (pc *PlatformClient) ResolveAgent(ctx context.Context, workID, name string) (*componentpb.ResolveAgentResponse, error) {
+	if err := pc.ensureConnected("ResolveAgent"); err != nil {
+		return nil, err
+	}
+	if workID == "" {
+		return nil, errors.New("ResolveAgent: workID cannot be empty")
+	}
+	if name == "" {
+		return nil, errors.New("ResolveAgent: name cannot be empty")
+	}
+	resp, err := pc.service.ResolveAgent(ctx, &componentpb.ResolveAgentRequest{WorkId: workID, Name: name})
+	if err != nil {
+		return nil, fmt.Errorf("ResolveAgent: %w", err)
+	}
+	return resp, nil
+}
+
+// grantHeaders returns the HeaderFunc that sends a grant of this client to a
+// gateway.
 func (pc *PlatformClient) grantHeaders() openresponses.HeaderFunc {
 	pc.mu.RLock()
 	cg := pc.capabilityGrantClient
@@ -808,37 +826,6 @@ func (pc *PlatformClient) ListTools(ctx context.Context, workID string) ([]*comp
 		return nil, fmt.Errorf("PlatformClient.ListTools: %w", err)
 	}
 	return resp.Tools, nil
-}
-
-// DelegateToAgent dispatches a sub-task to another agent and returns its
-// JSON-encoded result.
-func (pc *PlatformClient) DelegateToAgent(ctx context.Context, workID, agentName string, taskJSON []byte) ([]byte, error) {
-	if err := pc.ensureConnected("DelegateToAgent"); err != nil {
-		return nil, err
-	}
-
-	resp, err := pc.service.DelegateToAgent(ctx, &componentpb.DelegateToAgentRequest{
-		WorkId:    workID,
-		AgentName: agentName,
-		TaskJson:  taskJSON,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("PlatformClient.DelegateToAgent: %w", err)
-	}
-	return resp.ResultJson, nil
-}
-
-// ListAgents returns descriptors for all agents visible to the caller's tenant.
-func (pc *PlatformClient) ListAgents(ctx context.Context, workID string) ([]*componentpb.AgentDescriptorProto, error) {
-	if err := pc.ensureConnected("ListAgents"); err != nil {
-		return nil, err
-	}
-
-	resp, err := pc.service.ListAgents(ctx, &componentpb.ListAgentsRequest{WorkId: workID})
-	if err != nil {
-		return nil, fmt.Errorf("PlatformClient.ListAgents: %w", err)
-	}
-	return resp.Agents, nil
 }
 
 // CreateMission creates a new sub-mission and returns its JSON-encoded info.

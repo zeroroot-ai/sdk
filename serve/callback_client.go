@@ -450,36 +450,6 @@ func (c *CallbackClient) ListPlugins(ctx context.Context, req *harnesspb.ListPlu
 	return resp, nil
 }
 
-// DelegateToAgent delegates a task to another agent.
-func (c *CallbackClient) DelegateToAgent(ctx context.Context, req *harnesspb.DelegateToAgentRequest) (*harnesspb.DelegateToAgentResponse, error) {
-	if !c.IsConnected() {
-		return nil, errors.New("DelegateToAgent: client not connected")
-	}
-
-	req.Context = c.contextInfo()
-	ctx = c.contextWithMetadata(ctx)
-	resp, err := c.client.DelegateToAgent(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("DelegateToAgent: %w", err)
-	}
-	return resp, nil
-}
-
-// ListAgents retrieves the list of available agents.
-func (c *CallbackClient) ListAgents(ctx context.Context, req *harnesspb.ListAgentsRequest) (*harnesspb.ListAgentsResponse, error) {
-	if !c.IsConnected() {
-		return nil, errors.New("ListAgents: client not connected")
-	}
-
-	req.Context = c.contextInfo()
-	ctx = c.contextWithMetadata(ctx)
-	resp, err := c.client.ListAgents(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("ListAgents: %w", err)
-	}
-	return resp, nil
-}
-
 // SubmitFinding submits a security finding to the orchestrator.
 func (c *CallbackClient) SubmitFinding(ctx context.Context, req *harnesspb.SubmitFindingRequest) (*harnesspb.SubmitFindingResponse, error) {
 	if !c.IsConnected() {
@@ -1144,4 +1114,17 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+// ResolveAgent asks the orchestrator for the Agent gateway route of an agent.
+func (c *CallbackClient) ResolveAgent(ctx context.Context, name string) (*harnesspb.ResolveAgentResponse, error) {
+	if !c.IsConnected() {
+		return nil, errors.New("ResolveAgent: client not connected")
+	}
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.ResolveAgent(ctx, &harnesspb.ResolveAgentRequest{Context: c.contextInfo(), Name: name})
+	if err != nil {
+		return nil, fmt.Errorf("ResolveAgent: %w", err)
+	}
+	return resp, nil
 }

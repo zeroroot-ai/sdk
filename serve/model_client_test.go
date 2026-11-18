@@ -5,13 +5,20 @@ package serve
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
 	"io"
+	"math/big"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -163,4 +170,19 @@ func TestPlatformHarnessModel(t *testing.T) {
 	// The test client has no grant, so a call to the gateway must fail before it is sent.
 	_, err = model.Create(context.Background(), &openresponses.Request{})
 	require.ErrorContains(t, err, "no task grant")
+}
+
+// selfSignedPEMForServe returns a CA certificate that signed no test gateway.
+func selfSignedPEMForServe(t *testing.T) string {
+	t.Helper()
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+	tmpl := &x509.Certificate{
+		SerialNumber: big.NewInt(1), Subject: pkix.Name{CommonName: "other-ca"},
+		NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(time.Hour),
+		IsCA: true, BasicConstraintsValid: true, KeyUsage: x509.KeyUsageCertSign,
+	}
+	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
+	require.NoError(t, err)
+	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}))
 }

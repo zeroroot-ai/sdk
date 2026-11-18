@@ -39,8 +39,7 @@ const (
 	ComponentService_QueueToolWork_FullMethodName        = "/gibson.component.v1.ComponentService/QueueToolWork"
 	ComponentService_ToolResults_FullMethodName          = "/gibson.component.v1.ComponentService/ToolResults"
 	ComponentService_ListTools_FullMethodName            = "/gibson.component.v1.ComponentService/ListTools"
-	ComponentService_DelegateToAgent_FullMethodName      = "/gibson.component.v1.ComponentService/DelegateToAgent"
-	ComponentService_ListAgents_FullMethodName           = "/gibson.component.v1.ComponentService/ListAgents"
+	ComponentService_ResolveAgent_FullMethodName         = "/gibson.component.v1.ComponentService/ResolveAgent"
 	ComponentService_QueryNodes_FullMethodName           = "/gibson.component.v1.ComponentService/QueryNodes"
 	ComponentService_FindSimilarAttacks_FullMethodName   = "/gibson.component.v1.ComponentService/FindSimilarAttacks"
 	ComponentService_GetAttackChains_FullMethodName      = "/gibson.component.v1.ComponentService/GetAttackChains"
@@ -143,10 +142,16 @@ type ComponentServiceClient interface {
 	ToolResults(ctx context.Context, in *ToolResultsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ToolResultsResponse], error)
 	// ListTools returns descriptors for all tools visible to the caller's tenant.
 	ListTools(ctx context.Context, in *ListToolsRequest, opts ...grpc.CallOption) (*ListToolsResponse, error)
-	// DelegateToAgent dispatches a sub-task to another agent and returns its result.
-	DelegateToAgent(ctx context.Context, in *DelegateToAgentRequest, opts ...grpc.CallOption) (*DelegateToAgentResponse, error)
-	// ListAgents returns descriptors for all agents visible to the caller's tenant.
-	ListAgents(ctx context.Context, in *ListAgentsRequest, opts ...grpc.CallOption) (*ListAgentsResponse, error)
+	// ResolveAgent finds the route of an agent on the Agent gateway (A2A). The
+	// caller then sends an A2A SendMessage (JSON-RPC binding) to gateway_url
+	// with the A2A client of the SDK. It sends the task grant in the header
+	// x-capability-grant and each route header of the response unchanged.
+	// This is the same call as HarnessCallbackService.ResolveAgent, for an
+	// agent that polls for work. It replaces DelegateToAgent and ListAgents.
+	//
+	// Errors: NotFound (no agent of this name), PermissionDenied (the grant
+	// does not allow the delegation), InvalidArgument.
+	ResolveAgent(ctx context.Context, in *ResolveAgentRequest, opts ...grpc.CallOption) (*ResolveAgentResponse, error)
 	// QueryNodes searches the knowledge graph using hybrid vector + graph scoring.
 	QueryNodes(ctx context.Context, in *QueryNodesRequest, opts ...grpc.CallOption) (*QueryNodesResponse, error)
 	// FindSimilarAttacks returns attack patterns semantically similar to the given content.
@@ -424,20 +429,10 @@ func (c *componentServiceClient) ListTools(ctx context.Context, in *ListToolsReq
 	return out, nil
 }
 
-func (c *componentServiceClient) DelegateToAgent(ctx context.Context, in *DelegateToAgentRequest, opts ...grpc.CallOption) (*DelegateToAgentResponse, error) {
+func (c *componentServiceClient) ResolveAgent(ctx context.Context, in *ResolveAgentRequest, opts ...grpc.CallOption) (*ResolveAgentResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DelegateToAgentResponse)
-	err := c.cc.Invoke(ctx, ComponentService_DelegateToAgent_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *componentServiceClient) ListAgents(ctx context.Context, in *ListAgentsRequest, opts ...grpc.CallOption) (*ListAgentsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListAgentsResponse)
-	err := c.cc.Invoke(ctx, ComponentService_ListAgents_FullMethodName, in, out, cOpts...)
+	out := new(ResolveAgentResponse)
+	err := c.cc.Invoke(ctx, ComponentService_ResolveAgent_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -733,10 +728,16 @@ type ComponentServiceServer interface {
 	ToolResults(*ToolResultsRequest, grpc.ServerStreamingServer[ToolResultsResponse]) error
 	// ListTools returns descriptors for all tools visible to the caller's tenant.
 	ListTools(context.Context, *ListToolsRequest) (*ListToolsResponse, error)
-	// DelegateToAgent dispatches a sub-task to another agent and returns its result.
-	DelegateToAgent(context.Context, *DelegateToAgentRequest) (*DelegateToAgentResponse, error)
-	// ListAgents returns descriptors for all agents visible to the caller's tenant.
-	ListAgents(context.Context, *ListAgentsRequest) (*ListAgentsResponse, error)
+	// ResolveAgent finds the route of an agent on the Agent gateway (A2A). The
+	// caller then sends an A2A SendMessage (JSON-RPC binding) to gateway_url
+	// with the A2A client of the SDK. It sends the task grant in the header
+	// x-capability-grant and each route header of the response unchanged.
+	// This is the same call as HarnessCallbackService.ResolveAgent, for an
+	// agent that polls for work. It replaces DelegateToAgent and ListAgents.
+	//
+	// Errors: NotFound (no agent of this name), PermissionDenied (the grant
+	// does not allow the delegation), InvalidArgument.
+	ResolveAgent(context.Context, *ResolveAgentRequest) (*ResolveAgentResponse, error)
 	// QueryNodes searches the knowledge graph using hybrid vector + graph scoring.
 	QueryNodes(context.Context, *QueryNodesRequest) (*QueryNodesResponse, error)
 	// FindSimilarAttacks returns attack patterns semantically similar to the given content.
@@ -856,11 +857,8 @@ func (UnimplementedComponentServiceServer) ToolResults(*ToolResultsRequest, grpc
 func (UnimplementedComponentServiceServer) ListTools(context.Context, *ListToolsRequest) (*ListToolsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListTools not implemented")
 }
-func (UnimplementedComponentServiceServer) DelegateToAgent(context.Context, *DelegateToAgentRequest) (*DelegateToAgentResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DelegateToAgent not implemented")
-}
-func (UnimplementedComponentServiceServer) ListAgents(context.Context, *ListAgentsRequest) (*ListAgentsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListAgents not implemented")
+func (UnimplementedComponentServiceServer) ResolveAgent(context.Context, *ResolveAgentRequest) (*ResolveAgentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ResolveAgent not implemented")
 }
 func (UnimplementedComponentServiceServer) QueryNodes(context.Context, *QueryNodesRequest) (*QueryNodesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryNodes not implemented")
@@ -1289,38 +1287,20 @@ func _ComponentService_ListTools_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ComponentService_DelegateToAgent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DelegateToAgentRequest)
+func _ComponentService_ResolveAgent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResolveAgentRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ComponentServiceServer).DelegateToAgent(ctx, in)
+		return srv.(ComponentServiceServer).ResolveAgent(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: ComponentService_DelegateToAgent_FullMethodName,
+		FullMethod: ComponentService_ResolveAgent_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ComponentServiceServer).DelegateToAgent(ctx, req.(*DelegateToAgentRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ComponentService_ListAgents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListAgentsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ComponentServiceServer).ListAgents(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ComponentService_ListAgents_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ComponentServiceServer).ListAgents(ctx, req.(*ListAgentsRequest))
+		return srv.(ComponentServiceServer).ResolveAgent(ctx, req.(*ResolveAgentRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1758,12 +1738,8 @@ var ComponentService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ComponentService_ListTools_Handler,
 		},
 		{
-			MethodName: "DelegateToAgent",
-			Handler:    _ComponentService_DelegateToAgent_Handler,
-		},
-		{
-			MethodName: "ListAgents",
-			Handler:    _ComponentService_ListAgents_Handler,
+			MethodName: "ResolveAgent",
+			Handler:    _ComponentService_ResolveAgent_Handler,
 		},
 		{
 			MethodName: "QueryNodes",

@@ -289,28 +289,19 @@ func callPlugins(ctx context.Context, h agent.Harness, rep *Report) {
 }
 
 func callDelegation(ctx context.Context, h agent.Harness, rep *Report) {
-	res, err := h.DelegateToAgent(ctx, "helper", agent.Task{ID: "sub-1", Goal: "check the host"})
-	record(rep, "DelegateToAgent", res, err, describeResult)
-
-	as, err := h.ListAgents(ctx)
-	record(rep, "ListAgents", as, err, describeAgents)
+	msg := a2a.NewMessage(a2a.MessageRoleUser, a2a.NewTextPart("check the host"))
+	task, err := h.Delegate(ctx, "helper", msg)
+	record(rep, "Delegate", task, err, describeTask)
 }
 
-func describeResult(r agent.Result) string {
-	msg := ""
-	if r.Error != nil {
-		msg = r.Error.Error()
+func describeTask(t *a2a.Task) string {
+	var artifacts []string
+	for _, a := range t.Artifacts {
+		for _, p := range a.Parts {
+			artifacts = append(artifacts, p.Text())
+		}
 	}
-	return fmt.Sprintf("status=%s output=%v findings=%v error=%q", r.Status, r.Output, r.Findings, msg)
-}
-
-func describeAgents(ds []agent.Descriptor) string {
-	out := make([]string, 0, len(ds))
-	for _, d := range ds {
-		out = append(out, fmt.Sprintf("%s %s %q caps=%v targets=%v techniques=%v",
-			d.Name, d.Version, d.Description, d.Capabilities, d.TargetTypes, d.TechniqueTypes))
-	}
-	return strings.Join(out, "; ")
+	return fmt.Sprintf("state=%s artifacts=%v", t.Status.State, artifacts)
 }
 
 func callWorld(ctx context.Context, h agent.Harness, rep *Report) {

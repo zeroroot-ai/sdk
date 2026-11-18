@@ -6,8 +6,6 @@ package openresponses
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +13,8 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+
+	"github.com/zeroroot-ai/sdk/internal/gwhttp"
 )
 
 // ResponsesPath is the route of a model call. It is also the method name that
@@ -23,7 +23,7 @@ const ResponsesPath = "/v1/responses"
 
 // HeaderFunc returns the headers to add to a call of the route. The agent
 // uses it to send its task grant in the header x-capability-grant.
-type HeaderFunc func(ctx context.Context, route string) (map[string]string, error)
+type HeaderFunc = gwhttp.HeaderFunc
 
 // Client calls the model gateway. It holds no state that changes, so many
 // goroutines can share it.
@@ -78,8 +78,8 @@ func (c *Client) newRequest(ctx context.Context, req *Request, stream bool) (*ht
 	if c.BaseURL == "" {
 		return nil, errors.New("openresponses: client has no base URL")
 	}
-	if c.CAPEM != "" && !strings.HasPrefix(c.BaseURL, "https://") {
-		return nil, errors.New("openresponses: a client with CAPEM needs an https base URL")
+	if err := gwhttp.CheckURL(c.BaseURL, c.CAPEM); err != nil {
+		return nil, fmt.Errorf("openresponses: %w", err)
 	}
 	r := *req
 	if r.Model == "" {
@@ -148,15 +148,12 @@ func (c *Client) httpClient() (*http.Client, error) {
 		return nil, errors.New("openresponses: set CAPEM or HTTPClient, not both")
 	}
 	c.tlsOnce.Do(func() {
-		pool := x509.NewCertPool()
-		if !pool.AppendCertsFromPEM([]byte(c.CAPEM)) {
-			c.tlsErr = errors.New("openresponses: CAPEM holds no certificate")
+		tr, err := gwhttp.Transport(c.CAPEM)
+		if err != nil {
+			c.tlsErr = fmt.Errorf("openresponses: %w", err)
 			return
 		}
-		c.tlsClient = &http.Client{Transport: &http.Transport{
-			Proxy:           http.ProxyFromEnvironment,
-			TLSClientConfig: &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12},
-		}}
+		c.tlsClient = &http.Client{Transport: tr}
 	})
 	return c.tlsClient, c.tlsErr
 }

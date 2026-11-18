@@ -107,16 +107,16 @@ service HarnessCallbackService {
       };
     }
 
-    // Agent Operations
-    rpc DelegateToAgent(DelegateToAgentRequest) returns (DelegateToAgentResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "can_use"
-        object_type: "component"
-        object_deriver: "system_tenant"
-        allowed_identities: 4  // COMPONENT
-      };
-    }
-    rpc ListAgents(ListAgentsRequest) returns (ListAgentsResponse) {
+    // ResolveAgent finds the route of an agent on the Agent gateway (A2A). The
+    // caller then sends an A2A SendMessage (JSON-RPC binding) to gateway_url
+    // with the A2A client of the SDK. It sends the task grant in the header
+    // x-capability-grant and each route header of the response unchanged.
+    // This call replaces DelegateToAgent and ListAgents. An agent finds other
+    // agents through the Agent Cards that the daemon serves.
+    //
+    // Errors: NotFound (no agent of this name), PermissionDenied (the grant
+    // does not allow the delegation), InvalidArgument.
+    rpc ResolveAgent(ResolveAgentRequest) returns (ResolveAgentResponse) {
       option (gibson.auth.v1.authz) = {
         relation: "can_use"
         object_type: "component"
@@ -1058,58 +1058,28 @@ message HarnessPluginDescriptor {
 // Agent Operations
 // ============================================================================
 
-// DelegateToAgentRequest dispatches a task to another agent. The target
-// selector says WHERE the task runs. Absent means an ephemeral launch, which
-// is the behavior every caller had before banks existed.
-message DelegateToAgentRequest {
+// ResolveAgentRequest asks the daemon for the Agent gateway route of an agent.
+message ResolveAgentRequest {
     ContextInfo context = 1;
+    // name is the name of the agent.
     string name = 2 [(buf.validate.field).string = { max_len: 1024 }];
-    gibson.types.v1.Task task = 3;
-
-    // target says where the task runs. Leave it unset for an ephemeral
-    // launch.
-    oneof target {
-        // ephemeral launches a new sandbox for this task and tears it down
-        // when the task ends. Setting it to true is the same as leaving the
-        // oneof unset; it lets a caller say so out loud.
-        bool ephemeral = 10;
-        // bank_id opens a new job on that bank. A member with a free slot
-        // takes it, or the bank queues it, per the bank spill policy.
-        string bank_id = 11 [(buf.validate.field).string = { max_len: 1024 }];
-        // job_id sends the task as the next input to a job that is already
-        // open, so the agent keeps its conversation and its worktrees.
-        string job_id = 12 [(buf.validate.field).string = { max_len: 1024 }];
-    }
 }
 
-// DelegateToAgentResponse carries the delegated task's result, and the job
-// the task ran as when the target was a bank or a job.
-message DelegateToAgentResponse {
-    gibson.types.v1.Result result = 1;
-    HarnessError error = 2;
-    // job_id names the job the task ran as. Empty for an ephemeral launch.
-    string job_id = 3;
-    // member_id names the bank member that ran the job. Empty for an
-    // ephemeral launch.
-    string member_id = 4;
-}
-
-message ListAgentsRequest {
-    ContextInfo context = 1;
-}
-
-message ListAgentsResponse {
-    repeated HarnessAgentDescriptor agents = 1;
-    HarnessError error = 2;
-}
-
-message HarnessAgentDescriptor {
-    string name = 1;
-    string version = 2;
-    string description = 3;
-    repeated string capabilities = 4;
-    repeated string target_types = 5;
-    repeated string technique_types = 6;
+// ResolveAgentResponse holds what the caller needs to send an A2A message to
+// an agent through the Agent gateway.
+message ResolveAgentResponse {
+    // gateway_url is the JSON-RPC interface URL of the agent on the Agent
+    // gateway. The caller sends A2A SendMessage to this URL.
+    string gateway_url = 1;
+    // route_headers are the headers that the gateway route matches on. The
+    // caller sends each one unchanged.
+    map<string, string> route_headers = 2;
+    // gateway_ca_pem is the PEM bundle of the private CA of the Agent gateway.
+    // The caller trusts exactly this bundle for gateway_url, which must use
+    // https. Empty means the system roots.
+    string gateway_ca_pem = 3;
+    // agent_card_url is the URL of the Agent Card of the agent on the gateway.
+    string agent_card_url = 4;
 }
 
 // ============================================================================

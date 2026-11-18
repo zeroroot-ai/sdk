@@ -5,6 +5,7 @@ package agent
 
 import (
 	"context"
+	"github.com/a2aproject/a2a-go/v2/a2a"
 	"log/slog"
 	"time"
 
@@ -323,17 +324,17 @@ type PluginCaller interface {
 
 // Delegator is handing sub-tasks to other enrolled agents.
 type Delegator interface {
-
-	// Agent Delegation Methods
+	// Delegate sends an A2A message to another agent through the Agent gateway
+	// (JSON-RPC binding) and waits for the A2A Task to end. The Task state is
+	// an a2a.TaskState. A task that needs input (input-required) or
+	// authorization (auth-required) also ends the wait. Delegate returns an
+	// error only when the call itself fails. An agent that fails, rejects or
+	// cancels the task gives a Task in that state.
 	//
-	// These methods allow agents to delegate tasks to other agents.
-
-	// DelegateToAgent assigns a task to another agent for execution.
-	// This enables hierarchical agent architectures and specialization.
-	DelegateToAgent(ctx context.Context, name string, task Task) (Result, error)
-
-	// ListAgents returns descriptors for all available agents.
-	ListAgents(ctx context.Context) ([]Descriptor, error)
+	// The call sends the task grant of the agent in the header
+	// x-capability-grant. The daemon resolves the route of the agent. An agent
+	// finds other agents through the Agent Cards that the daemon serves.
+	Delegate(ctx context.Context, name string, msg *a2a.Message) (*a2a.Task, error)
 }
 
 // WorldEmitter is emitting into the tenant World.
@@ -538,26 +539,4 @@ type Harness interface {
 	// TokenUsage returns the token usage tracker for this execution.
 	// This tracks token consumption across all LLM slots.
 	TokenUsage() llm.TokenTracker
-}
-
-// Descriptor provides metadata about an agent.
-// This is used for agent discovery and selection.
-type Descriptor struct {
-	// Name is the unique identifier for the agent.
-	Name string
-
-	// Version is the semantic version of the agent.
-	Version string
-
-	// Description explains what the agent does.
-	Description string
-
-	// Capabilities lists the security testing capabilities the agent provides.
-	Capabilities []string
-
-	// TargetTypes lists the types of targets the agent can test.
-	TargetTypes []string
-
-	// TechniqueTypes lists the attack techniques the agent employs.
-	TechniqueTypes []string
 }

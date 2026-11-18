@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/a2aproject/a2a-go/v2/a2a"
 	"io"
 	"log/slog"
 	"math"
@@ -70,7 +71,6 @@ type CallbackHarness struct {
 	cacheMu      sync.RWMutex
 	toolsCache   []tool.Descriptor
 	pluginsCache []plugin.Descriptor
-	agentsCache  []agent.Descriptor
 }
 
 // NewCallbackHarness creates a new callback-based harness.
@@ -466,88 +466,6 @@ func (h *CallbackHarness) ListPlugins(ctx context.Context) ([]plugin.Descriptor,
 	h.cacheMu.Unlock()
 
 	return plugins, nil
-}
-
-// DelegateToAgent assigns a task to another agent for execution.
-func (h *CallbackHarness) DelegateToAgent(ctx context.Context, name string, task agent.Task) (agent.Result, error) {
-	protoReq := &harnesspb.DelegateToAgentRequest{
-		Name: name,
-		Task: legacyTaskToProto(task),
-	}
-
-	resp, err := h.client.DelegateToAgent(ctx, protoReq)
-	if err != nil {
-		return agent.Result{}, fmt.Errorf("delegate to agent callback failed: %w", err)
-	}
-
-	if resp.Error != nil {
-		return agent.Result{}, fmt.Errorf("delegate to agent error: %s", resp.Error.Message)
-	}
-
-	// Convert proto result to SDK result using the helper function
-	result := legacyProtoToResult(resp.Result)
-
-	// Convert error if present
-	if resp.Result.Error != nil {
-		// Convert map[string]string to map[string]any
-		details := make(map[string]any)
-		for k, v := range resp.Result.Error.Details {
-			details[k] = v
-		}
-
-		result.Error = &agent.ResultError{
-			Code:      resp.Result.Error.Code.String(),
-			Message:   resp.Result.Error.Message,
-			Details:   details,
-			Retryable: resp.Result.Error.Retryable,
-		}
-	}
-
-	return result, nil
-}
-
-// ListAgents returns descriptors for all available agents.
-// Results are cached per task execution.
-func (h *CallbackHarness) ListAgents(ctx context.Context) ([]agent.Descriptor, error) {
-	// Check cache first
-	h.cacheMu.RLock()
-	if h.agentsCache != nil {
-		defer h.cacheMu.RUnlock()
-		return h.agentsCache, nil
-	}
-	h.cacheMu.RUnlock()
-
-	// Fetch from orchestrator
-	protoReq := &harnesspb.ListAgentsRequest{}
-	resp, err := h.client.ListAgents(ctx, protoReq)
-	if err != nil {
-		return nil, fmt.Errorf("list agents callback failed: %w", err)
-	}
-
-	if resp.Error != nil {
-		return nil, fmt.Errorf("list agents error: %s", resp.Error.Message)
-	}
-
-	// Convert to agent.Descriptor
-	agents := make([]agent.Descriptor, len(resp.Agents))
-	for i, protoAgent := range resp.Agents {
-		// Proto returns strings, which match the new agent interface
-		agents[i] = agent.Descriptor{
-			Name:           protoAgent.Name,
-			Version:        protoAgent.Version,
-			Description:    protoAgent.Description,
-			Capabilities:   protoAgent.Capabilities,
-			TargetTypes:    protoAgent.TargetTypes,
-			TechniqueTypes: protoAgent.TechniqueTypes,
-		}
-	}
-
-	// Cache results
-	h.cacheMu.Lock()
-	h.agentsCache = agents
-	h.cacheMu.Unlock()
-
-	return agents, nil
 }
 
 // SubmitFinding records a new security finding.
@@ -1634,4 +1552,32 @@ func boundedInt32(n int) int32 {
 		return math.MaxInt32
 	}
 	return int32(n)
+}
+
+// Delegate sends an A2A message to another agent through the Agent gateway and
+// waits for the A2A Task to end. The platform resolves the route of the agent.
+func (h *CallbackHarness) Delegate(ctx context.Context, name string, msg *a2a.Message) (*a2a.Task, error) {
+	ctx, span := h.tracer.Start(ctx, "gibson.agent.delegate",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(attribute.String("gibson.agent.name", name)),
+	)
+	defer span.End()
+
+	resp, err := h.client.ResolveAgent(ctx, name)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, fmt.Errorf("CallbackHarness.Delegate: %w", err)
+	}
+	task, err := delegate(ctx, &resolvedAgent{
+		gatewayURL: resp.GetGatewayUrl(), routeHeaders: resp.GetRouteHeaders(),
+		gatewayCAPEM: resp.GetGatewayCaPem(), cardURL: resp.GetAgentCardUrl(),
+	}, h.client.grantHeaders(), msg)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, fmt.Errorf("CallbackHarness.Delegate: %w", err)
+	}
+	span.SetAttributes(attribute.String("a2a.task.state", string(task.Status.State)))
+	return task, nil
 }

@@ -22,7 +22,7 @@
 //   - LLM access (Model, which returns the Open Responses client)
 //   - Tool access (CallToolProto, ListTools)
 //   - Plugin access (QueryPlugin, ListPlugins)
-//   - Agent delegation (DelegateToAgent, ListAgents)
+//   - Agent delegation (Delegate, an A2A message through the Agent gateway)
 //   - Finding management (SubmitFinding, GetFindings)
 //   - Memory storage (Memory)
 //   - Context access (Mission, Target)

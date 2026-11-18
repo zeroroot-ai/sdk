@@ -182,21 +182,11 @@ func TestCallbackHarness_EveryCallReachesTheDaemon(t *testing.T) {
 		only[*harnesspb.ListPluginsRequest](t, &d.recorder, "ListPlugins")
 		assert.Contains(t, mustStep(t, rep, "ListPlugins").Summary, "scanner 2.0")
 
-		del := only[*harnesspb.DelegateToAgentRequest](t, &d.recorder, "DelegateToAgent")
-		assert.Equal(t, "helper", del.GetName())
-		assert.Equal(t, "sub-1", del.GetTask().GetId())
-		res := value[agent.Result](t, rep, "DelegateToAgent")
-		assert.Equal(t, a2a.TaskStateCompleted, res.Status)
-		assert.Equal(t, "helped", res.Output)
-		require.Error(t, res.Error)
-		assert.Contains(t, res.Error.Error(), "half done")
-
-		only[*harnesspb.ListAgentsRequest](t, &d.recorder, "ListAgents")
-		ag := value[[]agent.Descriptor](t, rep, "ListAgents")[0]
-		assert.Equal(t, agent.Descriptor{
-			Name: "helper", Version: "3.1", Description: "Helps", Capabilities: []string{"web"},
-			TargetTypes: []string{"llm_chat"}, TechniqueTypes: []string{"T1190"},
-		}, ag)
+		ra := only[*harnesspb.ResolveAgentRequest](t, &d.recorder, "ResolveAgent")
+		assert.Equal(t, "helper", ra.GetName())
+		task := value[*a2a.Task](t, rep, "Delegate")
+		assert.Equal(t, a2a.TaskStateCompleted, task.Status.State)
+		assert.Equal(t, "state=TASK_STATE_COMPLETED artifacts=[helped: check the host]", mustStep(t, rep, "Delegate").Summary)
 	})
 
 	t.Run("world", func(t *testing.T) {
@@ -455,7 +445,7 @@ func TestPlatformHarness_EveryCallReachesTheDaemon(t *testing.T) {
 		"GetRunFindings": true, "GetMissionRunHistory": true, "ApplicationFindings": true,
 	}
 	// The test client has no capability grant. The four calls to the gateway fail on that.
-	noGrant := map[string]bool{"Create": true, "CreateWithTools": true, "CreateStructured": true, "Stream": true}
+	noGrant := map[string]bool{"Create": true, "CreateWithTools": true, "CreateStructured": true, "Stream": true, "Delegate": true}
 	for _, s := range rep.Steps {
 		if unavailable[s.Call] {
 			assert.True(t, s.Unavailable(), "%s: %v", s.Call, s.Err)
@@ -492,8 +482,7 @@ func TestPlatformHarness_EveryCallReachesTheDaemon(t *testing.T) {
 	assert.Equal(t, []int{0, 1}, []int{results[0].Index, results[1].Index})
 	assert.Equal(t, map[string]any{"open": true}, value[any](t, rep, "QueryPlugin"))
 	assert.Empty(t, value[[]plugin.Descriptor](t, rep, "ListPlugins"))
-	assert.Equal(t, a2a.TaskStateCompleted, value[agent.Result](t, rep, "DelegateToAgent").Status)
-	assert.Equal(t, "helper", value[[]agent.Descriptor](t, rep, "ListAgents")[0].Name)
+	assert.ErrorContains(t, mustStep(t, rep, "Delegate").Err, "no task grant")
 	assert.Equal(t, "child-1", value[*mission.MissionInfo](t, rep, "CreateMission").ID)
 	assert.Equal(t, "scan", value[*mission.MissionStatusInfo](t, rep, "GetMissionStatus").Phase)
 	assert.Equal(t, mission.MissionStatusCompleted, value[*mission.MissionResult](t, rep, "WaitForMission").Status)
@@ -506,7 +495,7 @@ func TestPlatformHarness_EveryCallReachesTheDaemon(t *testing.T) {
 	// Each RPC that PlatformHarness uses reached the fake once or twice, with the right request.
 	for _, m := range []string{
 		"ResolveModel", "CallTool", "CallToolStream", "ListTools",
-		"QueueToolWork", "ToolResults", "QueryPlugin", "DelegateToAgent", "ListAgents", "SubmitFinding",
+		"QueueToolWork", "ToolResults", "QueryPlugin", "ResolveAgent", "SubmitFinding",
 		"ReportStepHints", "CreateMission", "RunMission", "GetMissionStatus", "WaitMission", "ListMissions",
 		"CancelMission", "GetMissionResults",
 	} {
@@ -520,7 +509,7 @@ func TestPlatformHarness_EveryCallReachesTheDaemon(t *testing.T) {
 	qp := only[*componentpb.QueryPluginRequest](t, &d.recorder, "QueryPlugin")
 	assert.Equal(t, "scanner", qp.GetPluginName())
 	assert.JSONEq(t, `{"host":"10.0.0.1"}`, qp.GetParamsJson())
-	assert.Equal(t, "helper", only[*componentpb.DelegateToAgentRequest](t, &d.recorder, "DelegateToAgent").GetAgentName())
+	assert.Equal(t, "helper", only[*componentpb.ResolveAgentRequest](t, &d.recorder, "ResolveAgent").GetName())
 	assert.Contains(t, string(only[*componentpb.SubmitFindingRequest](t, &d.recorder, "SubmitFinding").GetFinding()), "Open admin port")
 	assert.Equal(t, "target-1", only[*componentpb.CreateMissionRequest](t, &d.recorder, "CreateMission").GetTargetId())
 	assert.Equal(t, int64(5000), only[*componentpb.WaitMissionRequest](t, &d.recorder, "WaitMission").GetTimeoutMs())

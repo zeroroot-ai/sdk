@@ -283,20 +283,12 @@ func TestCallbackClientNotConnectedErrorMessages(t *testing.T) {
 			expectedMsg: "ListPlugins: client not connected",
 		},
 		{
-			name: "DelegateToAgent",
+			name: "ResolveAgent",
 			call: func() error {
-				_, err := client.DelegateToAgent(ctx, nil)
+				_, err := client.ResolveAgent(ctx, "helper")
 				return err
 			},
-			expectedMsg: "DelegateToAgent: client not connected",
-		},
-		{
-			name: "ListAgents",
-			call: func() error {
-				_, err := client.ListAgents(ctx, nil)
-				return err
-			},
-			expectedMsg: "ListAgents: client not connected",
+			expectedMsg: "ResolveAgent: client not connected",
 		},
 		{
 			name: "SubmitFinding",

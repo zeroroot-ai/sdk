@@ -28,8 +28,7 @@ const (
 	HarnessCallbackService_ToolResults_FullMethodName                     = "/gibson.harness.v1.HarnessCallbackService/ToolResults"
 	HarnessCallbackService_QueryPlugin_FullMethodName                     = "/gibson.harness.v1.HarnessCallbackService/QueryPlugin"
 	HarnessCallbackService_ListPlugins_FullMethodName                     = "/gibson.harness.v1.HarnessCallbackService/ListPlugins"
-	HarnessCallbackService_DelegateToAgent_FullMethodName                 = "/gibson.harness.v1.HarnessCallbackService/DelegateToAgent"
-	HarnessCallbackService_ListAgents_FullMethodName                      = "/gibson.harness.v1.HarnessCallbackService/ListAgents"
+	HarnessCallbackService_ResolveAgent_FullMethodName                    = "/gibson.harness.v1.HarnessCallbackService/ResolveAgent"
 	HarnessCallbackService_SubmitFinding_FullMethodName                   = "/gibson.harness.v1.HarnessCallbackService/SubmitFinding"
 	HarnessCallbackService_Observe_FullMethodName                         = "/gibson.harness.v1.HarnessCallbackService/Observe"
 	HarnessCallbackService_PlaceBet_FullMethodName                        = "/gibson.harness.v1.HarnessCallbackService/PlaceBet"
@@ -116,9 +115,16 @@ type HarnessCallbackServiceClient interface {
 	// Plugin Operations
 	QueryPlugin(ctx context.Context, in *QueryPluginRequest, opts ...grpc.CallOption) (*QueryPluginResponse, error)
 	ListPlugins(ctx context.Context, in *ListPluginsRequest, opts ...grpc.CallOption) (*ListPluginsResponse, error)
-	// Agent Operations
-	DelegateToAgent(ctx context.Context, in *DelegateToAgentRequest, opts ...grpc.CallOption) (*DelegateToAgentResponse, error)
-	ListAgents(ctx context.Context, in *ListAgentsRequest, opts ...grpc.CallOption) (*ListAgentsResponse, error)
+	// ResolveAgent finds the route of an agent on the Agent gateway (A2A). The
+	// caller then sends an A2A SendMessage (JSON-RPC binding) to gateway_url
+	// with the A2A client of the SDK. It sends the task grant in the header
+	// x-capability-grant and each route header of the response unchanged.
+	// This call replaces DelegateToAgent and ListAgents. An agent finds other
+	// agents through the Agent Cards that the daemon serves.
+	//
+	// Errors: NotFound (no agent of this name), PermissionDenied (the grant
+	// does not allow the delegation), InvalidArgument.
+	ResolveAgent(ctx context.Context, in *ResolveAgentRequest, opts ...grpc.CallOption) (*ResolveAgentResponse, error)
 	// Finding Operations
 	SubmitFinding(ctx context.Context, in *SubmitFindingRequest, opts ...grpc.CallOption) (*SubmitFindingResponse, error)
 	// Observe emits a typed observation into the World (ADR-0107). The brain
@@ -427,20 +433,10 @@ func (c *harnessCallbackServiceClient) ListPlugins(ctx context.Context, in *List
 	return out, nil
 }
 
-func (c *harnessCallbackServiceClient) DelegateToAgent(ctx context.Context, in *DelegateToAgentRequest, opts ...grpc.CallOption) (*DelegateToAgentResponse, error) {
+func (c *harnessCallbackServiceClient) ResolveAgent(ctx context.Context, in *ResolveAgentRequest, opts ...grpc.CallOption) (*ResolveAgentResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DelegateToAgentResponse)
-	err := c.cc.Invoke(ctx, HarnessCallbackService_DelegateToAgent_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *harnessCallbackServiceClient) ListAgents(ctx context.Context, in *ListAgentsRequest, opts ...grpc.CallOption) (*ListAgentsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListAgentsResponse)
-	err := c.cc.Invoke(ctx, HarnessCallbackService_ListAgents_FullMethodName, in, out, cOpts...)
+	out := new(ResolveAgentResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_ResolveAgent_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1026,9 +1022,16 @@ type HarnessCallbackServiceServer interface {
 	// Plugin Operations
 	QueryPlugin(context.Context, *QueryPluginRequest) (*QueryPluginResponse, error)
 	ListPlugins(context.Context, *ListPluginsRequest) (*ListPluginsResponse, error)
-	// Agent Operations
-	DelegateToAgent(context.Context, *DelegateToAgentRequest) (*DelegateToAgentResponse, error)
-	ListAgents(context.Context, *ListAgentsRequest) (*ListAgentsResponse, error)
+	// ResolveAgent finds the route of an agent on the Agent gateway (A2A). The
+	// caller then sends an A2A SendMessage (JSON-RPC binding) to gateway_url
+	// with the A2A client of the SDK. It sends the task grant in the header
+	// x-capability-grant and each route header of the response unchanged.
+	// This call replaces DelegateToAgent and ListAgents. An agent finds other
+	// agents through the Agent Cards that the daemon serves.
+	//
+	// Errors: NotFound (no agent of this name), PermissionDenied (the grant
+	// does not allow the delegation), InvalidArgument.
+	ResolveAgent(context.Context, *ResolveAgentRequest) (*ResolveAgentResponse, error)
 	// Finding Operations
 	SubmitFinding(context.Context, *SubmitFindingRequest) (*SubmitFindingResponse, error)
 	// Observe emits a typed observation into the World (ADR-0107). The brain
@@ -1256,11 +1259,8 @@ func (UnimplementedHarnessCallbackServiceServer) QueryPlugin(context.Context, *Q
 func (UnimplementedHarnessCallbackServiceServer) ListPlugins(context.Context, *ListPluginsRequest) (*ListPluginsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListPlugins not implemented")
 }
-func (UnimplementedHarnessCallbackServiceServer) DelegateToAgent(context.Context, *DelegateToAgentRequest) (*DelegateToAgentResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DelegateToAgent not implemented")
-}
-func (UnimplementedHarnessCallbackServiceServer) ListAgents(context.Context, *ListAgentsRequest) (*ListAgentsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListAgents not implemented")
+func (UnimplementedHarnessCallbackServiceServer) ResolveAgent(context.Context, *ResolveAgentRequest) (*ResolveAgentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ResolveAgent not implemented")
 }
 func (UnimplementedHarnessCallbackServiceServer) SubmitFinding(context.Context, *SubmitFindingRequest) (*SubmitFindingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SubmitFinding not implemented")
@@ -1591,38 +1591,20 @@ func _HarnessCallbackService_ListPlugins_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
-func _HarnessCallbackService_DelegateToAgent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DelegateToAgentRequest)
+func _HarnessCallbackService_ResolveAgent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResolveAgentRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(HarnessCallbackServiceServer).DelegateToAgent(ctx, in)
+		return srv.(HarnessCallbackServiceServer).ResolveAgent(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: HarnessCallbackService_DelegateToAgent_FullMethodName,
+		FullMethod: HarnessCallbackService_ResolveAgent_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HarnessCallbackServiceServer).DelegateToAgent(ctx, req.(*DelegateToAgentRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HarnessCallbackService_ListAgents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListAgentsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HarnessCallbackServiceServer).ListAgents(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HarnessCallbackService_ListAgents_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HarnessCallbackServiceServer).ListAgents(ctx, req.(*ListAgentsRequest))
+		return srv.(HarnessCallbackServiceServer).ResolveAgent(ctx, req.(*ResolveAgentRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2603,12 +2585,8 @@ var HarnessCallbackService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _HarnessCallbackService_ListPlugins_Handler,
 		},
 		{
-			MethodName: "DelegateToAgent",
-			Handler:    _HarnessCallbackService_DelegateToAgent_Handler,
-		},
-		{
-			MethodName: "ListAgents",
-			Handler:    _HarnessCallbackService_ListAgents_Handler,
+			MethodName: "ResolveAgent",
+			Handler:    _HarnessCallbackService_ResolveAgent_Handler,
 		},
 		{
 			MethodName: "SubmitFinding",

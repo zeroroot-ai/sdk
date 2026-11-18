@@ -9,7 +9,6 @@ import (
 	"net"
 	"testing"
 
-	"github.com/a2aproject/a2a-go/v2/a2a"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -18,7 +17,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 
-	"github.com/zeroroot-ai/sdk/agent"
 	componentpb "github.com/zeroroot-ai/sdk/api/gen/gibson/component/v1"
 	"github.com/zeroroot-ai/sdk/mission"
 )
@@ -26,11 +24,10 @@ import (
 type mockComponentServer struct {
 	componentpb.UnimplementedComponentServiceServer
 
-	queryNodesFunc      func(*componentpb.QueryNodesRequest) (*componentpb.QueryNodesResponse, error)
-	getFindingsFunc     func(*componentpb.GetFindingsRequest) (*componentpb.GetFindingsResponse, error)
-	delegateToAgentFunc func(*componentpb.DelegateToAgentRequest) (*componentpb.DelegateToAgentResponse, error)
-	createMissionFunc   func(*componentpb.CreateMissionRequest) (*componentpb.CreateMissionResponse, error)
-	getCredentialFunc   func(*componentpb.GetCredentialRequest) (*componentpb.GetCredentialResponse, error)
+	queryNodesFunc    func(*componentpb.QueryNodesRequest) (*componentpb.QueryNodesResponse, error)
+	getFindingsFunc   func(*componentpb.GetFindingsRequest) (*componentpb.GetFindingsResponse, error)
+	createMissionFunc func(*componentpb.CreateMissionRequest) (*componentpb.CreateMissionResponse, error)
+	getCredentialFunc func(*componentpb.GetCredentialRequest) (*componentpb.GetCredentialResponse, error)
 }
 
 func (s *mockComponentServer) QueryNodes(_ context.Context, req *componentpb.QueryNodesRequest) (*componentpb.QueryNodesResponse, error) {
@@ -43,13 +40,6 @@ func (s *mockComponentServer) QueryNodes(_ context.Context, req *componentpb.Que
 func (s *mockComponentServer) GetFindings(_ context.Context, req *componentpb.GetFindingsRequest) (*componentpb.GetFindingsResponse, error) {
 	if s.getFindingsFunc != nil {
 		return s.getFindingsFunc(req)
-	}
-	return nil, status.Error(codes.Unimplemented, "not set")
-}
-
-func (s *mockComponentServer) DelegateToAgent(_ context.Context, req *componentpb.DelegateToAgentRequest) (*componentpb.DelegateToAgentResponse, error) {
-	if s.delegateToAgentFunc != nil {
-		return s.delegateToAgentFunc(req)
 	}
 	return nil, status.Error(codes.Unimplemented, "not set")
 }
@@ -121,46 +111,6 @@ func setupParityTestWith(t *testing.T, register func(*grpc.Server)) (harness *Pl
 		lis.Close()
 	}
 	return harness, cleanup
-}
-
-func TestPlatformParity_DelegateToAgent_Happy(t *testing.T) {
-	wantResult := agent.Result{Status: a2a.TaskStateCompleted, Output: "recon complete"}
-	resultJSON, err := json.Marshal(wantResult)
-	require.NoError(t, err)
-
-	mock := &mockComponentServer{}
-	mock.delegateToAgentFunc = func(req *componentpb.DelegateToAgentRequest) (*componentpb.DelegateToAgentResponse, error) {
-		assert.Equal(t, "work-001", req.WorkId)
-		assert.Equal(t, "recon-agent", req.AgentName)
-		var task agent.Task
-		require.NoError(t, json.Unmarshal(req.TaskJson, &task))
-		assert.Equal(t, "task-99", task.ID)
-		return &componentpb.DelegateToAgentResponse{ResultJson: resultJSON}, nil
-	}
-
-	harness, cleanup := setupParityTest(t, mock)
-	defer cleanup()
-
-	result, err := harness.DelegateToAgent(context.Background(), "recon-agent", agent.Task{
-		ID:   "task-99",
-		Goal: "enumerate subdomains",
-	})
-	require.NoError(t, err)
-	assert.Equal(t, a2a.TaskStateCompleted, result.Status)
-}
-
-func TestPlatformParity_DelegateToAgent_RPCError(t *testing.T) {
-	mock := &mockComponentServer{}
-	mock.delegateToAgentFunc = func(_ *componentpb.DelegateToAgentRequest) (*componentpb.DelegateToAgentResponse, error) {
-		return nil, status.Error(codes.Unavailable, "agent offline")
-	}
-
-	harness, cleanup := setupParityTest(t, mock)
-	defer cleanup()
-
-	_, err := harness.DelegateToAgent(context.Background(), "recon-agent", agent.Task{ID: "t1"})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "PlatformHarness.DelegateToAgent")
 }
 
 func TestPlatformParity_CreateMission_Happy(t *testing.T) {

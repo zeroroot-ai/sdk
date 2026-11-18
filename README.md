@@ -139,7 +139,7 @@ composed of capability groups, declared in [`agent/harness.go`](agent/harness.go
 | `LLMCaller` | `Model` |
 | `ToolCaller` | `CallToolProto`, `CallToolProtoStream`, `ListTools`, `QueueToolWork`, `ToolResults` |
 | `PluginCaller` | `QueryPlugin`, `ListPlugins` |
-| `Delegator` | `DelegateToAgent`, `ListAgents` |
+| `Delegator` | `Delegate` |
 | `WorldEmitter` | `SubmitFinding`, `Observe` |
 | `WorldReader` | `WorldView` |
 | `KnowledgeReader` | `QueryNodes`, `FindSimilarFindings`, `GetAttackChains`, and the other read-only graph queries |

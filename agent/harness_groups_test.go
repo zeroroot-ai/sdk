@@ -42,7 +42,7 @@ func TestHarnessMethodSetUnchanged(t *testing.T) {
 		"CancelMission", "CreateMission", "GetMissionResults", "GetMissionStatus",
 		"ListMissions", "RunMission", "WaitForMission",
 		"Model",
-		"DelegateToAgent", "ListAgents",
+		"Delegate",
 		"ListPlugins", "QueryPlugin",
 		"Logger", "Mission", "Target", "TokenUsage", "Tracer",
 		"Observe", "PlaceBet", "SubmitFinding",
