@@ -183,7 +183,9 @@ func (h *CallbackHarness) Model(ctx context.Context, slot string) (*openresponse
 
 // CallToolProto invokes a tool using proto messages via the CallToolProto RPC.
 // This is the canonical way to execute tools - all tool calls should use this method.
-func (h *CallbackHarness) CallToolProto(ctx context.Context, name string, request protolib.Message, response protolib.Message) error {
+func (h *CallbackHarness) CallToolProto(
+	ctx context.Context, name string, request protolib.Message, response protolib.Message, opts ...agent.ToolCallOption,
+) error {
 	// Start span for proto tool call
 	ctx, span := h.tracer.Start(ctx, "gen_ai.tool.proto",
 		trace.WithSpanKind(trace.SpanKindClient),
@@ -222,6 +224,8 @@ func (h *CallbackHarness) CallToolProto(ctx context.Context, name string, reques
 		span.SetStatus(codes.Error, err.Error())
 		return fmt.Errorf("CallToolProto callback failed: %w", err)
 	}
+	// The daemon records a failed call too, so the id is set before the error.
+	agent.ApplyToolCallOptions(opts).SetToolCallID(resp.GetToolCallId())
 
 	if resp.Error != nil {
 		err := fmt.Errorf("CallToolProto error: %s", resp.Error.Message)
@@ -251,7 +255,14 @@ func (h *CallbackHarness) CallToolProto(ctx context.Context, name string, reques
 // The method marshals the input proto to JSON, calls the daemon's CallToolProtoStream RPC,
 // receives streaming ToolMessage events, dispatches them to the callback methods, and
 // returns the final output.
-func (h *CallbackHarness) CallToolProtoStream(ctx context.Context, toolName string, input protolib.Message, output protolib.Message, callback agent.ToolStreamCallback) error {
+func (h *CallbackHarness) CallToolProtoStream(
+	ctx context.Context, toolName string, input protolib.Message, output protolib.Message,
+	callback agent.ToolStreamCallback, opts ...agent.ToolCallOption,
+) error {
+	toolCallOpts := agent.ApplyToolCallOptions(opts)
+	var toolCallID string
+	defer func() { toolCallOpts.SetToolCallID(toolCallID) }()
+
 	// Start span for streaming proto tool call
 	ctx, span := h.tracer.Start(ctx, "gen_ai.tool.proto.stream",
 		trace.WithSpanKind(trace.SpanKindClient),
@@ -308,6 +319,9 @@ func (h *CallbackHarness) CallToolProtoStream(ctx context.Context, toolName stri
 			span.RecordError(err)
 			callback.OnError(err, true)
 			return fmt.Errorf("CallToolProtoStream receive error: %w", err)
+		}
+		if id := msg.GetToolCallId(); id != "" {
+			toolCallID = id
 		}
 
 		switch payload := msg.GetPayload().(type) {
@@ -1197,6 +1211,7 @@ func (h *CallbackHarness) ToolResults(ctx context.Context, jobID string) <-chan 
 			}
 
 			// Send result on channel
+			toolResult.ToolCallID = protoResult.GetToolCallId()
 			select {
 			case resultChan <- toolResult:
 			case <-ctx.Done():

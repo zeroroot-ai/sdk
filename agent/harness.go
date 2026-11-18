@@ -29,6 +29,47 @@ type QueuedToolResult struct {
 	Index  int           // Position in original inputs slice (0-based)
 	Output proto.Message // The tool's output proto (nil if error)
 	Error  error         // Error if execution failed (nil if success)
+
+	// ToolCallID is the id that the daemon recorded for the call of this input.
+	// Cite it with Finding.CiteToolCalls. Empty when the daemon recorded none,
+	// and from a daemon that does not send it.
+	ToolCallID string
+}
+
+// ToolCallOption sets an option of CallToolProto and CallToolProtoStream.
+type ToolCallOption func(*ToolCallOptions)
+
+// ToolCallOptions are the options of one tool call.
+type ToolCallOptions struct {
+	toolCallID *string
+}
+
+// ReceiveToolCallID stores the id that the daemon recorded for the call in dst.
+// Cite it with Finding.CiteToolCalls (or in the tool call ids of a proof) so the
+// platform builds recorded evidence from the call. The id is set even when the
+// call fails, because the daemon records a failed call too. It is an empty
+// string when the daemon recorded none, and from a daemon that does not send
+// the id. The SDK never makes up an id.
+func ReceiveToolCallID(dst *string) ToolCallOption {
+	return func(o *ToolCallOptions) { o.toolCallID = dst }
+}
+
+// ApplyToolCallOptions returns the options that opts set.
+func ApplyToolCallOptions(opts []ToolCallOption) ToolCallOptions {
+	var o ToolCallOptions
+	for _, opt := range opts {
+		if opt != nil {
+			opt(&o)
+		}
+	}
+	return o
+}
+
+// SetToolCallID stores the id in the destination of ReceiveToolCallID, if any.
+func (o ToolCallOptions) SetToolCallID(id string) {
+	if o.toolCallID != nil {
+		*o.toolCallID = id
+	}
 }
 
 // ToolStreamCallback receives streaming events during tool execution.
@@ -222,7 +263,11 @@ type ToolCaller interface {
 
 	// CallToolProto invokes a tool by name with proto message input/output.
 	// The request and response parameters should be pointers to proto message types.
-	CallToolProto(ctx context.Context, name string, request proto.Message, response proto.Message) error
+	//
+	// To get the id that the daemon recorded for the call, pass
+	// ReceiveToolCallID(&id). Cite that id with Finding.CiteToolCalls. The
+	// meta-tool invoke_tool gives the id of the recorded call of the invoked tool.
+	CallToolProto(ctx context.Context, name string, request proto.Message, response proto.Message, opts ...ToolCallOption) error
 
 	// CallToolProtoStream invokes a tool with streaming event callbacks.
 	// This enables real-time progress updates, partial results, and warnings during tool execution.
@@ -232,6 +277,9 @@ type ToolCaller interface {
 	//   - OnPartial: Incremental or replacement partial results
 	//   - OnWarning: Non-fatal warnings during execution
 	//   - OnError: Fatal or non-fatal errors
+	//
+	// ReceiveToolCallID(&id) gives the id that the daemon recorded for the call,
+	// as for CallToolProto.
 	//
 	// The method blocks until the tool completes or fails, returning the final output
 	// or an error. The final output is also delivered via callback.OnPartial() before returning.
@@ -244,7 +292,7 @@ type ToolCaller interface {
 	//       return fmt.Errorf("mytool failed: %w", err)
 	//   }
 	//   // output now contains the final result
-	CallToolProtoStream(ctx context.Context, toolName string, input proto.Message, output proto.Message, callback ToolStreamCallback) error
+	CallToolProtoStream(ctx context.Context, toolName string, input proto.Message, output proto.Message, callback ToolStreamCallback, opts ...ToolCallOption) error
 
 	// ListTools returns descriptors for all available tools.
 	// This can be used to discover available functionality.

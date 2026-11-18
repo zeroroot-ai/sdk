@@ -106,6 +106,9 @@ type ToolStreamEvent struct {
 	EventType string
 	// PayloadJSON carries event-specific data.
 	PayloadJSON string
+	// ToolCallID is the id that the daemon recorded for the call. The daemon sets
+	// it on the last event. Empty otherwise.
+	ToolCallID string
 	// Err is non-nil if the stream terminated with an error.
 	Err error
 }
@@ -116,6 +119,8 @@ type QueuedToolResultEvent struct {
 	Index int32
 	// OutputJSON is the JSON-encoded tool output.
 	OutputJSON string
+	// ToolCallID is the id that the daemon recorded for the call of this input.
+	ToolCallID string
 	// Err is non-nil if this invocation failed or the stream terminated with an error.
 	Err error
 }
@@ -652,15 +657,15 @@ func (pc *PlatformClient) RenewTaskGrant(ctx context.Context, current string) (s
 // CallTool proxies a tool execution request through the agent harness.
 // inputJSON must be a JSON object matching the named tool's input schema.
 // Returns the JSON-encoded tool output on success.
-func (pc *PlatformClient) CallTool(ctx context.Context, workID, toolName, inputJSON string) (string, error) {
+func (pc *PlatformClient) CallTool(ctx context.Context, workID, toolName, inputJSON string) (output, toolCallID string, err error) {
 	if err := pc.ensureConnected("CallTool"); err != nil {
-		return "", err
+		return "", "", err
 	}
 	if workID == "" {
-		return "", errors.New("CallTool: workID cannot be empty")
+		return "", "", errors.New("CallTool: workID cannot be empty")
 	}
 	if toolName == "" {
-		return "", errors.New("CallTool: toolName cannot be empty")
+		return "", "", errors.New("CallTool: toolName cannot be empty")
 	}
 
 	req := &componentpb.CallToolRequest{
@@ -671,12 +676,12 @@ func (pc *PlatformClient) CallTool(ctx context.Context, workID, toolName, inputJ
 
 	resp, err := pc.service.CallTool(ctx, req)
 	if err != nil {
-		return "", fmt.Errorf("CallTool: %w", err)
+		return "", "", fmt.Errorf("CallTool: %w", err)
 	}
 	if resp.Error != nil && resp.Error.Code != "" {
-		return "", fmt.Errorf("CallTool %s: [%s] %s", toolName, resp.Error.Code, resp.Error.Message)
+		return "", resp.ToolCallId, fmt.Errorf("CallTool %s: [%s] %s", toolName, resp.Error.Code, resp.Error.Message)
 	}
-	return resp.OutputJson, nil
+	return resp.OutputJson, resp.ToolCallId, nil
 }
 
 // QueryPlugin proxies a plugin method invocation through the agent harness.
@@ -789,6 +794,7 @@ func (pc *PlatformClient) CallToolStream(ctx context.Context, workID, toolName, 
 			evt := ToolStreamEvent{
 				EventType:   msg.EventType,
 				PayloadJSON: msg.PayloadJson,
+				ToolCallID:  msg.ToolCallId,
 			}
 			if msg.Error != nil && msg.Error.Code != "" {
 				evt.Err = fmt.Errorf("CallToolStream %s: [%s] %s", toolName, msg.Error.Code, msg.Error.Message)
@@ -832,6 +838,7 @@ func (pc *PlatformClient) ToolResults(ctx context.Context, workID, jobID string)
 			evt := QueuedToolResultEvent{
 				Index:      msg.Index,
 				OutputJSON: msg.OutputJson,
+				ToolCallID: msg.ToolCallId,
 			}
 			if msg.Error != nil && msg.Error.Code != "" {
 				evt.Err = fmt.Errorf("ToolResults index %d: [%s] %s", msg.Index, msg.Error.Code, msg.Error.Message)

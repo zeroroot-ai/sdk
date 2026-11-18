@@ -165,7 +165,7 @@ func (d *callbackDaemon) GetTaxonomySchema(context.Context, *harnesspb.GetTaxono
 }
 
 func (d *callbackDaemon) CallToolProto(context.Context, *harnesspb.CallToolProtoRequest) (*harnesspb.CallToolProtoResponse, error) {
-	return &harnesspb.CallToolProtoResponse{OutputJson: []byte(`"pong"`)}, nil
+	return &harnesspb.CallToolProtoResponse{OutputJson: []byte(`"pong"`), ToolCallId: "tc-call"}, nil
 }
 
 func (d *callbackDaemon) CallToolProtoStream(
@@ -179,7 +179,7 @@ func (d *callbackDaemon) CallToolProtoStream(
 		{Payload: &harnesspb.CallToolProtoStreamResponse_Warning{
 			Warning: &harnesspb.ToolWarningEvent{Message: "slow", Code: "W1"}}},
 		{Payload: &harnesspb.CallToolProtoStreamResponse_Complete{
-			Complete: &harnesspb.ToolCompleteEvent{OutputJson: []byte(`"done"`)}}},
+			Complete: &harnesspb.ToolCompleteEvent{OutputJson: []byte(`"done"`)}}, ToolCallId: "tc-stream"},
 	} {
 		if err := s.Send(m); err != nil {
 			return fmt.Errorf("send: %w", err)
@@ -199,8 +199,8 @@ func (d *callbackDaemon) QueueToolWork(context.Context, *harnesspb.QueueToolWork
 func (d *callbackDaemon) ToolResults(_ *harnesspb.ToolResultsRequest, s grpc.ServerStreamingServer[harnesspb.ToolResultsResponse]) error {
 	typ := string((&wrapperspb.StringValue{}).ProtoReflect().Descriptor().FullName())
 	for _, m := range []*harnesspb.ToolResultsResponse{
-		{Index: 0, OutputJson: `"A"`, OutputType: typ},
-		{Index: 1, OutputJson: `"B"`, OutputType: typ, IsFinal: true},
+		{Index: 0, OutputJson: `"A"`, OutputType: typ, ToolCallId: "tc-q0"},
+		{Index: 1, OutputJson: `"B"`, OutputType: typ, IsFinal: true, ToolCallId: "tc-q1"},
 	} {
 		if err := s.Send(m); err != nil {
 			return fmt.Errorf("send: %w", err)
@@ -455,7 +455,7 @@ func startComponentDaemon(t *testing.T) (d *componentDaemon, addr string) {
 }
 
 func (d *componentDaemon) CallTool(context.Context, *componentpb.CallToolRequest) (*componentpb.CallToolResponse, error) {
-	return &componentpb.CallToolResponse{OutputJson: `"pong"`}, nil
+	return &componentpb.CallToolResponse{OutputJson: `"pong"`, ToolCallId: "tc-call"}, nil
 }
 
 func (d *componentDaemon) CallToolStream(
@@ -465,7 +465,7 @@ func (d *componentDaemon) CallToolStream(
 		{EventType: "progress", PayloadJson: `{"percent":50,"phase":"scan","message":"halfway"}`},
 		{EventType: "partial", PayloadJson: `"part"`},
 		{EventType: "warning", PayloadJson: `{"message":"slow","context":"W1"}`},
-		{EventType: "result", PayloadJson: `"done"`, Done: true},
+		{EventType: "result", PayloadJson: `"done"`, Done: true, ToolCallId: "tc-stream"},
 	} {
 		if err := s.Send(m); err != nil {
 			return fmt.Errorf("send: %w", err)
@@ -487,7 +487,7 @@ func (d *componentDaemon) QueueToolWork(context.Context, *componentpb.QueueToolW
 
 func (d *componentDaemon) ToolResults(_ *componentpb.ToolResultsRequest, s grpc.ServerStreamingServer[componentpb.ToolResultsResponse]) error {
 	for _, m := range []*componentpb.ToolResultsResponse{
-		{Index: 0, OutputJson: `"A"`}, {Index: 1, OutputJson: `"B"`, Done: true},
+		{Index: 0, OutputJson: `"A"`, ToolCallId: "tc-q0"}, {Index: 1, OutputJson: `"B"`, Done: true, ToolCallId: "tc-q1"},
 	} {
 		if err := s.Send(m); err != nil {
 			return fmt.Errorf("send: %w", err)

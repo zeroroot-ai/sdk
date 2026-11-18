@@ -113,7 +113,9 @@ func (h *PlatformHarness) Model(ctx context.Context, slot string) (*openresponse
 // for transport and unmarshaling the JSON response back into resp.
 // Uses protojson with UseProtoNames=true for snake_case consistency with the
 // existing tool serve code.
-func (h *PlatformHarness) CallToolProto(ctx context.Context, name string, request protolib.Message, response protolib.Message) error {
+func (h *PlatformHarness) CallToolProto(
+	ctx context.Context, name string, request protolib.Message, response protolib.Message, opts ...agent.ToolCallOption,
+) error {
 	ctx, span := h.tracer.Start(ctx, "gen_ai.tool.proto",
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
@@ -132,7 +134,9 @@ func (h *PlatformHarness) CallToolProto(ctx context.Context, name string, reques
 		return fmt.Errorf("PlatformHarness.CallToolProto: marshal request: %w", err)
 	}
 
-	outputJSON, err := h.client.CallTool(ctx, h.workID, name, string(inputJSON))
+	outputJSON, toolCallID, err := h.client.CallTool(ctx, h.workID, name, string(inputJSON))
+	// The daemon records a failed call too, so the id is set before the error.
+	agent.ApplyToolCallOptions(opts).SetToolCallID(toolCallID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -153,7 +157,14 @@ func (h *PlatformHarness) CallToolProto(ctx context.Context, name string, reques
 // proto is marshaled to JSON and sent via the platform's CallToolStream RPC.
 // Events are dispatched to the callback as they arrive; the output proto is
 // populated from the final "result" event.
-func (h *PlatformHarness) CallToolProtoStream(ctx context.Context, toolName string, input protolib.Message, output protolib.Message, callback agent.ToolStreamCallback) error {
+func (h *PlatformHarness) CallToolProtoStream(
+	ctx context.Context, toolName string, input protolib.Message, output protolib.Message,
+	callback agent.ToolStreamCallback, opts ...agent.ToolCallOption,
+) error {
+	toolCallOpts := agent.ApplyToolCallOptions(opts)
+	var toolCallID string
+	defer func() { toolCallOpts.SetToolCallID(toolCallID) }()
+
 	ctx, span := h.tracer.Start(ctx, "gen_ai.tool.proto.stream",
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
@@ -180,6 +191,9 @@ func (h *PlatformHarness) CallToolProtoStream(ctx context.Context, toolName stri
 	unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
 
 	for evt := range evtCh {
+		if evt.ToolCallID != "" {
+			toolCallID = evt.ToolCallID
+		}
 		if evt.Err != nil {
 			span.RecordError(evt.Err)
 			span.SetStatus(codes.Error, evt.Err.Error())
@@ -337,8 +351,9 @@ func (h *PlatformHarness) ToolResults(ctx context.Context, jobID string) <-chan 
 		for evt := range rawCh {
 			if evt.Err != nil {
 				out <- agent.QueuedToolResult{
-					Index: int(evt.Index),
-					Error: fmt.Errorf("PlatformHarness.ToolResults: %w", evt.Err),
+					Index:      int(evt.Index),
+					Error:      fmt.Errorf("PlatformHarness.ToolResults: %w", evt.Err),
+					ToolCallID: evt.ToolCallID,
 				}
 				return
 			}
@@ -349,9 +364,10 @@ func (h *PlatformHarness) ToolResults(ctx context.Context, jobID string) <-chan 
 			// callers can observe completion by index.
 			_ = evt.OutputJSON // available if callers need raw JSON output
 			out <- agent.QueuedToolResult{
-				Index:  int(evt.Index),
-				Output: nil,
-				Error:  nil,
+				Index:      int(evt.Index),
+				Output:     nil,
+				Error:      nil,
+				ToolCallID: evt.ToolCallID,
 			}
 		}
 	}()

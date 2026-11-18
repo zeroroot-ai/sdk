@@ -151,6 +151,10 @@ func TestCallbackHarness_EveryCallReachesTheDaemon(t *testing.T) {
 		assert.JSONEq(t, `"ping"`, string(req.GetInputJson()))
 		assert.Equal(t, "google.protobuf.StringValue", req.GetInputType())
 		assert.Equal(t, "pong", value[string](t, rep, "CallToolProto"))
+		ids := value[*toolCallIDs](t, rep, "ToolCallIDs")
+		assert.Equal(t, "tc-call", ids.Call)
+		assert.Equal(t, "tc-stream", ids.Stream)
+		assert.Equal(t, []string{"tc-q0", "tc-q1"}, ids.Queued)
 
 		sreq := only[*harnesspb.CallToolProtoStreamRequest](t, &d.recorder, "CallToolProtoStream")
 		assert.JSONEq(t, `"stream"`, string(sreq.GetInputJson()))
@@ -168,7 +172,7 @@ func TestCallbackHarness_EveryCallReachesTheDaemon(t *testing.T) {
 		assert.Equal(t, []string{`"a"`, `"b"`}, q.GetInputJsons())
 		assert.Equal(t, "job-7", value[string](t, rep, "QueueToolWork"))
 		assert.Equal(t, "job-7", only[*harnesspb.ToolResultsRequest](t, &d.recorder, "ToolResults").GetJobId())
-		assert.Equal(t, []queuedResult{{Index: 0, Output: "A"}, {Index: 1, Output: "B"}},
+		assert.Equal(t, []queuedResult{{Index: 0, Output: "A", ToolCallID: "tc-q0"}, {Index: 1, Output: "B", ToolCallID: "tc-q1"}},
 			value[[]queuedResult](t, rep, "ToolResults"))
 	})
 
@@ -472,6 +476,11 @@ func TestPlatformHarness_EveryCallReachesTheDaemon(t *testing.T) {
 	}
 
 	assert.Equal(t, "pong", value[string](t, rep, "CallToolProto"))
+	ids := value[*toolCallIDs](t, rep, "ToolCallIDs")
+	assert.Equal(t, "tc-call", ids.Call)
+	assert.Equal(t, "tc-stream", ids.Stream)
+	assert.Equal(t, []string{"tc-q0", "tc-q1"}, ids.Queued)
+
 	ev := value[*toolEvents](t, rep, "CallToolProtoStream")
 	assert.Equal(t, []string{"50:scan:halfway"}, ev.Progress)
 	assert.Equal(t, []string{"slow:W1"}, ev.Warnings)

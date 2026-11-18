@@ -769,6 +769,12 @@ message CallToolResponse {
     // output_json is the JSON-encoded tool output matching the tool's output schema.
     string output_json = 1;
     ComponentError error = 2;
+    // tool_call_id is the id that the daemon recorded for this call. An agent
+    // cites it in the tool_call_ids of a finding or a proof (CiteToolCalls in the
+    // SDK). For the meta-tool invoke_tool it is the id of the recorded call of
+    // the invoked tool. Empty when the daemon recorded none, and from a daemon
+    // that does not send it.
+    string tool_call_id = 3;
 }
 
 // QueryPluginRequest is a harness proxy request to invoke a plugin method.
@@ -1045,6 +1051,11 @@ message CallToolStreamResponse {
     // done is true on the final event.
     bool done = 3;
     ComponentError error = 4;
+    // tool_call_id is the id that the daemon recorded for this call, as in
+    // CallToolResponse.tool_call_id. The daemon sets it on the last event
+    // (done is true). Empty on the other events, and from a daemon that does
+    // not send it.
+    string tool_call_id = 5;
 }
 
 // QueueToolWorkRequest submits a batch of tool invocations for parallel execution.
@@ -1075,6 +1086,10 @@ message ToolResultsResponse {
     ComponentError error = 3;
     // done is true on the final result.
     bool done = 4;
+    // tool_call_id is the id that the daemon recorded for the call of this
+    // input, as in CallToolResponse.tool_call_id. Empty when the daemon recorded
+    // none, and from a daemon that does not send it.
+    string tool_call_id = 5;
 }
 
 // ListToolsRequest requests descriptors for all available tools.

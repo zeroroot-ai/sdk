@@ -23,7 +23,9 @@ type fakeInvoker struct {
 	fail  string
 }
 
-func (f *fakeInvoker) CallToolProto(_ context.Context, name string, req protolib.Message, resp protolib.Message) error {
+func (f *fakeInvoker) CallToolProto(
+	_ context.Context, name string, req protolib.Message, resp protolib.Message, _ ...ToolCallOption,
+) error {
 	if name != InvokeToolName {
 		return errors.New("wrong tool " + name)
 	}

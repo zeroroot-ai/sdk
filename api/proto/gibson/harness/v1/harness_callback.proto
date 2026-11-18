@@ -815,6 +815,13 @@ message CallToolProtoResponse {
     // JSON-serialized proto response message
     bytes output_json = 1;
     HarnessError error = 2;
+    // tool_call_id is the id that the daemon recorded for this call. An agent
+    // cites it in the tool_call_ids of a finding or a proof (CiteToolCalls in the
+    // SDK). It is the same id as ContextInfo.tool_execution_id of the work that
+    // the call started. For the meta-tool invoke_tool it is the id of the
+    // recorded call of the invoked tool. Empty when the daemon recorded none,
+    // and from a daemon that does not send it.
+    string tool_call_id = 3;
 }
 
 // CallToolProtoStreamRequest initiates a streaming tool execution.
@@ -845,6 +852,11 @@ message CallToolProtoStreamResponse {
     int64 sequence = 12;
     reserved 13;
     reserved "timestamp_ms";
+    // tool_call_id is the id that the daemon recorded for this call, as in
+    // CallToolProtoResponse.tool_call_id. The daemon sets it on the last message
+    // of the stream (the complete event or the error event). Empty on the other
+    // messages, and from a daemon that does not send it.
+    string tool_call_id = 14;
 }
 
 // ToolProgressEvent indicates progress during tool execution
@@ -960,6 +972,10 @@ message ToolResultsResponse {
     string output_type = 3;       // Proto message type
     HarnessError error = 4;       // Error if execution failed
     bool is_final = 5;            // True if this is the last result
+    // tool_call_id is the id that the daemon recorded for the call of this
+    // input, as in CallToolProtoResponse.tool_call_id. Empty when the daemon
+    // recorded none, and from a daemon that does not send it.
+    string tool_call_id = 6;
 }
 
 // JSONSchemaNode represents a JSON Schema node with taxonomy support.

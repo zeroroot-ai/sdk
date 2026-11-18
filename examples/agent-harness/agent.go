@@ -234,15 +234,16 @@ func (e *toolEvents) OnError(err error, fatal bool) {
 
 // queuedResult is what the agent read from a queued tool result.
 type queuedResult struct {
-	Index  int
-	Output string
-	Err    error
+	Index      int
+	Output     string
+	Err        error
+	ToolCallID string
 }
 
 func gatherToolResults(ch <-chan agent.QueuedToolResult) []queuedResult {
 	var out []queuedResult
 	for r := range ch {
-		q := queuedResult{Index: r.Index, Err: r.Error}
+		q := queuedResult{Index: r.Index, Err: r.Error, ToolCallID: r.ToolCallID}
 		if sv, ok := r.Output.(*wrapperspb.StringValue); ok {
 			q.Output = sv.GetValue()
 		}
@@ -252,13 +253,17 @@ func gatherToolResults(ch <-chan agent.QueuedToolResult) []queuedResult {
 }
 
 func callTools(ctx context.Context, h agent.Harness, rep *Report) {
+	// ReceiveToolCallID gives the id that the daemon recorded for each call. An
+	// agent cites it with Finding.CiteToolCalls.
+	ids := &toolCallIDs{}
 	reply := &wrapperspb.StringValue{}
-	err := h.CallToolProto(ctx, "echo", wrapperspb.String("ping"), reply)
+	err := h.CallToolProto(ctx, "echo", wrapperspb.String("ping"), reply, agent.ReceiveToolCallID(&ids.Call))
 	record(rep, "CallToolProto", reply.GetValue(), err, func(v string) string { return v })
 
 	events := &toolEvents{}
 	streamReply := &wrapperspb.StringValue{}
-	err = h.CallToolProtoStream(ctx, "echo", wrapperspb.String("stream"), streamReply, events)
+	err = h.CallToolProtoStream(ctx, "echo", wrapperspb.String("stream"), streamReply, events,
+		agent.ReceiveToolCallID(&ids.Stream))
 	record(rep, "CallToolProtoStream", events, err, func(e *toolEvents) string {
 		return fmt.Sprintf("progress=%v partials=%d warnings=%v errors=%v reply=%q",
 			e.Progress, e.Partials, e.Warnings, e.Errors, streamReply.GetValue())
@@ -278,6 +283,17 @@ func callTools(ctx context.Context, h agent.Harness, rep *Report) {
 		lines = append(lines, fmt.Sprintf("%d:%s:%v", r.Index, r.Output, r.Err))
 	}
 	rep.add(Step{Call: "ToolResults", Value: results, Summary: strings.Join(lines, ",")})
+	for _, r := range results {
+		ids.Queued = append(ids.Queued, r.ToolCallID)
+	}
+	rep.add(Step{Call: "ToolCallIDs", Value: ids, Summary: fmt.Sprintf("%+v", *ids)})
+}
+
+// toolCallIDs holds the ids that the daemon recorded for the tool calls of the agent.
+type toolCallIDs struct {
+	Call   string
+	Stream string
+	Queued []string
 }
 
 func callPlugins(ctx context.Context, h agent.Harness, rep *Report) {
