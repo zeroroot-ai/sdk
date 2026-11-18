@@ -17,7 +17,6 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	agentpb "github.com/zeroroot-ai/sdk/api/gen/gibson/agent/v1"
 	bankpb "github.com/zeroroot-ai/sdk/api/gen/gibson/bank/v1"
 	componentpb "github.com/zeroroot-ai/sdk/api/gen/gibson/component/v1"
 	harnesspb "github.com/zeroroot-ai/sdk/api/gen/gibson/harness/v1"
@@ -53,24 +52,6 @@ func TestTypesV1_TaskCarriesJobSpec(t *testing.T) {
 	if task.GetJob().GetRepositories()[0].GetConnectorRef() != "connector/gitlab" {
 		t.Fatalf("connector_ref lost: %v", task.GetJob())
 	}
-}
-
-// TestAgentV1_ExecuteCarriesJobResults round-trips the one-shot and bank-job
-// result path: a job id in, deliverables and the session id out.
-func TestAgentV1_ExecuteCarriesJobResults(t *testing.T) {
-	roundTrip(t, &agentpb.ExecuteRequest{
-		Task:  &typespb.Task{Id: "task-1", Job: wiringSpec()},
-		JobId: "job-1",
-	})
-	roundTrip(t, &agentpb.ExecuteResponse{
-		Result: &typespb.Result{Status: typespb.ResultStatus_RESULT_STATUS_SUCCESS},
-		Deliverables: []*jobpb.Deliverable{{
-			Kind: jobpb.DeliverableKind_DELIVERABLE_KIND_MERGE_REQUEST,
-			Ref:  "!12",
-			Url:  "https://gitlab.example/group/api/-/merge_requests/12",
-		}},
-		ClaudeSessionId: "sess-1",
-	})
 }
 
 // TestMissionV1_JobNode round-trips a job node and checks NODE_TYPE_JOB is a

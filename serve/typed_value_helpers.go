@@ -6,17 +6,16 @@ package serve
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/zeroroot-ai/sdk/agent"
+	jobpb "github.com/zeroroot-ai/sdk/api/gen/gibson/job/v1"
+	protolib "google.golang.org/protobuf/proto"
 	"reflect"
 	"strings"
 	"time"
 	"unicode/utf8"
 
-	protolib "google.golang.org/protobuf/proto"
-
-	"github.com/zeroroot-ai/sdk/agent"
 	commonpb "github.com/zeroroot-ai/sdk/api/gen/gibson/common/v1"
 	harnesspb "github.com/zeroroot-ai/sdk/api/gen/gibson/harness/v1"
-	jobpb "github.com/zeroroot-ai/sdk/api/gen/gibson/job/v1"
 	typespb "github.com/zeroroot-ai/sdk/api/gen/gibson/types/v1"
 	"github.com/zeroroot-ai/sdk/finding"
 )
@@ -393,8 +392,6 @@ func FindingFromProto(pf *typespb.Finding) *finding.Finding {
 	return f
 }
 
-// Helper functions for enum conversions
-
 func severityToProto(s finding.Severity) typespb.FindingSeverity {
 	switch s {
 	case finding.SeverityCritical:
@@ -537,252 +534,6 @@ func mitreFromProto(m *typespb.MitreMapping) *finding.MitreMapping {
 	}
 }
 
-// ProtoToTask converts a proto Task to SDK agent.Task.
-func ProtoToTask(pt *typespb.Task) agent.Task {
-	if pt == nil {
-		return agent.Task{}
-	}
-
-	return agent.Task{
-		ID:       pt.GetId(),
-		Goal:     pt.GetGoal(),
-		Context:  FromTypedMap(pt.GetContext()),
-		Metadata: FromTypedMap(pt.GetMetadata()),
-		Constraints: agent.TaskConstraints{
-			MaxTurns:     int(pt.GetConstraints().GetMaxTurns()),
-			MaxTokens:    int(pt.GetConstraints().GetMaxTokens()),
-			AllowedTools: pt.GetConstraints().GetAllowedTools(),
-			BlockedTools: pt.GetConstraints().GetBlockedTools(),
-		},
-		Job: cloneJobSpec(pt.GetJob()),
-
-		PinnedSkills: append([]string(nil), pt.GetPinnedSkills()...),
-	}
-}
-
-// cloneJobSpec copies a JobSpec so the agent-side Task and the wire message
-// never share mutable state. A nil spec stays nil.
-func cloneJobSpec(spec *jobpb.JobSpec) *jobpb.JobSpec {
-	if spec == nil {
-		return nil
-	}
-	return protolib.Clone(spec).(*jobpb.JobSpec)
-}
-
-// TaskToProto converts SDK agent.Task to proto Task.
-func TaskToProto(t agent.Task) *typespb.Task {
-	return &typespb.Task{
-		Id:       t.ID,
-		Goal:     t.Goal,
-		Context:  ToTypedMap(t.Context),
-		Metadata: ToTypedMap(t.Metadata),
-		Constraints: &typespb.TaskConstraints{
-			MaxTurns:     int32(t.Constraints.MaxTurns),
-			MaxTokens:    int32(t.Constraints.MaxTokens),
-			AllowedTools: t.Constraints.AllowedTools,
-			BlockedTools: t.Constraints.BlockedTools,
-		},
-		Job: cloneJobSpec(t.Job),
-
-		PinnedSkills: append([]string(nil), t.PinnedSkills...),
-	}
-}
-
-// ProtoToResult converts a proto Result to SDK agent.Result.
-func ProtoToResult(pr *typespb.Result) agent.Result {
-	if pr == nil {
-		return agent.Result{}
-	}
-
-	result := agent.Result{
-		Status:   ProtoToResultStatus(pr.GetStatus()),
-		Output:   FromTypedValue(pr.GetOutput()),
-		Findings: pr.GetFindingIds(),
-		Metadata: FromTypedMap(pr.GetMetadata()),
-	}
-
-	// Convert error if present
-	if pr.GetError() != nil {
-		// Convert map[string]string to map[string]any
-		details := make(map[string]any)
-		for k, v := range pr.GetError().GetDetails() {
-			details[k] = v
-		}
-		result.ErrorInfo = &agent.ResultError{
-			Code:      ProtoErrorCodeToString(pr.GetError().GetCode()),
-			Message:   pr.GetError().GetMessage(),
-			Details:   details,
-			Retryable: pr.GetError().GetRetryable(),
-			Component: "", // Not in proto
-		}
-	}
-
-	return result
-}
-
-// ResultToProto converts SDK agent.Result to proto Result.
-func ResultToProto(r agent.Result) *typespb.Result {
-	result := &typespb.Result{
-		Status:     ResultStatusToProto(r.Status),
-		Output:     ToTypedValue(r.Output),
-		FindingIds: r.Findings,
-		Metadata:   ToTypedMap(r.Metadata),
-	}
-
-	// Convert ErrorInfo if present
-	if r.ErrorInfo != nil {
-		// Convert map[string]any to map[string]string
-		details := make(map[string]string)
-		for k, v := range r.ErrorInfo.Details {
-			details[k] = fmt.Sprintf("%v", v)
-		}
-		result.Error = &typespb.ResultError{
-			Code:      StringToProtoErrorCode(r.ErrorInfo.Code),
-			Message:   r.ErrorInfo.Message,
-			Details:   details,
-			Retryable: r.ErrorInfo.Retryable,
-		}
-	}
-
-	return result
-}
-
-// ProtoToResultStatus converts proto ResultStatus to SDK ResultStatus.
-func ProtoToResultStatus(ps typespb.ResultStatus) agent.ResultStatus {
-	switch ps {
-	case typespb.ResultStatus_RESULT_STATUS_SUCCESS:
-		return agent.StatusSuccess
-	case typespb.ResultStatus_RESULT_STATUS_FAILED:
-		return agent.StatusFailed
-	case typespb.ResultStatus_RESULT_STATUS_PARTIAL:
-		return agent.StatusPartial
-	case typespb.ResultStatus_RESULT_STATUS_CANCELLED:
-		return agent.StatusCancelled
-	case typespb.ResultStatus_RESULT_STATUS_TIMEOUT:
-		return agent.StatusTimeout
-	default:
-		return agent.StatusFailed
-	}
-}
-
-// ResultStatusToProto converts SDK ResultStatus to proto ResultStatus.
-func ResultStatusToProto(s agent.ResultStatus) typespb.ResultStatus {
-	switch s {
-	case agent.StatusSuccess:
-		return typespb.ResultStatus_RESULT_STATUS_SUCCESS
-	case agent.StatusFailed:
-		return typespb.ResultStatus_RESULT_STATUS_FAILED
-	case agent.StatusPartial:
-		return typespb.ResultStatus_RESULT_STATUS_PARTIAL
-	case agent.StatusCancelled:
-		return typespb.ResultStatus_RESULT_STATUS_CANCELLED
-	case agent.StatusTimeout:
-		return typespb.ResultStatus_RESULT_STATUS_TIMEOUT
-	default:
-		return typespb.ResultStatus_RESULT_STATUS_FAILED
-	}
-}
-
-// ProtoErrorCodeToString converts proto ErrorCode to string.
-func ProtoErrorCodeToString(code commonpb.ErrorCode) string {
-	switch code {
-	case commonpb.ErrorCode_ERROR_CODE_INTERNAL:
-		return agent.ErrCodeInternalError
-	case commonpb.ErrorCode_ERROR_CODE_INVALID_ARGUMENT:
-		return "INVALID_ARGUMENT"
-	case commonpb.ErrorCode_ERROR_CODE_NOT_FOUND:
-		return agent.ErrCodeToolNotFound
-	case commonpb.ErrorCode_ERROR_CODE_TIMEOUT:
-		return agent.ErrCodeAgentTimeout
-	case commonpb.ErrorCode_ERROR_CODE_UNAVAILABLE:
-		return "UNAVAILABLE"
-	case commonpb.ErrorCode_ERROR_CODE_PERMISSION_DENIED:
-		return "PERMISSION_DENIED"
-	case commonpb.ErrorCode_ERROR_CODE_ALREADY_EXISTS:
-		return "ALREADY_EXISTS"
-	case commonpb.ErrorCode_ERROR_CODE_RESOURCE_EXHAUSTED:
-		return "RESOURCE_EXHAUSTED"
-	case commonpb.ErrorCode_ERROR_CODE_CANCELLED:
-		return "CANCELLED"
-	case commonpb.ErrorCode_ERROR_CODE_AGENT_TIMEOUT:
-		return agent.ErrCodeAgentTimeout
-	case commonpb.ErrorCode_ERROR_CODE_AGENT_PANIC:
-		return agent.ErrCodeAgentPanic
-	case commonpb.ErrorCode_ERROR_CODE_AGENT_INIT_FAILED:
-		return agent.ErrCodeAgentInitFailed
-	case commonpb.ErrorCode_ERROR_CODE_LLM_RATE_LIMITED:
-		return agent.ErrCodeLLMRateLimited
-	case commonpb.ErrorCode_ERROR_CODE_LLM_CONTEXT_EXCEEDED:
-		return agent.ErrCodeLLMContextExceeded
-	case commonpb.ErrorCode_ERROR_CODE_LLM_API_ERROR:
-		return agent.ErrCodeLLMAPIError
-	case commonpb.ErrorCode_ERROR_CODE_LLM_PARSE_ERROR:
-		return agent.ErrCodeLLMParseError
-	case commonpb.ErrorCode_ERROR_CODE_TOOL_NOT_FOUND:
-		return agent.ErrCodeToolNotFound
-	case commonpb.ErrorCode_ERROR_CODE_TOOL_TIMEOUT:
-		return agent.ErrCodeToolTimeout
-	case commonpb.ErrorCode_ERROR_CODE_TOOL_EXEC_FAILED:
-		return agent.ErrCodeToolExecFailed
-	case commonpb.ErrorCode_ERROR_CODE_NETWORK_TIMEOUT:
-		return agent.ErrCodeNetworkTimeout
-	case commonpb.ErrorCode_ERROR_CODE_NETWORK_UNREACHABLE:
-		return agent.ErrCodeNetworkUnreachable
-	case commonpb.ErrorCode_ERROR_CODE_TLS_ERROR:
-		return agent.ErrCodeTLSError
-	case commonpb.ErrorCode_ERROR_CODE_DELEGATION_FAILED:
-		return agent.ErrCodeDelegationFailed
-	case commonpb.ErrorCode_ERROR_CODE_CHILD_AGENT_FAILED:
-		return agent.ErrCodeChildAgentFailed
-	case commonpb.ErrorCode_ERROR_CODE_CONFIG_ERROR:
-		return agent.ErrCodeConfigError
-	default:
-		return "UNKNOWN"
-	}
-}
-
-// StringToProtoErrorCode converts string error code to proto ErrorCode.
-func StringToProtoErrorCode(code string) commonpb.ErrorCode {
-	switch code {
-	case agent.ErrCodeInternalError:
-		return commonpb.ErrorCode_ERROR_CODE_INTERNAL
-	case agent.ErrCodeAgentTimeout:
-		return commonpb.ErrorCode_ERROR_CODE_AGENT_TIMEOUT
-	case agent.ErrCodeAgentPanic:
-		return commonpb.ErrorCode_ERROR_CODE_AGENT_PANIC
-	case agent.ErrCodeAgentInitFailed:
-		return commonpb.ErrorCode_ERROR_CODE_AGENT_INIT_FAILED
-	case agent.ErrCodeLLMRateLimited:
-		return commonpb.ErrorCode_ERROR_CODE_LLM_RATE_LIMITED
-	case agent.ErrCodeLLMContextExceeded:
-		return commonpb.ErrorCode_ERROR_CODE_LLM_CONTEXT_EXCEEDED
-	case agent.ErrCodeLLMAPIError:
-		return commonpb.ErrorCode_ERROR_CODE_LLM_API_ERROR
-	case agent.ErrCodeLLMParseError:
-		return commonpb.ErrorCode_ERROR_CODE_LLM_PARSE_ERROR
-	case agent.ErrCodeToolNotFound:
-		return commonpb.ErrorCode_ERROR_CODE_TOOL_NOT_FOUND
-	case agent.ErrCodeToolTimeout:
-		return commonpb.ErrorCode_ERROR_CODE_TOOL_TIMEOUT
-	case agent.ErrCodeToolExecFailed:
-		return commonpb.ErrorCode_ERROR_CODE_TOOL_EXEC_FAILED
-	case agent.ErrCodeNetworkTimeout:
-		return commonpb.ErrorCode_ERROR_CODE_NETWORK_TIMEOUT
-	case agent.ErrCodeNetworkUnreachable:
-		return commonpb.ErrorCode_ERROR_CODE_NETWORK_UNREACHABLE
-	case agent.ErrCodeTLSError:
-		return commonpb.ErrorCode_ERROR_CODE_TLS_ERROR
-	case agent.ErrCodeDelegationFailed:
-		return commonpb.ErrorCode_ERROR_CODE_DELEGATION_FAILED
-	case agent.ErrCodeChildAgentFailed:
-		return commonpb.ErrorCode_ERROR_CODE_CHILD_AGENT_FAILED
-	case agent.ErrCodeConfigError:
-		return commonpb.ErrorCode_ERROR_CODE_CONFIG_ERROR
-	default:
-		return commonpb.ErrorCode_ERROR_CODE_INTERNAL
-	}
-}
-
 // JSONSchemaToProtoNode converts a JSON schema map to proto JSONSchemaNode.
 // This is a simplified conversion that handles basic JSON Schema structures.
 func JSONSchemaToProtoNode(schema map[string]any) *harnesspb.JSONSchemaNode {
@@ -872,4 +623,36 @@ func JSONSchemaToProtoNode(schema map[string]any) *harnesspb.JSONSchemaNode {
 	}
 
 	return node
+}
+
+// ProtoToTask converts the proto Task of a fork claim (ClaimForkResponse) to
+// agent.Task. A work item of an agent is an A2A message and uses
+// agent.TaskFromMessage. The fork claim has no A2A message.
+func ProtoToTask(pt *typespb.Task) agent.Task {
+	if pt == nil {
+		return agent.Task{}
+	}
+
+	return agent.Task{
+		ID:       pt.GetId(),
+		Goal:     pt.GetGoal(),
+		Context:  FromTypedMap(pt.GetContext()),
+		Metadata: FromTypedMap(pt.GetMetadata()),
+		Constraints: agent.TaskConstraints{
+			MaxTurns:     int(pt.GetConstraints().GetMaxTurns()),
+			MaxTokens:    int(pt.GetConstraints().GetMaxTokens()),
+			AllowedTools: pt.GetConstraints().GetAllowedTools(),
+			BlockedTools: pt.GetConstraints().GetBlockedTools(),
+		},
+		Job: cloneJobSpec(pt.GetJob()),
+	}
+}
+
+// cloneJobSpec copies a JobSpec so the agent-side Task and the wire message
+// never share mutable state. A nil spec stays nil.
+func cloneJobSpec(spec *jobpb.JobSpec) *jobpb.JobSpec {
+	if spec == nil {
+		return nil
+	}
+	return protolib.Clone(spec).(*jobpb.JobSpec)
 }

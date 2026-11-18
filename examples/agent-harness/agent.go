@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/a2aproject/a2a-go/v2/a2a"
 	"strconv"
 	"strings"
 	"time"
@@ -118,7 +119,7 @@ func execute(ctx context.Context, h agent.Harness, task agent.Task) (agent.Resul
 	callMissions(ctx, h, rep)
 	callUsage(h, rep)
 
-	return agent.Result{Status: agent.StatusSuccess, Output: rep}, nil
+	return agent.Result{Status: a2a.TaskStateCompleted, Output: rep}, nil
 }
 
 // callContext reads the context accessors and asks for authorization.

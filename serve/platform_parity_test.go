@@ -9,6 +9,7 @@ import (
 	"net"
 	"testing"
 
+	"github.com/a2aproject/a2a-go/v2/a2a"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -123,7 +124,7 @@ func setupParityTestWith(t *testing.T, register func(*grpc.Server)) (harness *Pl
 }
 
 func TestPlatformParity_DelegateToAgent_Happy(t *testing.T) {
-	wantResult := agent.Result{Status: agent.StatusSuccess, Output: "recon complete"}
+	wantResult := agent.Result{Status: a2a.TaskStateCompleted, Output: "recon complete"}
 	resultJSON, err := json.Marshal(wantResult)
 	require.NoError(t, err)
 
@@ -145,7 +146,7 @@ func TestPlatformParity_DelegateToAgent_Happy(t *testing.T) {
 		Goal: "enumerate subdomains",
 	})
 	require.NoError(t, err)
-	assert.Equal(t, agent.StatusSuccess, result.Status)
+	assert.Equal(t, a2a.TaskStateCompleted, result.Status)
 }
 
 func TestPlatformParity_DelegateToAgent_RPCError(t *testing.T) {

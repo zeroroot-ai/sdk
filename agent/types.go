@@ -4,6 +4,7 @@
 package agent
 
 import (
+	"github.com/a2aproject/a2a-go/v2/a2a"
 	jobpb "github.com/zeroroot-ai/sdk/api/gen/gibson/job/v1"
 	"github.com/zeroroot-ai/sdk/openresponses"
 )
@@ -37,8 +38,20 @@ type Task struct {
 	Job *jobpb.JobSpec
 
 	// PinnedSkills lists the Agent Skills that the mission pins for this task,
-	// as canonical ids of the form skill:<name>.
+	// as canonical ids of the form skill:<name>. They come from the Gibson run
+	// envelope of the A2A message.
 	PinnedSkills []string
+
+	// ContextID is the A2A context id of the task. The SDK copies it to the
+	// A2A Task that it returns.
+	ContextID string
+
+	// Message is the A2A message that started this run. It holds every part
+	// of the message, for example a file part. Goal holds the text parts.
+	Message *a2a.Message
+
+	// Run names the run that the daemon started this task for.
+	Run RunContext
 
 	// SkillItems holds the loaded pinned skills as Open Responses items, a
 	// function_call and a function_call_output for each skill. The SDK fills
@@ -71,12 +84,25 @@ type TaskConstraints struct {
 // Result represents the outcome of task execution.
 // It contains the agent's output, findings, and execution status.
 type Result struct {
-	// Status indicates whether the task completed successfully.
-	Status ResultStatus
+	// Status is the A2A Task state of the run. It is one of the a2a.TaskState
+	// constants, for example a2a.TaskStateCompleted, a2a.TaskStateFailed,
+	// a2a.TaskStateCanceled or a2a.TaskStateInputRequired. An empty status
+	// means completed when Error and ErrorInfo are nil, and failed otherwise.
+	Status a2a.TaskState
 
-	// Output contains the task result data.
-	// The structure depends on the specific task and agent implementation.
+	// Output contains the task result data. A string becomes a text part, a
+	// []byte becomes a raw part, and any other value becomes a data part.
+	// The SDK puts it in an A2A artifact named "output". For the states
+	// input-required and auth-required it becomes the status message instead.
 	Output any
+
+	// Artifacts holds A2A artifacts that the agent builds itself. The SDK
+	// returns them unchanged, before the artifact of Output.
+	Artifacts []*a2a.Artifact
+
+	// History holds messages that the agent adds to the history of the A2A
+	// Task. The SDK puts the message that started the run first.
+	History []*a2a.Message
 
 	// Findings contains IDs of security findings discovered during task execution.
 	// These IDs reference findings submitted to the harness.
@@ -95,30 +121,4 @@ type Result struct {
 	// This field is populated automatically when Fail() is called.
 	// It preserves error details across process boundaries and serialization.
 	ErrorInfo *ResultError `json:"error,omitempty"`
-}
-
-// ResultStatus indicates the outcome of task execution.
-type ResultStatus string
-
-const (
-	// StatusSuccess indicates the task completed successfully.
-	StatusSuccess ResultStatus = "success"
-
-	// StatusFailed indicates the task failed to complete.
-	StatusFailed ResultStatus = "failed"
-
-	// StatusPartial indicates the task completed with partial results.
-	// Some objectives were achieved but not all.
-	StatusPartial ResultStatus = "partial"
-
-	// StatusCancelled indicates the task was cancelled before completion.
-	StatusCancelled ResultStatus = "cancelled"
-
-	// StatusTimeout indicates the task exceeded time or resource limits.
-	StatusTimeout ResultStatus = "timeout"
-)
-
-// String returns the string representation of the result status.
-func (s ResultStatus) String() string {
-	return string(s)
 }

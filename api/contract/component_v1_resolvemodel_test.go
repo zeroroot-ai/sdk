@@ -41,10 +41,14 @@ func TestResolveModelResponse_RoundTrip(t *testing.T) {
 	}
 }
 
-func TestTaskPinnedSkillsIsFieldSeven(t *testing.T) {
-	// The daemon fills pinned_skills. Its number must not move.
-	fd := typesv1.File_gibson_types_v1_types_proto.Messages().ByName("Task").Fields().ByName("pinned_skills")
-	if fd == nil || fd.Number() != 7 {
-		t.Fatalf("pinned_skills is not field 7: %v", fd)
+func TestTaskPinnedSkillsIsGoneAndItsNumberStaysReserved(t *testing.T) {
+	// The pinned Agent Skill ids ride in the Gibson run envelope of the A2A
+	// message. Field 7 of Task must not come back with another meaning.
+	task := typesv1.File_gibson_types_v1_types_proto.Messages().ByName("Task")
+	if task.Fields().ByName("pinned_skills") != nil || task.Fields().ByNumber(7) != nil {
+		t.Fatal("Task field 7 or pinned_skills exists again")
+	}
+	if !task.ReservedRanges().Has(7) || !task.ReservedNames().Has("pinned_skills") {
+		t.Fatal("Task field 7 and the name pinned_skills must stay reserved")
 	}
 }

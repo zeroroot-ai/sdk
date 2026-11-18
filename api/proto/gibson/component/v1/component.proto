@@ -619,6 +619,37 @@ message RegisterComponentRequest {
     // disambiguate tools in the catalog (SearchTools). Used when kind == "plugin".
     // Empty is valid (older SDKs populate only `methods`).
     repeated ComponentMethod method_descriptors = 12;
+
+    // card_skills are the entries of the "skills" list of the A2A Agent Card
+    // of this agent (used when kind == "agent"). The daemon serves the card
+    // from the catalog, and it builds the card from this registration.
+    //
+    // Naming: an A2A AgentSkill is a capability entry of a card. It is NOT an
+    // Agent Skill in the SKILL.md format (the "skill:<name>" ids of the
+    // catalog). The field says card_skills so the two never mix.
+    repeated CardSkill card_skills = 13;
+
+    // default_input_modes are the media types that the agent accepts, as the
+    // defaultInputModes of the Agent Card (used when kind == "agent").
+    repeated string default_input_modes = 14;
+
+    // default_output_modes are the media types that the agent returns, as the
+    // defaultOutputModes of the Agent Card (used when kind == "agent").
+    repeated string default_output_modes = 15;
+}
+
+// CardSkill is one A2A AgentSkill: a capability entry of an Agent Card. It is
+// not an Agent Skill in the SKILL.md format.
+message CardSkill {
+    string id = 1 [(buf.validate.field).string = { max_len: 1024 }];
+    string name = 2 [(buf.validate.field).string = { max_len: 1024 }];
+    string description = 3 [(buf.validate.field).string = { max_len: 4096 }];
+    repeated string tags = 4;
+    repeated string examples = 5;
+    // input_modes override default_input_modes for this card skill.
+    repeated string input_modes = 6;
+    // output_modes override default_output_modes for this card skill.
+    repeated string output_modes = 7;
 }
 
 // ComponentMethod is the rich, per-method descriptor for a plugin method,

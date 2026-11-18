@@ -218,7 +218,7 @@
 //	resultErr := agent.FromError(standardErr)
 //
 //	// Return in results
-//	return agent.Result{Status: agent.StatusFailed, Error: err}, err
+//	return agent.Result{Status: a2a.TaskStateFailed, Error: err}, err
 //
 // ResultError provides:
 //   - Code: Standard error code from taxonomy
@@ -230,8 +230,8 @@
 //   - Stack: Optional stack trace for debugging
 //
 // Standard result statuses:
-//   - Return Result with StatusFailed and error for unrecoverable errors
-//   - Return Result with StatusPartial for partially completed tasks
+//   - Return Result with a2a.TaskStateFailed and the error for unrecoverable errors
+//   - Return Result with a2a.TaskStateInputRequired when the agent needs more input
 //   - Return Result with StatusTimeout when hitting time limits
 //   - Return Result with StatusCancelled when context is cancelled
 //   - Log errors with sufficient context for debugging

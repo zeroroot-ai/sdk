@@ -12,6 +12,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"github.com/a2aproject/a2a-go/v2/a2a"
 	"log/slog"
 	"math/big"
 	"net"
@@ -50,7 +51,7 @@ func reportOf(t *testing.T, res agent.Result) *Report {
 	t.Helper()
 	rep, ok := res.Output.(*Report)
 	require.True(t, ok, "output is %T", res.Output)
-	require.Equal(t, agent.StatusSuccess, res.Status)
+	require.Equal(t, a2a.TaskStateCompleted, res.Status)
 	return rep
 }
 
@@ -185,7 +186,7 @@ func TestCallbackHarness_EveryCallReachesTheDaemon(t *testing.T) {
 		assert.Equal(t, "helper", del.GetName())
 		assert.Equal(t, "sub-1", del.GetTask().GetId())
 		res := value[agent.Result](t, rep, "DelegateToAgent")
-		assert.Equal(t, agent.StatusPartial, res.Status)
+		assert.Equal(t, a2a.TaskStateCompleted, res.Status)
 		assert.Equal(t, "helped", res.Output)
 		require.Error(t, res.Error)
 		assert.Contains(t, res.Error.Error(), "half done")
@@ -491,7 +492,7 @@ func TestPlatformHarness_EveryCallReachesTheDaemon(t *testing.T) {
 	assert.Equal(t, []int{0, 1}, []int{results[0].Index, results[1].Index})
 	assert.Equal(t, map[string]any{"open": true}, value[any](t, rep, "QueryPlugin"))
 	assert.Empty(t, value[[]plugin.Descriptor](t, rep, "ListPlugins"))
-	assert.Equal(t, agent.StatusPartial, value[agent.Result](t, rep, "DelegateToAgent").Status)
+	assert.Equal(t, a2a.TaskStateCompleted, value[agent.Result](t, rep, "DelegateToAgent").Status)
 	assert.Equal(t, "helper", value[[]agent.Descriptor](t, rep, "ListAgents")[0].Name)
 	assert.Equal(t, "child-1", value[*mission.MissionInfo](t, rep, "CreateMission").ID)
 	assert.Equal(t, "scan", value[*mission.MissionStatusInfo](t, rep, "GetMissionStatus").Phase)

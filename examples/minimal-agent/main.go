@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/a2aproject/a2a-go/v2/a2a"
 	"log"
 
 	sdk "github.com/zeroroot-ai/sdk"
@@ -68,7 +69,7 @@ func executeAgent(ctx context.Context, h agent.Harness, task agent.Task) (agent.
 	model, err := h.Model(ctx, "main")
 	if err != nil {
 		return agent.Result{
-			Status: agent.StatusFailed,
+			Status: a2a.TaskStateFailed,
 			Output: fmt.Sprintf("model resolve failed: %v", err),
 		}, nil
 	}
@@ -81,7 +82,7 @@ func executeAgent(ctx context.Context, h agent.Harness, task agent.Task) (agent.
 	})
 	if err != nil {
 		return agent.Result{
-			Status: agent.StatusFailed,
+			Status: a2a.TaskStateFailed,
 			Output: fmt.Sprintf("model call failed: %v", err),
 		}, nil
 	}
@@ -154,7 +155,7 @@ func executeAgent(ctx context.Context, h agent.Harness, task agent.Task) (agent.
 
 	// Return a successful result
 	return agent.Result{
-		Status: agent.StatusSuccess,
+		Status: a2a.TaskStateCompleted,
 		Output: "Task completed successfully. Agent is operational.",
 		Metadata: map[string]any{
 			"tokens_used": completion.Usage.TotalTokens,

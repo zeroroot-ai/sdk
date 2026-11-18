@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/a2aproject/a2a-go/v2/a2a"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -511,7 +512,7 @@ func (d *componentDaemon) QueryPlugin(context.Context, *componentpb.QueryPluginR
 }
 
 func (d *componentDaemon) DelegateToAgent(context.Context, *componentpb.DelegateToAgentRequest) (*componentpb.DelegateToAgentResponse, error) {
-	b, err := json.Marshal(map[string]any{"Status": "partial", "Output": "helped", "Findings": []string{"f-1"}})
+	b, err := json.Marshal(map[string]any{"Status": a2a.TaskStateCompleted, "Output": "helped", "Findings": []string{"f-1"}})
 	if err != nil {
 		return nil, fmt.Errorf("marshal: %w", err)
 	}

@@ -472,7 +472,7 @@ func (h *CallbackHarness) ListPlugins(ctx context.Context) ([]plugin.Descriptor,
 func (h *CallbackHarness) DelegateToAgent(ctx context.Context, name string, task agent.Task) (agent.Result, error) {
 	protoReq := &harnesspb.DelegateToAgentRequest{
 		Name: name,
-		Task: TaskToProto(task),
+		Task: legacyTaskToProto(task),
 	}
 
 	resp, err := h.client.DelegateToAgent(ctx, protoReq)
@@ -485,7 +485,7 @@ func (h *CallbackHarness) DelegateToAgent(ctx context.Context, name string, task
 	}
 
 	// Convert proto result to SDK result using the helper function
-	result := ProtoToResult(resp.Result)
+	result := legacyProtoToResult(resp.Result)
 
 	// Convert error if present
 	if resp.Result.Error != nil {

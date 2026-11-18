@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 
+	"github.com/zeroroot-ai/sdk/agent"
 	componentpb "github.com/zeroroot-ai/sdk/api/gen/gibson/component/v1"
 	"github.com/zeroroot-ai/sdk/capabilitygrant"
 	"github.com/zeroroot-ai/sdk/graphrag"
@@ -51,6 +52,14 @@ type ComponentInfo struct {
 	// `serve.OntologyContributor` have this field populated automatically by
 	// `serve.Tool` / `serve.Agent` from `OntologyExtension()`.
 	OntologyExtension graphrag.OntologyExtension
+	// CardSkills are the entries of the "skills" list of the A2A Agent Card
+	// (kind == "agent"). They are A2A AgentSkills, not Agent Skills in the
+	// SKILL.md format.
+	CardSkills []agent.CardSkill
+	// DefaultInputModes and DefaultOutputModes are the default media types of
+	// the Agent Card (kind == "agent").
+	DefaultInputModes  []string
+	DefaultOutputModes []string
 }
 
 // RegistrationResponse carries the server-assigned instance ID and connection
@@ -427,6 +436,15 @@ func (pc *PlatformClient) Register(ctx context.Context, info ComponentInfo) (*Re
 		InputMessageType:  info.InputMessageType,
 		OutputMessageType: info.OutputMessageType,
 		FileDescriptorSet: info.FileDescriptorSet,
+
+		DefaultInputModes:  info.DefaultInputModes,
+		DefaultOutputModes: info.DefaultOutputModes,
+	}
+	for _, cs := range info.CardSkills {
+		req.CardSkills = append(req.CardSkills, &componentpb.CardSkill{
+			Id: cs.ID, Name: cs.Name, Description: cs.Description, Tags: cs.Tags,
+			Examples: cs.Examples, InputModes: cs.InputModes, OutputModes: cs.OutputModes,
+		})
 	}
 	if !info.OntologyExtension.IsZero() {
 		req.OntologyExtension = graphrag.OntologyExtensionToProto(info.OntologyExtension)
