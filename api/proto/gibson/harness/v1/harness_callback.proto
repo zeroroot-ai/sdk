@@ -48,6 +48,22 @@ service HarnessCallbackService {
         allowed_identities: 4  // COMPONENT
       };
     }
+    // ResolveModel turns a slot into one exact model name (ADR-0172, decision 4).
+    // The agent then calls the model gateway with the Open Responses client of
+    // the SDK. The gateway never sees a slot name. The agent sends the task
+    // grant in the header x-capability-grant and sends each route header of
+    // the response unchanged.
+    //
+    // Errors: NotFound (the slot has no model), PermissionDenied (the task
+    // grant does not allow the slot), InvalidArgument.
+    rpc ResolveModel(ResolveModelRequest) returns (ResolveModelResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
 
     // Tool Operations
     rpc CallToolProto(CallToolProtoRequest) returns (CallToolProtoResponse) {
@@ -783,6 +799,33 @@ message TokenUsage {
     int32 input_tokens = 1;
     int32 output_tokens = 2;
     int32 total_tokens = 3;
+}
+
+// ResolveModelRequest asks the daemon for the model of a slot.
+message ResolveModelRequest {
+    ContextInfo context = 1;
+    // slot is the name of the slot, for example "primary".
+    string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
+}
+
+// ResolveModelResponse names the one model that the slot resolves to, and
+// the facts that the agent needs to call the model gateway.
+message ResolveModelResponse {
+    // model is the exact model name. The agent puts it in the model field of
+    // the Open Responses request.
+    string model = 1;
+    // provider is the name of the model provider of the tenant.
+    string provider = 2;
+    // gateway_url is the base URL of the model gateway. The agent calls
+    // POST {gateway_url}/v1/responses.
+    string gateway_url = 3;
+    // route_headers are the headers that the gateway route matches on, for
+    // example the tenant and the provider. The agent sends each one unchanged.
+    map<string, string> route_headers = 4;
+    // context_window is the size of the context window in tokens. 0 means unknown.
+    int32 context_window = 5;
+    // max_output_tokens is the output limit of the model in tokens. 0 means unknown.
+    int32 max_output_tokens = 6;
 }
 
 message LLMMessage {

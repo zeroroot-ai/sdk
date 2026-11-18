@@ -167,6 +167,7 @@ gibson.harness.v1.HarnessCallbackService/ReportDeliverable
 gibson.harness.v1.HarnessCallbackService/ReportJobState
 gibson.harness.v1.HarnessCallbackService/ReportStepHints
 gibson.harness.v1.HarnessCallbackService/RequestDestructiveAuthorization
+gibson.harness.v1.HarnessCallbackService/ResolveModel
 gibson.harness.v1.HarnessCallbackService/RunMission
 gibson.harness.v1.HarnessCallbackService/SearchTools
 gibson.harness.v1.HarnessCallbackService/SendInput
