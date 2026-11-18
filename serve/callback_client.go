@@ -22,6 +22,7 @@ import (
 	harnesspb "github.com/zeroroot-ai/sdk/api/gen/gibson/harness/v1"
 	"github.com/zeroroot-ai/sdk/capabilitygrant"
 	"github.com/zeroroot-ai/sdk/fork"
+	"github.com/zeroroot-ai/sdk/openresponses"
 )
 
 // CallbackClient manages the gRPC connection to the orchestrator's HarnessCallbackService.
@@ -347,6 +348,30 @@ func (c *CallbackClient) IsConnected() bool {
 // ============================================================================
 // LLM Operations
 // ============================================================================
+
+// ResolveModel asks the orchestrator for the exact model of a slot.
+func (c *CallbackClient) ResolveModel(ctx context.Context, slot string) (*harnesspb.ResolveModelResponse, error) {
+	if !c.IsConnected() {
+		return nil, errors.New("ResolveModel: client not connected")
+	}
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.ResolveModel(ctx, &harnesspb.ResolveModelRequest{Context: c.contextInfo(), Slot: slot})
+	if err != nil {
+		return nil, fmt.Errorf("ResolveModel: %w", err)
+	}
+	return resp, nil
+}
+
+// grantHeaders returns the HeaderFunc that sends the grant of this client to
+// the model gateway.
+func (c *CallbackClient) grantHeaders() openresponses.HeaderFunc {
+	c.mu.RLock()
+	token := c.token
+	creds := c.perRPCCreds
+	c.mu.RUnlock()
+	signer, _ := creds.(capabilitygrant.MethodSigner)
+	return grantHeaders(token, signer)
+}
 
 // LLMComplete performs an LLM completion request via the orchestrator.
 func (c *CallbackClient) LLMComplete(ctx context.Context, req *harnesspb.LLMCompleteRequest) (*harnesspb.LLMCompleteResponse, error) {

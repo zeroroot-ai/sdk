@@ -35,6 +35,7 @@ import (
 	harnessconst "github.com/zeroroot-ai/sdk/harness"
 	"github.com/zeroroot-ai/sdk/llm"
 	"github.com/zeroroot-ai/sdk/mission"
+	"github.com/zeroroot-ai/sdk/openresponses"
 	"github.com/zeroroot-ai/sdk/planning"
 	"github.com/zeroroot-ai/sdk/plugin"
 	"github.com/zeroroot-ai/sdk/schema"
@@ -173,6 +174,21 @@ func (h *CallbackHarness) Target() types.TargetInfo {
 // ============================================================================
 // LLM Operations
 // ============================================================================
+
+// Model resolves a slot to one exact model through the orchestrator and returns
+// the client that calls the model gateway. The client sends the task grant of
+// the agent. It adds token counts to TokenUsage.
+func (h *CallbackHarness) Model(ctx context.Context, slot string) (*openresponses.Client, error) {
+	resp, err := h.client.ResolveModel(ctx, slot)
+	if err != nil {
+		return nil, fmt.Errorf("CallbackHarness.Model: %w", err)
+	}
+	return newModelClient(slot, &resolvedModel{
+		model: resp.GetModel(), provider: resp.GetProvider(), gatewayURL: resp.GetGatewayUrl(),
+		routeHeaders: resp.GetRouteHeaders(), contextWindow: int(resp.GetContextWindow()),
+		maxOutputTokens: int(resp.GetMaxOutputTokens()),
+	}, h.client.grantHeaders(), h.tokenTracker)
+}
 
 // Complete performs a single LLM completion request via the orchestrator.
 func (h *CallbackHarness) Complete(ctx context.Context, slot string, messages []llm.Message, opts ...llm.CompletionOption) (*llm.CompletionResponse, error) {

@@ -38,6 +38,7 @@ const (
 	ComponentService_EnrollComponent_FullMethodName      = "/gibson.component.v1.ComponentService/EnrollComponent"
 	ComponentService_CompleteWithTools_FullMethodName    = "/gibson.component.v1.ComponentService/CompleteWithTools"
 	ComponentService_CompleteStructured_FullMethodName   = "/gibson.component.v1.ComponentService/CompleteStructured"
+	ComponentService_ResolveModel_FullMethodName         = "/gibson.component.v1.ComponentService/ResolveModel"
 	ComponentService_CallToolStream_FullMethodName       = "/gibson.component.v1.ComponentService/CallToolStream"
 	ComponentService_QueueToolWork_FullMethodName        = "/gibson.component.v1.ComponentService/QueueToolWork"
 	ComponentService_ToolResults_FullMethodName          = "/gibson.component.v1.ComponentService/ToolResults"
@@ -138,6 +139,13 @@ type ComponentServiceClient interface {
 	// CompleteStructured proxies an LLM completion requesting JSON output
 	// conforming to the supplied schema.
 	CompleteStructured(ctx context.Context, in *CompleteStructuredRequest, opts ...grpc.CallOption) (*CompleteStructuredResponse, error)
+	// ResolveModel turns a slot into one exact model name (ADR-0172). The agent
+	// then calls the model gateway with the Open Responses client of the SDK.
+	// The agent sends the task grant in the header x-capability-grant and sends
+	// each route header of the response unchanged. The gateway never sees a
+	// slot name. This is the same call as HarnessCallbackService.ResolveModel,
+	// for an agent that polls for work.
+	ResolveModel(ctx context.Context, in *ResolveModelRequest, opts ...grpc.CallOption) (*ResolveModelResponse, error)
 	// CallToolStream proxies a tool execution with server-side streaming of
 	// progress, partial results, warnings, and the final output.
 	CallToolStream(ctx context.Context, in *CallToolStreamRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CallToolStreamResponse], error)
@@ -405,6 +413,16 @@ func (c *componentServiceClient) CompleteStructured(ctx context.Context, in *Com
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CompleteStructuredResponse)
 	err := c.cc.Invoke(ctx, ComponentService_CompleteStructured_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *componentServiceClient) ResolveModel(ctx context.Context, in *ResolveModelRequest, opts ...grpc.CallOption) (*ResolveModelResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResolveModelResponse)
+	err := c.cc.Invoke(ctx, ComponentService_ResolveModel_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -770,6 +788,13 @@ type ComponentServiceServer interface {
 	// CompleteStructured proxies an LLM completion requesting JSON output
 	// conforming to the supplied schema.
 	CompleteStructured(context.Context, *CompleteStructuredRequest) (*CompleteStructuredResponse, error)
+	// ResolveModel turns a slot into one exact model name (ADR-0172). The agent
+	// then calls the model gateway with the Open Responses client of the SDK.
+	// The agent sends the task grant in the header x-capability-grant and sends
+	// each route header of the response unchanged. The gateway never sees a
+	// slot name. This is the same call as HarnessCallbackService.ResolveModel,
+	// for an agent that polls for work.
+	ResolveModel(context.Context, *ResolveModelRequest) (*ResolveModelResponse, error)
 	// CallToolStream proxies a tool execution with server-side streaming of
 	// progress, partial results, warnings, and the final output.
 	CallToolStream(*CallToolStreamRequest, grpc.ServerStreamingServer[CallToolStreamResponse]) error
@@ -900,6 +925,9 @@ func (UnimplementedComponentServiceServer) CompleteWithTools(context.Context, *C
 }
 func (UnimplementedComponentServiceServer) CompleteStructured(context.Context, *CompleteStructuredRequest) (*CompleteStructuredResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CompleteStructured not implemented")
+}
+func (UnimplementedComponentServiceServer) ResolveModel(context.Context, *ResolveModelRequest) (*ResolveModelResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ResolveModel not implemented")
 }
 func (UnimplementedComponentServiceServer) CallToolStream(*CallToolStreamRequest, grpc.ServerStreamingServer[CallToolStreamResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method CallToolStream not implemented")
@@ -1331,6 +1359,24 @@ func _ComponentService_CompleteStructured_Handler(srv interface{}, ctx context.C
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ComponentServiceServer).CompleteStructured(ctx, req.(*CompleteStructuredRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ComponentService_ResolveModel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResolveModelRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ComponentServiceServer).ResolveModel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ComponentService_ResolveModel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ComponentServiceServer).ResolveModel(ctx, req.(*ResolveModelRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1860,6 +1906,10 @@ var ComponentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CompleteStructured",
 			Handler:    _ComponentService_CompleteStructured_Handler,
+		},
+		{
+			MethodName: "ResolveModel",
+			Handler:    _ComponentService_ResolveModel_Handler,
 		},
 		{
 			MethodName: "QueueToolWork",

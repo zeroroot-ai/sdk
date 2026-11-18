@@ -58,6 +58,7 @@ gibson.component.v1.ComponentService/QueryPlugin
 gibson.component.v1.ComponentService/QueueToolWork
 gibson.component.v1.ComponentService/RegisterComponent
 gibson.component.v1.ComponentService/ReportStepHints
+gibson.component.v1.ComponentService/ResolveModel
 gibson.component.v1.ComponentService/RunMission
 gibson.component.v1.ComponentService/SubmitFinding
 gibson.component.v1.ComponentService/SubmitResult

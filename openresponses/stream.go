@@ -60,6 +60,8 @@ type Stream struct {
 	sc      *bufio.Scanner
 	final   *Response
 	termErr error
+	onDone  func(*Response)
+	done    bool
 }
 
 func newStream(body io.ReadCloser) *Stream {
@@ -159,6 +161,14 @@ func (s *Stream) decode(name string, data []byte) (*Event, error) {
 	if w.Error != nil {
 		ev.Err = &APIError{Type: w.Error.Type, Code: w.Error.Code, Message: w.Error.Message, Param: w.Error.Param}
 	}
+	defer func() {
+		if s.final != nil && !s.done {
+			s.done = true
+			if s.onDone != nil {
+				s.onDone(s.final)
+			}
+		}
+	}()
 	switch ev.Type {
 	case EventCompleted, EventIncomplete:
 		s.final = ev.Response

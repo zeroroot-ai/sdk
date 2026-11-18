@@ -326,3 +326,24 @@ func TestToolChoiceFunction(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, strings.Contains(string(b), `"tool_choice":{"name":"f","type":"function"}`), string(b))
 }
+
+func TestOnUsage(t *testing.T) {
+	var got []Usage
+	srv, _ := newGateway(t, 200, "application/json", plainReply)
+	cl := testClient(srv)
+	cl.OnUsage = func(u Usage) { got = append(got, u) }
+	_, err := cl.Create(context.Background(), &Request{Input: []Item{NewUserMessage("x")}})
+	require.NoError(t, err)
+
+	ssrv, _ := newGateway(t, 200, "text/event-stream", streamReply)
+	cl2 := testClient(ssrv)
+	cl2.OnUsage = func(u Usage) { got = append(got, u) }
+	s, err := cl2.Stream(context.Background(), &Request{Input: []Item{NewUserMessage("x")}})
+	require.NoError(t, err)
+	defer s.Close()
+	_, err = s.Collect(nil)
+	require.NoError(t, err)
+	require.Len(t, got, 2)
+	assert.Equal(t, 13, got[0].TotalTokens)
+	assert.Equal(t, 7, got[1].TotalTokens)
+}

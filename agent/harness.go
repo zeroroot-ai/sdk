@@ -12,6 +12,7 @@ import (
 	"github.com/zeroroot-ai/sdk/finding"
 	"github.com/zeroroot-ai/sdk/llm"
 	"github.com/zeroroot-ai/sdk/mission"
+	"github.com/zeroroot-ai/sdk/openresponses"
 	"github.com/zeroroot-ai/sdk/planning"
 	"github.com/zeroroot-ai/sdk/plugin"
 	"github.com/zeroroot-ai/sdk/tool"
@@ -216,6 +217,12 @@ type LLMCaller interface {
 	// These methods provide access to LLM completions through named slots.
 	// A slot is a name. The platform resolves it to one of the tenant's
 	// providers and a model.
+
+	// Model resolves a slot to one exact model and returns the client that
+	// calls the model gateway with Open Responses items. The client sends the
+	// task grant of the agent and adds its token counts to TokenUsage. Keep
+	// the client for the run. Each call to Model asks the daemon again.
+	Model(ctx context.Context, slot string) (*openresponses.Client, error)
 
 	// Complete performs a single LLM completion request.
 	// The slot parameter identifies which LLM to use (e.g., "primary", "vision").

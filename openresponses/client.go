@@ -35,6 +35,14 @@ type Client struct {
 	// Headers adds the headers of each call, for example the task grant. It is
 	// optional.
 	Headers HeaderFunc
+	// OnUsage is called with the token counts of each finished response. It is
+	// optional. The agent uses it to keep a running total.
+	OnUsage func(Usage)
+	// Provider, ContextWindow and MaxOutputTokens describe the model. The
+	// client does not read them. A value of 0 means unknown.
+	Provider        string
+	ContextWindow   int
+	MaxOutputTokens int
 	// HTTPClient makes the call. The default is http.DefaultClient.
 	HTTPClient *http.Client
 }
@@ -147,10 +155,17 @@ func (c *Client) Create(ctx context.Context, req *Request) (*Response, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
 		return nil, fmt.Errorf("openresponses: decode response: %w", err)
 	}
+	c.reportUsage(&out)
 	if out.Status == StatusFailed {
 		return &out, responseFailure(&out)
 	}
 	return &out, nil
+}
+
+func (c *Client) reportUsage(r *Response) {
+	if c.OnUsage != nil && r != nil && r.Usage != nil {
+		c.OnUsage(*r.Usage)
+	}
 }
 
 func responseFailure(r *Response) error {
@@ -193,5 +208,7 @@ func (c *Client) Stream(ctx context.Context, req *Request) (*Stream, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newStream(resp.Body), nil
+	s := newStream(resp.Body)
+	s.onDone = c.reportUsage
+	return s, nil
 }

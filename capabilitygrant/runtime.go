@@ -110,6 +110,16 @@ func (r *runtimeCredentials) GetRequestMetadata(ctx context.Context, _ ...string
 	return perRPCMetadata(r.key, r.hostID, r.agentID, r.componentScope, method)
 }
 
+// SignForMethod signs a fresh agent+jwt bound to a method name that is not a
+// gRPC method, for example the model route "/v1/responses".
+func (r *runtimeCredentials) SignForMethod(method string) (string, error) {
+	md, err := perRPCMetadata(r.key, r.hostID, r.agentID, r.componentScope, method)
+	if err != nil {
+		return "", err
+	}
+	return md[MetadataHeaderCapabilityGrant], nil
+}
+
 // RequireTransportSecurity returns false so the credential works over both TLS
 // and plaintext (tests / in-cluster mTLS-terminated hops). Production traffic is
 // TLS at the gateway.

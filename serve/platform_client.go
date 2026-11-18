@@ -23,6 +23,7 @@ import (
 	componentpb "github.com/zeroroot-ai/sdk/api/gen/gibson/component/v1"
 	"github.com/zeroroot-ai/sdk/capabilitygrant"
 	"github.com/zeroroot-ai/sdk/graphrag"
+	"github.com/zeroroot-ai/sdk/openresponses"
 )
 
 // ============================================================================
@@ -611,6 +612,37 @@ func (pc *PlatformClient) Heartbeat(ctx context.Context) error {
 		return ErrNotRegistered
 	}
 	return nil
+}
+
+// ResolveModel asks the platform for the exact model of a slot.
+func (pc *PlatformClient) ResolveModel(ctx context.Context, workID, slot string) (*componentpb.ResolveModelResponse, error) {
+	if err := pc.ensureConnected("ResolveModel"); err != nil {
+		return nil, err
+	}
+	if workID == "" {
+		return nil, errors.New("ResolveModel: workID cannot be empty")
+	}
+	if slot == "" {
+		return nil, errors.New("ResolveModel: slot cannot be empty")
+	}
+	resp, err := pc.service.ResolveModel(ctx, &componentpb.ResolveModelRequest{WorkId: workID, Slot: slot})
+	if err != nil {
+		return nil, fmt.Errorf("ResolveModel: %w", err)
+	}
+	return resp, nil
+}
+
+// grantHeaders returns the HeaderFunc that sends a grant of this client to the
+// model gateway.
+func (pc *PlatformClient) grantHeaders() openresponses.HeaderFunc {
+	pc.mu.RLock()
+	cg := pc.capabilityGrantClient
+	pc.mu.RUnlock()
+	if cg == nil {
+		return grantHeaders("", nil)
+	}
+	signer, _ := cg.GRPCPerRPCCredentials().(capabilitygrant.MethodSigner)
+	return grantHeaders("", signer)
 }
 
 // Complete proxies a non-streaming LLM completion request through the agent
