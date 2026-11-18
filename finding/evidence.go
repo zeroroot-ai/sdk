@@ -8,6 +8,12 @@ import (
 )
 
 // Evidence represents a piece of evidence supporting a security finding.
+//
+// It is the agent-side form of types.v1.Evidence. It has no tier and no tool
+// call ID, so an agent cannot set either. The platform sets the tier of each
+// item. An item that an agent types is tier 2. To get tier 1 evidence, name the
+// tool calls with Finding.CiteToolCalls, and the platform builds the items from
+// its own record.
 type Evidence struct {
 	// Type specifies the kind of evidence.
 	Type EvidenceType `json:"type"`
