@@ -67,3 +67,10 @@ func TestClientHeaderError(t *testing.T) {
 	_, err = c.Get(srv.URL)
 	require.ErrorContains(t, err, "no grant")
 }
+
+func TestNewClientRefusals(t *testing.T) {
+	_, err := NewClient("http://plain", "PEM", nil, nil)
+	require.ErrorContains(t, err, "https")
+	_, err = NewClient("https://x", "not pem", nil, nil)
+	require.ErrorContains(t, err, "no certificate")
+}
