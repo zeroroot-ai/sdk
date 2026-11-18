@@ -77,7 +77,8 @@ import (
 	FINDING_STATUS_FALSE_POSITIVE: 4
 }
 
-// EvidenceType represents the type of evidence collected.
+// EvidenceType is the one list of evidence types. Each evidence shape in the
+// platform uses this list.
 #EvidenceType:
 	#EVIDENCE_TYPE_UNSPECIFIED |
 	#EVIDENCE_TYPE_REQUEST |
@@ -85,7 +86,10 @@ import (
 	#EVIDENCE_TYPE_SCREENSHOT |
 	#EVIDENCE_TYPE_CODE |
 	#EVIDENCE_TYPE_LOG |
-	#EVIDENCE_TYPE_OTHER
+	#EVIDENCE_TYPE_OTHER |
+	#EVIDENCE_TYPE_PAYLOAD |
+	#EVIDENCE_TYPE_CONVERSATION |
+	#EVIDENCE_TYPE_NETWORK_TRACE
 
 #EVIDENCE_TYPE_UNSPECIFIED: 0
 #EVIDENCE_TYPE_REQUEST:     1
@@ -94,15 +98,46 @@ import (
 #EVIDENCE_TYPE_CODE:        4
 #EVIDENCE_TYPE_LOG:         5
 #EVIDENCE_TYPE_OTHER:       6
+#EVIDENCE_TYPE_PAYLOAD:     7
+
+// EVIDENCE_TYPE_CONVERSATION is a dialogue with a target. Gibson tests
+// targets that are models, so a dialogue is evidence.
+#EVIDENCE_TYPE_CONVERSATION:  8
+#EVIDENCE_TYPE_NETWORK_TRACE: 9
 
 #EvidenceType_value: {
-	EVIDENCE_TYPE_UNSPECIFIED: 0
-	EVIDENCE_TYPE_REQUEST:     1
-	EVIDENCE_TYPE_RESPONSE:    2
-	EVIDENCE_TYPE_SCREENSHOT:  3
-	EVIDENCE_TYPE_CODE:        4
-	EVIDENCE_TYPE_LOG:         5
-	EVIDENCE_TYPE_OTHER:       6
+	EVIDENCE_TYPE_UNSPECIFIED:   0
+	EVIDENCE_TYPE_REQUEST:       1
+	EVIDENCE_TYPE_RESPONSE:      2
+	EVIDENCE_TYPE_SCREENSHOT:    3
+	EVIDENCE_TYPE_CODE:          4
+	EVIDENCE_TYPE_LOG:           5
+	EVIDENCE_TYPE_OTHER:         6
+	EVIDENCE_TYPE_PAYLOAD:       7
+	EVIDENCE_TYPE_CONVERSATION:  8
+	EVIDENCE_TYPE_NETWORK_TRACE: 9
+}
+
+// EvidenceTier tells a reader how much to trust an evidence item. The daemon
+// sets the tier. An agent cannot set it.
+#EvidenceTier:
+	#EVIDENCE_TIER_UNSPECIFIED |
+	#EVIDENCE_TIER_RECORDED |
+	#EVIDENCE_TIER_TYPED
+
+#EVIDENCE_TIER_UNSPECIFIED: 0
+
+// EVIDENCE_TIER_RECORDED is tier 1. A tool call id backs the item, and the
+// daemon built the content from its own record of that tool call.
+#EVIDENCE_TIER_RECORDED: 1
+
+// EVIDENCE_TIER_TYPED is tier 2. The agent typed the content.
+#EVIDENCE_TIER_TYPED: 2
+
+#EvidenceTier_value: {
+	EVIDENCE_TIER_UNSPECIFIED: 0
+	EVIDENCE_TIER_RECORDED:    1
+	EVIDENCE_TIER_TYPED:       2
 }
 
 // Task represents a goal-oriented task with context and constraints.
@@ -205,6 +240,15 @@ import (
 	metadata?: {
 		[string]: string
 	} @protobuf(4,map[string]string)
+
+	// tier is set by the daemon. The daemon ignores a value that an agent sends.
+	tier?: #EvidenceTier @protobuf(5,EvidenceTier)
+
+	// tool_call_id is set by the daemon on a tier 1 item. It is the id of the
+	// recorded tool call that backs the item. It is empty on a tier 2 item. The
+	// daemon ignores a value that an agent sends. An agent names a tool call in
+	// the tool_call_ids field of the request.
+	toolCallId?: string @protobuf(6,string,name=tool_call_id)
 }
 
 // ReproStep represents a step in reproducing a finding.

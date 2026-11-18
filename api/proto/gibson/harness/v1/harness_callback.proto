@@ -1214,6 +1214,15 @@ message SubmitFindingRequest {
     // same key returns the result of the first request and does the work one
     // time. An empty key turns the protection off for the call.
     string idempotency_key = 3 [(buf.validate.field).string = { max_len: 128 }];
+
+    // tool_call_ids names the tool calls whose recorded results are the
+    // recorded evidence of this finding. Each id is the
+    // ContextInfo.tool_execution_id of a tool call that the daemon recorded in
+    // this mission. The daemon reads the recorded result of each call. If an id
+    // names no record of this mission and tenant, the whole request fails.
+    // Evidence in finding.evidence that no tool call id backs is typed by the
+    // agent.
+    repeated string tool_call_ids = 4;
 }
 
 message SubmitFindingResponse {

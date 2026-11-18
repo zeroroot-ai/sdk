@@ -46,6 +46,15 @@ const (
 
 	// EvidenceConversation represents a conversation transcript.
 	EvidenceConversation EvidenceType = "conversation"
+
+	// EvidenceCodeSnippet represents a piece of source code.
+	EvidenceCodeSnippet EvidenceType = "code_snippet"
+
+	// EvidenceNetworkTrace represents a network capture.
+	EvidenceNetworkTrace EvidenceType = "network_trace"
+
+	// EvidenceOther represents evidence that fits no other type.
+	EvidenceOther EvidenceType = "other"
 )
 
 // String returns the string representation of the evidence type.

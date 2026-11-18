@@ -467,11 +467,17 @@ func evidenceTypeToProto(t finding.EvidenceType) typespb.EvidenceType {
 		return typespb.EvidenceType_EVIDENCE_TYPE_RESPONSE
 	case finding.EvidenceScreenshot:
 		return typespb.EvidenceType_EVIDENCE_TYPE_SCREENSHOT
+	case finding.EvidenceCodeSnippet:
+		return typespb.EvidenceType_EVIDENCE_TYPE_CODE
 	case finding.EvidenceLog:
 		return typespb.EvidenceType_EVIDENCE_TYPE_LOG
 	case finding.EvidencePayload:
-		return typespb.EvidenceType_EVIDENCE_TYPE_OTHER
+		return typespb.EvidenceType_EVIDENCE_TYPE_PAYLOAD
 	case finding.EvidenceConversation:
+		return typespb.EvidenceType_EVIDENCE_TYPE_CONVERSATION
+	case finding.EvidenceNetworkTrace:
+		return typespb.EvidenceType_EVIDENCE_TYPE_NETWORK_TRACE
+	case finding.EvidenceOther:
 		return typespb.EvidenceType_EVIDENCE_TYPE_OTHER
 	default:
 		return typespb.EvidenceType_EVIDENCE_TYPE_UNSPECIFIED
@@ -486,12 +492,18 @@ func evidenceTypeFromProto(t typespb.EvidenceType) finding.EvidenceType {
 		return finding.EvidenceHTTPResponse
 	case typespb.EvidenceType_EVIDENCE_TYPE_SCREENSHOT:
 		return finding.EvidenceScreenshot
+	case typespb.EvidenceType_EVIDENCE_TYPE_CODE:
+		return finding.EvidenceCodeSnippet
 	case typespb.EvidenceType_EVIDENCE_TYPE_LOG:
 		return finding.EvidenceLog
-	case typespb.EvidenceType_EVIDENCE_TYPE_OTHER:
+	case typespb.EvidenceType_EVIDENCE_TYPE_PAYLOAD:
 		return finding.EvidencePayload
+	case typespb.EvidenceType_EVIDENCE_TYPE_CONVERSATION:
+		return finding.EvidenceConversation
+	case typespb.EvidenceType_EVIDENCE_TYPE_NETWORK_TRACE:
+		return finding.EvidenceNetworkTrace
 	default:
-		return finding.EvidencePayload
+		return finding.EvidenceOther
 	}
 }
 

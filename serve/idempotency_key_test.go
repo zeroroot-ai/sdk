@@ -118,6 +118,43 @@ func TestCallbackHarness_SendsAnIdempotencyKey(t *testing.T) {
 	srvImpl.rec.assertOneKeyForEachCall(t, 4)
 }
 
+// toolCallServer records the tool call IDs of each finding request.
+type toolCallServer struct {
+	harnesspb.UnimplementedHarnessCallbackServiceServer
+	got [][]string
+}
+
+func (s *toolCallServer) SubmitFinding(_ context.Context, req *harnesspb.SubmitFindingRequest) (*harnesspb.SubmitFindingResponse, error) {
+	s.got = append(s.got, req.GetToolCallIds())
+	return &harnesspb.SubmitFindingResponse{}, nil
+}
+
+// TestCallbackHarness_SubmitFindingSendsToolCallIDs proves that the harness
+// sends the tool call IDs that a finding names.
+func TestCallbackHarness_SubmitFindingSendsToolCallIDs(t *testing.T) {
+	srvImpl := &toolCallServer{}
+	srv := grpc.NewServer()
+	harnesspb.RegisterHarnessCallbackServiceServer(srv, srvImpl)
+	conn := dialBufconn(t, srv)
+
+	h := &CallbackHarness{
+		client: &CallbackClient{
+			conn:      conn,
+			client:    harnesspb.NewHarnessCallbackServiceClient(conn),
+			connected: true,
+			missionID: "mission-1",
+			agentName: "recon",
+			taskID:    "task-1",
+		},
+		tracer: defaultNoopTracer(),
+	}
+
+	f := &finding.Finding{Title: "open port"}
+	f.CiteToolCalls("tc-1", "tc-2")
+	require.NoError(t, h.SubmitFinding(context.Background(), f))
+	require.Equal(t, [][]string{{"tc-1", "tc-2"}}, srvImpl.got)
+}
+
 // keyComponentServer records the key of each component request that creates
 // something or starts work.
 type keyComponentServer struct {

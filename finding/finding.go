@@ -4,6 +4,7 @@
 package finding
 
 import (
+	"slices"
 	"time"
 )
 
@@ -48,6 +49,13 @@ type Finding struct {
 	// Evidence contains supporting evidence for the finding.
 	Evidence []Evidence `json:"evidence,omitempty"`
 
+	// ToolCallIDs names the tool calls whose recorded results are the
+	// recorded evidence of the finding. Each ID is the tool execution ID of a
+	// tool call that the platform recorded in this mission. The platform reads
+	// the recorded result of each call. If an ID names no record of this
+	// mission, the platform refuses the whole finding.
+	ToolCallIDs []string `json:"tool_call_ids,omitempty"`
+
 	// Reproduction contains steps to reproduce the finding.
 	Reproduction []ReproStep `json:"reproduction,omitempty"`
 
@@ -90,6 +98,18 @@ type Finding struct {
 	// MITRE ATLAS). See compliance_mapping.go for the helpers.
 	// Added by audit-finding-compliance-mappings.
 	ComplianceMappings []ComplianceMapping `json:"compliance_mappings,omitempty"`
+}
+
+// CiteToolCalls adds tool call IDs to the finding. The platform builds recorded
+// evidence from the tool calls that these IDs name. The method skips an ID that
+// the finding already holds.
+func (f *Finding) CiteToolCalls(ids ...string) {
+	for _, id := range ids {
+		if id == "" || slices.Contains(f.ToolCallIDs, id) {
+			continue
+		}
+		f.ToolCallIDs = append(f.ToolCallIDs, id)
+	}
 }
 
 // MitreMapping represents a mapping to a MITRE framework (ATT&CK or ATLAS).

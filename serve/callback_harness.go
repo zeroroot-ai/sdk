@@ -867,6 +867,7 @@ func (h *CallbackHarness) SubmitFinding(ctx context.Context, f *finding.Finding)
 	protoReq := &harnesspb.SubmitFindingRequest{
 		IdempotencyKey: uuid.NewString(),
 		Finding:        FindingToProto(f),
+		ToolCallIds:    f.ToolCallIDs,
 	}
 
 	resp, err := h.client.SubmitFinding(ctx, protoReq)
