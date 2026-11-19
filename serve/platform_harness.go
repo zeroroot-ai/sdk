@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/a2aproject/a2a-go/v2/a2a"
 	"log/slog"
 	"time"
 
@@ -19,15 +20,14 @@ import (
 	protolib "google.golang.org/protobuf/proto"
 
 	"github.com/zeroroot-ai/sdk/agent"
-	componentpb "github.com/zeroroot-ai/sdk/api/gen/gibson/component/v1"
 	"github.com/zeroroot-ai/sdk/codegen/workspace"
 	"github.com/zeroroot-ai/sdk/finding"
 	harnessconst "github.com/zeroroot-ai/sdk/harness"
 	"github.com/zeroroot-ai/sdk/llm"
 	"github.com/zeroroot-ai/sdk/mission"
+	"github.com/zeroroot-ai/sdk/openresponses"
 	"github.com/zeroroot-ai/sdk/planning"
 	"github.com/zeroroot-ai/sdk/plugin"
-	"github.com/zeroroot-ai/sdk/schema"
 	"github.com/zeroroot-ai/sdk/tool"
 	"github.com/zeroroot-ai/sdk/types"
 )
@@ -50,7 +50,10 @@ type PlatformHarness struct {
 	logger  *slog.Logger
 	tracer  trace.Tracer
 
-	// tokenTracker accumulates token usage from Complete/CompleteWithTools calls.
+	// grant is the task grant of the work item. Gateway calls send it.
+	grant *taskGrant
+
+	// tokenTracker accumulates token usage from the model client.
 	tokenTracker *CallbackTokenTracker
 }
 
@@ -69,12 +72,12 @@ func NewPlatformHarness(client *PlatformClient, opts ...PlatformHarnessOption) *
 	for _, opt := range opts {
 		opt(h)
 	}
+	// The harness renews the grant through its own platform client.
+	if h.grant != nil && h.grant.renew == nil {
+		h.grant.renew = client.RenewTaskGrant
+	}
 	return h
 }
-
-// ============================================================================
-// Observability
-// ============================================================================
 
 // Logger returns the structured logger for the agent.
 func (h *PlatformHarness) Logger() *slog.Logger { return h.logger }
@@ -85,264 +88,34 @@ func (h *PlatformHarness) Tracer() trace.Tracer { return h.tracer }
 // TokenUsage returns the accumulated token usage across all LLM slots.
 func (h *PlatformHarness) TokenUsage() llm.TokenTracker { return h.tokenTracker }
 
-// ============================================================================
-// Context Access
-// ============================================================================
-
 // Mission returns the current mission context.
 func (h *PlatformHarness) Mission() types.MissionContext { return h.mission }
 
 // Target returns information about the target being tested.
 func (h *PlatformHarness) Target() types.TargetInfo { return h.target }
 
-// ============================================================================
-// LLM Access
-// ============================================================================
-
-// Complete performs a non-streaming LLM completion through the platform.
-// The slot selects which named LLM slot to use (e.g. "primary").
-func (h *PlatformHarness) Complete(ctx context.Context, slot string, messages []llm.Message, opts ...llm.CompletionOption) (*llm.CompletionResponse, error) {
-	ctx, span := h.tracer.Start(ctx, "gen_ai.chat",
-		trace.WithSpanKind(trace.SpanKindClient),
-		trace.WithAttributes(
-			attribute.String("gen_ai.request.model", slot),
-			attribute.Int("gen_ai.request.message_count", len(messages)),
-		),
-	)
-	defer span.End()
-
-	// Convert messages to the platform wire format.
-	platMsgs := make([]LLMMessage, len(messages))
-	for i, m := range messages {
-		platMsgs[i] = LLMMessage{
-			Role:    string(m.Role),
-			Content: m.Content,
-		}
-	}
-
-	resp, err := h.client.Complete(ctx, h.workID, slot, platMsgs)
+// Model resolves a slot to one exact model through the platform and returns the
+// client that calls the model gateway. The client sends the grant of the agent.
+// It adds token counts to TokenUsage.
+func (h *PlatformHarness) Model(ctx context.Context, slot string) (*openresponses.Client, error) {
+	resp, err := h.client.ResolveModel(ctx, h.workID, slot)
 	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("PlatformHarness.Complete: %w", err)
+		return nil, fmt.Errorf("PlatformHarness.Model: %w", err)
 	}
-
-	result := &llm.CompletionResponse{}
-	if resp.Response != nil {
-		result.Content = resp.Response.Content
-	}
-	if resp.Usage != nil {
-		result.Usage = llm.TokenUsage{
-			InputTokens:  int(resp.Usage.InputTokens),
-			OutputTokens: int(resp.Usage.OutputTokens),
-			TotalTokens:  int(resp.Usage.InputTokens) + int(resp.Usage.OutputTokens),
-		}
-		h.tokenTracker.Add(slot, result.Usage)
-	}
-
-	span.SetAttributes(
-		attribute.Int("gen_ai.usage.input_tokens", result.Usage.InputTokens),
-		attribute.Int("gen_ai.usage.output_tokens", result.Usage.OutputTokens),
-	)
-
-	return result, nil
+	return newModelClient(slot, &resolvedModel{
+		model: resp.GetModel(), provider: resp.GetProvider(), gatewayURL: resp.GetGatewayUrl(),
+		routeHeaders: resp.GetRouteHeaders(), contextWindow: int(resp.GetContextWindow()),
+		maxOutputTokens: int(resp.GetMaxOutputTokens()), gatewayCAPEM: resp.GetGatewayCaPem(),
+	}, grantHeaders(h.grant.get), h.tokenTracker)
 }
-
-// CompleteWithTools performs a completion with tool definitions supplied to the
-// LLM. Tools are converted to componentpb.ToolDefinition wire format and sent
-// to the platform for forwarding to the LLM. ToolCalls in the response are
-// converted back to llm.ToolCall.
-func (h *PlatformHarness) CompleteWithTools(ctx context.Context, slot string, messages []llm.Message, tools []llm.ToolDef) (*llm.CompletionResponse, error) {
-	ctx, span := h.tracer.Start(ctx, "gen_ai.chat.tools",
-		trace.WithSpanKind(trace.SpanKindClient),
-		trace.WithAttributes(
-			attribute.String("gen_ai.request.model", slot),
-			attribute.Int("gen_ai.request.message_count", len(messages)),
-			attribute.Int("gen_ai.request.tool_count", len(tools)),
-		),
-	)
-	defer span.End()
-
-	// Convert messages to the wire format.
-	platMsgs := make([]LLMMessage, len(messages))
-	for i, m := range messages {
-		platMsgs[i] = LLMMessage{Role: string(m.Role), Content: m.Content}
-	}
-
-	// Convert llm.ToolDef slice to componentpb.ToolDefinition slice.
-	protoDefs := make([]*componentpb.ToolDefinition, 0, len(tools))
-	for _, td := range tools {
-		schemaJSON, err := json.Marshal(td.Parameters)
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, "failed to marshal tool parameters")
-			return nil, fmt.Errorf("PlatformHarness.CompleteWithTools: marshal tool %q parameters: %w", td.Name, err)
-		}
-		protoDefs = append(protoDefs, &componentpb.ToolDefinition{
-			Name:            td.Name,
-			Description:     td.Description,
-			InputSchemaJson: string(schemaJSON),
-		})
-	}
-
-	resp, err := h.client.CompleteWithTools(ctx, h.workID, slot, platMsgs, protoDefs)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("PlatformHarness.CompleteWithTools: %w", err)
-	}
-
-	result := &llm.CompletionResponse{
-		FinishReason: resp.FinishReason,
-	}
-	if resp.Response != nil {
-		result.Content = resp.Response.Content
-	}
-	if resp.Usage != nil {
-		result.Usage = llm.TokenUsage{
-			InputTokens:  int(resp.Usage.InputTokens),
-			OutputTokens: int(resp.Usage.OutputTokens),
-			TotalTokens:  int(resp.Usage.InputTokens) + int(resp.Usage.OutputTokens),
-		}
-		h.tokenTracker.Add(slot, result.Usage)
-	}
-
-	// Convert proto ToolCallResult slice to llm.ToolCall slice.
-	if len(resp.ToolCalls) > 0 {
-		result.ToolCalls = make([]llm.ToolCall, len(resp.ToolCalls))
-		for i, tc := range resp.ToolCalls {
-			result.ToolCalls[i] = llm.ToolCall{
-				ID:        tc.Id,
-				Name:      tc.Name,
-				Arguments: tc.ArgumentsJson,
-			}
-		}
-	}
-
-	span.SetAttributes(
-		attribute.Int("gen_ai.usage.input_tokens", result.Usage.InputTokens),
-		attribute.Int("gen_ai.usage.output_tokens", result.Usage.OutputTokens),
-		attribute.Int("gen_ai.response.tool_call_count", len(result.ToolCalls)),
-	)
-
-	return result, nil
-}
-
-// Stream performs a streaming completion request, proxying through the platform's
-// CompleteStream RPC. Returns a channel of llm.StreamChunk that is closed when
-// the stream completes or encounters an error.
-func (h *PlatformHarness) Stream(ctx context.Context, slot string, messages []llm.Message) (<-chan llm.StreamChunk, error) {
-	ctx, span := h.tracer.Start(ctx, "gen_ai.chat.stream",
-		trace.WithSpanKind(trace.SpanKindClient),
-		trace.WithAttributes(
-			attribute.String("gen_ai.request.model", slot),
-			attribute.Int("gen_ai.request.message_count", len(messages)),
-		),
-	)
-
-	platMsgs := make([]LLMMessage, len(messages))
-	for i, m := range messages {
-		platMsgs[i] = LLMMessage{Role: string(m.Role), Content: m.Content}
-	}
-
-	rawCh, err := h.client.StreamCompletion(ctx, h.workID, slot, platMsgs)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		span.End()
-		return nil, fmt.Errorf("PlatformHarness.Stream: %w", err)
-	}
-
-	out := make(chan llm.StreamChunk, 32)
-	go func() {
-		defer span.End()
-		defer close(out)
-		for raw := range rawCh {
-			if raw.Err != nil {
-				span.RecordError(raw.Err)
-				span.SetStatus(codes.Error, raw.Err.Error())
-				out <- llm.StreamChunk{FinishReason: "error"}
-				return
-			}
-			chunk := llm.StreamChunk{
-				Delta: raw.Content,
-			}
-			if raw.Done {
-				chunk.FinishReason = "stop"
-				if raw.Usage != nil {
-					chunk.Usage = &llm.TokenUsage{
-						InputTokens:  int(raw.Usage.InputTokens),
-						OutputTokens: int(raw.Usage.OutputTokens),
-						TotalTokens:  int(raw.Usage.InputTokens) + int(raw.Usage.OutputTokens),
-					}
-					h.tokenTracker.Add(slot, *chunk.Usage)
-				}
-			}
-			out <- chunk
-		}
-	}()
-
-	return out, nil
-}
-
-// CompleteStructured performs a completion requesting structured JSON output.
-// schemaType is an instance of the caller's struct. Its JSON Schema, from
-// schema.FromType as CallbackHarness builds it, goes to the platform as
-// schema_json (sdk#300). The returned JSON is decoded into an any value: a
-// map[string]any for an object schema.
-func (h *PlatformHarness) CompleteStructured(ctx context.Context, slot string, messages []llm.Message, schemaType any) (any, error) {
-	ctx, span := h.tracer.Start(ctx, "gen_ai.chat.structured",
-		trace.WithSpanKind(trace.SpanKindClient),
-		trace.WithAttributes(
-			attribute.String("gen_ai.request.model", slot),
-			attribute.Int("gen_ai.request.message_count", len(messages)),
-		),
-	)
-	defer span.End()
-
-	schemaJSON, err := json.Marshal(schema.FromType(schemaType))
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to marshal schema")
-		return nil, fmt.Errorf("PlatformHarness.CompleteStructured: marshal schema: %w", err)
-	}
-
-	platMsgs := make([]LLMMessage, len(messages))
-	for i, m := range messages {
-		platMsgs[i] = LLMMessage{Role: string(m.Role), Content: m.Content}
-	}
-
-	resultJSON, err := h.client.CompleteStructured(ctx, h.workID, slot, platMsgs, string(schemaJSON))
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("PlatformHarness.CompleteStructured: %w", err)
-	}
-
-	var result any
-	if err := json.Unmarshal([]byte(resultJSON), &result); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to unmarshal structured result")
-		return nil, fmt.Errorf("PlatformHarness.CompleteStructured: unmarshal result: %w", err)
-	}
-
-	return result, nil
-}
-
-// CompleteStructuredAny is an alias for CompleteStructured.
-func (h *PlatformHarness) CompleteStructuredAny(ctx context.Context, slot string, messages []llm.Message, schemaType any) (any, error) {
-	return h.CompleteStructured(ctx, slot, messages, schemaType)
-}
-
-// ============================================================================
-// Tool Access
-// ============================================================================
 
 // CallToolProto invokes a tool by name, marshaling the request proto to JSON
 // for transport and unmarshaling the JSON response back into resp.
 // Uses protojson with UseProtoNames=true for snake_case consistency with the
 // existing tool serve code.
-func (h *PlatformHarness) CallToolProto(ctx context.Context, name string, request protolib.Message, response protolib.Message) error {
+func (h *PlatformHarness) CallToolProto(
+	ctx context.Context, name string, request protolib.Message, response protolib.Message, opts ...agent.ToolCallOption,
+) error {
 	ctx, span := h.tracer.Start(ctx, "gen_ai.tool.proto",
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
@@ -361,7 +134,9 @@ func (h *PlatformHarness) CallToolProto(ctx context.Context, name string, reques
 		return fmt.Errorf("PlatformHarness.CallToolProto: marshal request: %w", err)
 	}
 
-	outputJSON, err := h.client.CallTool(ctx, h.workID, name, string(inputJSON))
+	outputJSON, toolCallID, err := h.client.CallTool(ctx, h.workID, name, string(inputJSON))
+	// The daemon records a failed call too, so the id is set before the error.
+	agent.ApplyToolCallOptions(opts).SetToolCallID(toolCallID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
@@ -382,7 +157,14 @@ func (h *PlatformHarness) CallToolProto(ctx context.Context, name string, reques
 // proto is marshaled to JSON and sent via the platform's CallToolStream RPC.
 // Events are dispatched to the callback as they arrive; the output proto is
 // populated from the final "result" event.
-func (h *PlatformHarness) CallToolProtoStream(ctx context.Context, toolName string, input protolib.Message, output protolib.Message, callback agent.ToolStreamCallback) error {
+func (h *PlatformHarness) CallToolProtoStream(
+	ctx context.Context, toolName string, input protolib.Message, output protolib.Message,
+	callback agent.ToolStreamCallback, opts ...agent.ToolCallOption,
+) error {
+	toolCallOpts := agent.ApplyToolCallOptions(opts)
+	var toolCallID string
+	defer func() { toolCallOpts.SetToolCallID(toolCallID) }()
+
 	ctx, span := h.tracer.Start(ctx, "gen_ai.tool.proto.stream",
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
@@ -409,6 +191,9 @@ func (h *PlatformHarness) CallToolProtoStream(ctx context.Context, toolName stri
 	unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
 
 	for evt := range evtCh {
+		if evt.ToolCallID != "" {
+			toolCallID = evt.ToolCallID
+		}
 		if evt.Err != nil {
 			span.RecordError(evt.Err)
 			span.SetStatus(codes.Error, evt.Err.Error())
@@ -428,53 +213,65 @@ func (h *PlatformHarness) CallToolProtoStream(ctx context.Context, toolName stri
 			continue
 		}
 
-		switch evt.EventType {
-		case "progress":
-			// Payload: {"percent": N, "phase": "...", "message": "..."}
-			var p struct {
-				Percent int    `json:"percent"`
-				Phase   string `json:"phase"`
-				Message string `json:"message"`
-			}
-			if evt.PayloadJSON != "" {
-				_ = json.Unmarshal([]byte(evt.PayloadJSON), &p)
-			}
-			callback.OnProgress(p.Percent, p.Phase, p.Message)
-
-		case "partial":
-			// Payload is a partial proto response JSON.
-			if evt.PayloadJSON != "" {
-				if err := unmarshaler.Unmarshal([]byte(evt.PayloadJSON), output); err == nil {
-					callback.OnPartial(output, true)
-				}
-			}
-
-		case "warning":
-			var w struct {
-				Message string `json:"message"`
-				Context string `json:"context"`
-			}
-			if evt.PayloadJSON != "" {
-				_ = json.Unmarshal([]byte(evt.PayloadJSON), &w)
-			}
-			callback.OnWarning(w.Message, w.Context)
-
-		case "error":
-			toolErr := fmt.Errorf("tool %s error: %s", toolName, evt.PayloadJSON)
-			callback.OnError(toolErr, false)
-
-		case "result":
-			if evt.PayloadJSON != "" {
-				if err := unmarshaler.Unmarshal([]byte(evt.PayloadJSON), output); err != nil {
-					span.RecordError(err)
-					span.SetStatus(codes.Error, "failed to unmarshal result")
-					return fmt.Errorf("PlatformHarness.CallToolProtoStream: unmarshal result: %w", err)
-				}
-				callback.OnPartial(output, false)
-			}
+		if err := dispatchToolEvent(evt, toolName, output, callback, unmarshaler); err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+			return err
 		}
 	}
 
+	return nil
+}
+
+// dispatchToolEvent sends one event of a pull-mode tool stream to the callback.
+// It returns an error when the event is a result that cannot be read.
+func dispatchToolEvent(
+	evt ToolStreamEvent, toolName string, output protolib.Message,
+	callback agent.ToolStreamCallback, unmarshaler protojson.UnmarshalOptions,
+) error {
+	switch evt.EventType {
+	case "progress":
+		// Payload: {"percent": N, "phase": "...", "message": "..."}
+		var p struct {
+			Percent int    `json:"percent"`
+			Phase   string `json:"phase"`
+			Message string `json:"message"`
+		}
+		if evt.PayloadJSON != "" {
+			_ = json.Unmarshal([]byte(evt.PayloadJSON), &p)
+		}
+		callback.OnProgress(p.Percent, p.Phase, p.Message)
+
+	case "partial":
+		// Payload is a partial proto response JSON.
+		if evt.PayloadJSON != "" {
+			if err := unmarshaler.Unmarshal([]byte(evt.PayloadJSON), output); err == nil {
+				callback.OnPartial(output, true)
+			}
+		}
+
+	case "warning":
+		var w struct {
+			Message string `json:"message"`
+			Context string `json:"context"`
+		}
+		if evt.PayloadJSON != "" {
+			_ = json.Unmarshal([]byte(evt.PayloadJSON), &w)
+		}
+		callback.OnWarning(w.Message, w.Context)
+
+	case "error":
+		toolErr := fmt.Errorf("tool %s error: %s", toolName, evt.PayloadJSON)
+		callback.OnError(toolErr, false)
+
+	case "result":
+		if evt.PayloadJSON != "" {
+			if err := unmarshaler.Unmarshal([]byte(evt.PayloadJSON), output); err != nil {
+				return fmt.Errorf("PlatformHarness.CallToolProtoStream: unmarshal result: %w", err)
+			}
+			callback.OnPartial(output, false)
+		}
+	}
 	return nil
 }
 
@@ -566,8 +363,9 @@ func (h *PlatformHarness) ToolResults(ctx context.Context, jobID string) <-chan 
 		for evt := range rawCh {
 			if evt.Err != nil {
 				out <- agent.QueuedToolResult{
-					Index: int(evt.Index),
-					Error: fmt.Errorf("PlatformHarness.ToolResults: %w", evt.Err),
+					Index:      int(evt.Index),
+					Error:      fmt.Errorf("PlatformHarness.ToolResults: %w", evt.Err),
+					ToolCallID: evt.ToolCallID,
 				}
 				return
 			}
@@ -578,19 +376,16 @@ func (h *PlatformHarness) ToolResults(ctx context.Context, jobID string) <-chan 
 			// callers can observe completion by index.
 			_ = evt.OutputJSON // available if callers need raw JSON output
 			out <- agent.QueuedToolResult{
-				Index:  int(evt.Index),
-				Output: nil,
-				Error:  nil,
+				Index:      int(evt.Index),
+				Output:     nil,
+				Error:      nil,
+				ToolCallID: evt.ToolCallID,
 			}
 		}
 	}()
 
 	return out
 }
-
-// ============================================================================
-// Plugin Access
-// ============================================================================
 
 // QueryPlugin sends a query to a named plugin method. params is marshaled to
 // JSON for transport; the result JSON is unmarshaled back to any.
@@ -635,78 +430,6 @@ func (h *PlatformHarness) ListPlugins(_ context.Context) ([]plugin.Descriptor, e
 	return []plugin.Descriptor{}, nil
 }
 
-// ============================================================================
-// Agent Delegation
-// ============================================================================
-
-// DelegateToAgent dispatches a task to another agent identified by name. The
-// task is marshaled to JSON and sent via the platform's DelegateToAgent RPC;
-// the JSON result is unmarshaled back to agent.Result.
-func (h *PlatformHarness) DelegateToAgent(ctx context.Context, name string, task agent.Task) (agent.Result, error) {
-	ctx, span := h.tracer.Start(ctx, "gibson.agent.delegate",
-		trace.WithSpanKind(trace.SpanKindClient),
-		trace.WithAttributes(
-			attribute.String("gibson.agent.name", name),
-			attribute.String("gibson.task.id", task.ID),
-		),
-	)
-	defer span.End()
-
-	taskJSON, err := json.Marshal(task)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to marshal task to JSON")
-		return agent.Result{}, fmt.Errorf("PlatformHarness.DelegateToAgent: marshal task: %w", err)
-	}
-
-	resultBytes, err := h.client.DelegateToAgent(ctx, h.workID, name, taskJSON)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return agent.Result{}, fmt.Errorf("PlatformHarness.DelegateToAgent: %w", err)
-	}
-
-	var result agent.Result
-	if err := json.Unmarshal(resultBytes, &result); err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, "failed to unmarshal agent result")
-		return agent.Result{}, fmt.Errorf("PlatformHarness.DelegateToAgent: unmarshal result: %w", err)
-	}
-
-	return result, nil
-}
-
-// ListAgents returns descriptors for all available agents by querying the platform.
-func (h *PlatformHarness) ListAgents(ctx context.Context) ([]agent.Descriptor, error) {
-	ctx, span := h.tracer.Start(ctx, "gibson.agent.list",
-		trace.WithSpanKind(trace.SpanKindClient),
-	)
-	defer span.End()
-
-	protos, err := h.client.ListAgents(ctx, h.workID)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("PlatformHarness.ListAgents: %w", err)
-	}
-
-	descs := make([]agent.Descriptor, len(protos))
-	for i, p := range protos {
-		descs[i] = agent.Descriptor{
-			Name:         p.Name,
-			Version:      p.Version,
-			Description:  p.Description,
-			Capabilities: p.Capabilities,
-			TargetTypes:  p.TargetTypes,
-		}
-	}
-	return descs, nil
-}
-
-// ============================================================================
-// Finding Management
-// ============================================================================
-
 // SubmitFinding serializes the finding and submits it to the platform via the
 // SubmitFinding RPC tied to the current work item.
 func (h *PlatformHarness) SubmitFinding(ctx context.Context, f *finding.Finding) error {
@@ -736,14 +459,6 @@ func (h *PlatformHarness) SubmitFinding(ctx context.Context, f *finding.Finding)
 
 	return nil
 }
-
-// ============================================================================
-// Memory Access
-// ============================================================================
-
-// ============================================================================
-// Planning
-// ============================================================================
 
 // PlanContext returns nil. Planning context is not yet propagated through the
 // work item's context fields in the component proto. When the daemon adds a
@@ -795,19 +510,11 @@ func (h *PlatformHarness) ReportStepHints(ctx context.Context, hints *planning.S
 	return nil
 }
 
-// ============================================================================
-// Mission Execution Context
-// ============================================================================
-
 // SetMissionExecutionContext stores the mission execution context populated
 // from the work item's "mission_execution_context_json" context key. This is
 // called by the platform serve loop after constructing the harness.
 func (h *PlatformHarness) SetMissionExecutionContext(ctx types.MissionExecutionContext) {
 }
-
-// ============================================================================
-// MissionManager — proxied through PlatformClient
-// ============================================================================
 
 // CreateMission marshals the mission definition and opts to JSON and calls the platform's
 // CreateMission RPC. The JSON result is unmarshaled to *mission.MissionInfo.
@@ -1023,10 +730,6 @@ func (h *PlatformHarness) GetMissionResults(ctx context.Context, missionID strin
 	return &result, nil
 }
 
-// ============================================================================
-// Workspace Access
-// ============================================================================
-
 // Workspace returns nil — workspace support is not available in pull mode.
 func (h *PlatformHarness) Workspace() workspace.Workspace {
 	h.logger.Debug("PlatformHarness.Workspace: workspace not available in pull mode")
@@ -1038,10 +741,6 @@ func (h *PlatformHarness) Workspaces() map[string]workspace.Workspace {
 	h.logger.Debug("PlatformHarness.Workspaces: workspace not available in pull mode")
 	return map[string]workspace.Workspace{}
 }
-
-// ============================================================================
-// Authorization Methods
-// ============================================================================
 
 // Authorize asks the daemon whether the work item of this harness may do action
 // on resource, through ComponentService.Authorize. It means the same as
@@ -1072,22 +771,6 @@ func (h *PlatformHarness) Authorize(ctx context.Context, action, resource string
 	}
 	return nil
 }
-
-// ── KnowledgeReader ─────────────────────────────────────────────────────────
-//
-// Not wired in platform pull-mode, and each read says so rather than answering
-// empty. Same reasoning as WorldView above: an empty result reads as "the tenant
-// knows nothing", which a caller cannot distinguish from "I could not look" —
-// and for a security agent that is a silent false negative.
-//
-// ErrKnowledgeUnavailable is matchable, so a caller can degrade deliberately:
-//
-//	if errors.Is(err, agent.ErrKnowledgeUnavailable) { /* say so, conclude nothing */ }
-//
-// These reach the daemon over ComponentService, which does carry all eight RPCs
-// — what is missing is the client half plus a decode, since that service still
-// returns the JSON-bytes payloads the callback service has now moved off. The
-// dispatched path (CallbackHarness) is the one this epic needed, and it is wired.
 
 // QueryNodes is not wired in platform pull-mode; it reports ErrKnowledgeUnavailable.
 func (h *PlatformHarness) QueryNodes(context.Context, *graphragpb.GraphQuery) ([]*graphragpb.QueryResult, error) {
@@ -1132,4 +815,21 @@ func (h *PlatformHarness) ApplicationFindings(context.Context, string, []string,
 // GetMissionRunHistory is not wired in platform pull-mode; it reports ErrKnowledgeUnavailable.
 func (h *PlatformHarness) GetMissionRunHistory(context.Context) ([]types.MissionRunSummary, error) {
 	return nil, fmt.Errorf("GetMissionRunHistory in platform pull-mode: %w", agent.ErrKnowledgeUnavailable)
+}
+
+// Delegate sends an A2A message to another agent through the Agent gateway and
+// waits for the A2A Task to end. The platform resolves the route of the agent.
+func (h *PlatformHarness) Delegate(
+	ctx context.Context, name string, msg *a2a.Message, opts ...agent.DelegateOption,
+) (*a2a.Task, error) {
+	bankID := agent.ApplyDelegateOptions(opts).BankID
+	return delegateVia(ctx, h.tracer, "PlatformHarness", name, func(ctx context.Context) (*resolvedAgent, error) {
+		resp, err := h.client.ResolveAgent(ctx, h.workID, name, bankID)
+		if err != nil {
+			return nil, err
+		}
+		return &resolvedAgent{
+			gatewayURL: resp.GetGatewayUrl(), routeHeaders: resp.GetRouteHeaders(), gatewayCAPEM: resp.GetGatewayCaPem(),
+		}, nil
+	}, grantHeaders(h.grant.get), msg)
 }

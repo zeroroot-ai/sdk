@@ -3,7 +3,11 @@
 
 package capabilitygrant
 
-import "github.com/golang-jwt/jwt/v5"
+import (
+	"fmt"
+
+	"github.com/golang-jwt/jwt/v5"
+)
 
 // MissionRunOf reads the mission run claim from the payload of a grant without
 // checking the signature. The daemon verifies the grant on every call. The
@@ -19,4 +23,20 @@ func MissionRunOf(token string) string {
 		return ""
 	}
 	return claims.MissionRunID
+}
+
+// ClaimsOf reads the claims of a grant WITHOUT checking the signature. The
+// daemon verifies the grant on every call. The client uses the claims to know
+// the subject, the mission, the task and the expiry, for example to renew the
+// grant before it ends.
+func ClaimsOf(token string) (*Claims, error) {
+	mc := jwt.MapClaims{}
+	if _, _, err := jwt.NewParser().ParseUnverified(token, mc); err != nil {
+		return nil, fmt.Errorf("capabilitygrant: read grant claims: %w", err)
+	}
+	claims, err := claimsFromMap(mc)
+	if err != nil {
+		return nil, err
+	}
+	return &claims, nil
 }

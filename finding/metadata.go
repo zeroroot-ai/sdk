@@ -10,6 +10,4 @@ const (
 	// Security domain metadata keys
 	MetaKeyMitreAttack = "mitre_attack"
 	MetaKeyMitreAtlas  = "mitre_atlas"
-	MetaKeyCVSS        = "cvss"
-	MetaKeyCWE         = "cwe"
 )

@@ -18,10 +18,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/a2aproject/a2a-go/v2/a2a"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -29,10 +31,11 @@ import (
 	"github.com/zeroroot-ai/sdk/agent"
 	graphragpb "github.com/zeroroot-ai/sdk/api/gen/gibson/graphrag/v1"
 	"github.com/zeroroot-ai/sdk/finding"
-	"github.com/zeroroot-ai/sdk/llm"
 	"github.com/zeroroot-ai/sdk/mission"
+	"github.com/zeroroot-ai/sdk/openresponses"
 	"github.com/zeroroot-ai/sdk/planning"
 	"github.com/zeroroot-ai/sdk/plugin"
+	"github.com/zeroroot-ai/sdk/schema"
 	"github.com/zeroroot-ai/sdk/tool"
 	"github.com/zeroroot-ai/sdk/types"
 )
@@ -108,17 +111,17 @@ func execute(ctx context.Context, h agent.Harness, task agent.Task) (agent.Resul
 	rep := &Report{}
 	callContext(ctx, h, task, rep)
 	callLLM(ctx, h, task, rep)
-	callTools(ctx, h, rep)
+	ids := callTools(ctx, h, task, rep)
 	callPlugins(ctx, h, rep)
 	callDelegation(ctx, h, rep)
-	callWorld(ctx, h, rep)
+	callWorld(ctx, h, rep, ids)
 	callPlanning(ctx, h, rep)
 	callWorkspace(ctx, h, rep)
 	callKnowledge(ctx, h, rep)
 	callMissions(ctx, h, rep)
 	callUsage(h, rep)
 
-	return agent.Result{Status: agent.StatusSuccess, Output: rep}, nil
+	return agent.Result{Status: a2a.TaskStateCompleted, Output: rep}, nil
 }
 
 // callContext reads the context accessors and asks for authorization.
@@ -127,78 +130,122 @@ func callContext(ctx context.Context, h agent.Harness, task agent.Task, rep *Rep
 	rep.add(Step{Call: "Mission", Value: m, Summary: m.ID + " " + m.Name})
 	target := h.Target()
 	rep.add(Step{Call: "Target", Value: target, Summary: target.ID + " " + target.Name + " " + target.URL()})
-	h.Logger().InfoContext(ctx, "task start", "task", task.ID, "goal", task.Goal)
+	h.Logger().InfoContext(ctx, "task start", "task", task.ID, "goal", task.Goal,
+		"agent_run", task.Run.AgentRunID, "mission_run", task.Run.MissionRunID,
+		"max_turns", task.Constraints.MaxTurns, "has_job", task.Job != nil, "metadata_keys", len(task.Metadata))
 	recordErr(rep, "Authorize", h.Authorize(ctx, "scan", "target:"+target.ID))
 }
 
 func callLLM(ctx context.Context, h agent.Harness, task agent.Task, rep *Report) {
-	msgs := []llm.Message{{Role: llm.RoleUser, Content: task.Goal}}
+	model, err := h.Model(ctx, llmSlot)
+	record(rep, "Model", model, err, func(m *openresponses.Client) string {
+		return fmt.Sprintf("model=%s provider=%s context_window=%d max_output_tokens=%d",
+			m.Model, m.Provider, m.ContextWindow, m.MaxOutputTokens)
+	})
+	if err != nil {
+		return
+	}
+	// The pinned Agent Skills come first, then the goal. The agent holds these
+	// items from the first message to the last tool result.
+	input := append(append([]openresponses.Item(nil), task.SkillItems...), openresponses.NewUserMessage(task.Goal))
 
-	c, err := h.Complete(ctx, llmSlot, msgs, llm.WithTemperature(0.2), llm.WithMaxTokens(256))
-	record(rep, "Complete", c, err, describeCompletion)
+	temperature := 0.2
+	maxTokens := 256
+	// The task limits the tokens of the run. The SDK does not enforce the limits of a
+	// task: the agent reads them and applies them.
+	if limit := task.Constraints.MaxTokens; limit > 0 && limit < maxTokens {
+		maxTokens = limit
+	}
+	c, err := model.Create(ctx, &openresponses.Request{Input: input, Temperature: &temperature, MaxOutputTokens: &maxTokens})
+	record(rep, "Create", c, err, describeResponse)
 
-	tools := []llm.ToolDef{{
+	tools := []openresponses.Tool{{
 		Name:        "lookup",
 		Description: "Look up a host",
 		Parameters:  map[string]any{"type": "object", "properties": map[string]any{"host": map[string]any{"type": "string"}}},
 	}}
-	ct, err := h.CompleteWithTools(ctx, llmSlot, msgs, tools)
-	record(rep, "CompleteWithTools", ct, err, describeCompletion)
+	ct, err := model.Create(ctx, &openresponses.Request{
+		Input: input, Tools: tools, ToolChoice: openresponses.ToolChoiceFunction("lookup"),
+	})
+	record(rep, "CreateWithTools", ct, err, describeResponse)
 
 	type verdict struct {
 		Safe bool `json:"safe"`
 	}
-	cs, err := h.CompleteStructured(ctx, llmSlot, msgs, verdict{})
-	record(rep, "CompleteStructured", cs, err, func(v any) string { return fmt.Sprintf("%v", v) })
-	ca, err := h.CompleteStructuredAny(ctx, llmSlot, msgs, verdict{})
-	record(rep, "CompleteStructuredAny", ca, err, func(v any) string { return fmt.Sprintf("%v", v) })
+	var v verdict
+	_, err = model.CreateStructured(ctx, &openresponses.Request{Input: input}, "verdict", schema.FromType(verdict{}), &v)
+	record(rep, "CreateStructured", v, err, func(v verdict) string { return fmt.Sprintf("%+v", v) })
 
-	ch, err := h.Stream(ctx, llmSlot, msgs)
+	st, err := model.Stream(ctx, &openresponses.Request{Input: input})
 	if err != nil {
 		rep.add(Step{Call: "Stream", Err: err})
 		return
 	}
-	s := drainStream(ch)
+	defer func() { _ = st.Close() }()
+	var text strings.Builder
+	final, err := st.Collect(func(d string) { text.WriteString(d) })
+	if err != nil {
+		rep.add(Step{Call: "Stream", Err: err})
+		return
+	}
+	s := streamed{Text: text.String(), ToolCalls: len(final.FunctionCalls()), Status: final.Status}
+	if final.Usage != nil {
+		s.Usage = *final.Usage
+	}
 	rep.add(Step{Call: "Stream", Value: s, Summary: s.String()})
 }
 
-// streamed is what the agent read from the chunks of a stream.
+// streamed is what the agent read from the events of a stream.
 type streamed struct {
 	Text      string
 	ToolCalls int
-	Finish    string
-	Usage     llm.TokenUsage
+	Status    string
+	Usage     openresponses.Usage
 }
 
 func (s streamed) String() string {
-	return fmt.Sprintf("text=%q tool_calls=%d finish=%s total=%d", s.Text, s.ToolCalls, s.Finish, s.Usage.TotalTokens)
+	return fmt.Sprintf("text=%q tool_calls=%d status=%s total=%d", s.Text, s.ToolCalls, s.Status, s.Usage.TotalTokens)
 }
 
-func drainStream(ch <-chan llm.StreamChunk) streamed {
-	var s streamed
-	var text strings.Builder
-	for chunk := range ch {
-		text.WriteString(chunk.Delta)
-		s.ToolCalls += len(chunk.ToolCalls)
-		if chunk.FinishReason != "" {
-			s.Finish = chunk.FinishReason
-		}
-		if chunk.Usage != nil {
-			s.Usage = *chunk.Usage
-		}
+func describeResponse(r *openresponses.Response) string {
+	fcs := r.FunctionCalls()
+	calls := make([]string, 0, len(fcs))
+	for _, fc := range fcs {
+		calls = append(calls, fc.CallID+":"+fc.Name+":"+fc.Arguments)
 	}
-	s.Text = text.String()
-	return s
+	var total int
+	if r.Usage != nil {
+		total = r.Usage.TotalTokens
+	}
+	out := fmt.Sprintf("text=%q status=%s calls=[%s] total=%d", r.Text(), r.Status, strings.Join(calls, ","), total)
+	// An item or a part of a type that the SDK has no struct for comes as a raw value.
+	// The agent can tell which types came back.
+	if kinds := rawKinds(r); len(kinds) > 0 {
+		out += " raw=" + strings.Join(kinds, ",")
+	}
+	// A response that ends early says why. The agent must not treat it as complete.
+	if r.Status == openresponses.StatusIncomplete && r.IncompleteDetails != nil {
+		out += " incomplete=" + r.IncompleteDetails.Reason
+	}
+	return out
 }
 
-func describeCompletion(c *llm.CompletionResponse) string {
-	calls := make([]string, 0, len(c.ToolCalls))
-	for _, tc := range c.ToolCalls {
-		calls = append(calls, tc.ID+":"+tc.Name+":"+tc.Arguments)
+// rawKinds lists the types of the raw items and raw parts of a response.
+func rawKinds(r *openresponses.Response) []string {
+	var kinds []string
+	for _, it := range r.Output {
+		switch v := it.(type) {
+		case openresponses.RawItem:
+			kinds = append(kinds, v.Type)
+		case openresponses.Message:
+			for _, p := range v.Content {
+				if raw, ok := p.(openresponses.RawPart); ok {
+					kinds = append(kinds, raw.Type)
+				}
+			}
+		}
 	}
-	return fmt.Sprintf("content=%q finish=%s calls=[%s] in=%d out=%d total=%d",
-		c.Content, c.FinishReason, strings.Join(calls, ","),
-		c.Usage.InputTokens, c.Usage.OutputTokens, c.Usage.TotalTokens)
+	return kinds
 }
 
 // toolEvents records what a tool stream tells the agent.
@@ -225,15 +272,16 @@ func (e *toolEvents) OnError(err error, fatal bool) {
 
 // queuedResult is what the agent read from a queued tool result.
 type queuedResult struct {
-	Index  int
-	Output string
-	Err    error
+	Index      int
+	Output     string
+	Err        error
+	ToolCallID string
 }
 
 func gatherToolResults(ch <-chan agent.QueuedToolResult) []queuedResult {
 	var out []queuedResult
 	for r := range ch {
-		q := queuedResult{Index: r.Index, Err: r.Error}
+		q := queuedResult{Index: r.Index, Err: r.Error, ToolCallID: r.ToolCallID}
 		if sv, ok := r.Output.(*wrapperspb.StringValue); ok {
 			q.Output = sv.GetValue()
 		}
@@ -242,14 +290,30 @@ func gatherToolResults(ch <-chan agent.QueuedToolResult) []queuedResult {
 	return out
 }
 
-func callTools(ctx context.Context, h agent.Harness, rep *Report) {
+// toolAllowed applies the tool limits of a task. The SDK does not enforce them.
+func toolAllowed(c agent.TaskConstraints, name string) bool {
+	if slices.Contains(c.BlockedTools, name) {
+		return false
+	}
+	return len(c.AllowedTools) == 0 || slices.Contains(c.AllowedTools, name)
+}
+
+func callTools(ctx context.Context, h agent.Harness, task agent.Task, rep *Report) *toolCallIDs {
+	// ReceiveToolCallID gives the id that the daemon recorded for each call. An
+	// agent cites it with Finding.CiteToolCalls.
+	ids := &toolCallIDs{}
+	if !toolAllowed(task.Constraints, "echo") {
+		rep.add(Step{Call: "CallToolProto", Err: errors.New("the task does not allow the tool echo")})
+		return ids
+	}
 	reply := &wrapperspb.StringValue{}
-	err := h.CallToolProto(ctx, "echo", wrapperspb.String("ping"), reply)
+	err := h.CallToolProto(ctx, "echo", wrapperspb.String("ping"), reply, agent.ReceiveToolCallID(&ids.Call))
 	record(rep, "CallToolProto", reply.GetValue(), err, func(v string) string { return v })
 
 	events := &toolEvents{}
 	streamReply := &wrapperspb.StringValue{}
-	err = h.CallToolProtoStream(ctx, "echo", wrapperspb.String("stream"), streamReply, events)
+	err = h.CallToolProtoStream(ctx, "echo", wrapperspb.String("stream"), streamReply, events,
+		agent.ReceiveToolCallID(&ids.Stream))
 	record(rep, "CallToolProtoStream", events, err, func(e *toolEvents) string {
 		return fmt.Sprintf("progress=%v partials=%d warnings=%v errors=%v reply=%q",
 			e.Progress, e.Partials, e.Warnings, e.Errors, streamReply.GetValue())
@@ -261,7 +325,7 @@ func callTools(ctx context.Context, h agent.Harness, rep *Report) {
 	job, err := h.QueueToolWork(ctx, "echo", []proto.Message{wrapperspb.String("a"), wrapperspb.String("b")})
 	record(rep, "QueueToolWork", job, err, func(id string) string { return id })
 	if err != nil {
-		return
+		return ids
 	}
 	results := gatherToolResults(h.ToolResults(ctx, job))
 	lines := make([]string, 0, len(results))
@@ -269,6 +333,18 @@ func callTools(ctx context.Context, h agent.Harness, rep *Report) {
 		lines = append(lines, fmt.Sprintf("%d:%s:%v", r.Index, r.Output, r.Err))
 	}
 	rep.add(Step{Call: "ToolResults", Value: results, Summary: strings.Join(lines, ",")})
+	for _, r := range results {
+		ids.Queued = append(ids.Queued, r.ToolCallID)
+	}
+	rep.add(Step{Call: "ToolCallIDs", Value: ids, Summary: fmt.Sprintf("%+v", *ids)})
+	return ids
+}
+
+// toolCallIDs holds the ids that the daemon recorded for the tool calls of the agent.
+type toolCallIDs struct {
+	Call   string
+	Stream string
+	Queued []string
 }
 
 func callPlugins(ctx context.Context, h agent.Harness, rep *Report) {
@@ -280,31 +356,26 @@ func callPlugins(ctx context.Context, h agent.Harness, rep *Report) {
 }
 
 func callDelegation(ctx context.Context, h agent.Harness, rep *Report) {
-	res, err := h.DelegateToAgent(ctx, "helper", agent.Task{ID: "sub-1", Goal: "check the host"})
-	record(rep, "DelegateToAgent", res, err, describeResult)
+	msg := a2a.NewMessage(a2a.MessageRoleUser, a2a.NewTextPart("check the host"))
+	task, err := h.Delegate(ctx, "helper", msg)
+	record(rep, "Delegate", task, err, describeTask)
 
-	as, err := h.ListAgents(ctx)
-	record(rep, "ListAgents", as, err, describeAgents)
+	// A bank of always-on agents is a delegation target too.
+	banked, err := h.Delegate(ctx, "helper", msg, agent.WithBank("bank-1"))
+	record(rep, "DelegateToBank", banked, err, describeTask)
 }
 
-func describeResult(r agent.Result) string {
-	msg := ""
-	if r.Error != nil {
-		msg = r.Error.Error()
+func describeTask(t *a2a.Task) string {
+	var artifacts []string
+	for _, a := range t.Artifacts {
+		for _, p := range a.Parts {
+			artifacts = append(artifacts, p.Text())
+		}
 	}
-	return fmt.Sprintf("status=%s output=%v findings=%v error=%q", r.Status, r.Output, r.Findings, msg)
+	return fmt.Sprintf("state=%s artifacts=%v", t.Status.State, artifacts)
 }
 
-func describeAgents(ds []agent.Descriptor) string {
-	out := make([]string, 0, len(ds))
-	for _, d := range ds {
-		out = append(out, fmt.Sprintf("%s %s %q caps=%v targets=%v techniques=%v",
-			d.Name, d.Version, d.Description, d.Capabilities, d.TargetTypes, d.TechniqueTypes))
-	}
-	return strings.Join(out, "; ")
-}
-
-func callWorld(ctx context.Context, h agent.Harness, rep *Report) {
+func callWorld(ctx context.Context, h agent.Harness, rep *Report, ids *toolCallIDs) {
 	f := &finding.Finding{
 		Title:       "Open admin port",
 		Description: "Port 8443 answers without a login",
@@ -312,6 +383,8 @@ func callWorld(ctx context.Context, h agent.Harness, rep *Report) {
 		Severity:    finding.SeverityHigh,
 		Confidence:  0.9,
 	}
+	// The tool calls that back the finding. The platform builds recorded evidence from them.
+	f.CiteToolCalls(ids.Call, ids.Stream)
 	recordErr(rep, "SubmitFinding", h.SubmitFinding(ctx, f))
 	recordErr(rep, "Observe", h.Observe(ctx, agent.DomainObservation{Name: "example.com"}))
 	recordErr(rep, "PlaceBet", h.PlaceBet(ctx, agent.Bet{
@@ -424,7 +497,7 @@ func callMissions(ctx context.Context, h agent.Harness, rep *Report) {
 	waited, err := h.WaitForMission(ctx, info.ID, 5*time.Second)
 	record(rep, "WaitForMission", waited, err, describeMissionResult)
 
-	pending := mission.MissionStatusRunning
+	pending := mission.MissionStatusWorking
 	list, err := h.ListMissions(ctx, &mission.MissionFilter{Status: &pending, Tags: []string{"d86"}, Limit: 5})
 	record(rep, "ListMissions", list, err, func(ms []*mission.MissionInfo) string {
 		out := make([]string, 0, len(ms))

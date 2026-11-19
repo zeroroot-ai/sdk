@@ -30,7 +30,8 @@ go get github.com/zeroroot-ai/sdk@latest
 
 | Package | What it gives you |
 |---------|-------------------|
-| `llm` | Provider-agnostic message, completion, streaming and token-tracking types. There is no provider client here — the platform holds the credentials and makes the call |
+| `llm` | Token counts and the token tracker of the model calls of an agent |
+| `openresponses` | The Open Responses item types and the one client that calls the model gateway: plain, tools, structured output and stream. It has no provider code. The gateway holds the credentials |
 | `graphrag` | The knowledge-graph client: nodes, relationships, query builders, CEL validators, generated domain types and node-ID generation |
 | `extraction` | The `EntityExtractor` framework that turns a tool's proto response into a standard `DiscoveryResult` |
 | `finding` | Structured security findings: categories, severities, evidence and SARIF-shaped output |

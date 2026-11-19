@@ -4,7 +4,6 @@
 package serve
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/zeroroot-ai/sdk/agent"
@@ -14,34 +13,10 @@ import (
 	"github.com/zeroroot-ai/sdk/mission"
 )
 
-func TestCallbackHarnessConversions(t *testing.T) {
-	h := &CallbackHarness{}
-	msgs := []llm.Message{
-		{Role: "system", Content: "be brief"},
-		{Role: "assistant", Content: "calling", ToolCalls: []llm.ToolCall{{ID: "c1", Name: "scan", Arguments: `{"x":1}`}}},
-		{Role: "tool", Name: "scan", ToolResults: []llm.ToolResult{{ToolCallID: "c1", Content: "ok", IsError: true}}},
-	}
-	pm := h.messagesToProto(msgs)
-	if len(pm) != 3 || pm[1].GetToolCalls()[0].GetName() != "scan" || pm[2].GetToolResults()[0].GetContent() != "ok" {
-		t.Fatalf("messagesToProto = %v", pm)
-	}
-	back := h.toolCallsFromProto(pm[1].GetToolCalls())
-	if len(back) != 1 || back[0].ID != "c1" || back[0].Arguments != `{"x":1}` {
-		t.Fatalf("toolCallsFromProto = %+v", back)
-	}
-	defs := h.toolDefsToProto([]llm.ToolDef{{Name: "scan", Description: "d", Parameters: map[string]any{"type": "object"}}})
-	if len(defs) != 1 || defs[0].GetName() != "scan" {
-		t.Fatalf("toolDefsToProto = %v", defs)
-	}
-	if got := formatMessagesForPrompt(msgs); !strings.Contains(got, "be brief") {
-		t.Fatalf("formatMessagesForPrompt = %q", got)
-	}
-}
-
 func TestStatusAndScopeConversions(t *testing.T) {
 	for _, s := range []mission.MissionStatus{
-		mission.MissionStatusPending, mission.MissionStatusRunning, mission.MissionStatusPaused,
-		mission.MissionStatusCompleted, mission.MissionStatusFailed, mission.MissionStatusCancelled, "other",
+		mission.MissionStatusSubmitted, mission.MissionStatusWorking, mission.MissionStatusPaused,
+		mission.MissionStatusCompleted, mission.MissionStatusFailed, mission.MissionStatusCanceled, mission.MissionStatusInputRequired, "other",
 	} {
 		_ = missionStatusToProto(s)
 	}

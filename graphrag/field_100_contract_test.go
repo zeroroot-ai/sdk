@@ -42,7 +42,6 @@ import (
 	// against its own descriptors. The customer-visible
 	// gibson/budget_status/v1 (BudgetExceeded + BudgetScope) stays
 	// in OSS.
-	_ "github.com/zeroroot-ai/sdk/api/gen/gibson/agent/v1"
 	_ "github.com/zeroroot-ai/sdk/api/gen/gibson/auth/v1"
 	_ "github.com/zeroroot-ai/sdk/api/gen/gibson/budget_status/v1"
 	_ "github.com/zeroroot-ai/sdk/api/gen/gibson/common/v1"

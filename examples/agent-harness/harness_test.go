@@ -12,6 +12,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"github.com/a2aproject/a2a-go/v2/a2a"
 	"log/slog"
 	"math/big"
 	"net"
@@ -32,6 +33,7 @@ import (
 	"github.com/zeroroot-ai/sdk/harness"
 	"github.com/zeroroot-ai/sdk/llm"
 	"github.com/zeroroot-ai/sdk/mission"
+	"github.com/zeroroot-ai/sdk/openresponses"
 	"github.com/zeroroot-ai/sdk/plugin"
 	"github.com/zeroroot-ai/sdk/serve"
 	"github.com/zeroroot-ai/sdk/tool"
@@ -49,7 +51,7 @@ func reportOf(t *testing.T, res agent.Result) *Report {
 	t.Helper()
 	rep, ok := res.Output.(*Report)
 	require.True(t, ok, "output is %T", res.Output)
-	require.Equal(t, agent.StatusSuccess, res.Status)
+	require.Equal(t, a2a.TaskStateCompleted, res.Status)
 	return rep
 }
 
@@ -102,34 +104,47 @@ func TestCallbackHarness_EveryCallReachesTheDaemon(t *testing.T) {
 	}
 
 	t.Run("llm", func(t *testing.T) {
-		req := only[*harnesspb.LLMCompleteRequest](t, &d.recorder, "LLMComplete")
-		assert.Equal(t, "main", req.GetSlot())
-		assert.Equal(t, "scan the host", req.GetMessages()[0].GetContent())
-		assert.Equal(t, "user", req.GetMessages()[0].GetRole())
-		assert.InDelta(t, 0.2, req.GetTemperature(), 0.001)
-		assert.Equal(t, int32(256), req.GetMaxTokens())
-		c := value[*llm.CompletionResponse](t, rep, "Complete")
-		assert.Equal(t, "hello", c.Content)
-		assert.Equal(t, "stop", c.FinishReason)
+		rm := only[*harnesspb.ResolveModelRequest](t, &d.recorder, "ResolveModel")
+		assert.Equal(t, "main", rm.GetSlot())
+		assert.Equal(t, "model=model-exact provider=prov context_window=200000 max_output_tokens=8192", mustStep(t, rep, "Model").Summary)
+
+		// The agent called the gateway four times, never with a slot name.
+		reqs := d.gw.requests()
+		require.Len(t, reqs, 4)
+		for _, r := range reqs {
+			assert.Equal(t, "model-exact", r.body["model"])
+			assert.Equal(t, "grant-1", r.header.Get("x-capability-grant"))
+			assert.Equal(t, "t1", r.header.Get("x-gibson-tenant"))
+			assert.Equal(t, "prov", r.header.Get("x-gibson-provider"))
+			assert.Empty(t, r.header.Get("authorization"))
+		}
+		input := reqs[0].body["input"].([]any)[0].(map[string]any)
+		assert.Equal(t, "user", input["role"])
+		assert.InDelta(t, 0.2, reqs[0].body["temperature"], 0.001)
+		assert.InDelta(t, 256, reqs[0].body["max_output_tokens"], 0.001)
+
+		c := value[*openresponses.Response](t, rep, "Create")
+		assert.Equal(t, "hello", c.Text())
 		assert.Equal(t, 18, c.Usage.TotalTokens)
 
-		wt := only[*harnesspb.LLMCompleteWithToolsRequest](t, &d.recorder, "LLMCompleteWithTools")
-		assert.Equal(t, "lookup", wt.GetTools()[0].GetName())
-		ct := value[*llm.CompletionResponse](t, rep, "CompleteWithTools")
-		assert.Equal(t, "tc-1", ct.ToolCalls[0].ID)
-		assert.JSONEq(t, `{"host":"10.0.0.1"}`, ct.ToolCalls[0].Arguments)
+		assert.Equal(t, "lookup", reqs[1].body["tools"].([]any)[0].(map[string]any)["name"])
+		ct := value[*openresponses.Response](t, rep, "CreateWithTools")
+		require.Len(t, ct.FunctionCalls(), 1)
+		assert.Equal(t, "tc-1", ct.FunctionCalls()[0].CallID)
+		assert.JSONEq(t, `{"host":"10.0.0.1"}`, ct.FunctionCalls()[0].Arguments)
+		assert.Contains(t, mustStep(t, rep, "CreateWithTools").Summary, "raw=web_search_call")
 
-		structured := d.named("LLMCompleteStructured")
-		require.Len(t, structured, 2, "CompleteStructured and CompleteStructuredAny")
-		assert.Contains(t, structured[0].req.(*harnesspb.LLMCompleteStructuredRequest).GetSchemaJson(), "safe")
-		assert.Equal(t, map[string]any{"safe": true}, value[any](t, rep, "CompleteStructured"))
-		assert.Equal(t, map[string]any{"safe": true}, value[any](t, rep, "CompleteStructuredAny"))
+		format := reqs[2].body["text"].(map[string]any)["format"].(map[string]any)
+		assert.Equal(t, "json_schema", format["type"])
+		assert.Equal(t, "verdict", format["name"])
+		assert.Contains(t, mustStep(t, rep, "CreateStructured").Summary, "Safe:true")
 
-		st := only[*harnesspb.LLMStreamRequest](t, &d.recorder, "LLMStream")
-		assert.Equal(t, "main", st.GetSlot())
+		streaming, _ := reqs[3].body["stream"].(bool)
+		assert.True(t, streaming)
 		s := value[streamed](t, rep, "Stream")
-		assert.Equal(t, streamed{Text: "hello", ToolCalls: 1, Finish: "stop", Usage: llm.TokenUsage{
-			InputTokens: 11, OutputTokens: 7, TotalTokens: 18}}, s)
+		assert.Equal(t, "hello", s.Text)
+		assert.Equal(t, "completed", s.Status)
+		assert.Equal(t, 18, s.Usage.TotalTokens)
 	})
 
 	t.Run("tools", func(t *testing.T) {
@@ -138,6 +153,10 @@ func TestCallbackHarness_EveryCallReachesTheDaemon(t *testing.T) {
 		assert.JSONEq(t, `"ping"`, string(req.GetInputJson()))
 		assert.Equal(t, "google.protobuf.StringValue", req.GetInputType())
 		assert.Equal(t, "pong", value[string](t, rep, "CallToolProto"))
+		ids := value[*toolCallIDs](t, rep, "ToolCallIDs")
+		assert.Equal(t, "tc-call", ids.Call)
+		assert.Equal(t, "tc-stream", ids.Stream)
+		assert.Equal(t, []string{"tc-q0", "tc-q1"}, ids.Queued)
 
 		sreq := only[*harnesspb.CallToolProtoStreamRequest](t, &d.recorder, "CallToolProtoStream")
 		assert.JSONEq(t, `"stream"`, string(sreq.GetInputJson()))
@@ -155,7 +174,7 @@ func TestCallbackHarness_EveryCallReachesTheDaemon(t *testing.T) {
 		assert.Equal(t, []string{`"a"`, `"b"`}, q.GetInputJsons())
 		assert.Equal(t, "job-7", value[string](t, rep, "QueueToolWork"))
 		assert.Equal(t, "job-7", only[*harnesspb.ToolResultsRequest](t, &d.recorder, "ToolResults").GetJobId())
-		assert.Equal(t, []queuedResult{{Index: 0, Output: "A"}, {Index: 1, Output: "B"}},
+		assert.Equal(t, []queuedResult{{Index: 0, Output: "A", ToolCallID: "tc-q0"}, {Index: 1, Output: "B", ToolCallID: "tc-q1"}},
 			value[[]queuedResult](t, rep, "ToolResults"))
 	})
 
@@ -169,26 +188,23 @@ func TestCallbackHarness_EveryCallReachesTheDaemon(t *testing.T) {
 		only[*harnesspb.ListPluginsRequest](t, &d.recorder, "ListPlugins")
 		assert.Contains(t, mustStep(t, rep, "ListPlugins").Summary, "scanner 2.0")
 
-		del := only[*harnesspb.DelegateToAgentRequest](t, &d.recorder, "DelegateToAgent")
-		assert.Equal(t, "helper", del.GetName())
-		assert.Equal(t, "sub-1", del.GetTask().GetId())
-		res := value[agent.Result](t, rep, "DelegateToAgent")
-		assert.Equal(t, agent.StatusPartial, res.Status)
-		assert.Equal(t, "helped", res.Output)
-		require.Error(t, res.Error)
-		assert.Contains(t, res.Error.Error(), "half done")
-
-		only[*harnesspb.ListAgentsRequest](t, &d.recorder, "ListAgents")
-		ag := value[[]agent.Descriptor](t, rep, "ListAgents")[0]
-		assert.Equal(t, agent.Descriptor{
-			Name: "helper", Version: "3.1", Description: "Helps", Capabilities: []string{"web"},
-			TargetTypes: []string{"llm_chat"}, TechniqueTypes: []string{"T1190"},
-		}, ag)
+		ras := d.named("ResolveAgent")
+		require.Len(t, ras, 2, "one delegation, and one to a bank")
+		first := ras[0].req.(*harnesspb.ResolveAgentRequest)
+		second := ras[1].req.(*harnesspb.ResolveAgentRequest)
+		assert.Equal(t, "helper", first.GetName())
+		assert.Nil(t, first.BankId)
+		assert.Equal(t, "bank-1", second.GetBankId())
+		assert.Equal(t, "state=TASK_STATE_COMPLETED artifacts=[helped: check the host]", mustStep(t, rep, "DelegateToBank").Summary)
+		task := value[*a2a.Task](t, rep, "Delegate")
+		assert.Equal(t, a2a.TaskStateCompleted, task.Status.State)
+		assert.Equal(t, "state=TASK_STATE_COMPLETED artifacts=[helped: check the host]", mustStep(t, rep, "Delegate").Summary)
 	})
 
 	t.Run("world", func(t *testing.T) {
 		sf := only[*harnesspb.SubmitFindingRequest](t, &d.recorder, "SubmitFinding")
 		assert.Equal(t, "Open admin port", sf.GetFinding().GetTitle())
+		assert.Equal(t, []string{"tc-call", "tc-stream"}, sf.GetToolCallIds(), "the finding cites the tool calls")
 		assert.NotEmpty(t, sf.GetIdempotencyKey())
 		assert.Equal(t, "example.com", only[*harnesspb.ObserveRequest](t, &d.recorder, "Observe").GetDomain().GetName())
 		bet := only[*harnesspb.PlaceBetRequest](t, &d.recorder, "PlaceBet").GetBet()
@@ -264,7 +280,7 @@ func TestCallbackHarness_EveryCallReachesTheDaemon(t *testing.T) {
 		assert.JSONEq(t, `{"name":"child"}`, string(cm.GetMissionDefinitionJson()))
 		info := value[*mission.MissionInfo](t, rep, "CreateMission")
 		assert.Equal(t, "child-1", info.ID)
-		assert.Equal(t, mission.MissionStatusRunning, info.Status)
+		assert.Equal(t, mission.MissionStatusWorking, info.Status)
 
 		rm := only[*harnesspb.RunMissionRequest](t, &d.recorder, "RunMission")
 		assert.Equal(t, "child-1", rm.GetMissionId())
@@ -284,7 +300,7 @@ func TestCallbackHarness_EveryCallReachesTheDaemon(t *testing.T) {
 		assert.Equal(t, "Child finding", waited.Findings[0].Title)
 
 		lm := only[*harnesspb.ListMissionsRequest](t, &d.recorder, "ListMissions")
-		assert.Equal(t, harnesspb.MissionStatus_MISSION_STATUS_RUNNING, lm.GetFilter().GetStatus())
+		assert.Equal(t, harnesspb.MissionStatus_MISSION_STATUS_WORKING, lm.GetFilter().GetStatus())
 		assert.Equal(t, []string{"d86"}, lm.GetFilter().GetTags())
 		assert.Equal(t, int32(5), lm.GetPageSize())
 		assert.Len(t, value[[]*mission.MissionInfo](t, rep, "ListMissions"), 1)
@@ -441,14 +457,18 @@ func TestPlatformHarness_EveryCallReachesTheDaemon(t *testing.T) {
 		"GetAttackChains": true, "FindSimilarFindings": true, "GetRelatedFindings": true, "GetFindings": true,
 		"GetRunFindings": true, "GetMissionRunHistory": true, "ApplicationFindings": true,
 	}
+	// The test client has no capability grant. The four calls to the gateway fail on that.
+	noGrant := map[string]bool{"Create": true, "CreateWithTools": true, "CreateStructured": true, "Stream": true, "Delegate": true, "DelegateToBank": true}
 	for _, s := range rep.Steps {
 		if unavailable[s.Call] {
 			assert.True(t, s.Unavailable(), "%s: %v", s.Call, s.Err)
 			continue
 		}
+		if noGrant[s.Call] {
+			continue
+		}
 		require.NoError(t, s.Err, "step %s", s.Call)
 	}
-	assert.Empty(t, Failures(rep))
 
 	for _, c := range d.all() {
 		wid, ok := workID(c)
@@ -456,21 +476,20 @@ func TestPlatformHarness_EveryCallReachesTheDaemon(t *testing.T) {
 		assert.Equal(t, "work-1", wid, c.method)
 	}
 
-	cr := only[*componentpb.CompleteRequest](t, &d.recorder, "Complete")
-	assert.Equal(t, "main", cr.GetSlot())
-	assert.Equal(t, "scan the host", cr.GetMessages()[0].GetContent())
-	c := value[*llm.CompletionResponse](t, rep, "Complete")
-	assert.Equal(t, "hello", c.Content)
-	assert.Equal(t, 18, c.Usage.TotalTokens)
-	ct := value[*llm.CompletionResponse](t, rep, "CompleteWithTools")
-	assert.Equal(t, "lookup", ct.ToolCalls[0].Name)
-	assert.Equal(t, "tool_use", ct.FinishReason)
-	assert.Equal(t, map[string]any{"safe": true}, value[any](t, rep, "CompleteStructured"))
-	assert.Len(t, d.named("CompleteStructured"), 2)
-	assert.Equal(t, streamed{Text: "hello", Finish: "stop", Usage: llm.TokenUsage{
-		InputTokens: 11, OutputTokens: 7, TotalTokens: 18}}, value[streamed](t, rep, "Stream"))
+	rm := only[*componentpb.ResolveModelRequest](t, &d.recorder, "ResolveModel")
+	assert.Equal(t, "main", rm.GetSlot())
+	assert.Equal(t, "model=model-exact provider=prov context_window=200000 max_output_tokens=8192", mustStep(t, rep, "Model").Summary)
+	// This test client has no capability grant, so each call to the gateway stops before it is sent.
+	for _, call := range []string{"Create", "CreateWithTools", "CreateStructured", "Stream"} {
+		require.ErrorContains(t, mustStep(t, rep, call).Err, "no task grant", call)
+	}
 
 	assert.Equal(t, "pong", value[string](t, rep, "CallToolProto"))
+	ids := value[*toolCallIDs](t, rep, "ToolCallIDs")
+	assert.Equal(t, "tc-call", ids.Call)
+	assert.Equal(t, "tc-stream", ids.Stream)
+	assert.Equal(t, []string{"tc-q0", "tc-q1"}, ids.Queued)
+
 	ev := value[*toolEvents](t, rep, "CallToolProtoStream")
 	assert.Equal(t, []string{"50:scan:halfway"}, ev.Progress)
 	assert.Equal(t, []string{"slow:W1"}, ev.Warnings)
@@ -481,8 +500,7 @@ func TestPlatformHarness_EveryCallReachesTheDaemon(t *testing.T) {
 	assert.Equal(t, []int{0, 1}, []int{results[0].Index, results[1].Index})
 	assert.Equal(t, map[string]any{"open": true}, value[any](t, rep, "QueryPlugin"))
 	assert.Empty(t, value[[]plugin.Descriptor](t, rep, "ListPlugins"))
-	assert.Equal(t, agent.StatusPartial, value[agent.Result](t, rep, "DelegateToAgent").Status)
-	assert.Equal(t, "helper", value[[]agent.Descriptor](t, rep, "ListAgents")[0].Name)
+	require.ErrorContains(t, mustStep(t, rep, "Delegate").Err, "no task grant")
 	assert.Equal(t, "child-1", value[*mission.MissionInfo](t, rep, "CreateMission").ID)
 	assert.Equal(t, "scan", value[*mission.MissionStatusInfo](t, rep, "GetMissionStatus").Phase)
 	assert.Equal(t, mission.MissionStatusCompleted, value[*mission.MissionResult](t, rep, "WaitForMission").Status)
@@ -490,12 +508,12 @@ func TestPlatformHarness_EveryCallReachesTheDaemon(t *testing.T) {
 	assert.Equal(t, "none", mustStep(t, rep, "Workspace").Summary)
 	assert.Equal(t, "m-1 Mission One", mustStep(t, rep, "Mission").Summary)
 	assert.Equal(t, "t-1 web https://t.example", mustStep(t, rep, "Target").Summary)
-	assert.Positive(t, value[llm.TokenUsage](t, rep, "TokenUsage").TotalTokens)
+	assert.Zero(t, value[llm.TokenUsage](t, rep, "TokenUsage").TotalTokens, "no call reached the gateway")
 
 	// Each RPC that PlatformHarness uses reached the fake once or twice, with the right request.
 	for _, m := range []string{
-		"Complete", "CompleteWithTools", "CompleteStream", "CallTool", "CallToolStream", "ListTools",
-		"QueueToolWork", "ToolResults", "QueryPlugin", "DelegateToAgent", "ListAgents", "SubmitFinding",
+		"ResolveModel", "CallTool", "CallToolStream", "ListTools",
+		"QueueToolWork", "ToolResults", "QueryPlugin", "SubmitFinding",
 		"ReportStepHints", "CreateMission", "RunMission", "GetMissionStatus", "WaitMission", "ListMissions",
 		"CancelMission", "GetMissionResults",
 	} {
@@ -509,7 +527,7 @@ func TestPlatformHarness_EveryCallReachesTheDaemon(t *testing.T) {
 	qp := only[*componentpb.QueryPluginRequest](t, &d.recorder, "QueryPlugin")
 	assert.Equal(t, "scanner", qp.GetPluginName())
 	assert.JSONEq(t, `{"host":"10.0.0.1"}`, qp.GetParamsJson())
-	assert.Equal(t, "helper", only[*componentpb.DelegateToAgentRequest](t, &d.recorder, "DelegateToAgent").GetAgentName())
+	assert.Len(t, d.named("ResolveAgent"), 2, "one delegation, and one to a bank")
 	assert.Contains(t, string(only[*componentpb.SubmitFindingRequest](t, &d.recorder, "SubmitFinding").GetFinding()), "Open admin port")
 	assert.Equal(t, "target-1", only[*componentpb.CreateMissionRequest](t, &d.recorder, "CreateMission").GetTargetId())
 	assert.Equal(t, int64(5000), only[*componentpb.WaitMissionRequest](t, &d.recorder, "WaitMission").GetTimeoutMs())
@@ -651,9 +669,9 @@ func TestCallbackOptions(t *testing.T) {
 			require.NoError(t, err)
 			t.Cleanup(func() { _ = client.Close() })
 
-			_, err = h.Complete(context.Background(), "main", []llm.Message{{Role: llm.RoleUser, Content: "hi"}})
+			_, err = h.Model(context.Background(), "main")
 			require.NoError(t, err)
-			cs := d.named("LLMComplete")
+			cs := d.named("ResolveModel")
 			require.Len(t, cs, 1)
 			assert.Equal(t, tc.auth, cs[0].md.Get("authorization"))
 		})
@@ -668,7 +686,7 @@ func TestTLSClientAgainstPlainServerFails(t *testing.T) {
 	client, h, err := Dial(ctx, CallbackOptions{Endpoint: addr, TLS: &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS13}})
 	if err == nil {
 		t.Cleanup(func() { _ = client.Close() })
-		_, err = h.Complete(ctx, "main", nil)
+		_, err = h.Model(ctx, "main")
 	}
 	require.Error(t, err)
 }
@@ -716,7 +734,7 @@ func TestFork_ClaimUsesTheIdentityTokenAndNoGrantAndTheNewGrantReplacesTheOld(t 
 	assert.Contains(t, summary, "node=node-b")
 	assert.Contains(t, summary, "model=model-x")
 	assert.Contains(t, summary, "task=task-b")
-	assert.Contains(t, summary, "Complete: *llm.CompletionResponse")
+	assert.Contains(t, summary, "Create: *openresponses.Response")
 	assert.NotContains(t, summary, "failed=")
 
 	after := 0
@@ -732,7 +750,10 @@ func TestFork_ClaimUsesTheIdentityTokenAndNoGrantAndTheNewGrantReplacesTheOld(t 
 	assert.Equal(t, "task-b", cm.GetContext().GetTaskId())
 	assert.Equal(t, "child-1", cm.GetContext().GetMissionId())
 	assert.Equal(t, "fork-run-1", cm.GetContext().GetAgentRunId())
-	assert.Equal(t, "scan the next host", d.named("LLMComplete")[0].req.(*harnesspb.LLMCompleteRequest).GetMessages()[0].GetContent())
+	gw := d.gw.requests()
+	require.NotEmpty(t, gw)
+	assert.Equal(t, "scan the next host",
+		gw[0].body["input"].([]any)[0].(map[string]any)["content"].([]any)[0].(map[string]any)["text"])
 }
 
 func TestFork_NotForkableClaimsNothing(t *testing.T) {

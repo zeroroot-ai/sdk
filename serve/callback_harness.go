@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/a2aproject/a2a-go/v2/a2a"
 	"io"
 	"log/slog"
 	"math"
@@ -35,9 +36,9 @@ import (
 	harnessconst "github.com/zeroroot-ai/sdk/harness"
 	"github.com/zeroroot-ai/sdk/llm"
 	"github.com/zeroroot-ai/sdk/mission"
+	"github.com/zeroroot-ai/sdk/openresponses"
 	"github.com/zeroroot-ai/sdk/planning"
 	"github.com/zeroroot-ai/sdk/plugin"
-	"github.com/zeroroot-ai/sdk/schema"
 	"github.com/zeroroot-ai/sdk/tool"
 	"github.com/zeroroot-ai/sdk/types"
 )
@@ -70,7 +71,6 @@ type CallbackHarness struct {
 	cacheMu      sync.RWMutex
 	toolsCache   []tool.Descriptor
 	pluginsCache []plugin.Descriptor
-	agentsCache  []agent.Descriptor
 }
 
 // NewCallbackHarness creates a new callback-based harness.
@@ -141,10 +141,6 @@ func (h *CallbackHarness) initTaxonomy(ctx context.Context) {
 	})
 }
 
-// ============================================================================
-// Core Harness Methods
-// ============================================================================
-
 // Logger returns the structured logger for the agent.
 func (h *CallbackHarness) Logger() *slog.Logger {
 	return h.logger
@@ -170,309 +166,26 @@ func (h *CallbackHarness) Target() types.TargetInfo {
 	return h.target
 }
 
-// ============================================================================
-// LLM Operations
-// ============================================================================
-
-// Complete performs a single LLM completion request via the orchestrator.
-func (h *CallbackHarness) Complete(ctx context.Context, slot string, messages []llm.Message, opts ...llm.CompletionOption) (*llm.CompletionResponse, error) {
-	// Start span for LLM completion
-	ctx, span := h.tracer.Start(ctx, "gen_ai.chat",
-		trace.WithSpanKind(trace.SpanKindClient),
-		trace.WithAttributes(
-			attribute.String("gen_ai.system", "anthropic"),
-			attribute.String("gen_ai.request.model", slot),
-			attribute.Int("gen_ai.request.message_count", len(messages)),
-		),
-	)
-	defer span.End()
-
-	// Add prompt attribute for observability
-	span.SetAttributes(attribute.String("gen_ai.prompt", formatMessagesForPrompt(messages)))
-
-	// Build completion request with options
-	req := llm.NewCompletionRequest(messages, opts...)
-
-	// Convert to proto request
-	protoReq := &harnesspb.LLMCompleteRequest{
-		Slot:     slot,
-		Messages: h.messagesToProto(req.Messages),
-	}
-
-	// Apply options
-	if req.Temperature != nil {
-		temp := *req.Temperature
-		protoReq.Temperature = &temp
-		span.SetAttributes(attribute.Float64("gen_ai.request.temperature", float64(temp)))
-	}
-	if req.MaxTokens != nil {
-		maxTokens := int32(*req.MaxTokens)
-		protoReq.MaxTokens = &maxTokens
-		span.SetAttributes(attribute.Int("gen_ai.request.max_tokens", int(*req.MaxTokens)))
-	}
-	if req.TopP != nil {
-		topP := *req.TopP
-		protoReq.TopP = &topP
-		span.SetAttributes(attribute.Float64("gen_ai.request.top_p", float64(topP)))
-	}
-	protoReq.Stop = req.Stop
-
-	// Call orchestrator
-	resp, err := h.client.LLMComplete(ctx, protoReq)
+// Model resolves a slot to one exact model through the orchestrator and returns
+// the client that calls the model gateway. The client sends the task grant of
+// the agent. It adds token counts to TokenUsage.
+func (h *CallbackHarness) Model(ctx context.Context, slot string) (*openresponses.Client, error) {
+	resp, err := h.client.ResolveModel(ctx, slot)
 	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("LLM complete callback failed: %w", err)
+		return nil, fmt.Errorf("CallbackHarness.Model: %w", err)
 	}
-
-	if resp.Error != nil {
-		err := fmt.Errorf("LLM complete error: %s", resp.Error.Message)
-		span.RecordError(err)
-		span.SetStatus(codes.Error, resp.Error.Message)
-		return nil, err
-	}
-
-	// Convert response
-	result := &llm.CompletionResponse{
-		Content:      resp.Content,
-		ToolCalls:    h.toolCallsFromProto(resp.ToolCalls),
-		FinishReason: resp.FinishReason,
-		Usage: llm.TokenUsage{
-			InputTokens:  int(resp.Usage.InputTokens),
-			OutputTokens: int(resp.Usage.OutputTokens),
-			TotalTokens:  int(resp.Usage.TotalTokens),
-		},
-	}
-
-	// Record token usage and response in span
-	span.SetAttributes(
-		attribute.Int("gen_ai.usage.input_tokens", result.Usage.InputTokens),
-		attribute.Int("gen_ai.usage.output_tokens", result.Usage.OutputTokens),
-		attribute.String("gen_ai.response.finish_reason", result.FinishReason),
-		attribute.String("gen_ai.completion", result.Content),
-		attribute.String("gen_ai.response.model", slot),
-	)
-
-	// Track token usage
-	h.tokenTracker.Add(slot, result.Usage)
-
-	return result, nil
+	return newModelClient(slot, &resolvedModel{
+		model: resp.GetModel(), provider: resp.GetProvider(), gatewayURL: resp.GetGatewayUrl(),
+		routeHeaders: resp.GetRouteHeaders(), contextWindow: int(resp.GetContextWindow()),
+		maxOutputTokens: int(resp.GetMaxOutputTokens()), gatewayCAPEM: resp.GetGatewayCaPem(),
+	}, h.client.grantHeaders(), h.tokenTracker)
 }
-
-// CompleteWithTools performs a completion with tool calling enabled.
-func (h *CallbackHarness) CompleteWithTools(ctx context.Context, slot string, messages []llm.Message, tools []llm.ToolDef) (*llm.CompletionResponse, error) {
-	// Start span for LLM completion with tools
-	ctx, span := h.tracer.Start(ctx, "gen_ai.chat",
-		trace.WithSpanKind(trace.SpanKindClient),
-		trace.WithAttributes(
-			attribute.String("gen_ai.system", "anthropic"),
-			attribute.String("gen_ai.request.model", slot),
-			attribute.Int("gen_ai.request.message_count", len(messages)),
-			attribute.Int("gen_ai.request.tool_count", len(tools)),
-		),
-	)
-	defer span.End()
-
-	// Add prompt attribute for observability
-	span.SetAttributes(attribute.String("gen_ai.prompt", formatMessagesForPrompt(messages)))
-
-	protoReq := &harnesspb.LLMCompleteWithToolsRequest{
-		Slot:     slot,
-		Messages: h.messagesToProto(messages),
-		Tools:    h.toolDefsToProto(tools),
-	}
-
-	resp, err := h.client.LLMCompleteWithTools(ctx, protoReq)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		return nil, fmt.Errorf("LLM complete with tools callback failed: %w", err)
-	}
-
-	if resp.Error != nil {
-		err := fmt.Errorf("LLM complete with tools error: %s", resp.Error.Message)
-		span.RecordError(err)
-		span.SetStatus(codes.Error, resp.Error.Message)
-		return nil, err
-	}
-
-	result := &llm.CompletionResponse{
-		Content:      resp.Content,
-		ToolCalls:    h.toolCallsFromProto(resp.ToolCalls),
-		FinishReason: resp.FinishReason,
-		Usage: llm.TokenUsage{
-			InputTokens:  int(resp.Usage.InputTokens),
-			OutputTokens: int(resp.Usage.OutputTokens),
-			TotalTokens:  int(resp.Usage.TotalTokens),
-		},
-	}
-
-	// Record token usage and response in span
-	span.SetAttributes(
-		attribute.Int("gen_ai.usage.input_tokens", result.Usage.InputTokens),
-		attribute.Int("gen_ai.usage.output_tokens", result.Usage.OutputTokens),
-		attribute.String("gen_ai.response.finish_reason", result.FinishReason),
-		attribute.Int("gen_ai.response.tool_call_count", len(result.ToolCalls)),
-		attribute.String("gen_ai.completion", result.Content),
-		attribute.String("gen_ai.response.model", slot),
-	)
-
-	// Track token usage
-	h.tokenTracker.Add(slot, result.Usage)
-
-	return result, nil
-}
-
-// CompleteStructured performs a completion with provider-native structured output.
-// This forwards the request to the orchestrator which handles schema conversion
-// and provider-specific structured output mechanisms.
-//
-// The schemaType parameter should be a Go struct (or pointer to struct) that
-// defines the expected response structure. The method generates a JSON schema
-// from the type and sends it to the daemon for LLM completion.
-func (h *CallbackHarness) CompleteStructured(ctx context.Context, slot string, messages []llm.Message, schemaType any) (any, error) {
-	// Generate JSON schema from the Go type
-	// This converts the struct definition to a proper JSON schema that the LLM can use
-	jsonSchema := schema.FromType(schemaType)
-
-	// Serialize the schema to JSON for transmission
-	schemaJSON, err := json.Marshal(jsonSchema)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal schema: %w", err)
-	}
-
-	protoReq := &harnesspb.LLMCompleteStructuredRequest{
-		Slot:       slot,
-		Messages:   h.messagesToProto(messages),
-		SchemaJson: string(schemaJSON),
-	}
-
-	resp, err := h.client.LLMCompleteStructured(ctx, protoReq)
-	if err != nil {
-		return nil, fmt.Errorf("LLM complete structured callback failed: %w", err)
-	}
-
-	if resp.Error != nil {
-		return nil, fmt.Errorf("LLM complete structured error: %s", resp.Error.Message)
-	}
-
-	// Convert TypedValue result to Go value
-	result := FromTypedValue(resp.Result)
-
-	// Track token usage if available
-	if resp.Usage != nil {
-		usage := llm.TokenUsage{
-			InputTokens:  int(resp.Usage.InputTokens),
-			OutputTokens: int(resp.Usage.OutputTokens),
-			TotalTokens:  int(resp.Usage.TotalTokens),
-		}
-		h.tokenTracker.Add(slot, usage)
-	}
-
-	return result, nil
-}
-
-// CompleteStructuredAny is an alias for CompleteStructured for compatibility.
-func (h *CallbackHarness) CompleteStructuredAny(ctx context.Context, slot string, messages []llm.Message, schema any) (any, error) {
-	return h.CompleteStructured(ctx, slot, messages, schema)
-}
-
-// Stream performs a streaming completion request.
-func (h *CallbackHarness) Stream(ctx context.Context, slot string, messages []llm.Message) (<-chan llm.StreamChunk, error) {
-	// Start span for streaming LLM completion
-	ctx, span := h.tracer.Start(ctx, "gen_ai.chat.stream",
-		trace.WithSpanKind(trace.SpanKindClient),
-		trace.WithAttributes(
-			attribute.String("gen_ai.system", "anthropic"),
-			attribute.String("gen_ai.request.model", slot),
-			attribute.Int("gen_ai.request.message_count", len(messages)),
-		),
-	)
-
-	protoReq := &harnesspb.LLMStreamRequest{
-		Slot:     slot,
-		Messages: h.messagesToProto(messages),
-	}
-
-	stream, err := h.client.LLMStream(ctx, protoReq)
-	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		span.End()
-		return nil, fmt.Errorf("LLM stream callback failed: %w", err)
-	}
-
-	// Create output channel
-	chunkChan := make(chan llm.StreamChunk, 10)
-
-	// Spawn goroutine to receive stream chunks
-	go func() {
-		defer close(chunkChan)
-		defer span.End()
-
-		for {
-			protoChunk, err := stream.Recv()
-			if err != nil {
-				// Stream ended (could be EOF or error)
-				if err.Error() != "EOF" {
-					span.RecordError(err)
-					span.SetStatus(codes.Error, err.Error())
-				}
-				return
-			}
-
-			if protoChunk.Error != nil {
-				h.logger.Error("stream chunk error", "error", protoChunk.Error.Message)
-				err := fmt.Errorf("stream chunk error: %s", protoChunk.Error.Message)
-				span.RecordError(err)
-				span.SetStatus(codes.Error, protoChunk.Error.Message)
-				return
-			}
-
-			chunk := llm.StreamChunk{
-				Delta:        protoChunk.Delta,
-				ToolCalls:    h.toolCallsFromProto(protoChunk.ToolCalls),
-				FinishReason: protoChunk.FinishReason,
-			}
-
-			if protoChunk.Usage != nil {
-				usage := llm.TokenUsage{
-					InputTokens:  int(protoChunk.Usage.InputTokens),
-					OutputTokens: int(protoChunk.Usage.OutputTokens),
-					TotalTokens:  int(protoChunk.Usage.TotalTokens),
-				}
-				chunk.Usage = &usage
-
-				// Track token usage on final chunk
-				if chunk.FinishReason != "" {
-					h.tokenTracker.Add(slot, usage)
-					// Record final token usage in span
-					span.SetAttributes(
-						attribute.Int("gen_ai.usage.input_tokens", usage.InputTokens),
-						attribute.Int("gen_ai.usage.output_tokens", usage.OutputTokens),
-						attribute.String("gen_ai.response.finish_reason", chunk.FinishReason),
-					)
-				}
-			}
-
-			select {
-			case chunkChan <- chunk:
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-
-	return chunkChan, nil
-}
-
-// ============================================================================
-// Tool Operations
-// ============================================================================
 
 // CallToolProto invokes a tool using proto messages via the CallToolProto RPC.
 // This is the canonical way to execute tools - all tool calls should use this method.
-func (h *CallbackHarness) CallToolProto(ctx context.Context, name string, request protolib.Message, response protolib.Message) error {
+func (h *CallbackHarness) CallToolProto(
+	ctx context.Context, name string, request protolib.Message, response protolib.Message, opts ...agent.ToolCallOption,
+) error {
 	// Start span for proto tool call
 	ctx, span := h.tracer.Start(ctx, "gen_ai.tool.proto",
 		trace.WithSpanKind(trace.SpanKindClient),
@@ -511,6 +224,8 @@ func (h *CallbackHarness) CallToolProto(ctx context.Context, name string, reques
 		span.SetStatus(codes.Error, err.Error())
 		return fmt.Errorf("CallToolProto callback failed: %w", err)
 	}
+	// The daemon records a failed call too, so the id is set before the error.
+	agent.ApplyToolCallOptions(opts).SetToolCallID(resp.GetToolCallId())
 
 	if resp.Error != nil {
 		err := fmt.Errorf("CallToolProto error: %s", resp.Error.Message)
@@ -540,7 +255,14 @@ func (h *CallbackHarness) CallToolProto(ctx context.Context, name string, reques
 // The method marshals the input proto to JSON, calls the daemon's CallToolProtoStream RPC,
 // receives streaming ToolMessage events, dispatches them to the callback methods, and
 // returns the final output.
-func (h *CallbackHarness) CallToolProtoStream(ctx context.Context, toolName string, input protolib.Message, output protolib.Message, callback agent.ToolStreamCallback) error {
+func (h *CallbackHarness) CallToolProtoStream(
+	ctx context.Context, toolName string, input protolib.Message, output protolib.Message,
+	callback agent.ToolStreamCallback, opts ...agent.ToolCallOption,
+) error {
+	toolCallOpts := agent.ApplyToolCallOptions(opts)
+	var toolCallID string
+	defer func() { toolCallOpts.SetToolCallID(toolCallID) }()
+
 	// Start span for streaming proto tool call
 	ctx, span := h.tracer.Start(ctx, "gen_ai.tool.proto.stream",
 		trace.WithSpanKind(trace.SpanKindClient),
@@ -598,47 +320,61 @@ func (h *CallbackHarness) CallToolProtoStream(ctx context.Context, toolName stri
 			callback.OnError(err, true)
 			return fmt.Errorf("CallToolProtoStream receive error: %w", err)
 		}
+		if id := msg.GetToolCallId(); id != "" {
+			toolCallID = id
+		}
 
-		switch payload := msg.GetPayload().(type) {
-		case *harnesspb.CallToolProtoStreamResponse_Progress:
-			ev := payload.Progress
-			callback.OnProgress(int(ev.GetPercent()), ev.GetStage(), ev.GetMessage())
-
-		case *harnesspb.CallToolProtoStreamResponse_Partial:
-			ev := payload.Partial
-			if len(ev.GetOutputJson()) > 0 {
-				if err := unmarshaler.Unmarshal(ev.GetOutputJson(), output); err == nil {
-					callback.OnPartial(output, false)
-				}
-			}
-
-		case *harnesspb.CallToolProtoStreamResponse_Warning:
-			ev := payload.Warning
-			callback.OnWarning(ev.GetMessage(), ev.GetCode())
-
-		case *harnesspb.CallToolProtoStreamResponse_Error:
-			ev := payload.Error
-			callbackErr := fmt.Errorf("%s", ev.GetError().GetMessage())
-			callback.OnError(callbackErr, ev.GetFatal())
-			if ev.GetFatal() {
-				span.RecordError(callbackErr)
-				span.SetStatus(codes.Error, ev.GetError().GetMessage())
-				return callbackErr
-			}
-
-		case *harnesspb.CallToolProtoStreamResponse_Complete:
-			ev := payload.Complete
-			if len(ev.GetOutputJson()) > 0 {
-				if err := unmarshaler.Unmarshal(ev.GetOutputJson(), output); err != nil {
-					span.RecordError(err)
-					span.SetStatus(codes.Error, "failed to unmarshal complete output")
-					return fmt.Errorf("failed to unmarshal streaming tool output: %w", err)
-				}
-			}
+		if err := dispatchToolStreamMessage(msg, output, callback, unmarshaler); err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+			return err
 		}
 	}
 
 	span.SetStatus(codes.Ok, "")
+	return nil
+}
+
+// dispatchToolStreamMessage sends one message of a tool stream to the callback.
+// It returns an error when the message ends the call: a fatal error event, or a
+// complete event whose output cannot be read.
+func dispatchToolStreamMessage(
+	msg *harnesspb.CallToolProtoStreamResponse, output protolib.Message,
+	callback agent.ToolStreamCallback, unmarshaler protojson.UnmarshalOptions,
+) error {
+	switch payload := msg.GetPayload().(type) {
+	case *harnesspb.CallToolProtoStreamResponse_Progress:
+		ev := payload.Progress
+		callback.OnProgress(int(ev.GetPercent()), ev.GetStage(), ev.GetMessage())
+
+	case *harnesspb.CallToolProtoStreamResponse_Partial:
+		ev := payload.Partial
+		if len(ev.GetOutputJson()) > 0 {
+			if err := unmarshaler.Unmarshal(ev.GetOutputJson(), output); err == nil {
+				callback.OnPartial(output, false)
+			}
+		}
+
+	case *harnesspb.CallToolProtoStreamResponse_Warning:
+		ev := payload.Warning
+		callback.OnWarning(ev.GetMessage(), ev.GetCode())
+
+	case *harnesspb.CallToolProtoStreamResponse_Error:
+		ev := payload.Error
+		callbackErr := errors.New(ev.GetError().GetMessage())
+		callback.OnError(callbackErr, ev.GetFatal())
+		if ev.GetFatal() {
+			return callbackErr
+		}
+
+	case *harnesspb.CallToolProtoStreamResponse_Complete:
+		ev := payload.Complete
+		if len(ev.GetOutputJson()) > 0 {
+			if err := unmarshaler.Unmarshal(ev.GetOutputJson(), output); err != nil {
+				return fmt.Errorf("failed to unmarshal streaming tool output: %w", err)
+			}
+		}
+	}
 	return nil
 }
 
@@ -684,10 +420,6 @@ func (h *CallbackHarness) ListTools(ctx context.Context) ([]tool.Descriptor, err
 
 	return tools, nil
 }
-
-// ============================================================================
-// Plugin Operations
-// ============================================================================
 
 // QueryPlugin sends a query to a plugin and returns the result.
 func (h *CallbackHarness) QueryPlugin(ctx context.Context, name string, method string, params map[string]any) (any, error) {
@@ -761,96 +493,6 @@ func (h *CallbackHarness) ListPlugins(ctx context.Context) ([]plugin.Descriptor,
 	return plugins, nil
 }
 
-// ============================================================================
-// Agent Delegation Operations
-// ============================================================================
-
-// DelegateToAgent assigns a task to another agent for execution.
-func (h *CallbackHarness) DelegateToAgent(ctx context.Context, name string, task agent.Task) (agent.Result, error) {
-	protoReq := &harnesspb.DelegateToAgentRequest{
-		Name: name,
-		Task: TaskToProto(task),
-	}
-
-	resp, err := h.client.DelegateToAgent(ctx, protoReq)
-	if err != nil {
-		return agent.Result{}, fmt.Errorf("delegate to agent callback failed: %w", err)
-	}
-
-	if resp.Error != nil {
-		return agent.Result{}, fmt.Errorf("delegate to agent error: %s", resp.Error.Message)
-	}
-
-	// Convert proto result to SDK result using the helper function
-	result := ProtoToResult(resp.Result)
-
-	// Convert error if present
-	if resp.Result.Error != nil {
-		// Convert map[string]string to map[string]any
-		details := make(map[string]any)
-		for k, v := range resp.Result.Error.Details {
-			details[k] = v
-		}
-
-		result.Error = &agent.ResultError{
-			Code:      resp.Result.Error.Code.String(),
-			Message:   resp.Result.Error.Message,
-			Details:   details,
-			Retryable: resp.Result.Error.Retryable,
-		}
-	}
-
-	return result, nil
-}
-
-// ListAgents returns descriptors for all available agents.
-// Results are cached per task execution.
-func (h *CallbackHarness) ListAgents(ctx context.Context) ([]agent.Descriptor, error) {
-	// Check cache first
-	h.cacheMu.RLock()
-	if h.agentsCache != nil {
-		defer h.cacheMu.RUnlock()
-		return h.agentsCache, nil
-	}
-	h.cacheMu.RUnlock()
-
-	// Fetch from orchestrator
-	protoReq := &harnesspb.ListAgentsRequest{}
-	resp, err := h.client.ListAgents(ctx, protoReq)
-	if err != nil {
-		return nil, fmt.Errorf("list agents callback failed: %w", err)
-	}
-
-	if resp.Error != nil {
-		return nil, fmt.Errorf("list agents error: %s", resp.Error.Message)
-	}
-
-	// Convert to agent.Descriptor
-	agents := make([]agent.Descriptor, len(resp.Agents))
-	for i, protoAgent := range resp.Agents {
-		// Proto returns strings, which match the new agent interface
-		agents[i] = agent.Descriptor{
-			Name:           protoAgent.Name,
-			Version:        protoAgent.Version,
-			Description:    protoAgent.Description,
-			Capabilities:   protoAgent.Capabilities,
-			TargetTypes:    protoAgent.TargetTypes,
-			TechniqueTypes: protoAgent.TechniqueTypes,
-		}
-	}
-
-	// Cache results
-	h.cacheMu.Lock()
-	h.agentsCache = agents
-	h.cacheMu.Unlock()
-
-	return agents, nil
-}
-
-// ============================================================================
-// Finding Operations
-// ============================================================================
-
 // SubmitFinding records a new security finding.
 func (h *CallbackHarness) SubmitFinding(ctx context.Context, f *finding.Finding) error {
 	// Start span for finding submission
@@ -867,6 +509,7 @@ func (h *CallbackHarness) SubmitFinding(ctx context.Context, f *finding.Finding)
 	protoReq := &harnesspb.SubmitFindingRequest{
 		IdempotencyKey: uuid.NewString(),
 		Finding:        FindingToProto(f),
+		ToolCallIds:    f.ToolCallIDs,
 	}
 
 	resp, err := h.client.SubmitFinding(ctx, protoReq)
@@ -885,21 +528,6 @@ func (h *CallbackHarness) SubmitFinding(ctx context.Context, f *finding.Finding)
 
 	return nil
 }
-
-// ============================================================================
-// GraphRAG Query Operations
-// ============================================================================
-
-// QueryGraphRAG performs a semantic or hybrid query against the knowledge graph.
-// Uses auto-routing to select semantic or structured query based on the Query fields.
-
-// ============================================================================
-// GraphRAG Storage Operations
-// ============================================================================
-
-// ============================================================================
-// Planning Operations
-// ============================================================================
 
 // PlanContext returns the planning context for the current execution.
 // Returns nil if no planning context is available (non-planned execution).
@@ -932,95 +560,6 @@ func (h *CallbackHarness) ReportStepHints(ctx context.Context, hints *planning.S
 
 	return nil
 }
-
-// ============================================================================
-// Helper Methods for Proto Conversions
-// ============================================================================
-
-func (h *CallbackHarness) messagesToProto(messages []llm.Message) []*harnesspb.LLMMessage {
-	protoMessages := make([]*harnesspb.LLMMessage, len(messages))
-	for i, msg := range messages {
-		protoMessages[i] = &harnesspb.LLMMessage{
-			Role:        string(msg.Role),
-			Content:     msg.Content,
-			ToolCalls:   h.toolCallsToProto(msg.ToolCalls),
-			ToolResults: h.toolResultsToProto(msg.ToolResults),
-			Name:        msg.Name,
-		}
-	}
-	return protoMessages
-}
-
-func (h *CallbackHarness) toolCallsToProto(calls []llm.ToolCall) []*harnesspb.ToolCall {
-	protoCalls := make([]*harnesspb.ToolCall, len(calls))
-	for i, call := range calls {
-		protoCalls[i] = &harnesspb.ToolCall{
-			Id:        call.ID,
-			Name:      call.Name,
-			Arguments: call.Arguments,
-		}
-	}
-	return protoCalls
-}
-
-func (h *CallbackHarness) toolCallsFromProto(calls []*harnesspb.ToolCall) []llm.ToolCall {
-	toolCalls := make([]llm.ToolCall, len(calls))
-	for i, call := range calls {
-		toolCalls[i] = llm.ToolCall{
-			ID:        call.Id,
-			Name:      call.Name,
-			Arguments: call.Arguments,
-		}
-	}
-	return toolCalls
-}
-
-func (h *CallbackHarness) toolResultsToProto(results []llm.ToolResult) []*harnesspb.ToolResult {
-	protoResults := make([]*harnesspb.ToolResult, len(results))
-	for i, result := range results {
-		protoResults[i] = &harnesspb.ToolResult{
-			ToolCallId: result.ToolCallID,
-			Content:    result.Content,
-			IsError:    result.IsError,
-		}
-	}
-	return protoResults
-}
-
-func (h *CallbackHarness) toolDefsToProto(tools []llm.ToolDef) []*harnesspb.ToolDef {
-	protoTools := make([]*harnesspb.ToolDef, len(tools))
-	for i, tool := range tools {
-		// Convert parameters to JSONSchemaNode
-		// Parameters is map[string]any representing a JSON schema
-		protoTools[i] = &harnesspb.ToolDef{
-			Name:        tool.Name,
-			Description: tool.Description,
-			Parameters:  JSONSchemaToProtoNode(tool.Parameters),
-		}
-	}
-	return protoTools
-}
-
-// formatMessagesForPrompt formats LLM messages into a readable prompt string
-// for observability in traces.
-func formatMessagesForPrompt(messages []llm.Message) string {
-	if len(messages) == 0 {
-		return ""
-	}
-
-	var result string
-	for i, msg := range messages {
-		if i > 0 {
-			result += "\n---\n"
-		}
-		result += fmt.Sprintf("[%s]: %s", msg.Role, msg.Content)
-	}
-	return result
-}
-
-// ============================================================================
-// MissionManager Methods
-// ============================================================================
 
 // CreateMission creates a new mission from a mission definition.
 // The missionDef parameter should be JSON-serializable.
@@ -1350,10 +889,6 @@ func (h *CallbackHarness) GetMissionResults(ctx context.Context, missionID strin
 	return protoToMissionResult(resp.Result), nil
 }
 
-// ============================================================================
-// Mission Proto Conversion Helpers
-// ============================================================================
-
 // protoToMissionInfo converts proto MissionInfo to SDK mission.MissionInfo.
 func protoToMissionInfo(p *harnesspb.MissionInfo) *mission.MissionInfo {
 	if p == nil {
@@ -1373,38 +908,42 @@ func protoToMissionInfo(p *harnesspb.MissionInfo) *mission.MissionInfo {
 // protoToMissionStatus converts proto MissionStatus to SDK mission.MissionStatus.
 func protoToMissionStatus(p harnesspb.MissionStatus) mission.MissionStatus {
 	switch p {
-	case harnesspb.MissionStatus_MISSION_STATUS_PENDING:
-		return mission.MissionStatusPending
-	case harnesspb.MissionStatus_MISSION_STATUS_RUNNING:
-		return mission.MissionStatusRunning
+	case harnesspb.MissionStatus_MISSION_STATUS_SUBMITTED:
+		return mission.MissionStatusSubmitted
+	case harnesspb.MissionStatus_MISSION_STATUS_WORKING:
+		return mission.MissionStatusWorking
 	case harnesspb.MissionStatus_MISSION_STATUS_PAUSED:
 		return mission.MissionStatusPaused
 	case harnesspb.MissionStatus_MISSION_STATUS_COMPLETED:
 		return mission.MissionStatusCompleted
 	case harnesspb.MissionStatus_MISSION_STATUS_FAILED:
 		return mission.MissionStatusFailed
-	case harnesspb.MissionStatus_MISSION_STATUS_CANCELLED:
-		return mission.MissionStatusCancelled
+	case harnesspb.MissionStatus_MISSION_STATUS_CANCELED:
+		return mission.MissionStatusCanceled
+	case harnesspb.MissionStatus_MISSION_STATUS_INPUT_REQUIRED:
+		return mission.MissionStatusInputRequired
 	default:
-		return mission.MissionStatusPending
+		return mission.MissionStatusSubmitted
 	}
 }
 
 // missionStatusToProto converts SDK mission.MissionStatus to proto MissionStatus.
 func missionStatusToProto(s mission.MissionStatus) harnesspb.MissionStatus {
 	switch s {
-	case mission.MissionStatusPending:
-		return harnesspb.MissionStatus_MISSION_STATUS_PENDING
-	case mission.MissionStatusRunning:
-		return harnesspb.MissionStatus_MISSION_STATUS_RUNNING
+	case mission.MissionStatusSubmitted:
+		return harnesspb.MissionStatus_MISSION_STATUS_SUBMITTED
+	case mission.MissionStatusWorking:
+		return harnesspb.MissionStatus_MISSION_STATUS_WORKING
 	case mission.MissionStatusPaused:
 		return harnesspb.MissionStatus_MISSION_STATUS_PAUSED
 	case mission.MissionStatusCompleted:
 		return harnesspb.MissionStatus_MISSION_STATUS_COMPLETED
 	case mission.MissionStatusFailed:
 		return harnesspb.MissionStatus_MISSION_STATUS_FAILED
-	case mission.MissionStatusCancelled:
-		return harnesspb.MissionStatus_MISSION_STATUS_CANCELLED
+	case mission.MissionStatusCanceled:
+		return harnesspb.MissionStatus_MISSION_STATUS_CANCELED
+	case mission.MissionStatusInputRequired:
+		return harnesspb.MissionStatus_MISSION_STATUS_INPUT_REQUIRED
 	default:
 		return harnesspb.MissionStatus_MISSION_STATUS_UNSPECIFIED
 	}
@@ -1470,14 +1009,6 @@ func protoToMissionResult(p *harnesspb.MissionResult) *mission.MissionResult {
 
 	return result
 }
-
-// ============================================================================
-// Taxonomy Operations
-// ============================================================================
-
-// ============================================================================
-// Tool Work Queue Operations
-// ============================================================================
 
 // QueueToolWork queues multiple tool invocations for parallel execution.
 // Returns a job ID that can be used to retrieve results via ToolResults.
@@ -1691,6 +1222,7 @@ func (h *CallbackHarness) ToolResults(ctx context.Context, jobID string) <-chan 
 			}
 
 			// Send result on channel
+			toolResult.ToolCallID = protoResult.GetToolCallId()
 			select {
 			case resultChan <- toolResult:
 			case <-ctx.Done():
@@ -1710,10 +1242,6 @@ func (h *CallbackHarness) ToolResults(ctx context.Context, jobID string) <-chan 
 
 	return resultChan
 }
-
-// ============================================================================
-// Workspace Operations
-// ============================================================================
 
 // Workspace returns the primary workspace for single-repository
 // missions, or nil if the mission has no workspace configured (the
@@ -1761,10 +1289,6 @@ func (h *CallbackHarness) Workspaces() map[string]workspace.Workspace {
 	}
 	return out
 }
-
-// ============================================================================
-// Authorization Methods
-// ============================================================================
 
 // Authorize implements agent.Harness by forwarding the authorization check to
 // the daemon's HarnessCallbackService.Authorize RPC. It fails closed: any
@@ -1819,17 +1343,6 @@ func (h *CallbackHarness) Authorize(ctx context.Context, action, resource string
 
 	return nil
 }
-
-// ── KnowledgeReader ─────────────────────────────────────────────────────────
-//
-// The dispatched agent's read of what earlier work established. These reach the
-// daemon over the callback service, which resolves tenant from the task context
-// — no method takes a tenant, so another tenant's graph is unrepresentable
-// rather than merely refused.
-//
-// Read-only by construction: the projector is the sole graph writer (ADR-0112),
-// and an agent contributes by emitting (SubmitFinding, Observe), never by
-// writing here.
 
 // QueryNodes searches the tenant knowledge graph for a dispatched agent.
 func (h *CallbackHarness) QueryNodes(ctx context.Context, query *graphragpb.GraphQuery) ([]*graphragpb.QueryResult, error) {
@@ -2065,4 +1578,21 @@ func boundedInt32(n int) int32 {
 		return math.MaxInt32
 	}
 	return int32(n)
+}
+
+// Delegate sends an A2A message to another agent through the Agent gateway and
+// waits for the A2A Task to end. The platform resolves the route of the agent.
+func (h *CallbackHarness) Delegate(
+	ctx context.Context, name string, msg *a2a.Message, opts ...agent.DelegateOption,
+) (*a2a.Task, error) {
+	bankID := agent.ApplyDelegateOptions(opts).BankID
+	return delegateVia(ctx, h.tracer, "CallbackHarness", name, func(ctx context.Context) (*resolvedAgent, error) {
+		resp, err := h.client.ResolveAgent(ctx, name, bankID)
+		if err != nil {
+			return nil, err
+		}
+		return &resolvedAgent{
+			gatewayURL: resp.GetGatewayUrl(), routeHeaders: resp.GetRouteHeaders(), gatewayCAPEM: resp.GetGatewayCaPem(),
+		}, nil
+	}, h.client.grantHeaders(), msg)
 }

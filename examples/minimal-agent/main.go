@@ -8,9 +8,10 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/a2aproject/a2a-go/v2/a2a"
 	sdk "github.com/zeroroot-ai/sdk"
 	"github.com/zeroroot-ai/sdk/agent"
-	"github.com/zeroroot-ai/sdk/llm"
+	"github.com/zeroroot-ai/sdk/openresponses"
 )
 
 func main() {
@@ -65,23 +66,33 @@ func executeAgent(ctx context.Context, h agent.Harness, task agent.Task) (agent.
 	// The harness resolves the "main" LLM slot to a provider and a model
 	// In a real agent, you would construct prompts based on the task goal
 	// and analyze the responses for security vulnerabilities
-	maxTokens := 100
-	temperature := 0.7
-	completion, err := h.Complete(ctx, "main", []llm.Message{
-		{
-			Role:    llm.RoleUser,
-			Content: "Respond with 'Hello, Gibson!' to confirm operation.",
-		},
-	}, llm.WithMaxTokens(maxTokens), llm.WithTemperature(temperature))
+	model, err := h.Model(ctx, "main")
 	if err != nil {
 		return agent.Result{
-			Status: agent.StatusFailed,
-			Output: fmt.Sprintf("LLM completion failed: %v", err),
+			Status: a2a.TaskStateFailed,
+			Output: fmt.Sprintf("model resolve failed: %v", err),
+		}, nil
+	}
+	maxTokens := 100
+	temperature := 0.7
+	resp, err := model.Create(ctx, &openresponses.Request{
+		Input:           []openresponses.Item{openresponses.NewUserMessage("Respond with 'Hello, Gibson!' to confirm operation.")},
+		MaxOutputTokens: &maxTokens,
+		Temperature:     &temperature,
+	})
+	if err != nil {
+		return agent.Result{
+			Status: a2a.TaskStateFailed,
+			Output: fmt.Sprintf("model call failed: %v", err),
 		}, nil
 	}
 
-	fmt.Printf("  LLM Response: %s\n", completion.Content)
-	fmt.Printf("  Tokens used: %d\n", completion.Usage.TotalTokens)
+	tokens := 0
+	if resp.Usage != nil {
+		tokens = resp.Usage.TotalTokens
+	}
+	fmt.Printf("  LLM Response: %s\n", resp.Text())
+	fmt.Printf("  Tokens used: %d\n", tokens)
 
 	// Example: List available tools
 	// In a real agent, you might use tools to interact with the target system
@@ -119,7 +130,7 @@ func executeAgent(ctx context.Context, h agent.Harness, task agent.Task) (agent.
 	mission := h.Mission()
 	target := h.Target()
 	fmt.Printf("  Mission: %s\n", mission.Name)
-	fmt.Printf("  Target: %s\n", target.URL)
+	fmt.Printf("  Target: %s\n", target.URL())
 
 	// Example: Report a finding
 	// In a real agent, you would discover actual vulnerabilities
@@ -142,17 +153,17 @@ func executeAgent(ctx context.Context, h agent.Harness, task agent.Task) (agent.
 	logger := h.Logger()
 	logger.Info("Task execution completed",
 		"task_id", task.ID,
-		"tokens", completion.Usage.TotalTokens)
+		"tokens", tokens)
 
 	// Return a successful result
 	return agent.Result{
-		Status: agent.StatusSuccess,
+		Status: a2a.TaskStateCompleted,
 		Output: "Task completed successfully. Agent is operational.",
 		Metadata: map[string]any{
-			"tokens_used": completion.Usage.TotalTokens,
-			"response":    completion.Content,
+			"tokens_used": tokens,
+			"response":    resp.Text(),
 			"mission":     mission.Name,
-			"target":      target.URL,
+			"target":      target.URL(),
 		},
 	}, nil
 }

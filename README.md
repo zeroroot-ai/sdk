@@ -70,14 +70,18 @@ func main() {
 }
 
 func execute(ctx context.Context, h agent.Harness, task agent.Task) (agent.Result, error) {
-    resp, err := h.Complete(ctx, "primary", []llm.Message{
-        {Role: llm.RoleSystem, Content: "You are a Kubernetes expert. Diagnose cluster issues."},
-        {Role: llm.RoleUser, Content: task.Goal},
+    model, err := h.Model(ctx, "primary")
+    if err != nil {
+        return agent.Result{Status: agent.StatusFailed, Output: err.Error()}, nil
+    }
+    resp, err := model.Create(ctx, &openresponses.Request{
+        Instructions: "You are a Kubernetes expert. Diagnose cluster issues.",
+        Input:        []openresponses.Item{openresponses.NewUserMessage(task.Goal)},
     })
     if err != nil {
         return agent.Result{Status: agent.StatusFailed, Output: err.Error()}, nil
     }
-    return agent.Result{Status: agent.StatusSuccess, Output: resp.Content}, nil
+    return agent.Result{Status: agent.StatusSuccess, Output: resp.Text()}, nil
 }
 ```
 
@@ -132,10 +136,10 @@ composed of capability groups, declared in [`agent/harness.go`](agent/harness.go
 
 | Group | Methods |
 |-------|---------|
-| `LLMCaller` | `Complete`, `CompleteWithTools`, `Stream`, `CompleteStructured`, `CompleteStructuredAny` |
+| `LLMCaller` | `Model` |
 | `ToolCaller` | `CallToolProto`, `CallToolProtoStream`, `ListTools`, `QueueToolWork`, `ToolResults` |
 | `PluginCaller` | `QueryPlugin`, `ListPlugins` |
-| `Delegator` | `DelegateToAgent`, `ListAgents` |
+| `Delegator` | `Delegate` |
 | `WorldEmitter` | `SubmitFinding`, `Observe` |
 | `WorldReader` | `WorldView` |
 | `KnowledgeReader` | `QueryNodes`, `FindSimilarFindings`, `GetAttackChains`, and the other read-only graph queries |
@@ -149,13 +153,23 @@ composed of capability groups, declared in [`agent/harness.go`](agent/harness.go
 ### LLM Slots
 
 An agent calls an LLM through a named slot. A slot is a name. The platform
-resolves it to one of the tenant's providers and a model. It uses the tenant
-default provider and model when that model meets the context floor of the
-slot:
+resolves it to one exact model. It uses the tenant default provider and model
+when that model meets the context floor of the slot. `Harness.Model` returns
+the one client that calls the model gateway. The client uses Open Responses
+items, from the `openresponses` package:
 
 ```go
-resp, err := h.Complete(ctx, "primary", messages)
+model, err := h.Model(ctx, "primary")
+resp, err := model.Create(ctx, &openresponses.Request{
+    Input: []openresponses.Item{openresponses.NewUserMessage("Hello")},
+})
 ```
+
+The client has four calls: `Create` (with `Request.Tools` for a tool call),
+`CreateStructured` (a JSON schema in `text.format`) and `Stream` (server-sent
+events). The agent holds the items of its conversation. It sends all items
+back on each call, with the output of each tool call as a
+`FunctionCallOutput` item.
 
 ## Building an Agent
 

@@ -7,9 +7,7 @@ package contract_test
 // existing surfaces (gibson#1706, sdk#546, sdk#547, sdk#548):
 //
 //   - gibson.types.v1.Task.job
-//   - gibson.agent.v1.ExecuteRequest.job_id, ExecuteResponse deliverables
 //   - gibson.mission.v1 NODE_TYPE_JOB and JobNodeConfig
-//   - gibson.harness.v1.DelegateToAgentRequest.target
 //   - gibson.component.v1.HeartbeatRequest.member
 
 import (
@@ -17,10 +15,8 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	agentpb "github.com/zeroroot-ai/sdk/api/gen/gibson/agent/v1"
 	bankpb "github.com/zeroroot-ai/sdk/api/gen/gibson/bank/v1"
 	componentpb "github.com/zeroroot-ai/sdk/api/gen/gibson/component/v1"
-	harnesspb "github.com/zeroroot-ai/sdk/api/gen/gibson/harness/v1"
 	jobpb "github.com/zeroroot-ai/sdk/api/gen/gibson/job/v1"
 	missionpb "github.com/zeroroot-ai/sdk/api/gen/gibson/mission/v1"
 	typespb "github.com/zeroroot-ai/sdk/api/gen/gibson/types/v1"
@@ -55,24 +51,6 @@ func TestTypesV1_TaskCarriesJobSpec(t *testing.T) {
 	}
 }
 
-// TestAgentV1_ExecuteCarriesJobResults round-trips the one-shot and bank-job
-// result path: a job id in, deliverables and the session id out.
-func TestAgentV1_ExecuteCarriesJobResults(t *testing.T) {
-	roundTrip(t, &agentpb.ExecuteRequest{
-		Task:  &typespb.Task{Id: "task-1", Job: wiringSpec()},
-		JobId: "job-1",
-	})
-	roundTrip(t, &agentpb.ExecuteResponse{
-		Result: &typespb.Result{Status: typespb.ResultStatus_RESULT_STATUS_SUCCESS},
-		Deliverables: []*jobpb.Deliverable{{
-			Kind: jobpb.DeliverableKind_DELIVERABLE_KIND_MERGE_REQUEST,
-			Ref:  "!12",
-			Url:  "https://gitlab.example/group/api/-/merge_requests/12",
-		}},
-		ClaudeSessionId: "sess-1",
-	})
-}
-
 // TestMissionV1_JobNode round-trips a job node and checks NODE_TYPE_JOB is a
 // distinct enum value that did not displace an existing one.
 func TestMissionV1_JobNode(t *testing.T) {
@@ -105,29 +83,6 @@ func TestMissionV1_JobNode(t *testing.T) {
 	if cfg.JobConfig.GetSpec().GetAcceptance().GetMaxPasses() != 2 {
 		t.Fatal("the verify loop bound must come from spec.acceptance.max_passes")
 	}
-}
-
-// TestHarnessV1_DelegateTarget round-trips each arm of the dispatch target
-// selector. An absent selector is today's ephemeral launch.
-func TestHarnessV1_DelegateTarget(t *testing.T) {
-	cases := map[string]*harnesspb.DelegateToAgentRequest{
-		"absent":    {Name: "worker", Task: &typespb.Task{Id: "t-1"}},
-		"ephemeral": {Name: "worker", Target: &harnesspb.DelegateToAgentRequest_Ephemeral{Ephemeral: true}},
-		"bank":      {Name: "worker", Target: &harnesspb.DelegateToAgentRequest_BankId{BankId: "bank-1"}},
-		"job":       {Name: "worker", Target: &harnesspb.DelegateToAgentRequest_JobId{JobId: "job-1"}},
-	}
-	for name, req := range cases {
-		t.Run(name, func(t *testing.T) { roundTrip(t, req) })
-	}
-	if cases["absent"].GetTarget() != nil {
-		t.Fatal("an absent selector must stay absent: it means ephemeral, today's behavior")
-	}
-
-	roundTrip(t, &harnesspb.DelegateToAgentResponse{
-		Result:   &typespb.Result{Status: typespb.ResultStatus_RESULT_STATUS_SUCCESS},
-		JobId:    "job-1",
-		MemberId: "member-1",
-	})
 }
 
 // TestComponentV1_HeartbeatCarriesMemberStatus round-trips a heartbeat with

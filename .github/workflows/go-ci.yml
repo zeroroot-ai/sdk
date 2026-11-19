@@ -313,6 +313,9 @@ jobs:
       - name: Mutation-test the check that a job checks out before it runs a script
         run: bash scripts/__tests__/check-workflow-script-checkout.test.sh
 
+      - name: Test the consumer checkout of the unwired gate
+        run: bash scripts/__tests__/unwired-consumers.test.sh
+
       - name: Every job that runs a script of the repo checks the repo out first
         run: bash scripts/check-workflow-script-checkout.sh .github/workflows
 

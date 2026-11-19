@@ -151,12 +151,13 @@ func TestMissionStatusToProto(t *testing.T) {
 	statuses := []struct {
 		name string
 	}{
-		{"pending"},
-		{"running"},
+		{"submitted"},
+		{"working"},
 		{"paused"},
 		{"completed"},
 		{"failed"},
-		{"cancelled"},
+		{"canceled"},
+		{"input_required"},
 	}
 
 	for _, s := range statuses {

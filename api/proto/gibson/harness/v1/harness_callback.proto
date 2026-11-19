@@ -15,32 +15,15 @@ import "gibson/auth/v1/options.proto";
 // HarnessCallbackService provides the harness interface for agents executing in standalone mode.
 // The SDK's CallbackHarness forwards all harness operations to the orchestrator via this service.
 service HarnessCallbackService {
-    // LLM Operations
-    rpc LLMComplete(LLMCompleteRequest) returns (LLMCompleteResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "can_use"
-        object_type: "component"
-        object_deriver: "system_tenant"
-        allowed_identities: 4  // COMPONENT
-      };
-    }
-    rpc LLMCompleteWithTools(LLMCompleteWithToolsRequest) returns (LLMCompleteWithToolsResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "can_use"
-        object_type: "component"
-        object_deriver: "system_tenant"
-        allowed_identities: 4  // COMPONENT
-      };
-    }
-    rpc LLMCompleteStructured(LLMCompleteStructuredRequest) returns (LLMCompleteStructuredResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "can_use"
-        object_type: "component"
-        object_deriver: "system_tenant"
-        allowed_identities: 4  // COMPONENT
-      };
-    }
-    rpc LLMStream(LLMStreamRequest) returns (stream LLMStreamResponse) {
+    // ResolveModel turns a slot into one exact model name (ADR-0172, decision 4).
+    // The agent then calls the model gateway with the Open Responses client of
+    // the SDK. The gateway never sees a slot name. The agent sends the task
+    // grant in the header x-capability-grant and sends each route header of
+    // the response unchanged.
+    //
+    // Errors: NotFound (the slot has no model), PermissionDenied (the task
+    // grant does not allow the slot), InvalidArgument.
+    rpc ResolveModel(ResolveModelRequest) returns (ResolveModelResponse) {
       option (gibson.auth.v1.authz) = {
         relation: "can_use"
         object_type: "component"
@@ -124,16 +107,16 @@ service HarnessCallbackService {
       };
     }
 
-    // Agent Operations
-    rpc DelegateToAgent(DelegateToAgentRequest) returns (DelegateToAgentResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "can_use"
-        object_type: "component"
-        object_deriver: "system_tenant"
-        allowed_identities: 4  // COMPONENT
-      };
-    }
-    rpc ListAgents(ListAgentsRequest) returns (ListAgentsResponse) {
+    // ResolveAgent finds the route of an agent on the Agent gateway (A2A). The
+    // caller then sends an A2A SendMessage (JSON-RPC binding) to gateway_url
+    // with the A2A client of the SDK. It sends the task grant in the header
+    // x-capability-grant and each route header of the response unchanged.
+    // This call replaces DelegateToAgent and ListAgents. An agent finds other
+    // agents through the Agent Cards that the daemon serves.
+    //
+    // Errors: NotFound (no agent of this name), PermissionDenied (the grant
+    // does not allow the delegation), InvalidArgument.
+    rpc ResolveAgent(ResolveAgentRequest) returns (ResolveAgentResponse) {
       option (gibson.auth.v1.authz) = {
         relation: "can_use"
         object_type: "component"
@@ -779,109 +762,36 @@ message ContextInfo {
     string tool_execution_id = 9;
 }
 
-message TokenUsage {
-    int32 input_tokens = 1;
-    int32 output_tokens = 2;
-    int32 total_tokens = 3;
-}
-
-message LLMMessage {
-    string role = 1;  // system, user, assistant, tool
-    string content = 2;
-    repeated ToolCall tool_calls = 3;
-    repeated ToolResult tool_results = 4;
-    string name = 5;  // For tool messages
-}
-
-message ToolCall {
-    string id = 1;
-    string name = 2;
-    string arguments = 3;  // JSON string
-}
-
-message ToolResult {
-    string tool_call_id = 1;
-    string content = 2;
-    bool is_error = 3;
-}
-
-message ToolDef {
-    string name = 1;
-    string description = 2;
-    JSONSchemaNode parameters = 3;
-}
-
-// ============================================================================
-// LLM Operations
-// ============================================================================
-
-message LLMCompleteRequest {
+// ResolveModelRequest asks the daemon for the model of a slot.
+message ResolveModelRequest {
     ContextInfo context = 1;
+    // slot is the name of the slot, for example "primary".
     string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
-    repeated LLMMessage messages = 3;
-
-    // Completion options
-    optional double temperature = 4;
-    optional int32 max_tokens = 5;
-    optional double top_p = 6;
-    repeated string stop = 7;
 }
 
-message LLMCompleteWithToolsRequest {
-    ContextInfo context = 1;
-    string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
-    repeated LLMMessage messages = 3;
-    repeated ToolDef tools = 4;
-}
-
-message LLMCompleteStructuredRequest {
-    ContextInfo context = 1;
-    string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
-    repeated LLMMessage messages = 3;
-    string schema_json = 4 [(buf.validate.field).string = { max_len: 16777216 }]; // JSON-encoded schema (Go struct as JSON) - kept for backward compatibility
-}
-
-message LLMCompleteStructuredResponse {
-    gibson.common.v1.TypedValue result = 1;
-    reserved 2;  // Previously result_json
-    TokenUsage usage = 3;
-    HarnessError error = 4;
-}
-
-message LLMCompleteResponse {
-    string content = 1;
-    repeated ToolCall tool_calls = 2;
-    string finish_reason = 3;
-    TokenUsage usage = 4;
-    HarnessError error = 5;
-}
-
-message LLMCompleteWithToolsResponse {
-    string content = 1;
-    repeated ToolCall tool_calls = 2;
-    string finish_reason = 3;
-    TokenUsage usage = 4;
-    HarnessError error = 5;
-}
-
-message LLMStreamRequest {
-    ContextInfo context = 1;
-    string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
-    repeated LLMMessage messages = 3;
-
-    // Completion options
-    optional double temperature = 4;
-    optional int32 max_tokens = 5;
-    optional double top_p = 6;
-    repeated string stop = 7;
-}
-
-message LLMStreamResponse {
-    string delta = 1;
-    repeated ToolCall tool_calls = 2;
-    string finish_reason = 3;
-    TokenUsage usage = 4;
-    HarnessError error = 5;
+// ResolveModelResponse names the one model that the slot resolves to, and
+// the facts that the agent needs to call the model gateway.
+message ResolveModelResponse {
+    // model is the exact model name. The agent puts it in the model field of
+    // the Open Responses request.
+    string model = 1;
+    // provider is the name of the model provider of the tenant.
+    string provider = 2;
+    // gateway_url is the base URL of the model gateway. The agent calls
+    // POST {gateway_url}/v1/responses.
+    string gateway_url = 3;
+    // route_headers are the headers that the gateway route matches on, for
+    // example the tenant and the provider. The agent sends each one unchanged.
+    map<string, string> route_headers = 4;
+    // context_window is the size of the context window in tokens. 0 means unknown.
+    int32 context_window = 5;
+    // max_output_tokens is the output limit of the model in tokens. 0 means unknown.
+    int32 max_output_tokens = 6;
+    // gateway_ca_pem is the PEM bundle of the private CA that signed the
+    // certificate of the model gateway. The agent trusts exactly this bundle
+    // for calls to gateway_url, which must use https. Empty means the system
+    // roots.
+    string gateway_ca_pem = 7;
 }
 
 // ============================================================================
@@ -905,6 +815,13 @@ message CallToolProtoResponse {
     // JSON-serialized proto response message
     bytes output_json = 1;
     HarnessError error = 2;
+    // tool_call_id is the id that the daemon recorded for this call. An agent
+    // cites it in the tool_call_ids of a finding or a proof (CiteToolCalls in the
+    // SDK). It is the same id as ContextInfo.tool_execution_id of the work that
+    // the call started. For the meta-tool invoke_tool it is the id of the
+    // recorded call of the invoked tool. Empty when the daemon recorded none,
+    // and from a daemon that does not send it.
+    string tool_call_id = 3;
 }
 
 // CallToolProtoStreamRequest initiates a streaming tool execution.
@@ -935,6 +852,11 @@ message CallToolProtoStreamResponse {
     int64 sequence = 12;
     reserved 13;
     reserved "timestamp_ms";
+    // tool_call_id is the id that the daemon recorded for this call, as in
+    // CallToolProtoResponse.tool_call_id. The daemon sets it on the last message
+    // of the stream (the complete event or the error event). Empty on the other
+    // messages, and from a daemon that does not send it.
+    string tool_call_id = 14;
 }
 
 // ToolProgressEvent indicates progress during tool execution
@@ -1050,6 +972,10 @@ message ToolResultsResponse {
     string output_type = 3;       // Proto message type
     HarnessError error = 4;       // Error if execution failed
     bool is_final = 5;            // True if this is the last result
+    // tool_call_id is the id that the daemon recorded for the call of this
+    // input, as in CallToolProtoResponse.tool_call_id. Empty when the daemon
+    // recorded none, and from a daemon that does not send it.
+    string tool_call_id = 6;
 }
 
 // JSONSchemaNode represents a JSON Schema node with taxonomy support.
@@ -1148,58 +1074,32 @@ message HarnessPluginDescriptor {
 // Agent Operations
 // ============================================================================
 
-// DelegateToAgentRequest dispatches a task to another agent. The target
-// selector says WHERE the task runs. Absent means an ephemeral launch, which
-// is the behavior every caller had before banks existed.
-message DelegateToAgentRequest {
+// ResolveAgentRequest asks the daemon for the Agent gateway route of an agent.
+message ResolveAgentRequest {
     ContextInfo context = 1;
+    // name is the name of the agent.
     string name = 2 [(buf.validate.field).string = { max_len: 1024 }];
-    gibson.types.v1.Task task = 3;
-
-    // target says where the task runs. Leave it unset for an ephemeral
-    // launch.
-    oneof target {
-        // ephemeral launches a new sandbox for this task and tears it down
-        // when the task ends. Setting it to true is the same as leaving the
-        // oneof unset; it lets a caller say so out loud.
-        bool ephemeral = 10;
-        // bank_id opens a new job on that bank. A member with a free slot
-        // takes it, or the bank queues it, per the bank spill policy.
-        string bank_id = 11 [(buf.validate.field).string = { max_len: 1024 }];
-        // job_id sends the task as the next input to a job that is already
-        // open, so the agent keeps its conversation and its worktrees.
-        string job_id = 12 [(buf.validate.field).string = { max_len: 1024 }];
-    }
+    // bank_id names a bank of always-on agents. When it is set, the route is
+    // the route of a member of that bank, and name is the agent that the bank
+    // runs. Unset means an ephemeral agent.
+    optional string bank_id = 3 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
-// DelegateToAgentResponse carries the delegated task's result, and the job
-// the task ran as when the target was a bank or a job.
-message DelegateToAgentResponse {
-    gibson.types.v1.Result result = 1;
-    HarnessError error = 2;
-    // job_id names the job the task ran as. Empty for an ephemeral launch.
-    string job_id = 3;
-    // member_id names the bank member that ran the job. Empty for an
-    // ephemeral launch.
-    string member_id = 4;
-}
-
-message ListAgentsRequest {
-    ContextInfo context = 1;
-}
-
-message ListAgentsResponse {
-    repeated HarnessAgentDescriptor agents = 1;
-    HarnessError error = 2;
-}
-
-message HarnessAgentDescriptor {
-    string name = 1;
-    string version = 2;
-    string description = 3;
-    repeated string capabilities = 4;
-    repeated string target_types = 5;
-    repeated string technique_types = 6;
+// ResolveAgentResponse holds what the caller needs to send an A2A message to
+// an agent through the Agent gateway.
+message ResolveAgentResponse {
+    // gateway_url is the JSON-RPC interface URL of the agent on the Agent
+    // gateway. The caller sends A2A SendMessage to this URL.
+    string gateway_url = 1;
+    // route_headers are the headers that the gateway route matches on. The
+    // caller sends each one unchanged.
+    map<string, string> route_headers = 2;
+    // gateway_ca_pem is the PEM bundle of the private CA of the Agent gateway.
+    // The caller trusts exactly this bundle for gateway_url, which must use
+    // https. Empty means the system roots.
+    string gateway_ca_pem = 3;
+    // agent_card_url is the URL of the Agent Card of the agent on the gateway.
+    string agent_card_url = 4;
 }
 
 // ============================================================================
@@ -1214,6 +1114,15 @@ message SubmitFindingRequest {
     // same key returns the result of the first request and does the work one
     // time. An empty key turns the protection off for the call.
     string idempotency_key = 3 [(buf.validate.field).string = { max_len: 128 }];
+
+    // tool_call_ids names the tool calls whose recorded results are the
+    // recorded evidence of this finding. Each id is the
+    // ContextInfo.tool_execution_id of a tool call that the daemon recorded in
+    // this mission. The daemon reads the recorded result of each call. If an id
+    // names no record of this mission and tenant, the whole request fails.
+    // Evidence in finding.evidence that no tool call id backs is typed by the
+    // agent.
+    repeated string tool_call_ids = 4;
 }
 
 message SubmitFindingResponse {
@@ -2311,12 +2220,21 @@ message ValidationError {
 // MissionStatus represents the current state of a mission.
 enum MissionStatus {
     MISSION_STATUS_UNSPECIFIED = 0;
-    MISSION_STATUS_PENDING = 1;
-    MISSION_STATUS_RUNNING = 2;
     MISSION_STATUS_PAUSED = 3;
     MISSION_STATUS_COMPLETED = 4;
     MISSION_STATUS_FAILED = 5;
-    MISSION_STATUS_CANCELLED = 6;
+    MISSION_STATUS_INPUT_REQUIRED = 7;
+    reserved 1, 2, 6;
+    reserved "MISSION_STATUS_PENDING", "MISSION_STATUS_RUNNING", "MISSION_STATUS_CANCELLED";
+
+    // The values 8, 9 and 10 are the A2A Task states. The old values 1 (PENDING),
+    // 2 (RUNNING) and 6 (CANCELLED) are deleted, and their numbers and names are
+    // reserved. The wire contract is append-only (ADR-0028), so the renamed
+    // states have new numbers.
+
+    MISSION_STATUS_SUBMITTED = 8;
+    MISSION_STATUS_WORKING = 9;
+    MISSION_STATUS_CANCELED = 10;
 }
 
 // MissionMetrics aggregates execution statistics.

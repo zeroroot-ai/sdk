@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"errors"
 	"testing"
+
+	"github.com/a2aproject/a2a-go/v2/a2a"
 )
 
 func TestNewBuildsAnAgent(t *testing.T) {
@@ -19,7 +21,7 @@ func TestNewBuildsAnAgent(t *testing.T) {
 		SetTargetTypes([]string{"http"}).
 		SetExecuteFunc(func(context.Context, Harness, Task) (Result, error) {
 			called = true
-			return Result{Status: StatusSuccess}, nil
+			return Result{Status: a2a.TaskStateCompleted}, nil
 		})
 	a, err := New(cfg)
 	if err != nil {
@@ -35,7 +37,7 @@ func TestNewBuildsAnAgent(t *testing.T) {
 		t.Fatalf("TargetTypes = %v", got)
 	}
 	res, err := a.Execute(context.Background(), nil, Task{})
-	if err != nil || !called || res.Status != StatusSuccess {
+	if err != nil || !called || res.Status != a2a.TaskStateCompleted {
 		t.Fatalf("Execute = %+v, %v (called %v)", res, err, called)
 	}
 	if s, ok := a.(interface{ Shutdown(context.Context) error }); !ok || s.Shutdown(context.Background()) != nil {
@@ -90,9 +92,6 @@ func TestStringers(t *testing.T) {
 		if got := scope.String(); got != want {
 			t.Errorf("RunScope(%d) = %q, want %q", scope, got, want)
 		}
-	}
-	if StatusFailed.String() != "failed" {
-		t.Errorf("StatusFailed = %q", StatusFailed.String())
 	}
 }
 

@@ -206,7 +206,7 @@ func TestIsForkUnclaimed(t *testing.T) {
 		want bool
 	}{
 		{"the refusal", unclaimed(t, codes.FailedPrecondition, ReasonForkUnclaimed, ErrorDomain), true},
-		{"the refusal, wrapped", fmt.Errorf("LLMComplete: %w", unclaimed(t, codes.FailedPrecondition, ReasonForkUnclaimed, ErrorDomain)), true},
+		{"the refusal, wrapped", fmt.Errorf("ResolveModel: %w", unclaimed(t, codes.FailedPrecondition, ReasonForkUnclaimed, ErrorDomain)), true},
 		{"another reason", unclaimed(t, codes.FailedPrecondition, "OTHER", ErrorDomain), false},
 		{"another domain", unclaimed(t, codes.FailedPrecondition, ReasonForkUnclaimed, "other.v1"), false},
 		{"another code", unclaimed(t, codes.PermissionDenied, ReasonForkUnclaimed, ErrorDomain), false},

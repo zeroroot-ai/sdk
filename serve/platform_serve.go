@@ -16,18 +16,18 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/a2aproject/a2a-go/v2/a2a"
 	"github.com/spiffe/go-spiffe/v2/spiffegrpc/grpccredentials"
 	"github.com/spiffe/go-spiffe/v2/spiffetls/tlsconfig"
 	"github.com/spiffe/go-spiffe/v2/workloadapi"
+
 	"github.com/zeroroot-ai/sdk/agent"
 	componentpb "github.com/zeroroot-ai/sdk/api/gen/gibson/component/v1"
-	typespb "github.com/zeroroot-ai/sdk/api/gen/gibson/types/v1"
 	"github.com/zeroroot-ai/sdk/tool"
 	"github.com/zeroroot-ai/sdk/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/protobuf/encoding/protojson"
-	protolib "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 )
@@ -143,6 +143,7 @@ func servePlatformAgent(a agent.Agent, cfg *Config) error {
 	targetTypes := a.TargetTypes()
 	techniqueTypes := a.TechniqueTypes()
 
+	cardSkills, inputModes, outputModes := agent.CardOf(a)
 	info := ComponentInfo{
 		Kind:    "agent",
 		Name:    a.Name(),
@@ -155,6 +156,10 @@ func servePlatformAgent(a agent.Agent, cfg *Config) error {
 		},
 		Capabilities:      capabilities,
 		OntologyExtension: ontologyExtensionFrom(a),
+
+		CardSkills:         cardSkills,
+		DefaultInputModes:  inputModes,
+		DefaultOutputModes: outputModes,
 	}
 
 	reg, err := client.Register(ctx, info)
@@ -257,8 +262,8 @@ func servePlatformAgent(a agent.Agent, cfg *Config) error {
 	}
 }
 
-// executePlatformAgentWork deserializes a work item payload, invokes the agent,
-// and submits the result back to the platform.
+// executePlatformAgentWork reads the A2A message of a work item, invokes the
+// agent, and submits the A2A Task of the result back to the platform.
 func executePlatformAgentWork(ctx context.Context, client *PlatformClient, a agent.Agent, work *WorkItem) {
 	slog.Info("agent executing work item",
 		"component", "agent",
@@ -267,32 +272,28 @@ func executePlatformAgentWork(ctx context.Context, client *PlatformClient, a age
 		"work_type", work.WorkType,
 	)
 
-	// Deserialize task from proto-encoded payload.
-	var protoTask typespb.Task
-	if err := protolib.Unmarshal(work.Payload, &protoTask); err != nil {
-		// Fall back to JSON deserialization for flexibility.
-		var taskJSON struct {
-			ID   string `json:"id"`
-			Goal string `json:"goal"`
-		}
-		if jsonErr := json.Unmarshal(work.Payload, &taskJSON); jsonErr != nil {
-			slog.Error("failed to deserialize agent task payload",
-				"work_id", work.WorkID,
-				"proto_error", err,
-				"json_error", jsonErr,
-			)
-			_ = client.SubmitResult(ctx, work.WorkID, nil, &WorkError{
-				Code:      "DESERIALIZATION_ERROR",
-				Message:   fmt.Sprintf("failed to decode task payload: %v", err),
-				Retryable: false,
-			})
-			return
-		}
-		protoTask.Id = taskJSON.ID
-		protoTask.Goal = taskJSON.Goal
+	// The payload is an A2A message (A2A v1.0 JSON). The Gibson context that A2A
+	// has no field for is in the message metadata (agent.ExtensionKey).
+	var msg a2a.Message
+	if err := json.Unmarshal(work.Payload, &msg); err != nil {
+		slog.Error("failed to decode the a2a message of the work item", "work_id", work.WorkID, "error", err)
+		_ = client.SubmitResult(ctx, work.WorkID, nil, &WorkError{
+			Code:      "DESERIALIZATION_ERROR",
+			Message:   fmt.Sprintf("failed to decode the a2a message: %v", err),
+			Retryable: false,
+		})
+		return
 	}
-
-	task := ProtoToTask(&protoTask)
+	task, err := agent.TaskFromMessage(&msg)
+	if err != nil {
+		slog.Error("invalid a2a message in the work item", "work_id", work.WorkID, "error", err)
+		_ = client.SubmitResult(ctx, work.WorkID, nil, &WorkError{
+			Code:      "DESERIALIZATION_ERROR",
+			Message:   fmt.Sprintf("invalid a2a message: %v", err),
+			Retryable: false,
+		})
+		return
+	}
 
 	// Apply work item timeout if provided.
 	taskCtx := ctx
@@ -306,6 +307,7 @@ func executePlatformAgentWork(ctx context.Context, client *PlatformClient, a age
 	// LLM completion, tools, plugins, and findings through the platform RPCs.
 	harness := NewPlatformHarness(client,
 		WithPlatformWorkID(work.WorkID),
+		WithPlatformTaskGrant(work.TaskGrant),
 		WithPlatformMission(missionContextFromWorkItem(work)),
 		WithPlatformTarget(targetInfoFromWorkItem(work)),
 		WithPlatformLogger(slog.Default().With("agent", a.Name(), "work_id", work.WorkID)),
@@ -314,6 +316,23 @@ func executePlatformAgentWork(ctx context.Context, client *PlatformClient, a age
 	// Populate mission execution context from the work item if the daemon
 	// provided it (key: "mission_execution_context_json").
 	harness.SetMissionExecutionContext(missionExecutionContextFromWorkItem(work))
+
+	// Load the pinned Agent Skills before the first model call. A load that
+	// fails stops the run (gibson#1375).
+	if len(task.PinnedSkills) > 0 {
+		items, err := agent.LoadPinnedSkills(taskCtx, harness, task.PinnedSkills)
+		if err != nil {
+			slog.Warn("pinned skill load failed",
+				"component", "agent", "name", a.Name(), "work_id", work.WorkID, "error", err)
+			_ = client.SubmitResult(ctx, work.WorkID, nil, &WorkError{
+				Code:      "PINNED_SKILL_LOAD_FAILED",
+				Message:   err.Error(),
+				Retryable: false,
+			})
+			return
+		}
+		task.SkillItems = items
+	}
 
 	result, err := a.Execute(taskCtx, harness, task)
 
@@ -332,17 +351,20 @@ func executePlatformAgentWork(ctx context.Context, client *PlatformClient, a age
 		return
 	}
 
-	// Serialize result as proto bytes.
-	protoResult := ResultToProto(result)
-	resultBytes, marshalErr := protolib.Marshal(protoResult)
-	if marshalErr != nil {
-		slog.Error("failed to marshal agent result",
+	// The result is an A2A Task (A2A v1.0 JSON). Its state is the status of the result.
+	a2aTask, taskErr := agent.ResultToTask(task, result)
+	var resultBytes []byte
+	if taskErr == nil {
+		resultBytes, taskErr = json.Marshal(a2aTask)
+	}
+	if taskErr != nil {
+		slog.Error("failed to build the a2a task of the agent result",
 			"work_id", work.WorkID,
-			"error", marshalErr,
+			"error", taskErr,
 		)
 		_ = client.SubmitResult(ctx, work.WorkID, nil, &WorkError{
 			Code:      "SERIALIZATION_ERROR",
-			Message:   fmt.Sprintf("failed to marshal result: %v", marshalErr),
+			Message:   fmt.Sprintf("failed to build the a2a task: %v", taskErr),
 			Retryable: false,
 		})
 		return
@@ -362,7 +384,7 @@ func executePlatformAgentWork(ctx context.Context, client *PlatformClient, a age
 		"component", "agent",
 		"name", a.Name(),
 		"work_id", work.WorkID,
-		"status", result.Status,
+		"state", a2aTask.Status.State,
 	)
 }
 

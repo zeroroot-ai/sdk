@@ -20,19 +20,12 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 
+	"github.com/zeroroot-ai/sdk/agent"
 	componentpb "github.com/zeroroot-ai/sdk/api/gen/gibson/component/v1"
+	daemonpb "github.com/zeroroot-ai/sdk/api/gen/gibson/daemon/v1"
 	"github.com/zeroroot-ai/sdk/capabilitygrant"
 	"github.com/zeroroot-ai/sdk/graphrag"
 )
-
-// ============================================================================
-// Local message types mirroring component.proto
-//
-// These types are the public API surface for PlatformClient callers. They
-// mirror the wire types in componentpb but are deliberately decoupled so that
-// callers in the serve package do not need to import the generated proto package
-// directly.
-// ============================================================================
 
 // ComponentInfo carries registration metadata sent in RegisterComponent.
 type ComponentInfo struct {
@@ -59,6 +52,14 @@ type ComponentInfo struct {
 	// `serve.OntologyContributor` have this field populated automatically by
 	// `serve.Tool` / `serve.Agent` from `OntologyExtension()`.
 	OntologyExtension graphrag.OntologyExtension
+	// CardSkills are the entries of the "skills" list of the A2A Agent Card
+	// (kind == "agent"). They are A2A AgentSkills, not Agent Skills in the
+	// SKILL.md format.
+	CardSkills []agent.CardSkill
+	// DefaultInputModes and DefaultOutputModes are the default media types of
+	// the Agent Card (kind == "agent").
+	DefaultInputModes  []string
+	DefaultOutputModes []string
 }
 
 // RegistrationResponse carries the server-assigned instance ID and connection
@@ -83,6 +84,9 @@ type WorkItem struct {
 	Context map[string]string
 	// TimeoutMs is the maximum allowed time to complete and submit the result.
 	TimeoutMs int64
+	// TaskGrant is the task grant of this work item. It is a secret. Empty
+	// means the daemon gave none, and the agent then cannot call a gateway.
+	TaskGrant string
 }
 
 // WorkError represents a structured error outcome for a failed work item.
@@ -96,57 +100,15 @@ type WorkError struct {
 	Retryable bool
 }
 
-// LLMMessage is a single message in an LLM conversation, matching the
-// LLMMessage proto message in component.proto.
-type LLMMessage struct {
-	// Role is "system", "user", or "assistant".
-	Role    string
-	Content string
-}
-
-// TokenUsage reports token consumption for an LLM completion call.
-type TokenUsage struct {
-	InputTokens  int32
-	OutputTokens int32
-}
-
-// CompleteResponse carries the LLM reply for a non-streaming completion.
-type CompleteResponse struct {
-	Response *LLMMessage
-	Usage    *TokenUsage
-}
-
-// CompleteWithToolsResult holds the LLM reply, any tool calls, and token usage
-// for a CompleteWithTools request.
-type CompleteWithToolsResult struct {
-	// Response is the LLM text reply (may be nil when the model only emitted tool calls).
-	Response *LLMMessage
-	// ToolCalls is the list of tool-use invocations requested by the model.
-	ToolCalls []*componentpb.ToolCallResult
-	// Usage reports token consumption for this call.
-	Usage *TokenUsage
-	// FinishReason is the model's stop reason (e.g. "tool_use", "end_turn").
-	FinishReason string
-}
-
-// StreamChunk is a single token chunk delivered by StreamCompletion.
-type StreamChunk struct {
-	// Content is the incremental text fragment for this chunk.
-	Content string
-	// Done is true on the final chunk; Usage is only set when Done is true.
-	Done bool
-	// Usage reports token consumption, populated only on the final chunk.
-	Usage *TokenUsage
-	// Err is non-nil if the stream terminated with an error.
-	Err error
-}
-
 // ToolStreamEvent is a single event delivered by CallToolStream.
 type ToolStreamEvent struct {
 	// EventType is one of "progress", "partial", "warning", "error", "result".
 	EventType string
 	// PayloadJSON carries event-specific data.
 	PayloadJSON string
+	// ToolCallID is the id that the daemon recorded for the call. The daemon sets
+	// it on the last event. Empty otherwise.
+	ToolCallID string
 	// Err is non-nil if the stream terminated with an error.
 	Err error
 }
@@ -157,13 +119,11 @@ type QueuedToolResultEvent struct {
 	Index int32
 	// OutputJSON is the JSON-encoded tool output.
 	OutputJSON string
+	// ToolCallID is the id that the daemon recorded for the call of this input.
+	ToolCallID string
 	// Err is non-nil if this invocation failed or the stream terminated with an error.
 	Err error
 }
-
-// ============================================================================
-// PlatformClient
-// ============================================================================
 
 // PlatformClient manages the outbound gRPC connection from a Gibson component
 // to the Gibson platform's ComponentService. It is thread-safe and supports
@@ -465,10 +425,6 @@ func (pc *PlatformClient) InstanceID() string {
 	return pc.instanceID
 }
 
-// ============================================================================
-// ComponentService RPC methods
-// ============================================================================
-
 // Register calls the RegisterComponent RPC and stores the returned instance ID
 // and poll timeout. The RegistrationResponse carries connection parameters
 // (heartbeat/poll intervals) that callers should use to configure their
@@ -488,6 +444,15 @@ func (pc *PlatformClient) Register(ctx context.Context, info ComponentInfo) (*Re
 		InputMessageType:  info.InputMessageType,
 		OutputMessageType: info.OutputMessageType,
 		FileDescriptorSet: info.FileDescriptorSet,
+
+		DefaultInputModes:  info.DefaultInputModes,
+		DefaultOutputModes: info.DefaultOutputModes,
+	}
+	for _, cs := range info.CardSkills {
+		req.CardSkills = append(req.CardSkills, &componentpb.CardSkill{
+			Id: cs.ID, Name: cs.Name, Description: cs.Description, Tags: cs.Tags,
+			Examples: cs.Examples, InputModes: cs.InputModes, OutputModes: cs.OutputModes,
+		})
 	}
 	if !info.OntologyExtension.IsZero() {
 		req.OntologyExtension = graphrag.OntologyExtensionToProto(info.OntologyExtension)
@@ -545,6 +510,7 @@ func (pc *PlatformClient) PollWork(ctx context.Context) (*WorkItem, error) {
 		Payload:   resp.Payload,
 		Context:   resp.Context,
 		TimeoutMs: resp.TimeoutMs,
+		TaskGrant: resp.TaskGrant,
 	}
 
 	return item, nil
@@ -613,67 +579,93 @@ func (pc *PlatformClient) Heartbeat(ctx context.Context) error {
 	return nil
 }
 
-// Complete proxies a non-streaming LLM completion request through the agent
-// harness. workID ties the request to the active work item for authorization
-// and billing. slot is the named LLM slot (e.g. "primary") declared by the agent.
-func (pc *PlatformClient) Complete(ctx context.Context, workID, slot string, messages []LLMMessage) (*CompleteResponse, error) {
-	if err := pc.ensureConnected("Complete"); err != nil {
+// ResolveModel asks the platform for the exact model of a slot.
+func (pc *PlatformClient) ResolveModel(ctx context.Context, workID, slot string) (*componentpb.ResolveModelResponse, error) {
+	if err := pc.ensureConnected("ResolveModel"); err != nil {
 		return nil, err
 	}
 	if workID == "" {
-		return nil, errors.New("Complete: workID cannot be empty")
+		return nil, errors.New("ResolveModel: workID cannot be empty")
 	}
 	if slot == "" {
-		return nil, errors.New("Complete: slot cannot be empty")
+		return nil, errors.New("ResolveModel: slot cannot be empty")
 	}
-
-	protoMsgs := make([]*componentpb.LLMMessage, len(messages))
-	for i, m := range messages {
-		protoMsgs[i] = &componentpb.LLMMessage{
-			Role:    m.Role,
-			Content: m.Content,
-		}
-	}
-
-	req := &componentpb.CompleteRequest{
-		WorkId:   workID,
-		Slot:     slot,
-		Messages: protoMsgs,
-	}
-
-	resp, err := pc.service.Complete(ctx, req)
+	resp, err := pc.service.ResolveModel(ctx, &componentpb.ResolveModelRequest{WorkId: workID, Slot: slot})
 	if err != nil {
-		return nil, fmt.Errorf("Complete: %w", err)
+		return nil, fmt.Errorf("ResolveModel: %w", err)
 	}
+	return resp, nil
+}
 
-	result := &CompleteResponse{}
-	if resp.Response != nil {
-		result.Response = &LLMMessage{
-			Role:    resp.Response.Role,
-			Content: resp.Response.Content,
-		}
+// ResolveAgent asks the platform for the Agent gateway route of an agent.
+func (pc *PlatformClient) ResolveAgent(
+	ctx context.Context, workID, name, bankID string,
+) (*componentpb.ResolveAgentResponse, error) {
+	if err := pc.ensureConnected("ResolveAgent"); err != nil {
+		return nil, err
 	}
-	if resp.Usage != nil {
-		result.Usage = &TokenUsage{
-			InputTokens:  resp.Usage.InputTokens,
-			OutputTokens: resp.Usage.OutputTokens,
-		}
+	if workID == "" {
+		return nil, errors.New("ResolveAgent: workID cannot be empty")
 	}
-	return result, nil
+	if name == "" {
+		return nil, errors.New("ResolveAgent: name cannot be empty")
+	}
+	req := &componentpb.ResolveAgentRequest{WorkId: workID, Name: name}
+	if bankID != "" {
+		req.BankId = &bankID
+	}
+	resp, err := pc.service.ResolveAgent(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("ResolveAgent: %w", err)
+	}
+	return resp, nil
+}
+
+// grantCreds sends a task grant in x-capability-grant. A call option with it
+// replaces the per-RPC grant of the connection for one call.
+type grantCreds struct{ token string }
+
+func (g grantCreds) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
+	return map[string]string{capabilitygrant.MetadataHeaderCapabilityGrant: g.token}, nil
+}
+
+func (grantCreds) RequireTransportSecurity() bool { return false }
+
+// RenewTaskGrant asks the daemon for a new task grant of a task. It presents
+// the current grant, as the call needs. It returns the new grant.
+func (pc *PlatformClient) RenewTaskGrant(ctx context.Context, current string) (string, error) {
+	if err := pc.ensureConnected("RenewTaskGrant"); err != nil {
+		return "", err
+	}
+	claims, err := capabilitygrant.ClaimsOf(current)
+	if err != nil {
+		return "", fmt.Errorf("RenewTaskGrant: %w", err)
+	}
+	resp, err := daemonpb.NewDaemonServiceClient(pc.conn).RenewCapabilityGrant(ctx,
+		&daemonpb.RenewCapabilityGrantRequest{
+			AgentId: claims.Subject, MissionId: claims.MissionID, TaskId: claims.TaskID,
+		}, grpc.PerRPCCredentials(grantCreds{token: current}))
+	if err != nil {
+		return "", fmt.Errorf("RenewTaskGrant: %w", err)
+	}
+	if resp.GetCapabilityGrant() == "" {
+		return "", errors.New("RenewTaskGrant: the daemon returned no grant")
+	}
+	return resp.GetCapabilityGrant(), nil
 }
 
 // CallTool proxies a tool execution request through the agent harness.
 // inputJSON must be a JSON object matching the named tool's input schema.
 // Returns the JSON-encoded tool output on success.
-func (pc *PlatformClient) CallTool(ctx context.Context, workID, toolName, inputJSON string) (string, error) {
+func (pc *PlatformClient) CallTool(ctx context.Context, workID, toolName, inputJSON string) (output, toolCallID string, err error) {
 	if err := pc.ensureConnected("CallTool"); err != nil {
-		return "", err
+		return "", "", err
 	}
 	if workID == "" {
-		return "", errors.New("CallTool: workID cannot be empty")
+		return "", "", errors.New("CallTool: workID cannot be empty")
 	}
 	if toolName == "" {
-		return "", errors.New("CallTool: toolName cannot be empty")
+		return "", "", errors.New("CallTool: toolName cannot be empty")
 	}
 
 	req := &componentpb.CallToolRequest{
@@ -684,12 +676,12 @@ func (pc *PlatformClient) CallTool(ctx context.Context, workID, toolName, inputJ
 
 	resp, err := pc.service.CallTool(ctx, req)
 	if err != nil {
-		return "", fmt.Errorf("CallTool: %w", err)
+		return "", "", fmt.Errorf("CallTool: %w", err)
 	}
 	if resp.Error != nil && resp.Error.Code != "" {
-		return "", fmt.Errorf("CallTool %s: [%s] %s", toolName, resp.Error.Code, resp.Error.Message)
+		return "", resp.ToolCallId, fmt.Errorf("CallTool %s: [%s] %s", toolName, resp.Error.Code, resp.Error.Message)
 	}
-	return resp.OutputJson, nil
+	return resp.OutputJson, resp.ToolCallId, nil
 }
 
 // QueryPlugin proxies a plugin method invocation through the agent harness.
@@ -753,121 +745,6 @@ func (pc *PlatformClient) SubmitFinding(ctx context.Context, workID string, find
 	return resp.FindingId, nil
 }
 
-// ============================================================================
-// New harness-parity methods — added in task 2
-// ============================================================================
-
-// CompleteWithTools proxies an LLM completion with tool definitions for
-// function-calling support. tools is a slice of componentpb.ToolDefinition
-// describing the tools available to the model.
-func (pc *PlatformClient) CompleteWithTools(ctx context.Context, workID, slot string, messages []LLMMessage, tools []*componentpb.ToolDefinition) (*CompleteWithToolsResult, error) {
-	if err := pc.ensureConnected("CompleteWithTools"); err != nil {
-		return nil, err
-	}
-
-	protoMsgs := make([]*componentpb.LLMMessage, len(messages))
-	for i, m := range messages {
-		protoMsgs[i] = &componentpb.LLMMessage{Role: m.Role, Content: m.Content}
-	}
-
-	resp, err := pc.service.CompleteWithTools(ctx, &componentpb.CompleteWithToolsRequest{
-		WorkId:   workID,
-		Slot:     slot,
-		Messages: protoMsgs,
-		Tools:    tools,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("PlatformClient.CompleteWithTools: %w", err)
-	}
-
-	result := &CompleteWithToolsResult{
-		ToolCalls:    resp.ToolCalls,
-		FinishReason: resp.FinishReason,
-	}
-	if resp.Response != nil {
-		result.Response = &LLMMessage{Role: resp.Response.Role, Content: resp.Response.Content}
-	}
-	if resp.Usage != nil {
-		result.Usage = &TokenUsage{InputTokens: resp.Usage.InputTokens, OutputTokens: resp.Usage.OutputTokens}
-	}
-	return result, nil
-}
-
-// CompleteStructured proxies an LLM completion requesting JSON output conforming
-// to the provided JSON Schema. Returns the result_json string on success.
-func (pc *PlatformClient) CompleteStructured(ctx context.Context, workID, slot string, messages []LLMMessage, schemaJSON string) (string, error) {
-	if err := pc.ensureConnected("CompleteStructured"); err != nil {
-		return "", err
-	}
-
-	protoMsgs := make([]*componentpb.LLMMessage, len(messages))
-	for i, m := range messages {
-		protoMsgs[i] = &componentpb.LLMMessage{Role: m.Role, Content: m.Content}
-	}
-
-	resp, err := pc.service.CompleteStructured(ctx, &componentpb.CompleteStructuredRequest{
-		WorkId:     workID,
-		Slot:       slot,
-		Messages:   protoMsgs,
-		SchemaJson: schemaJSON,
-	})
-	if err != nil {
-		return "", fmt.Errorf("PlatformClient.CompleteStructured: %w", err)
-	}
-	return resp.ResultJson, nil
-}
-
-// StreamCompletion proxies a streaming LLM completion request. It opens a
-// server-side stream and returns a channel that receives chunks as they arrive.
-// The channel is closed after the final chunk or on error. Callers should drain
-// the channel until it is closed; the last event will have Done==true or a
-// non-nil Err.
-func (pc *PlatformClient) StreamCompletion(ctx context.Context, workID, slot string, messages []LLMMessage) (<-chan StreamChunk, error) {
-	if err := pc.ensureConnected("StreamCompletion"); err != nil {
-		return nil, err
-	}
-
-	protoMsgs := make([]*componentpb.LLMMessage, len(messages))
-	for i, m := range messages {
-		protoMsgs[i] = &componentpb.LLMMessage{Role: m.Role, Content: m.Content}
-	}
-
-	stream, err := pc.service.CompleteStream(ctx, &componentpb.CompleteStreamRequest{
-		WorkId:   workID,
-		Slot:     slot,
-		Messages: protoMsgs,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("PlatformClient.StreamCompletion: %w", err)
-	}
-
-	ch := make(chan StreamChunk, 32)
-	go func() {
-		defer close(ch)
-		for {
-			msg, recvErr := stream.Recv()
-			if recvErr != nil {
-				if !errors.Is(recvErr, io.EOF) {
-					ch <- StreamChunk{Err: fmt.Errorf("PlatformClient.StreamCompletion: %w", recvErr)}
-				}
-				return
-			}
-			chunk := StreamChunk{
-				Content: msg.Content,
-				Done:    msg.Done,
-			}
-			if msg.Usage != nil {
-				chunk.Usage = &TokenUsage{InputTokens: msg.Usage.InputTokens, OutputTokens: msg.Usage.OutputTokens}
-			}
-			ch <- chunk
-			if msg.Done {
-				return
-			}
-		}
-	}()
-	return ch, nil
-}
-
 // QueueToolWork submits a batch of tool invocations for parallel execution and
 // returns the assigned job ID for tracking with ToolResults.
 func (pc *PlatformClient) QueueToolWork(ctx context.Context, workID, toolName string, inputsJSON []string) (string, error) {
@@ -917,6 +794,7 @@ func (pc *PlatformClient) CallToolStream(ctx context.Context, workID, toolName, 
 			evt := ToolStreamEvent{
 				EventType:   msg.EventType,
 				PayloadJSON: msg.PayloadJson,
+				ToolCallID:  msg.ToolCallId,
 			}
 			if msg.Error != nil && msg.Error.Code != "" {
 				evt.Err = fmt.Errorf("CallToolStream %s: [%s] %s", toolName, msg.Error.Code, msg.Error.Message)
@@ -960,6 +838,7 @@ func (pc *PlatformClient) ToolResults(ctx context.Context, workID, jobID string)
 			evt := QueuedToolResultEvent{
 				Index:      msg.Index,
 				OutputJSON: msg.OutputJson,
+				ToolCallID: msg.ToolCallId,
 			}
 			if msg.Error != nil && msg.Error.Code != "" {
 				evt.Err = fmt.Errorf("ToolResults index %d: [%s] %s", msg.Index, msg.Error.Code, msg.Error.Message)
@@ -984,37 +863,6 @@ func (pc *PlatformClient) ListTools(ctx context.Context, workID string) ([]*comp
 		return nil, fmt.Errorf("PlatformClient.ListTools: %w", err)
 	}
 	return resp.Tools, nil
-}
-
-// DelegateToAgent dispatches a sub-task to another agent and returns its
-// JSON-encoded result.
-func (pc *PlatformClient) DelegateToAgent(ctx context.Context, workID, agentName string, taskJSON []byte) ([]byte, error) {
-	if err := pc.ensureConnected("DelegateToAgent"); err != nil {
-		return nil, err
-	}
-
-	resp, err := pc.service.DelegateToAgent(ctx, &componentpb.DelegateToAgentRequest{
-		WorkId:    workID,
-		AgentName: agentName,
-		TaskJson:  taskJSON,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("PlatformClient.DelegateToAgent: %w", err)
-	}
-	return resp.ResultJson, nil
-}
-
-// ListAgents returns descriptors for all agents visible to the caller's tenant.
-func (pc *PlatformClient) ListAgents(ctx context.Context, workID string) ([]*componentpb.AgentDescriptorProto, error) {
-	if err := pc.ensureConnected("ListAgents"); err != nil {
-		return nil, err
-	}
-
-	resp, err := pc.service.ListAgents(ctx, &componentpb.ListAgentsRequest{WorkId: workID})
-	if err != nil {
-		return nil, fmt.Errorf("PlatformClient.ListAgents: %w", err)
-	}
-	return resp.Agents, nil
 }
 
 // CreateMission creates a new sub-mission and returns its JSON-encoded info.

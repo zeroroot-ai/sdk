@@ -140,26 +140,6 @@ service ComponentService {
       };
     }
 
-    // Complete proxies an LLM completion request through the agent harness.
-    rpc Complete(CompleteRequest) returns (CompleteResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "can_execute"
-        object_type: "component"
-        object_deriver: "system_tenant"
-        allowed_identities: 4  // COMPONENT
-      };
-    }
-
-    // CompleteStream proxies a streaming LLM completion request through the agent harness.
-    rpc CompleteStream(CompleteStreamRequest) returns (stream CompleteStreamResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "can_execute"
-        object_type: "component"
-        object_deriver: "system_tenant"
-        allowed_identities: 4  // COMPONENT
-      };
-    }
-
     // CallTool proxies a tool execution request through the agent harness.
     rpc CallTool(CallToolRequest) returns (CallToolResponse) {
       option (gibson.auth.v1.authz) = {
@@ -280,23 +260,16 @@ service ComponentService {
     }
 
     // =========================================================================
-    // Harness Proxy — LLM (extended)
+    // Harness Proxy — Model
     // =========================================================================
 
-    // CompleteWithTools proxies an LLM completion with tool definitions for
-    // function-calling support. Returns the response including any tool calls.
-    rpc CompleteWithTools(CompleteWithToolsRequest) returns (CompleteWithToolsResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "can_execute"
-        object_type: "component"
-        object_deriver: "system_tenant"
-        allowed_identities: 4  // COMPONENT
-      };
-    }
-
-    // CompleteStructured proxies an LLM completion requesting JSON output
-    // conforming to the supplied schema.
-    rpc CompleteStructured(CompleteStructuredRequest) returns (CompleteStructuredResponse) {
+    // ResolveModel turns a slot into one exact model name (ADR-0172). The agent
+    // then calls the model gateway with the Open Responses client of the SDK.
+    // The agent sends the task grant in the header x-capability-grant and sends
+    // each route header of the response unchanged. The gateway never sees a
+    // slot name. This is the same call as HarnessCallbackService.ResolveModel,
+    // for an agent that polls for work.
+    rpc ResolveModel(ResolveModelRequest) returns (ResolveModelResponse) {
       option (gibson.auth.v1.authz) = {
         relation: "can_execute"
         object_type: "component"
@@ -353,21 +326,19 @@ service ComponentService {
     }
 
     // =========================================================================
-    // Harness Proxy — Agent Delegation
+    // Harness Proxy — Agent Delegation (A2A)
     // =========================================================================
 
-    // DelegateToAgent dispatches a sub-task to another agent and returns its result.
-    rpc DelegateToAgent(DelegateToAgentRequest) returns (DelegateToAgentResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "can_execute"
-        object_type: "component"
-        object_deriver: "system_tenant"
-        allowed_identities: 4  // COMPONENT
-      };
-    }
-
-    // ListAgents returns descriptors for all agents visible to the caller's tenant.
-    rpc ListAgents(ListAgentsRequest) returns (ListAgentsResponse) {
+    // ResolveAgent finds the route of an agent on the Agent gateway (A2A). The
+    // caller then sends an A2A SendMessage (JSON-RPC binding) to gateway_url
+    // with the A2A client of the SDK. It sends the task grant in the header
+    // x-capability-grant and each route header of the response unchanged.
+    // This is the same call as HarnessCallbackService.ResolveAgent, for an
+    // agent that polls for work. It replaces DelegateToAgent and ListAgents.
+    //
+    // Errors: NotFound (no agent of this name), PermissionDenied (the grant
+    // does not allow the delegation), InvalidArgument.
+    rpc ResolveAgent(ResolveAgentRequest) returns (ResolveAgentResponse) {
       option (gibson.auth.v1.authz) = {
         relation: "can_execute"
         object_type: "component"
@@ -646,6 +617,37 @@ message RegisterComponentRequest {
     // disambiguate tools in the catalog (SearchTools). Used when kind == "plugin".
     // Empty is valid (older SDKs populate only `methods`).
     repeated ComponentMethod method_descriptors = 12;
+
+    // card_skills are the entries of the "skills" list of the A2A Agent Card
+    // of this agent (used when kind == "agent"). The daemon serves the card
+    // from the catalog, and it builds the card from this registration.
+    //
+    // Naming: an A2A AgentSkill is a capability entry of a card. It is NOT an
+    // Agent Skill in the SKILL.md format (the "skill:<name>" ids of the
+    // catalog). The field says card_skills so the two never mix.
+    repeated CardSkill card_skills = 13;
+
+    // default_input_modes are the media types that the agent accepts, as the
+    // defaultInputModes of the Agent Card (used when kind == "agent").
+    repeated string default_input_modes = 14;
+
+    // default_output_modes are the media types that the agent returns, as the
+    // defaultOutputModes of the Agent Card (used when kind == "agent").
+    repeated string default_output_modes = 15;
+}
+
+// CardSkill is one A2A AgentSkill: a capability entry of an Agent Card. It is
+// not an Agent Skill in the SKILL.md format.
+message CardSkill {
+    string id = 1 [(buf.validate.field).string = { max_len: 1024 }];
+    string name = 2 [(buf.validate.field).string = { max_len: 1024 }];
+    string description = 3 [(buf.validate.field).string = { max_len: 4096 }];
+    repeated string tags = 4;
+    repeated string examples = 5;
+    // input_modes override default_input_modes for this card skill.
+    repeated string input_modes = 6;
+    // output_modes override default_output_modes for this card skill.
+    repeated string output_modes = 7;
 }
 
 // ComponentMethod is the rich, per-method descriptor for a plugin method,
@@ -727,6 +729,13 @@ message PollWorkResponse {
     map<string, string> context = 4;
     // timeout_ms is the maximum time allowed to complete and submit the result.
     int64 timeout_ms = 5;
+    // task_grant is the task grant of this work item (the compact JWT that the
+    // daemon mints for the task, with the tenant, mission and task claims). The
+    // agent sends it in the header x-capability-grant on each call to a gateway:
+    // the model gateway and the Agent gateway. It is a secret. Empty means the
+    // work item has no grant, and the agent then cannot call a gateway. The
+    // agent renews it with DaemonService.RenewCapabilityGrant before it expires.
+    string task_grant = 6;
 }
 
 // SubmitResultRequest delivers the outcome of a completed work item back to Gibson.
@@ -746,79 +755,6 @@ message SubmitResultRequest {
 // SubmitResultResponse is returned after a result is accepted.
 message SubmitResultResponse {}
 
-// CompleteRequest is a harness proxy request for a non-streaming LLM completion.
-message CompleteRequest {
-    // work_id ties this request to the active work item for authorization and billing.
-    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
-    // slot is the named LLM slot defined by the agent (e.g. "primary").
-    string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
-    repeated LLMMessage messages = 3;
-    // timeout_ms is the maximum time to wait for the completion.
-    int64 timeout_ms = 4;
-}
-
-// LLMMessage represents a single message in an LLM conversation.
-//
-// Tool-call round trips are represented with two message shapes so a
-// multi-turn conversation can replay the full tool history structurally
-// (instead of flattening it into `content` text):
-//
-//   1. An assistant turn that requested tool calls sets `role` to
-//      "assistant" and carries the calls in `tool_calls` (typically copied
-//      verbatim from a prior `CompleteWithToolsResponse.tool_calls`).
-//      `content` holds any accompanying assistant text and may be empty.
-//   2. A tool-result turn sets `role` to "tool", `tool_call_id` to the
-//      `ToolCallResult.id` it answers, and `content` to the tool's output.
-//      One message per tool call; a turn with N tool calls is followed by
-//      N tool-result messages.
-//
-// Both fields are optional: plain role+content messages are unchanged.
-message LLMMessage {
-    // role is "system", "user", "assistant", or "tool".
-    string role = 1;
-    string content = 2;
-    // tool_calls carries the tool calls an assistant turn requested.
-    // Set only when role is "assistant"; empty for all other roles.
-    repeated ToolCallResult tool_calls = 3;
-    // tool_call_id identifies which requested tool call this message
-    // answers. Set only when role is "tool", in which case `content`
-    // carries the tool's output and this matches the `ToolCallResult.id`
-    // of the corresponding entry in the preceding assistant turn's
-    // `tool_calls`. Empty for all other roles.
-    string tool_call_id = 4;
-}
-
-// CompleteResponse carries the LLM's reply to a non-streaming completion.
-message CompleteResponse {
-    LLMMessage response = 1;
-    TokenUsage usage = 2;
-}
-
-// CompleteStreamRequest is a harness proxy request for a streaming LLM completion.
-message CompleteStreamRequest {
-    // work_id ties this request to the active work item for authorization and billing.
-    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
-    // slot is the named LLM slot defined by the agent (e.g. "primary").
-    string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
-    repeated LLMMessage messages = 3;
-    // timeout_ms is the maximum time to wait for the completion.
-    int64 timeout_ms = 4;
-}
-
-// CompleteStreamResponse is a single chunk in a streaming LLM completion response.
-message CompleteStreamResponse {
-    string content = 1;
-    // done is true on the final chunk; usage is only populated on the final chunk.
-    bool done = 2;
-    TokenUsage usage = 3;
-}
-
-// TokenUsage reports token consumption for an LLM call.
-message TokenUsage {
-    int32 input_tokens = 1;
-    int32 output_tokens = 2;
-}
-
 // CallToolRequest is a harness proxy request to execute a tool.
 message CallToolRequest {
     string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
@@ -833,6 +769,12 @@ message CallToolResponse {
     // output_json is the JSON-encoded tool output matching the tool's output schema.
     string output_json = 1;
     ComponentError error = 2;
+    // tool_call_id is the id that the daemon recorded for this call. An agent
+    // cites it in the tool_call_ids of a finding or a proof (CiteToolCalls in the
+    // SDK). For the meta-tool invoke_tool it is the id of the recorded call of
+    // the invoked tool. Empty when the daemon recorded none, and from a daemon
+    // that does not send it.
+    string tool_call_id = 3;
 }
 
 // QueryPluginRequest is a harness proxy request to invoke a plugin method.
@@ -1053,57 +995,39 @@ message PluginAccessProto {
 }
 
 // =============================================================================
-// LLM Extended Messages
+// Model Messages
 // =============================================================================
 
-// ToolDefinition describes a tool available for LLM function calling.
-message ToolDefinition {
-    string name = 1;
-    string description = 2;
-    // input_schema is a JSON Schema describing the tool's input parameters.
-    string input_schema_json = 3;
-}
-
-// ToolCallResult represents a tool call made by the LLM.
-message ToolCallResult {
-    string id = 1;
-    string name = 2;
-    // arguments is the JSON-encoded arguments the LLM generated for this tool call.
-    string arguments_json = 3;
-}
-
-// CompleteWithToolsRequest is a harness proxy request for LLM completion with tool definitions.
-message CompleteWithToolsRequest {
+// ResolveModelRequest asks the daemon for the model of a slot.
+message ResolveModelRequest {
+    // work_id ties this request to the active work item for authorization.
     string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
+    // slot is the named LLM slot defined by the agent (e.g. "primary").
     string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
-    repeated LLMMessage messages = 3;
-    repeated ToolDefinition tools = 4;
-    int64 timeout_ms = 5;
 }
 
-// CompleteWithToolsResponse carries the LLM's reply including any tool calls.
-message CompleteWithToolsResponse {
-    LLMMessage response = 1;
-    TokenUsage usage = 2;
-    repeated ToolCallResult tool_calls = 3;
-    string finish_reason = 4;
-}
-
-// CompleteStructuredRequest is a harness proxy request for structured JSON output.
-message CompleteStructuredRequest {
-    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
-    string slot = 2 [(buf.validate.field).string = { max_len: 1024 }];
-    repeated LLMMessage messages = 3;
-    // schema_json is a JSON Schema the LLM output must conform to.
-    string schema_json = 4 [(buf.validate.field).string = { max_len: 16777216 }];
-    int64 timeout_ms = 5;
-}
-
-// CompleteStructuredResponse carries the validated structured output.
-message CompleteStructuredResponse {
-    // result_json is the JSON output conforming to the requested schema.
-    string result_json = 1;
-    TokenUsage usage = 2;
+// ResolveModelResponse names the one model that the slot resolves to, and the
+// facts that the agent needs to call the model gateway.
+message ResolveModelResponse {
+    // model is the exact model name for the model field of the request.
+    string model = 1;
+    // provider is the name of the model provider of the tenant.
+    string provider = 2;
+    // gateway_url is the base URL of the model gateway. The agent calls
+    // POST {gateway_url}/v1/responses.
+    string gateway_url = 3;
+    // route_headers are the headers that the gateway route matches on. The
+    // agent sends each one unchanged.
+    map<string, string> route_headers = 4;
+    // context_window is the size of the context window in tokens. 0 means unknown.
+    int32 context_window = 5;
+    // max_output_tokens is the output limit of the model in tokens. 0 means unknown.
+    int32 max_output_tokens = 6;
+    // gateway_ca_pem is the PEM bundle of the private CA that signed the
+    // certificate of the model gateway. The agent trusts exactly this bundle
+    // for calls to gateway_url, which must use https. Empty means the system
+    // roots.
+    string gateway_ca_pem = 7;
 }
 
 // =============================================================================
@@ -1127,6 +1051,11 @@ message CallToolStreamResponse {
     // done is true on the final event.
     bool done = 3;
     ComponentError error = 4;
+    // tool_call_id is the id that the daemon recorded for this call, as in
+    // CallToolResponse.tool_call_id. The daemon sets it on the last event
+    // (done is true). Empty on the other events, and from a daemon that does
+    // not send it.
+    string tool_call_id = 5;
 }
 
 // QueueToolWorkRequest submits a batch of tool invocations for parallel execution.
@@ -1157,6 +1086,10 @@ message ToolResultsResponse {
     ComponentError error = 3;
     // done is true on the final result.
     bool done = 4;
+    // tool_call_id is the id that the daemon recorded for the call of this
+    // input, as in CallToolResponse.tool_call_id. Empty when the daemon recorded
+    // none, and from a daemon that does not send it.
+    string tool_call_id = 5;
 }
 
 // ListToolsRequest requests descriptors for all available tools.
@@ -1180,40 +1113,36 @@ message ListToolsResponse {
 }
 
 // =============================================================================
-// Agent Delegation Messages
+// Agent Delegation Messages (A2A)
 // =============================================================================
 
-// DelegateToAgentRequest dispatches a sub-task to another agent.
-message DelegateToAgentRequest {
+// ResolveAgentRequest asks the daemon for the Agent gateway route of an agent.
+message ResolveAgentRequest {
+    // work_id ties this request to the active work item for authorization.
     string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
-    string agent_name = 2 [(buf.validate.field).string = { max_len: 1024 }];
-    // task_json is the JSON-encoded agent.Task to delegate.
-    bytes task_json = 3;
+    // name is the name of the agent.
+    string name = 2 [(buf.validate.field).string = { max_len: 1024 }];
+    // bank_id names a bank of always-on agents. When it is set, the route is
+    // the route of a member of that bank, and name is the agent that the bank
+    // runs. Unset means an ephemeral agent.
+    optional string bank_id = 3 [(buf.validate.field).string = { max_len: 1024 }];
 }
 
-// DelegateToAgentResponse carries the delegated agent's result.
-message DelegateToAgentResponse {
-    // result_json is the JSON-encoded agent.Result.
-    bytes result_json = 1;
-}
-
-// ListAgentsRequest requests descriptors for all available agents.
-message ListAgentsRequest {
-    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
-}
-
-// AgentDescriptorProto describes a registered agent.
-message AgentDescriptorProto {
-    string name = 1;
-    string version = 2;
-    string description = 3;
-    repeated string capabilities = 4;
-    repeated string target_types = 5;
-}
-
-// ListAgentsResponse carries all agent descriptors visible to the caller.
-message ListAgentsResponse {
-    repeated AgentDescriptorProto agents = 1;
+// ResolveAgentResponse holds what the caller needs to send an A2A message to
+// an agent through the Agent gateway.
+message ResolveAgentResponse {
+    // gateway_url is the JSON-RPC interface URL of the agent on the Agent
+    // gateway. The caller sends A2A SendMessage to this URL.
+    string gateway_url = 1;
+    // route_headers are the headers that the gateway route matches on. The
+    // caller sends each one unchanged.
+    map<string, string> route_headers = 2;
+    // gateway_ca_pem is the PEM bundle of the private CA of the Agent gateway.
+    // The caller trusts exactly this bundle for gateway_url, which must use
+    // https. Empty means the system roots.
+    string gateway_ca_pem = 3;
+    // agent_card_url is the URL of the Agent Card of the agent on the gateway.
+    string agent_card_url = 4;
 }
 
 // =============================================================================

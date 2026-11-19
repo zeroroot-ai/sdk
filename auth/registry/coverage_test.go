@@ -29,7 +29,6 @@ import (
 	// service descriptors with protoregistry.GlobalFiles. Without
 	// these blank imports, GlobalFiles would be empty for a test
 	// binary that doesn't otherwise reference them.
-	_ "github.com/zeroroot-ai/sdk/api/gen/gibson/agent/v1"
 
 	_ "github.com/zeroroot-ai/sdk/api/gen/gibson/auth/v1"
 

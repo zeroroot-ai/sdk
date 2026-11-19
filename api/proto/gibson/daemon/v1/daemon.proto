@@ -34,12 +34,21 @@ import "gibson/auth/v1/options.proto";
 // MissionStatus represents the execution status of a mission.
 enum MissionStatus {
   MISSION_STATUS_UNSPECIFIED = 0;
-  MISSION_STATUS_PENDING = 1;
-  MISSION_STATUS_RUNNING = 2;
   MISSION_STATUS_PAUSED = 3;
   MISSION_STATUS_COMPLETED = 4;
   MISSION_STATUS_FAILED = 5;
-  MISSION_STATUS_CANCELLED = 6;
+  MISSION_STATUS_INPUT_REQUIRED = 7;
+  reserved 1, 2, 6;
+  reserved "MISSION_STATUS_PENDING", "MISSION_STATUS_RUNNING", "MISSION_STATUS_CANCELLED";
+
+  // The values 8, 9 and 10 are the A2A Task states. The old values 1 (PENDING),
+  // 2 (RUNNING) and 6 (CANCELLED) are deleted, and their numbers and names are
+  // reserved. The wire contract is append-only (ADR-0028), so the renamed
+  // states have new numbers.
+
+  MISSION_STATUS_SUBMITTED = 8;
+  MISSION_STATUS_WORKING = 9;
+  MISSION_STATUS_CANCELED = 10;
 }
 
 // DaemonService provides the gRPC API for Gibson daemon client communication.

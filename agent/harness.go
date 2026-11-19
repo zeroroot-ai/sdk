@@ -5,6 +5,7 @@ package agent
 
 import (
 	"context"
+	"github.com/a2aproject/a2a-go/v2/a2a"
 	"log/slog"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/zeroroot-ai/sdk/finding"
 	"github.com/zeroroot-ai/sdk/llm"
 	"github.com/zeroroot-ai/sdk/mission"
+	"github.com/zeroroot-ai/sdk/openresponses"
 	"github.com/zeroroot-ai/sdk/planning"
 	"github.com/zeroroot-ai/sdk/plugin"
 	"github.com/zeroroot-ai/sdk/tool"
@@ -27,6 +29,47 @@ type QueuedToolResult struct {
 	Index  int           // Position in original inputs slice (0-based)
 	Output proto.Message // The tool's output proto (nil if error)
 	Error  error         // Error if execution failed (nil if success)
+
+	// ToolCallID is the id that the daemon recorded for the call of this input.
+	// Cite it with Finding.CiteToolCalls. Empty when the daemon recorded none,
+	// and from a daemon that does not send it.
+	ToolCallID string
+}
+
+// ToolCallOption sets an option of CallToolProto and CallToolProtoStream.
+type ToolCallOption func(*ToolCallOptions)
+
+// ToolCallOptions are the options of one tool call.
+type ToolCallOptions struct {
+	toolCallID *string
+}
+
+// ReceiveToolCallID stores the id that the daemon recorded for the call in dst.
+// Cite it with Finding.CiteToolCalls (or in the tool call ids of a proof) so the
+// platform builds recorded evidence from the call. The id is set even when the
+// call fails, because the daemon records a failed call too. It is an empty
+// string when the daemon recorded none, and from a daemon that does not send
+// the id. The SDK never makes up an id.
+func ReceiveToolCallID(dst *string) ToolCallOption {
+	return func(o *ToolCallOptions) { o.toolCallID = dst }
+}
+
+// ApplyToolCallOptions returns the options that opts set.
+func ApplyToolCallOptions(opts []ToolCallOption) ToolCallOptions {
+	var o ToolCallOptions
+	for _, opt := range opts {
+		if opt != nil {
+			opt(&o)
+		}
+	}
+	return o
+}
+
+// SetToolCallID stores the id in the destination of ReceiveToolCallID, if any.
+func (o ToolCallOptions) SetToolCallID(id string) {
+	if o.toolCallID != nil {
+		*o.toolCallID = id
+	}
 }
 
 // ToolStreamCallback receives streaming events during tool execution.
@@ -194,22 +237,9 @@ type MissionManager interface {
 	GetMissionResults(ctx context.Context, missionID string) (*mission.MissionResult, error)
 }
 
-// ── Harness capability groups ───────────────────────────────────────────────
-//
-// Harness is composed of these rather than carrying 27 methods flat. The
-// grouping is not cosmetic. Before it, the groups existed only as section
-// comments and they had drifted: DelegateToAgent, ListAgents and SubmitFinding
-// sat under "Plugin Access Methods", Observe and WorldView under "Context
-// Access", and the five LLM methods had no header at all. Comments do not
-// compile. MissionManager was the one group already expressed as a type, and
-// the one that had not rotted.
-//
-// Groups also let a caller ask for exactly the capability it needs, so a
-// function that only reads cannot emit.
-//
-// See ADR-0162.
-
-// LLMCaller is the model-facing surface: one completion call per shape an agent needs.
+// LLMCaller is the model-facing surface. The agent gets one client that calls the
+// model gateway with Open Responses items. It holds the items of its conversation
+// from the first message to the last tool result.
 type LLMCaller interface {
 	// LLM Access Methods
 	//
@@ -217,35 +247,11 @@ type LLMCaller interface {
 	// A slot is a name. The platform resolves it to one of the tenant's
 	// providers and a model.
 
-	// Complete performs a single LLM completion request.
-	// The slot parameter identifies which LLM to use (e.g., "primary", "vision").
-	// Options can be provided to customize temperature, max tokens, etc.
-	Complete(ctx context.Context, slot string, messages []llm.Message, opts ...llm.CompletionOption) (*llm.CompletionResponse, error)
-
-	// CompleteWithTools performs a completion with tool calling enabled.
-	// The LLM can request to invoke tools and will receive tool results in subsequent turns.
-	CompleteWithTools(ctx context.Context, slot string, messages []llm.Message, tools []llm.ToolDef) (*llm.CompletionResponse, error)
-
-	// Stream performs a streaming completion request.
-	// Returns a channel that yields incremental chunks as they arrive.
-	// The channel will be closed when the stream completes or an error occurs.
-	Stream(ctx context.Context, slot string, messages []llm.Message) (<-chan llm.StreamChunk, error)
-
-	// CompleteStructured performs a completion with provider-native structured output.
-	// The response schema is derived from the provided struct type.
-	// For Anthropic: uses tool_use pattern (schema becomes a tool definition)
-	// For OpenAI: uses response_format with json_schema
-	// The prompt should be natural language - no JSON instructions needed.
-	// The schema parameter should be an instance of the struct type (e.g., MyStruct{}).
-	// The harness derives the JSON Schema from that type, so a ready-made
-	// schema (a map or a schema.JSON value) is not passed through.
-	// It returns the decoded JSON value, not the struct: a map[string]any for
-	// a struct schema. To get the struct, marshal the value and unmarshal it
-	// into the struct type.
-	CompleteStructured(ctx context.Context, slot string, messages []llm.Message, schema any) (any, error)
-
-	// CompleteStructuredAny is an alias for CompleteStructured for compatibility.
-	CompleteStructuredAny(ctx context.Context, slot string, messages []llm.Message, schema any) (any, error)
+	// Model resolves a slot to one exact model and returns the client that
+	// calls the model gateway with Open Responses items. The client sends the
+	// task grant of the agent and adds its token counts to TokenUsage. Keep
+	// the client for the run. Each call to Model asks the daemon again.
+	Model(ctx context.Context, slot string) (*openresponses.Client, error)
 }
 
 // ToolCaller is dispatching tools and reading their results.
@@ -257,7 +263,11 @@ type ToolCaller interface {
 
 	// CallToolProto invokes a tool by name with proto message input/output.
 	// The request and response parameters should be pointers to proto message types.
-	CallToolProto(ctx context.Context, name string, request proto.Message, response proto.Message) error
+	//
+	// To get the id that the daemon recorded for the call, pass
+	// ReceiveToolCallID(&id). Cite that id with Finding.CiteToolCalls. The
+	// meta-tool invoke_tool gives the id of the recorded call of the invoked tool.
+	CallToolProto(ctx context.Context, name string, request proto.Message, response proto.Message, opts ...ToolCallOption) error
 
 	// CallToolProtoStream invokes a tool with streaming event callbacks.
 	// This enables real-time progress updates, partial results, and warnings during tool execution.
@@ -267,6 +277,9 @@ type ToolCaller interface {
 	//   - OnPartial: Incremental or replacement partial results
 	//   - OnWarning: Non-fatal warnings during execution
 	//   - OnError: Fatal or non-fatal errors
+	//
+	// ReceiveToolCallID(&id) gives the id that the daemon recorded for the call,
+	// as for CallToolProto.
 	//
 	// The method blocks until the tool completes or fails, returning the final output
 	// or an error. The final output is also delivered via callback.OnPartial() before returning.
@@ -279,7 +292,7 @@ type ToolCaller interface {
 	//       return fmt.Errorf("mytool failed: %w", err)
 	//   }
 	//   // output now contains the final result
-	CallToolProtoStream(ctx context.Context, toolName string, input proto.Message, output proto.Message, callback ToolStreamCallback) error
+	CallToolProtoStream(ctx context.Context, toolName string, input proto.Message, output proto.Message, callback ToolStreamCallback, opts ...ToolCallOption) error
 
 	// ListTools returns descriptors for all available tools.
 	// This can be used to discover available functionality.
@@ -359,17 +372,18 @@ type PluginCaller interface {
 
 // Delegator is handing sub-tasks to other enrolled agents.
 type Delegator interface {
-
-	// Agent Delegation Methods
+	// Delegate sends an A2A message to another agent through the Agent gateway
+	// (JSON-RPC binding) and waits for the A2A Task to end. The Task state is
+	// an a2a.TaskState. A task that needs input (input-required) or
+	// authorization (auth-required) also ends the wait. Delegate returns an
+	// error only when the call itself fails. An agent that fails, rejects or
+	// cancels the task gives a Task in that state.
 	//
-	// These methods allow agents to delegate tasks to other agents.
-
-	// DelegateToAgent assigns a task to another agent for execution.
-	// This enables hierarchical agent architectures and specialization.
-	DelegateToAgent(ctx context.Context, name string, task Task) (Result, error)
-
-	// ListAgents returns descriptors for all available agents.
-	ListAgents(ctx context.Context) ([]Descriptor, error)
+	// The call sends the task grant of the agent in the header
+	// x-capability-grant. The daemon resolves the route of the agent. An agent
+	// finds other agents through the Agent Cards that the daemon serves.
+	// WithBank sends the message to a bank of always-on agents.
+	Delegate(ctx context.Context, name string, msg *a2a.Message, opts ...DelegateOption) (*a2a.Task, error)
 }
 
 // WorldEmitter is emitting into the tenant World.
@@ -574,26 +588,4 @@ type Harness interface {
 	// TokenUsage returns the token usage tracker for this execution.
 	// This tracks token consumption across all LLM slots.
 	TokenUsage() llm.TokenTracker
-}
-
-// Descriptor provides metadata about an agent.
-// This is used for agent discovery and selection.
-type Descriptor struct {
-	// Name is the unique identifier for the agent.
-	Name string
-
-	// Version is the semantic version of the agent.
-	Version string
-
-	// Description explains what the agent does.
-	Description string
-
-	// Capabilities lists the security testing capabilities the agent provides.
-	Capabilities []string
-
-	// TargetTypes lists the types of targets the agent can test.
-	TargetTypes []string
-
-	// TechniqueTypes lists the attack techniques the agent employs.
-	TechniqueTypes []string
 }
