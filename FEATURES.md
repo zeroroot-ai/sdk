@@ -46,6 +46,7 @@ go get github.com/zeroroot-ai/sdk@latest
 |---------|-------------------|
 | `auth` | The SDK-side identity and authorization surface, including the tenant type |
 | `capabilitygrant` | The client half of the Capability Grant Protocol: enrollment, the host keypair store, grant verification |
+| `a2ainbound` | The client of the inbound A2A endpoint. An outside program sends a message to a published agent, reads the Task, cancels the Task and reads the Agent Card. It signs each request with the enrolled identity of `capabilitygrant` |
 | `serve` | gRPC servers for agents, tools and plugins, with Kubernetes health probes and graceful shutdown |
 | `api` | The generated protobuf and gRPC types the wire contract is made of |
 

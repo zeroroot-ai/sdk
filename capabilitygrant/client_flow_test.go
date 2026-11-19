@@ -150,3 +150,49 @@ func TestRegistrationAuthReusesTheHostKey(t *testing.T) {
 		t.Fatalf("Authorization = %q, want a host+jwt", *gotAuth)
 	}
 }
+
+// SignPath binds the token to the HTTP path, with the claims of the per-RPC
+// token, and each call gives a new jti.
+func TestClientSignPath(t *testing.T) {
+	srv, _ := fakePlatform(t, http.StatusCreated, `{"agent_id":"ag-1","component_scope":"component:agent/a"}`)
+	c := newFlowClient(t, srv.URL)
+	c.SetHTTPClient(srv.Client())
+	ctx := context.Background()
+
+	if _, err := c.SignPath("/a2a/inbound/recon"); err == nil || !strings.Contains(err.Error(), "before Register") {
+		t.Fatalf("SignPath before Register: err = %v", err)
+	}
+	if err := c.Discover(ctx); err != nil {
+		t.Fatalf("Discover: %v", err)
+	}
+	if err := c.Register(ctx); err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+	if _, err := c.SignPath("a2a/inbound/recon"); err == nil || !strings.Contains(err.Error(), "does not start with /") {
+		t.Fatalf("SignPath of a relative path: err = %v", err)
+	}
+
+	const path = "/a2a/inbound/recon"
+	first, err := c.SignPath(path)
+	if err != nil {
+		t.Fatalf("SignPath: %v", err)
+	}
+	second, err := c.SignPath(path)
+	if err != nil {
+		t.Fatalf("SignPath: %v", err)
+	}
+	header, claims, _ := parseJWT(t, first)
+	if header["typ"] != "agent+jwt" || header["kid"] != "ag-1" || header["alg"] != "EdDSA" {
+		t.Errorf("header = %v", header)
+	}
+	if claims["method"] != path || claims["aud"] != AudienceGibsonDaemon || claims["sub"] != "ag-1" {
+		t.Errorf("claims = %v", claims)
+	}
+	if life := claims["exp"].(float64) - claims["iat"].(float64); life != jwtExpiry.Seconds() {
+		t.Errorf("lifetime = %v s, want %v s", life, jwtExpiry.Seconds())
+	}
+	_, claims2, _ := parseJWT(t, second)
+	if claims["jti"] == "" || claims["jti"] == claims2["jti"] {
+		t.Errorf("two tokens share the jti %v", claims["jti"])
+	}
+}
