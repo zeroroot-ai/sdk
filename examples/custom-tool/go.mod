@@ -3,13 +3,14 @@ module github.com/zeroroot-ai/sdk/examples/custom-tool
 go 1.27.4
 
 require (
-	github.com/zeroroot-ai/sdk v0.209.1
+	github.com/zeroroot-ai/sdk v0.210.0
 	google.golang.org/protobuf v1.36.12
 )
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.12-20260825204119-511051f7f437.2 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
+	github.com/a2aproject/a2a-go/v2 v2.9.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.5 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
@@ -17,6 +18,7 @@ require (
 	github.com/spiffe/go-spiffe/v2 v2.9.0 // indirect
 	go.opentelemetry.io/otel v1.47.0 // indirect
 	go.opentelemetry.io/otel/trace v1.47.0 // indirect
+	golang.org/x/mod v0.41.0 // indirect
 	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
