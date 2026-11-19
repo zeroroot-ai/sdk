@@ -1,6 +1,6 @@
 module github.com/zeroroot-ai/sdk/examples/custom-tool
 
-go 1.27.3
+go 1.27.4
 
 require (
 	github.com/zeroroot-ai/sdk v0.209.1
