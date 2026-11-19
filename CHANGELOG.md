@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.211.0](https://github.com/zeroroot-ai/sdk/compare/v0.210.0...v0.211.0) (2026-11-19)
+
+
+### Features
+
+* **a2ainbound:** add the inbound a2a client and the path signer ([#352](https://github.com/zeroroot-ai/sdk/issues/352)) ([021db1d](https://github.com/zeroroot-ai/sdk/commit/021db1d96d0d674edab73f9a8f3339dd33f6ca0c))
+
 ## [0.210.0](https://github.com/zeroroot-ai/sdk/compare/v0.209.1...v0.210.0) (2026-11-19)
 
 
