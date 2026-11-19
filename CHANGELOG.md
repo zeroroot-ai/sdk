@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.210.0](https://github.com/zeroroot-ai/sdk/compare/v0.209.1...v0.210.0) (2026-11-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* the four LLM calls of each service, the llm message types and the Complete methods of the Harness no longer exist. Use Harness.Model and the openresponses client.
+
+### Features
+
+* add the Open Responses model client, the A2A agent wire, finding evidence and Agent Skill loading ([#347](https://github.com/zeroroot-ai/sdk/issues/347)) ([4adbbe9](https://github.com/zeroroot-ai/sdk/commit/4adbbe93fbeff0d3b089966eaf82dd52edc7ad62))
+
 ## [0.209.1](https://github.com/zeroroot-ai/sdk/compare/v0.209.0...v0.209.1) (2026-10-21)
 
 
