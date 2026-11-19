@@ -51,6 +51,8 @@ type fakeEdge struct {
 	refuse int
 	// answerMessage makes SendMessage answer with a message and no task.
 	answerMessage bool
+	// reject makes SendMessage answer with a Task in the state rejected.
+	reject bool
 }
 
 func newFakeEdge(t *testing.T) *fakeEdge {
@@ -254,6 +256,13 @@ func (f *fakeRuns) SendMessage(_ context.Context, req *a2a.SendMessageRequest) (
 	if f.edge.answerMessage {
 		return a2a.NewMessage(a2a.MessageRoleAgent, a2a.NewTextPart("hello")), nil
 	}
+	if f.edge.reject {
+		// The answer of the daemon for a refused message (RejectedTask).
+		t := &a2a.Task{ID: "refused-1", ContextID: "refused-1", Status: a2a.TaskStatus{State: a2a.TaskStateRejected}}
+		t.Status.Message = a2a.NewMessageForTask(a2a.MessageRoleAgent, t,
+			a2a.NewTextPart("the agent is not available for inbound calls"))
+		return t, nil
+	}
 	return &a2a.Task{ID: "mission-1", ContextID: "ctx-1", Status: a2a.TaskStatus{State: a2a.TaskStateSubmitted}}, nil
 }
 
@@ -329,6 +338,50 @@ func TestSendMessageRefusesAnAnswerThatIsNoTask(t *testing.T) {
 	e.answerMessage = true
 	_, err := e.client(t).SendMessage(context.Background(), "recon", "scan")
 	require.ErrorContains(t, err, "not a task")
+}
+
+// A refused message is a Task in the state rejected. It is a value and not an
+// error, and it holds the reason.
+func TestARejectedTaskIsAValue(t *testing.T) {
+	e := newFakeEdge(t)
+	e.reject = true
+	task, err := e.client(t).SendMessage(context.Background(), "recon", "scan", "target-outside")
+	require.NoError(t, err)
+	assert.Equal(t, a2a.TaskStateRejected, task.Status.State)
+	require.NotNil(t, task.Status.Message)
+	require.Len(t, task.Status.Message.Parts, 1)
+	assert.Equal(t, "the agent is not available for inbound calls", task.Status.Message.Parts[0].Text())
+}
+
+func TestACanceledContextEndsTheCall(t *testing.T) {
+	e := newFakeEdge(t)
+	c := e.client(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := c.SendMessage(ctx, "recon", "scan")
+	require.ErrorIs(t, err, context.Canceled)
+	_, err = c.GetTask(ctx, "recon", "mission-1")
+	require.ErrorIs(t, err, context.Canceled)
+	_, err = c.CancelTask(ctx, "recon", "mission-1")
+	require.ErrorIs(t, err, context.Canceled)
+	_, err = c.AgentCard(ctx, "recon")
+	require.ErrorIs(t, err, context.Canceled)
+	assert.Empty(t, e.paths, "no request reached the agent")
+}
+
+// ext-authz compares the method claim with the full path of the request, and
+// that path holds the query. So the client signs the path with the query.
+func TestARequestWithAQueryVerifies(t *testing.T) {
+	e := newFakeEdge(t)
+	c := e.client(t)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet,
+		e.srv.URL+"/a2a/inbound/recon/.well-known/agent-card.json?probe=1", nil)
+	require.NoError(t, err)
+	resp, err := c.http.Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+	assert.Equal(t, http.StatusOK, resp.StatusCode, "the edge accepts the token of a request with a query")
 }
 
 // The edge checks the binding of a token to its path. A token for one agent is

@@ -21,8 +21,9 @@ import (
 )
 
 // HeaderFunc returns the headers to add to a call of a route. The route is the
-// path of the request URL. The agent uses it to send its grant in the header
-// x-capability-grant.
+// path of the request URL, with the query when the URL has one. It is the value
+// that the gateway reads as the path of the request. The agent uses it to send
+// its grant in the header x-capability-grant.
 type HeaderFunc func(ctx context.Context, route string) (map[string]string, error)
 
 // CheckURL refuses a plain http URL when a CA bundle is set. The bundle only
@@ -96,7 +97,7 @@ func (r *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		out.Header.Set(k, v)
 	}
 	if r.headers != nil {
-		extra, err := r.headers(ctx, out.URL.Path)
+		extra, err := r.headers(ctx, out.URL.RequestURI())
 		if err != nil {
 			return nil, fmt.Errorf("get call headers: %w", err)
 		}

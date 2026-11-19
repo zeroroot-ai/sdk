@@ -62,9 +62,9 @@ const TargetsKey = "targets"
 // agentPattern is a DNS label. The daemon refuses each other agent name.
 var agentPattern = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$`)
 
-// Signer signs the Capability Grant JWT of one request. The token is bound to
-// the path of the request. *capabilitygrant.Client is a Signer.
-type Signer interface {
+// PathSigner signs the Capability Grant JWT of one request. The token is bound
+// to the path of the request. *capabilitygrant.Client is a PathSigner.
+type PathSigner interface {
 	SignPath(path string) (string, error)
 }
 
@@ -76,7 +76,7 @@ type Config struct {
 	BaseURL string
 
 	// Signer is the enrolled identity of the caller. Required.
-	Signer Signer
+	Signer PathSigner
 
 	// CAPEM is an optional PEM bundle of the CA of the platform edge. The client
 	// then trusts exactly that bundle. When it is empty, the client uses the
@@ -84,7 +84,9 @@ type Config struct {
 	CAPEM string
 
 	// Transport is an optional base transport, for a caller that needs its own
-	// dial or TLS rules. It cannot be set together with CAPEM.
+	// dial rules. The caller owns the TLS rules of this transport: the client
+	// adds no CA and no minimum version to it. It cannot be set together with
+	// CAPEM.
 	Transport http.RoundTripper
 }
 
@@ -169,10 +171,17 @@ func (c *Client) rpc(ctx context.Context, agent string, call func(*a2aclient.Cli
 // published definition, and they travel in a data part under TargetsKey. With
 // no target, the mission runs on all targets of the definition.
 //
-// A message that the policy refuses gives a Task in the state rejected, and no
-// mission starts. A caller that the platform refuses gives an error:
-// a2a.ErrUnauthenticated for a refused token, and a2a.ErrUnauthorized for a
-// caller with no right to the agent.
+// A refused message is a value and not an error: the Task has the state
+// rejected, its status message holds the reason, and no mission starts. The
+// platform answers this way for a target outside the definition, for an agent
+// that is not published, and for a caller with no grant to the agent. The last
+// two get the same answer, so a caller cannot tell which agents exist.
+//
+// An error means that the platform refused the caller before the agent saw the
+// message. a2a.ErrUnauthenticated reports a token that the platform does not
+// accept, for example the token of a revoked identity. a2a.ErrUnauthorized
+// reports an identity that is not a caller identity: it does not have the
+// ceiling mission:originate, or it holds another capability.
 func (c *Client) SendMessage(ctx context.Context, agent, text string, targets ...string) (*a2a.Task, error) {
 	parts := []*a2a.Part{a2a.NewTextPart(text)}
 	if len(targets) > 0 {
@@ -210,6 +219,8 @@ func (c *Client) GetTask(ctx context.Context, agent string, id a2a.TaskID) (*a2a
 }
 
 // CancelTask ends a mission that this caller started, and it returns the Task.
+// The caller needs its grant to the agent at the time of the call. Without the
+// grant, the call gives an error.
 func (c *Client) CancelTask(ctx context.Context, agent string, id a2a.TaskID) (*a2a.Task, error) {
 	return c.rpc(ctx, agent, func(client *a2aclient.Client) (*a2a.Task, error) {
 		task, err := client.CancelTask(ctx, &a2a.CancelTaskRequest{ID: id})
@@ -221,8 +232,11 @@ func (c *Client) CancelTask(ctx context.Context, agent string, id a2a.TaskID) (*
 }
 
 // AgentCard returns the Agent Card of a published agent. The platform serves a
-// card only to a caller with a right to the agent. The errors of a refused
-// caller are those of SendMessage.
+// card only to a caller with a grant to the agent. A caller with no grant gets
+// the error of an agent that is not published, so it cannot tell which agents
+// exist. This error is not a2a.ErrUnauthenticated and not a2a.ErrUnauthorized.
+// Those two report a refused token and an identity that is not a caller
+// identity, as for SendMessage.
 func (c *Client) AgentCard(ctx context.Context, agent string) (*a2a.AgentCard, error) {
 	endpoint, err := c.endpoint(agent)
 	if err != nil {
