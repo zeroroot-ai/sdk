@@ -442,6 +442,33 @@ func (c *Client) GRPCPerRPCCredentials() credentials.PerRPCCredentials {
 	return &capabilityGrantCredentials{client: c}
 }
 
+// SignPath signs a fresh agent+jwt that is bound to one HTTP path. It is the
+// signer of GRPCPerRPCCredentials for a plain HTTP call: the method claim holds
+// the path, which is the value that ext-authz reads from the request. The path
+// starts with "/" and is the exact path of the request, for example
+// "/a2a/inbound/recon".
+//
+// Send the token in the header MetadataHeaderCapabilityGrant. A token is single
+// use and lives 55 seconds, so sign a new one for each request. Never log it.
+// Register must succeed before the first call.
+func (c *Client) SignPath(path string) (string, error) {
+	if !strings.HasPrefix(path, "/") {
+		return "", fmt.Errorf("capabilitygrant: SignPath: the path %q does not start with /", path)
+	}
+
+	c.mu.RLock()
+	hostID := c.hostID
+	agentID := c.agentID
+	key := c.agentKey
+	scope := c.componentScope
+	c.mu.RUnlock()
+
+	if agentID == "" {
+		return "", errors.New("capabilitygrant: SignPath called before Register")
+	}
+	return SignAgentJWT(key, hostID, agentID, path, scope)
+}
+
 // SetHTTPClient replaces the underlying *http.Client used for discovery and
 // registration requests. This is useful when the caller needs a custom
 // transport — for example, to trust a test server's self-signed TLS certificate

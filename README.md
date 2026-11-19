@@ -655,6 +655,7 @@ sdk/
 │   └── id/             # Node ID generation
 ├── auth/           # SDK-side identity and authorization
 ├── capabilitygrant/ # Capability Grant Protocol client
+├── a2ainbound/     # Client of the inbound A2A endpoint
 ├── serve/          # gRPC serving utilities
 ├── health/         # Health check helpers
 ├── schema/         # JSON Schema types and validation

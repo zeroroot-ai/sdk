@@ -21,8 +21,9 @@ import (
 )
 
 // HeaderFunc returns the headers to add to a call of a route. The route is the
-// path of the request URL. The agent uses it to send its grant in the header
-// x-capability-grant.
+// path of the request URL, with the query when the URL has one. It is the value
+// that the gateway reads as the path of the request. The agent uses it to send
+// its grant in the header x-capability-grant.
 type HeaderFunc func(ctx context.Context, route string) (map[string]string, error)
 
 // CheckURL refuses a plain http URL when a CA bundle is set. The bundle only
@@ -69,11 +70,21 @@ func NewClient(baseURL, caPEM string, fixed map[string]string, headers HeaderFun
 	if err != nil {
 		return nil, err
 	}
-	next := http.DefaultTransport
+	var next http.RoundTripper
 	if tr != nil {
 		next = tr
 	}
-	return &http.Client{Transport: &roundTripper{next: next, fixed: fixed, headers: headers}}, nil
+	return NewClientOn(next, fixed, headers), nil
+}
+
+// NewClientOn returns an HTTP client that sends each request through next. A
+// nil next is the default transport, which uses the system roots. The client
+// adds the fixed headers and the headers of the HeaderFunc to each request.
+func NewClientOn(next http.RoundTripper, fixed map[string]string, headers HeaderFunc) *http.Client {
+	if next == nil {
+		next = http.DefaultTransport
+	}
+	return &http.Client{Transport: &roundTripper{next: next, fixed: fixed, headers: headers}}
 }
 
 // RoundTrip adds the headers and sends the request.
@@ -86,7 +97,7 @@ func (r *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 		out.Header.Set(k, v)
 	}
 	if r.headers != nil {
-		extra, err := r.headers(ctx, out.URL.Path)
+		extra, err := r.headers(ctx, out.URL.RequestURI())
 		if err != nil {
 			return nil, fmt.Errorf("get call headers: %w", err)
 		}

@@ -50,6 +50,12 @@ func TestClientAddsHeadersAndTrustsTheBundle(t *testing.T) {
 	assert.Equal(t, "g:/a2a/helper", got.Get("x-capability-grant"))
 	assert.Equal(t, "/a2a/helper", path)
 
+	// The route holds the query, because the gateway reads the path with it.
+	resp, err = c.Get(srv.URL + "/a2a/helper?x=1")
+	require.NoError(t, err)
+	_ = resp.Body.Close()
+	assert.Equal(t, "g:/a2a/helper?x=1", got.Get("x-capability-grant"))
+
 	// Without the bundle the system roots do not trust the test CA.
 	plain, err := NewClient(srv.URL, "", nil, nil)
 	require.NoError(t, err)
