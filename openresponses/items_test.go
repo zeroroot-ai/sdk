@@ -11,23 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTypeNames(t *testing.T) {
-	assert.Equal(t, "message", Message{}.ItemType())
-	assert.Equal(t, "function_call", FunctionCall{}.ItemType())
-	assert.Equal(t, "function_call_output", FunctionCallOutput{}.ItemType())
-	assert.Equal(t, "reasoning", Reasoning{}.ItemType())
-	assert.Equal(t, "x", RawItem{Type: "x"}.ItemType())
-	assert.Equal(t, "input_text", InputText{}.PartType())
-	assert.Equal(t, "output_text", OutputText{}.PartType())
-	assert.Equal(t, "refusal", Refusal{}.PartType())
-	assert.Equal(t, "image", RawPart{Type: "image"}.PartType())
-}
-
 func TestMessageHelpers(t *testing.T) {
 	assert.Equal(t, "s", NewSystemMessage("s").Text())
 	assert.Equal(t, RoleSystem, NewSystemMessage("s").Role)
-	a := NewAssistantMessage("a")
-	assert.Equal(t, RoleAssistant, a.Role)
 	m := Message{Content: []ContentPart{InputText{Text: "x"}, Refusal{Refusal: "no"}, OutputText{Text: "y"}}}
 	assert.Equal(t, "xy", m.Text(), "only text parts count")
 }
@@ -53,7 +39,7 @@ func TestMarshalPartVariants(t *testing.T) {
 
 type badPart struct{}
 
-func (badPart) PartType() string { return "bad" }
+func (badPart) isPart() {}
 
 func TestUnmarshalItemErrors(t *testing.T) {
 	for name, in := range map[string]string{
@@ -83,8 +69,6 @@ func TestResponseUnmarshalError(t *testing.T) {
 	var r Response
 	require.Error(t, json.Unmarshal([]byte(`{"output":[5]}`), &r))
 	require.Error(t, json.Unmarshal([]byte(`{"output":"x"}`), &r))
-	var u Usage
-	require.Error(t, json.Unmarshal([]byte(`{"input_tokens":"x"}`), &u))
 }
 
 func TestRequestMarshalNilInput(t *testing.T) {

@@ -14,10 +14,6 @@ package auth
 //                    the entire mission lifetime, including sub-agent
 //                    delegation, scheduled runs, and checkpoint
 //                    resume — span attribution follows the spend.
-//   - ExecutorUser:  the owner of the agent currently executing a
-//                    mission step. May differ from InitiatorUser when
-//                    a parent agent delegates to a sub-agent owned by
-//                    a different user.
 //   - ComponentScope: a "component:<id>" string identifying the
 //                    capability-grant subject for a request — used by
 //                    the FGA batch-check to apply component-scoped
@@ -25,8 +21,7 @@ package auth
 //
 // These helpers are not part of the Identity struct because they are
 // orthogonal to subject identity and may be set/cleared independently
-// during a single request's lifetime (e.g., the orchestrator sets
-// ExecutorUser at sub-agent dispatch time without re-setting Identity).
+// during a single request's lifetime.
 
 import (
 	"context"
@@ -67,7 +62,6 @@ func TenantScopedRedisKey(tenant, key string) string {
 
 type actingUserKey struct{}
 type initiatorUserKey struct{}
-type executorUserKey struct{}
 type componentScopeKey struct{}
 
 // ActingUserFromContext returns the user ID a platform service is
@@ -113,16 +107,6 @@ func ContextWithInitiatorUser(ctx context.Context, userID string) context.Contex
 		return ctx
 	}
 	return context.WithValue(ctx, initiatorUserKey{}, userID)
-}
-
-// ContextWithExecutorUser stores the executing-agent owner user ID
-// on ctx. Set at sub-agent dispatch time so attribution follows the
-// code path through delegation.
-func ContextWithExecutorUser(ctx context.Context, userID string) context.Context {
-	if userID == "" {
-		return ctx
-	}
-	return context.WithValue(ctx, executorUserKey{}, userID)
 }
 
 // ComponentScopeFromContext returns the component scope (e.g.

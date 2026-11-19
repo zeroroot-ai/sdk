@@ -96,8 +96,6 @@ func TestCreatePlain(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "hello", resp.Text())
 	assert.Equal(t, 13, resp.Usage.TotalTokens)
-	assert.Equal(t, 4, resp.Usage.CachedTokens)
-	assert.Equal(t, 1, resp.Usage.ReasoningTokens)
 
 	assert.Equal(t, "/v1/responses", c.path)
 	assert.Equal(t, "grant-for-/v1/responses", c.header.Get("x-capability-grant"))
@@ -123,7 +121,7 @@ func TestCreateToolCallRoundTrip(t *testing.T) {
 				"required": []string{"city"},
 			},
 		}},
-		ToolChoice: ToolChoiceAuto,
+		ToolChoice: "auto",
 	}
 	resp, err := cl.Create(context.Background(), req)
 	require.NoError(t, err)
@@ -219,7 +217,7 @@ func TestStreamEvents(t *testing.T) {
 		types = append(types, ev.Type)
 	}
 	assert.Equal(t, []string{
-		EventCreated, EventOutputItemAdded, EventOutputTextDelta, EventOutputTextDelta, EventCompleted,
+		"response.created", "response.output_item.added", EventOutputTextDelta, EventOutputTextDelta, EventCompleted,
 	}, types)
 }
 
@@ -265,7 +263,6 @@ func TestAPIError(t *testing.T) {
 	require.ErrorAs(t, err, &ae)
 	assert.Equal(t, 403, ae.StatusCode)
 	assert.Equal(t, "model_forbidden", ae.Code)
-	assert.Equal(t, "model", ae.Param)
 }
 
 func TestAPIErrorPlainBody(t *testing.T) {

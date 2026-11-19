@@ -63,10 +63,8 @@ type Client struct {
 // APIError is an error reply of the gateway.
 type APIError struct {
 	StatusCode int
-	Type       string
 	Code       string
 	Message    string
-	Param      string
 }
 
 // Error describes the reply.
@@ -163,14 +161,12 @@ func parseAPIError(resp *http.Response) error {
 	e := &APIError{StatusCode: resp.StatusCode}
 	var w struct {
 		Error struct {
-			Type    string `json:"type"`
 			Code    string `json:"code"`
 			Message string `json:"message"`
-			Param   string `json:"param"`
 		} `json:"error"`
 	}
 	if json.Unmarshal(raw, &w) == nil && w.Error.Message != "" {
-		e.Type, e.Code, e.Message, e.Param = w.Error.Type, w.Error.Code, w.Error.Message, w.Error.Param
+		e.Code, e.Message = w.Error.Code, w.Error.Message
 		return e
 	}
 	e.Message = strings.TrimSpace(string(raw))

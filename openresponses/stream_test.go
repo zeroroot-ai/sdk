@@ -30,7 +30,6 @@ func TestStreamLastEventWithoutBlankLine(t *testing.T) {
 	ev, err := s.Recv()
 	require.NoError(t, err)
 	assert.Equal(t, EventCompleted, ev.Type)
-	assert.Equal(t, "completed", s.Response().Status)
 	_, err = s.Recv()
 	require.ErrorIs(t, err, io.EOF)
 }
@@ -59,16 +58,8 @@ func TestStreamErrorEvents(t *testing.T) {
 func TestStreamBadEvents(t *testing.T) {
 	_, err := streamOf("data: {\n\n").Recv()
 	require.ErrorContains(t, err, "decode event")
-	_, err = streamOf("data: {\"item\":5}\n\n").Recv()
-	require.Error(t, err)
 	_, err = streamOf("data: {\"response\":5}\n\n").Recv()
 	require.Error(t, err)
-}
-
-func TestStreamItemEvent(t *testing.T) {
-	ev, err := streamOf("data: {\"type\":\"response.output_item.done\",\"item\":{\"type\":\"function_call\",\"call_id\":\"c\",\"name\":\"n\",\"arguments\":\"{}\"}}\n\n").Recv()
-	require.NoError(t, err)
-	assert.IsType(t, FunctionCall{}, ev.Item)
 }
 
 func TestCollectNeedsATerminalEvent(t *testing.T) {

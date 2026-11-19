@@ -30,13 +30,6 @@ func (t Tool) MarshalJSON() ([]byte, error) {
 	}{"function", t.Name, t.Description, t.Parameters, t.Strict})
 }
 
-// Tool choice values of the specification.
-const (
-	ToolChoiceAuto     = "auto"
-	ToolChoiceRequired = "required"
-	ToolChoiceNone     = "none"
-)
-
 // ToolChoiceFunction forces the model to call the function with this name.
 func ToolChoiceFunction(name string) any {
 	return map[string]string{"type": "function", "name": name}
@@ -75,7 +68,7 @@ type Request struct {
 	Input        []Item
 	Instructions string
 	Tools        []Tool
-	// ToolChoice is "auto", "required", "none", or the value of
+	// ToolChoice is the string "auto", "required" or "none", or the value of
 	// ToolChoiceFunction.
 	ToolChoice      any
 	Text            *TextParam
@@ -114,33 +107,6 @@ type Usage struct {
 	InputTokens  int `json:"input_tokens"`
 	OutputTokens int `json:"output_tokens"`
 	TotalTokens  int `json:"total_tokens"`
-	// CachedTokens is input_tokens_details.cached_tokens.
-	CachedTokens int `json:"-"`
-	// ReasoningTokens is output_tokens_details.reasoning_tokens.
-	ReasoningTokens int `json:"-"`
-}
-
-// UnmarshalJSON reads the counts and their detail objects.
-func (u *Usage) UnmarshalJSON(data []byte) error {
-	var w struct {
-		InputTokens        int `json:"input_tokens"`
-		OutputTokens       int `json:"output_tokens"`
-		TotalTokens        int `json:"total_tokens"`
-		InputTokensDetails struct {
-			CachedTokens int `json:"cached_tokens"`
-		} `json:"input_tokens_details"`
-		OutputTokensDetails struct {
-			ReasoningTokens int `json:"reasoning_tokens"`
-		} `json:"output_tokens_details"`
-	}
-	if err := json.Unmarshal(data, &w); err != nil {
-		return fmt.Errorf("openresponses: decode usage: %w", err)
-	}
-	*u = Usage{
-		InputTokens: w.InputTokens, OutputTokens: w.OutputTokens, TotalTokens: w.TotalTokens,
-		CachedTokens: w.InputTokensDetails.CachedTokens, ReasoningTokens: w.OutputTokensDetails.ReasoningTokens,
-	}
-	return nil
 }
 
 // IncompleteDetails says why a response is incomplete.
@@ -156,9 +122,7 @@ type ResponseError struct {
 
 // Response is the response object of POST /v1/responses.
 type Response struct {
-	ID                string
 	Status            string
-	Model             string
 	Output            []Item
 	Usage             *Usage
 	IncompleteDetails *IncompleteDetails
@@ -168,9 +132,7 @@ type Response struct {
 // UnmarshalJSON reads the response and decodes each output item.
 func (r *Response) UnmarshalJSON(data []byte) error {
 	var w struct {
-		ID                string             `json:"id"`
 		Status            string             `json:"status"`
-		Model             string             `json:"model"`
 		Output            []json.RawMessage  `json:"output"`
 		Usage             *Usage             `json:"usage"`
 		IncompleteDetails *IncompleteDetails `json:"incomplete_details"`
@@ -179,7 +141,7 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &w); err != nil {
 		return fmt.Errorf("openresponses: decode response: %w", err)
 	}
-	out := Response{ID: w.ID, Status: w.Status, Model: w.Model, Usage: w.Usage,
+	out := Response{Status: w.Status, Usage: w.Usage,
 		IncompleteDetails: w.IncompleteDetails, Error: w.Error}
 	for _, raw := range w.Output {
 		it, err := UnmarshalItem(raw)

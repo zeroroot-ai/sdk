@@ -672,7 +672,8 @@ func (g *testGateway) handle(w http.ResponseWriter, r *http.Request) {
 	case body["tools"] != nil:
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprint(w, `{"status":"completed","output":[{"type":"function_call","id":"fc1","call_id":"tc-1","name":"lookup",`+
-			`"arguments":"{\"host\":\"10.0.0.1\"}","status":"completed"}],`+usageJSON+`}`)
+			`"arguments":"{\"host\":\"10.0.0.1\"}","status":"completed"},`+
+			`{"type":"web_search_call","id":"w1","status":"completed"}],`+usageJSON+`}`)
 	case body["text"] != nil:
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprint(w, `{"status":"completed",`+text(`{"safe":true}`)+`,`+usageJSON+`}`)
@@ -687,7 +688,8 @@ func (d *callbackDaemon) ResolveModel(
 ) (*harnesspb.ResolveModelResponse, error) {
 	return &harnesspb.ResolveModelResponse{
 		Model: "model-exact", Provider: "prov", GatewayUrl: d.gw.srv.URL,
-		RouteHeaders: map[string]string{"x-gibson-tenant": "t1", "x-gibson-provider": "prov"},
+		RouteHeaders:  map[string]string{"x-gibson-tenant": "t1", "x-gibson-provider": "prov"},
+		ContextWindow: 200000, MaxOutputTokens: 8192,
 	}, nil
 }
 
@@ -696,7 +698,8 @@ func (d *componentDaemon) ResolveModel(
 ) (*componentpb.ResolveModelResponse, error) {
 	return &componentpb.ResolveModelResponse{
 		Model: "model-exact", Provider: "prov", GatewayUrl: "http://gateway.invalid",
-		RouteHeaders: map[string]string{"x-gibson-tenant": "t1"},
+		RouteHeaders:  map[string]string{"x-gibson-tenant": "t1"},
+		ContextWindow: 200000, MaxOutputTokens: 8192,
 	}, nil
 }
 

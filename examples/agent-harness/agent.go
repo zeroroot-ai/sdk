@@ -18,11 +18,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/a2aproject/a2a-go/v2/a2a"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/a2aproject/a2a-go/v2/a2a"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -34,6 +35,7 @@ import (
 	"github.com/zeroroot-ai/sdk/openresponses"
 	"github.com/zeroroot-ai/sdk/planning"
 	"github.com/zeroroot-ai/sdk/plugin"
+	"github.com/zeroroot-ai/sdk/schema"
 	"github.com/zeroroot-ai/sdk/tool"
 	"github.com/zeroroot-ai/sdk/types"
 )
@@ -109,10 +111,10 @@ func execute(ctx context.Context, h agent.Harness, task agent.Task) (agent.Resul
 	rep := &Report{}
 	callContext(ctx, h, task, rep)
 	callLLM(ctx, h, task, rep)
-	callTools(ctx, h, rep)
+	ids := callTools(ctx, h, task, rep)
 	callPlugins(ctx, h, rep)
 	callDelegation(ctx, h, rep)
-	callWorld(ctx, h, rep)
+	callWorld(ctx, h, rep, ids)
 	callPlanning(ctx, h, rep)
 	callWorkspace(ctx, h, rep)
 	callKnowledge(ctx, h, rep)
@@ -128,22 +130,32 @@ func callContext(ctx context.Context, h agent.Harness, task agent.Task, rep *Rep
 	rep.add(Step{Call: "Mission", Value: m, Summary: m.ID + " " + m.Name})
 	target := h.Target()
 	rep.add(Step{Call: "Target", Value: target, Summary: target.ID + " " + target.Name + " " + target.URL()})
-	h.Logger().InfoContext(ctx, "task start", "task", task.ID, "goal", task.Goal)
+	h.Logger().InfoContext(ctx, "task start", "task", task.ID, "goal", task.Goal,
+		"agent_run", task.Run.AgentRunID, "mission_run", task.Run.MissionRunID,
+		"max_turns", task.Constraints.MaxTurns, "has_job", task.Job != nil, "metadata_keys", len(task.Metadata))
 	recordErr(rep, "Authorize", h.Authorize(ctx, "scan", "target:"+target.ID))
 }
 
 func callLLM(ctx context.Context, h agent.Harness, task agent.Task, rep *Report) {
 	model, err := h.Model(ctx, llmSlot)
 	record(rep, "Model", model, err, func(m *openresponses.Client) string {
-		return fmt.Sprintf("model=%s provider=%s", m.Model, m.Provider)
+		return fmt.Sprintf("model=%s provider=%s context_window=%d max_output_tokens=%d",
+			m.Model, m.Provider, m.ContextWindow, m.MaxOutputTokens)
 	})
 	if err != nil {
 		return
 	}
-	input := []openresponses.Item{openresponses.NewUserMessage(task.Goal)}
+	// The pinned Agent Skills come first, then the goal. The agent holds these
+	// items from the first message to the last tool result.
+	input := append(append([]openresponses.Item(nil), task.SkillItems...), openresponses.NewUserMessage(task.Goal))
 
 	temperature := 0.2
 	maxTokens := 256
+	// The task limits the tokens of the run. The SDK does not enforce the limits of a
+	// task: the agent reads them and applies them.
+	if limit := task.Constraints.MaxTokens; limit > 0 && limit < maxTokens {
+		maxTokens = limit
+	}
 	c, err := model.Create(ctx, &openresponses.Request{Input: input, Temperature: &temperature, MaxOutputTokens: &maxTokens})
 	record(rep, "Create", c, err, describeResponse)
 
@@ -152,19 +164,16 @@ func callLLM(ctx context.Context, h agent.Harness, task agent.Task, rep *Report)
 		Description: "Look up a host",
 		Parameters:  map[string]any{"type": "object", "properties": map[string]any{"host": map[string]any{"type": "string"}}},
 	}}
-	ct, err := model.Create(ctx, &openresponses.Request{Input: input, Tools: tools})
+	ct, err := model.Create(ctx, &openresponses.Request{
+		Input: input, Tools: tools, ToolChoice: openresponses.ToolChoiceFunction("lookup"),
+	})
 	record(rep, "CreateWithTools", ct, err, describeResponse)
 
 	type verdict struct {
 		Safe bool `json:"safe"`
 	}
 	var v verdict
-	schema := map[string]any{
-		"type": "object", "additionalProperties": false,
-		"properties": map[string]any{"safe": map[string]any{"type": "boolean"}},
-		"required":   []string{"safe"},
-	}
-	_, err = model.CreateStructured(ctx, &openresponses.Request{Input: input}, "verdict", schema, &v)
+	_, err = model.CreateStructured(ctx, &openresponses.Request{Input: input}, "verdict", schema.FromType(verdict{}), &v)
 	record(rep, "CreateStructured", v, err, func(v verdict) string { return fmt.Sprintf("%+v", v) })
 
 	st, err := model.Stream(ctx, &openresponses.Request{Input: input})
@@ -207,7 +216,35 @@ func describeResponse(r *openresponses.Response) string {
 	if r.Usage != nil {
 		total = r.Usage.TotalTokens
 	}
-	return fmt.Sprintf("text=%q status=%s calls=[%s] total=%d", r.Text(), r.Status, strings.Join(calls, ","), total)
+	out := fmt.Sprintf("text=%q status=%s calls=[%s] total=%d", r.Text(), r.Status, strings.Join(calls, ","), total)
+	// An item or a part of a type that the SDK has no struct for comes as a raw value.
+	// The agent can tell which types came back.
+	if kinds := rawKinds(r); len(kinds) > 0 {
+		out += " raw=" + strings.Join(kinds, ",")
+	}
+	// A response that ends early says why. The agent must not treat it as complete.
+	if r.Status == openresponses.StatusIncomplete && r.IncompleteDetails != nil {
+		out += " incomplete=" + r.IncompleteDetails.Reason
+	}
+	return out
+}
+
+// rawKinds lists the types of the raw items and raw parts of a response.
+func rawKinds(r *openresponses.Response) []string {
+	var kinds []string
+	for _, it := range r.Output {
+		switch v := it.(type) {
+		case openresponses.RawItem:
+			kinds = append(kinds, v.Type)
+		case openresponses.Message:
+			for _, p := range v.Content {
+				if raw, ok := p.(openresponses.RawPart); ok {
+					kinds = append(kinds, raw.Type)
+				}
+			}
+		}
+	}
+	return kinds
 }
 
 // toolEvents records what a tool stream tells the agent.
@@ -252,10 +289,22 @@ func gatherToolResults(ch <-chan agent.QueuedToolResult) []queuedResult {
 	return out
 }
 
-func callTools(ctx context.Context, h agent.Harness, rep *Report) {
+// toolAllowed applies the tool limits of a task. The SDK does not enforce them.
+func toolAllowed(c agent.TaskConstraints, name string) bool {
+	if slices.Contains(c.BlockedTools, name) {
+		return false
+	}
+	return len(c.AllowedTools) == 0 || slices.Contains(c.AllowedTools, name)
+}
+
+func callTools(ctx context.Context, h agent.Harness, task agent.Task, rep *Report) *toolCallIDs {
 	// ReceiveToolCallID gives the id that the daemon recorded for each call. An
 	// agent cites it with Finding.CiteToolCalls.
 	ids := &toolCallIDs{}
+	if !toolAllowed(task.Constraints, "echo") {
+		rep.add(Step{Call: "CallToolProto", Err: errors.New("the task does not allow the tool echo")})
+		return ids
+	}
 	reply := &wrapperspb.StringValue{}
 	err := h.CallToolProto(ctx, "echo", wrapperspb.String("ping"), reply, agent.ReceiveToolCallID(&ids.Call))
 	record(rep, "CallToolProto", reply.GetValue(), err, func(v string) string { return v })
@@ -275,7 +324,7 @@ func callTools(ctx context.Context, h agent.Harness, rep *Report) {
 	job, err := h.QueueToolWork(ctx, "echo", []proto.Message{wrapperspb.String("a"), wrapperspb.String("b")})
 	record(rep, "QueueToolWork", job, err, func(id string) string { return id })
 	if err != nil {
-		return
+		return ids
 	}
 	results := gatherToolResults(h.ToolResults(ctx, job))
 	lines := make([]string, 0, len(results))
@@ -287,6 +336,7 @@ func callTools(ctx context.Context, h agent.Harness, rep *Report) {
 		ids.Queued = append(ids.Queued, r.ToolCallID)
 	}
 	rep.add(Step{Call: "ToolCallIDs", Value: ids, Summary: fmt.Sprintf("%+v", *ids)})
+	return ids
 }
 
 // toolCallIDs holds the ids that the daemon recorded for the tool calls of the agent.
@@ -308,6 +358,10 @@ func callDelegation(ctx context.Context, h agent.Harness, rep *Report) {
 	msg := a2a.NewMessage(a2a.MessageRoleUser, a2a.NewTextPart("check the host"))
 	task, err := h.Delegate(ctx, "helper", msg)
 	record(rep, "Delegate", task, err, describeTask)
+
+	// A bank of always-on agents is a delegation target too.
+	banked, err := h.Delegate(ctx, "helper", msg, agent.WithBank("bank-1"))
+	record(rep, "DelegateToBank", banked, err, describeTask)
 }
 
 func describeTask(t *a2a.Task) string {
@@ -320,7 +374,7 @@ func describeTask(t *a2a.Task) string {
 	return fmt.Sprintf("state=%s artifacts=%v", t.Status.State, artifacts)
 }
 
-func callWorld(ctx context.Context, h agent.Harness, rep *Report) {
+func callWorld(ctx context.Context, h agent.Harness, rep *Report, ids *toolCallIDs) {
 	f := &finding.Finding{
 		Title:       "Open admin port",
 		Description: "Port 8443 answers without a login",
@@ -328,6 +382,8 @@ func callWorld(ctx context.Context, h agent.Harness, rep *Report) {
 		Severity:    finding.SeverityHigh,
 		Confidence:  0.9,
 	}
+	// The tool calls that back the finding. The platform builds recorded evidence from them.
+	f.CiteToolCalls(ids.Call, ids.Stream)
 	recordErr(rep, "SubmitFinding", h.SubmitFinding(ctx, f))
 	recordErr(rep, "Observe", h.Observe(ctx, agent.DomainObservation{Name: "example.com"}))
 	recordErr(rep, "PlaceBet", h.PlaceBet(ctx, agent.Bet{

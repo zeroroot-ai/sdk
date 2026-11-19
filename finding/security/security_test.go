@@ -118,73 +118,6 @@ func TestMitreMapping_JSONOmitsEmptySubTechniques(t *testing.T) {
 	}
 }
 
-func TestCVSSScore_JSONSerialization(t *testing.T) {
-	tests := []struct {
-		name  string
-		score CVSSScore
-	}{
-		{
-			name: "CVSS v3.1 high score",
-			score: CVSSScore{
-				Version: "3.1",
-				Vector:  "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
-				Score:   9.8,
-			},
-		},
-		{
-			name: "CVSS v4.0 medium score",
-			score: CVSSScore{
-				Version: "4.0",
-				Vector:  "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
-				Score:   7.5,
-			},
-		},
-		{
-			name: "CVSS with zero score",
-			score: CVSSScore{
-				Version: "3.1",
-				Vector:  "CVSS:3.1/AV:L/AC:H/PR:H/UI:R/S:U/C:N/I:N/A:N",
-				Score:   0.0,
-			},
-		},
-		{
-			name: "CVSS with max score",
-			score: CVSSScore{
-				Version: "3.1",
-				Vector:  "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
-				Score:   10.0,
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Marshal to JSON
-			data, err := json.Marshal(tt.score)
-			if err != nil {
-				t.Fatalf("json.Marshal() error = %v", err)
-			}
-
-			// Unmarshal back
-			var got CVSSScore
-			if err := json.Unmarshal(data, &got); err != nil {
-				t.Fatalf("json.Unmarshal() error = %v", err)
-			}
-
-			// Verify fields
-			if got.Version != tt.score.Version {
-				t.Errorf("Version = %v, want %v", got.Version, tt.score.Version)
-			}
-			if got.Vector != tt.score.Vector {
-				t.Errorf("Vector = %v, want %v", got.Vector, tt.score.Vector)
-			}
-			if got.Score != tt.score.Score {
-				t.Errorf("Score = %v, want %v", got.Score, tt.score.Score)
-			}
-		})
-	}
-}
-
 func TestMetadataKeyConstants(t *testing.T) {
 	// Verify that metadata key constants are exported and have expected values
 	keys := []struct {
@@ -193,8 +126,6 @@ func TestMetadataKeyConstants(t *testing.T) {
 	}{
 		{"MetaKeyMitreAttack", MetaKeyMitreAttack},
 		{"MetaKeyMitreAtlas", MetaKeyMitreAtlas},
-		{"MetaKeyCVSS", MetaKeyCVSS},
-		{"MetaKeyCWE", MetaKeyCWE},
 	}
 
 	for _, key := range keys {

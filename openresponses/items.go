@@ -28,29 +28,27 @@ const (
 	RoleUser      = "user"
 	RoleAssistant = "assistant"
 	RoleSystem    = "system"
-	RoleDeveloper = "developer"
 )
 
 // Status names of an item and of a response.
 const (
-	StatusInProgress = "in_progress"
 	StatusIncomplete = "incomplete"
 	StatusCompleted  = "completed"
 	StatusFailed     = "failed"
 )
 
 // Item is one element of the conversation. The concrete types are Message,
-// FunctionCall, FunctionCallOutput, Reasoning and RawItem.
+// FunctionCall, FunctionCallOutput, Reasoning and RawItem. The set is closed:
+// RawItem holds any other item type.
 type Item interface {
-	// ItemType returns the value of the type field.
-	ItemType() string
+	isItem()
 }
 
 // ContentPart is one part of a message. The concrete types are InputText,
-// OutputText, Refusal and RawPart.
+// OutputText, Refusal and RawPart. The set is closed: RawPart holds any other
+// part type.
 type ContentPart interface {
-	// PartType returns the value of the type field.
-	PartType() string
+	isPart()
 }
 
 // InputText is a text part of an input message.
@@ -78,17 +76,13 @@ type RawPart struct {
 	JSON json.RawMessage
 }
 
-// PartType returns "input_text".
-func (InputText) PartType() string { return PartInputText }
+func (InputText) isPart() {}
 
-// PartType returns "output_text".
-func (OutputText) PartType() string { return PartOutputText }
+func (OutputText) isPart() {}
 
-// PartType returns "refusal".
-func (Refusal) PartType() string { return PartRefusal }
+func (Refusal) isPart() {}
 
-// PartType returns the type of the part.
-func (p RawPart) PartType() string { return p.Type }
+func (RawPart) isPart() {}
 
 // Message is a message of a user, the system, or the model.
 type Message struct {
@@ -139,20 +133,16 @@ type RawItem struct {
 	JSON json.RawMessage
 }
 
-// ItemType returns "message".
-func (Message) ItemType() string { return TypeMessage }
+// The marker methods close the sets of items and parts.
+func (Message) isItem() {}
 
-// ItemType returns "function_call".
-func (FunctionCall) ItemType() string { return TypeFunctionCall }
+func (FunctionCall) isItem() {}
 
-// ItemType returns "function_call_output".
-func (FunctionCallOutput) ItemType() string { return TypeFunctionCallOutput }
+func (FunctionCallOutput) isItem() {}
 
-// ItemType returns "reasoning".
-func (Reasoning) ItemType() string { return TypeReasoning }
+func (Reasoning) isItem() {}
 
-// ItemType returns the type of the item.
-func (r RawItem) ItemType() string { return r.Type }
+func (RawItem) isItem() {}
 
 // NewUserMessage returns a user message with one text part.
 func NewUserMessage(text string) Message {
@@ -162,11 +152,6 @@ func NewUserMessage(text string) Message {
 // NewSystemMessage returns a system message with one text part.
 func NewSystemMessage(text string) Message {
 	return Message{Role: RoleSystem, Content: []ContentPart{InputText{Text: text}}}
-}
-
-// NewAssistantMessage returns a message of the model with one text part.
-func NewAssistantMessage(text string) Message {
-	return Message{Role: RoleAssistant, Content: []ContentPart{OutputText{Text: text}}}
 }
 
 // Text returns the text of each text part of the message, joined in order.
