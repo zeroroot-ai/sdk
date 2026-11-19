@@ -2,7 +2,10 @@ module github.com/zeroroot-ai/sdk/examples/minimal-agent
 
 go 1.27.4
 
-require github.com/zeroroot-ai/sdk v0.209.1
+require (
+	github.com/a2aproject/a2a-go/v2 v2.9.0
+	github.com/zeroroot-ai/sdk v0.210.0
+)
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.12-20260825204119-511051f7f437.2 // indirect
@@ -14,6 +17,7 @@ require (
 	github.com/spiffe/go-spiffe/v2 v2.9.0 // indirect
 	go.opentelemetry.io/otel v1.47.0 // indirect
 	go.opentelemetry.io/otel/trace v1.47.0 // indirect
+	golang.org/x/mod v0.41.0 // indirect
 	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
