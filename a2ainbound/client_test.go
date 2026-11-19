@@ -376,7 +376,7 @@ func TestARequestWithAQueryVerifies(t *testing.T) {
 	e := newFakeEdge(t)
 	c := e.client(t)
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet,
-		e.srv.URL+"/a2a/inbound/recon/.well-known/agent-card.json?probe=1", nil)
+		e.srv.URL+"/a2a/inbound/recon/.well-known/agent-card.json?probe=1", http.NoBody)
 	require.NoError(t, err)
 	resp, err := c.http.Do(req)
 	require.NoError(t, err)
