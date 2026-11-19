@@ -19,7 +19,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -329,7 +328,7 @@ func TestFunctionCallOutputNonString(t *testing.T) {
 func TestToolChoiceFunction(t *testing.T) {
 	b, err := json.Marshal(Request{Model: "m", ToolChoice: ToolChoiceFunction("f")})
 	require.NoError(t, err)
-	assert.True(t, strings.Contains(string(b), `"tool_choice":{"name":"f","type":"function"}`), string(b))
+	assert.Contains(t, string(b), `"tool_choice":{"name":"f","type":"function"}`)
 }
 
 func TestOnUsage(t *testing.T) {
@@ -353,9 +352,9 @@ func TestOnUsage(t *testing.T) {
 	assert.Equal(t, 7, got[1].TotalTokens)
 }
 
-func newTLSGateway(t *testing.T) (*httptest.Server, string) {
+func newTLSGateway(t *testing.T) (srv *httptest.Server, caPEM string) {
 	t.Helper()
-	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	srv = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = io.WriteString(w, plainReply)
 	}))

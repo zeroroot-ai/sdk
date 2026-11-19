@@ -662,29 +662,29 @@ func (g *testGateway) handle(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case body["stream"] == true:
 		w.Header().Set("Content-Type", "text/event-stream")
-		fmt.Fprint(w, "event: response.output_text.delta\n"+
+		_, _ = fmt.Fprint(w, "event: response.output_text.delta\n"+
 			`data: {"type":"response.output_text.delta","sequence_number":1,"item_id":"m1","output_index":0,"content_index":0,"delta":"he"}`+"\n\n")
-		fmt.Fprint(w, "event: response.output_text.delta\n"+
+		_, _ = fmt.Fprint(w, "event: response.output_text.delta\n"+
 			`data: {"type":"response.output_text.delta","sequence_number":2,"item_id":"m1","output_index":0,"content_index":0,"delta":"llo"}`+"\n\n")
-		fmt.Fprint(w, "event: response.completed\n"+
+		_, _ = fmt.Fprint(w, "event: response.completed\n"+
 			`data: {"type":"response.completed","sequence_number":3,"response":{"status":"completed",`+text("hello")+
 			`,`+usageJSON+`}}`+"\n\n")
 	case body["tools"] != nil:
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, `{"status":"completed","output":[{"type":"function_call","id":"fc1","call_id":"tc-1","name":"lookup",`+
+		_, _ = fmt.Fprint(w, `{"status":"completed","output":[{"type":"function_call","id":"fc1","call_id":"tc-1","name":"lookup",`+
 			`"arguments":"{\"host\":\"10.0.0.1\"}","status":"completed"},`+
 			`{"type":"web_search_call","id":"w1","status":"completed"}],`+usageJSON+`}`)
 	case body["text"] != nil:
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, `{"status":"completed",`+text(`{"safe":true}`)+`,`+usageJSON+`}`)
+		_, _ = fmt.Fprint(w, `{"status":"completed",`+text(`{"safe":true}`)+`,`+usageJSON+`}`)
 	default:
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, `{"status":"completed",`+text("hello")+`,`+usageJSON+`}`)
+		_, _ = fmt.Fprint(w, `{"status":"completed",`+text("hello")+`,`+usageJSON+`}`)
 	}
 }
 
 func (d *callbackDaemon) ResolveModel(
-	_ context.Context, req *harnesspb.ResolveModelRequest,
+	_ context.Context, _ *harnesspb.ResolveModelRequest,
 ) (*harnesspb.ResolveModelResponse, error) {
 	return &harnesspb.ResolveModelResponse{
 		Model: "model-exact", Provider: "prov", GatewayUrl: d.gw.srv.URL,
@@ -694,7 +694,7 @@ func (d *callbackDaemon) ResolveModel(
 }
 
 func (d *componentDaemon) ResolveModel(
-	_ context.Context, req *componentpb.ResolveModelRequest,
+	_ context.Context, _ *componentpb.ResolveModelRequest,
 ) (*componentpb.ResolveModelResponse, error) {
 	return &componentpb.ResolveModelResponse{
 		Model: "model-exact", Provider: "prov", GatewayUrl: "http://gateway.invalid",

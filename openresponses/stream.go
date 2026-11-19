@@ -51,7 +51,12 @@ func newStream(body io.ReadCloser) *Stream {
 }
 
 // Close releases the connection.
-func (s *Stream) Close() error { return s.body.Close() }
+func (s *Stream) Close() error {
+	if err := s.body.Close(); err != nil {
+		return fmt.Errorf("openresponses: close stream: %w", err)
+	}
+	return nil
+}
 
 // Recv returns the next event. It returns io.EOF after the last event. A
 // terminal response.failed or error event is returned as an event, and the

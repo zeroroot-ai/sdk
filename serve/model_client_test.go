@@ -92,7 +92,7 @@ func TestCallbackHarnessModelEndToEnd(t *testing.T) {
 	harnesspb.RegisterHarnessCallbackServiceServer(srv, fake)
 	go func() { _ = srv.Serve(lis) }()
 	defer srv.Stop()
-	//nolint:staticcheck
+	//nolint:staticcheck // grpc.DialContext is the dial call of the bufconn tests of this package
 	conn, err := grpc.DialContext(context.Background(), "bufnet",
 		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) { return lis.Dial() }),
 		grpc.WithTransportCredentials(insecure.NewCredentials()))

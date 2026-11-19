@@ -69,7 +69,7 @@ func NewClient(baseURL, caPEM string, fixed map[string]string, headers HeaderFun
 	if err != nil {
 		return nil, err
 	}
-	var next http.RoundTripper = http.DefaultTransport
+	next := http.DefaultTransport
 	if tr != nil {
 		next = tr
 	}
@@ -78,20 +78,23 @@ func NewClient(baseURL, caPEM string, fixed map[string]string, headers HeaderFun
 
 // RoundTrip adds the headers and sends the request.
 func (r *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	req = req.Clone(req.Context())
+	// The context of the incoming request goes to the header function and to
+	// the clone, so a cancel of the caller reaches both.
+	ctx := req.Context()
+	out := req.Clone(ctx)
 	for k, v := range r.fixed {
-		req.Header.Set(k, v)
+		out.Header.Set(k, v)
 	}
 	if r.headers != nil {
-		extra, err := r.headers(req.Context(), req.URL.Path)
+		extra, err := r.headers(ctx, out.URL.Path)
 		if err != nil {
 			return nil, fmt.Errorf("get call headers: %w", err)
 		}
 		for k, v := range extra {
-			req.Header.Set(k, v)
+			out.Header.Set(k, v)
 		}
 	}
-	resp, err := r.next.RoundTrip(req)
+	resp, err := r.next.RoundTrip(out)
 	if err != nil {
 		return nil, fmt.Errorf("gateway round trip: %w", err)
 	}

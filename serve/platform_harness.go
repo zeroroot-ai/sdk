@@ -213,53 +213,65 @@ func (h *PlatformHarness) CallToolProtoStream(
 			continue
 		}
 
-		switch evt.EventType {
-		case "progress":
-			// Payload: {"percent": N, "phase": "...", "message": "..."}
-			var p struct {
-				Percent int    `json:"percent"`
-				Phase   string `json:"phase"`
-				Message string `json:"message"`
-			}
-			if evt.PayloadJSON != "" {
-				_ = json.Unmarshal([]byte(evt.PayloadJSON), &p)
-			}
-			callback.OnProgress(p.Percent, p.Phase, p.Message)
-
-		case "partial":
-			// Payload is a partial proto response JSON.
-			if evt.PayloadJSON != "" {
-				if err := unmarshaler.Unmarshal([]byte(evt.PayloadJSON), output); err == nil {
-					callback.OnPartial(output, true)
-				}
-			}
-
-		case "warning":
-			var w struct {
-				Message string `json:"message"`
-				Context string `json:"context"`
-			}
-			if evt.PayloadJSON != "" {
-				_ = json.Unmarshal([]byte(evt.PayloadJSON), &w)
-			}
-			callback.OnWarning(w.Message, w.Context)
-
-		case "error":
-			toolErr := fmt.Errorf("tool %s error: %s", toolName, evt.PayloadJSON)
-			callback.OnError(toolErr, false)
-
-		case "result":
-			if evt.PayloadJSON != "" {
-				if err := unmarshaler.Unmarshal([]byte(evt.PayloadJSON), output); err != nil {
-					span.RecordError(err)
-					span.SetStatus(codes.Error, "failed to unmarshal result")
-					return fmt.Errorf("PlatformHarness.CallToolProtoStream: unmarshal result: %w", err)
-				}
-				callback.OnPartial(output, false)
-			}
+		if err := dispatchToolEvent(evt, toolName, output, callback, unmarshaler); err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+			return err
 		}
 	}
 
+	return nil
+}
+
+// dispatchToolEvent sends one event of a pull-mode tool stream to the callback.
+// It returns an error when the event is a result that cannot be read.
+func dispatchToolEvent(
+	evt ToolStreamEvent, toolName string, output protolib.Message,
+	callback agent.ToolStreamCallback, unmarshaler protojson.UnmarshalOptions,
+) error {
+	switch evt.EventType {
+	case "progress":
+		// Payload: {"percent": N, "phase": "...", "message": "..."}
+		var p struct {
+			Percent int    `json:"percent"`
+			Phase   string `json:"phase"`
+			Message string `json:"message"`
+		}
+		if evt.PayloadJSON != "" {
+			_ = json.Unmarshal([]byte(evt.PayloadJSON), &p)
+		}
+		callback.OnProgress(p.Percent, p.Phase, p.Message)
+
+	case "partial":
+		// Payload is a partial proto response JSON.
+		if evt.PayloadJSON != "" {
+			if err := unmarshaler.Unmarshal([]byte(evt.PayloadJSON), output); err == nil {
+				callback.OnPartial(output, true)
+			}
+		}
+
+	case "warning":
+		var w struct {
+			Message string `json:"message"`
+			Context string `json:"context"`
+		}
+		if evt.PayloadJSON != "" {
+			_ = json.Unmarshal([]byte(evt.PayloadJSON), &w)
+		}
+		callback.OnWarning(w.Message, w.Context)
+
+	case "error":
+		toolErr := fmt.Errorf("tool %s error: %s", toolName, evt.PayloadJSON)
+		callback.OnError(toolErr, false)
+
+	case "result":
+		if evt.PayloadJSON != "" {
+			if err := unmarshaler.Unmarshal([]byte(evt.PayloadJSON), output); err != nil {
+				return fmt.Errorf("PlatformHarness.CallToolProtoStream: unmarshal result: %w", err)
+			}
+			callback.OnPartial(output, false)
+		}
+	}
 	return nil
 }
 

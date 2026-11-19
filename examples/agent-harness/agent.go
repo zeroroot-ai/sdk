@@ -208,8 +208,9 @@ func (s streamed) String() string {
 }
 
 func describeResponse(r *openresponses.Response) string {
-	calls := make([]string, 0)
-	for _, fc := range r.FunctionCalls() {
+	fcs := r.FunctionCalls()
+	calls := make([]string, 0, len(fcs))
+	for _, fc := range fcs {
 		calls = append(calls, fc.CallID+":"+fc.Name+":"+fc.Arguments)
 	}
 	var total int

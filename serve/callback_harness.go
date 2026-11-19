@@ -324,46 +324,57 @@ func (h *CallbackHarness) CallToolProtoStream(
 			toolCallID = id
 		}
 
-		switch payload := msg.GetPayload().(type) {
-		case *harnesspb.CallToolProtoStreamResponse_Progress:
-			ev := payload.Progress
-			callback.OnProgress(int(ev.GetPercent()), ev.GetStage(), ev.GetMessage())
-
-		case *harnesspb.CallToolProtoStreamResponse_Partial:
-			ev := payload.Partial
-			if len(ev.GetOutputJson()) > 0 {
-				if err := unmarshaler.Unmarshal(ev.GetOutputJson(), output); err == nil {
-					callback.OnPartial(output, false)
-				}
-			}
-
-		case *harnesspb.CallToolProtoStreamResponse_Warning:
-			ev := payload.Warning
-			callback.OnWarning(ev.GetMessage(), ev.GetCode())
-
-		case *harnesspb.CallToolProtoStreamResponse_Error:
-			ev := payload.Error
-			callbackErr := fmt.Errorf("%s", ev.GetError().GetMessage())
-			callback.OnError(callbackErr, ev.GetFatal())
-			if ev.GetFatal() {
-				span.RecordError(callbackErr)
-				span.SetStatus(codes.Error, ev.GetError().GetMessage())
-				return callbackErr
-			}
-
-		case *harnesspb.CallToolProtoStreamResponse_Complete:
-			ev := payload.Complete
-			if len(ev.GetOutputJson()) > 0 {
-				if err := unmarshaler.Unmarshal(ev.GetOutputJson(), output); err != nil {
-					span.RecordError(err)
-					span.SetStatus(codes.Error, "failed to unmarshal complete output")
-					return fmt.Errorf("failed to unmarshal streaming tool output: %w", err)
-				}
-			}
+		if err := dispatchToolStreamMessage(msg, output, callback, unmarshaler); err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
+			return err
 		}
 	}
 
 	span.SetStatus(codes.Ok, "")
+	return nil
+}
+
+// dispatchToolStreamMessage sends one message of a tool stream to the callback.
+// It returns an error when the message ends the call: a fatal error event, or a
+// complete event whose output cannot be read.
+func dispatchToolStreamMessage(
+	msg *harnesspb.CallToolProtoStreamResponse, output protolib.Message,
+	callback agent.ToolStreamCallback, unmarshaler protojson.UnmarshalOptions,
+) error {
+	switch payload := msg.GetPayload().(type) {
+	case *harnesspb.CallToolProtoStreamResponse_Progress:
+		ev := payload.Progress
+		callback.OnProgress(int(ev.GetPercent()), ev.GetStage(), ev.GetMessage())
+
+	case *harnesspb.CallToolProtoStreamResponse_Partial:
+		ev := payload.Partial
+		if len(ev.GetOutputJson()) > 0 {
+			if err := unmarshaler.Unmarshal(ev.GetOutputJson(), output); err == nil {
+				callback.OnPartial(output, false)
+			}
+		}
+
+	case *harnesspb.CallToolProtoStreamResponse_Warning:
+		ev := payload.Warning
+		callback.OnWarning(ev.GetMessage(), ev.GetCode())
+
+	case *harnesspb.CallToolProtoStreamResponse_Error:
+		ev := payload.Error
+		callbackErr := errors.New(ev.GetError().GetMessage())
+		callback.OnError(callbackErr, ev.GetFatal())
+		if ev.GetFatal() {
+			return callbackErr
+		}
+
+	case *harnesspb.CallToolProtoStreamResponse_Complete:
+		ev := payload.Complete
+		if len(ev.GetOutputJson()) > 0 {
+			if err := unmarshaler.Unmarshal(ev.GetOutputJson(), output); err != nil {
+				return fmt.Errorf("failed to unmarshal streaming tool output: %w", err)
+			}
+		}
+	}
 	return nil
 }
 

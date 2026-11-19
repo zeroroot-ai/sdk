@@ -6,6 +6,7 @@ package openresponses
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 // Tool is a function that the model may call.
@@ -21,7 +22,7 @@ type Tool struct {
 
 // MarshalJSON writes the tool with type "function".
 func (t Tool) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
+	return marshal(struct {
 		Type        string `json:"type"`
 		Name        string `json:"name"`
 		Description string `json:"description,omitempty"`
@@ -47,7 +48,7 @@ type TextFormat struct {
 
 // MarshalJSON writes the format with type "json_schema".
 func (f TextFormat) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
+	return marshal(struct {
 		Type        string `json:"type"`
 		Name        string `json:"name"`
 		Description string `json:"description,omitempty"`
@@ -86,7 +87,7 @@ func (r Request) MarshalJSON() ([]byte, error) {
 	if input == nil {
 		input = []Item{}
 	}
-	return json.Marshal(struct {
+	return marshal(struct {
 		Model              string     `json:"model"`
 		Input              []Item     `json:"input"`
 		Instructions       string     `json:"instructions,omitempty"`
@@ -156,13 +157,13 @@ func (r *Response) UnmarshalJSON(data []byte) error {
 
 // Text returns the text of each message of the model, joined in order.
 func (r *Response) Text() string {
-	var out string
+	var b strings.Builder
 	for _, it := range r.Output {
 		if m, ok := it.(Message); ok {
-			out += m.Text()
+			b.WriteString(m.Text())
 		}
 	}
-	return out
+	return b.String()
 }
 
 // FunctionCalls returns the function calls of the response in order.

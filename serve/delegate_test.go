@@ -117,10 +117,10 @@ func TestDelegateRefusesAnUnknownCA(t *testing.T) {
 
 // rpcServer is a hand-made A2A JSON-RPC server. send answers SendMessage and
 // get answers GetTask.
-func rpcServer(t *testing.T, send, get func() any) (*httptest.Server, *int) {
+func rpcServer(t *testing.T, send, get func() any) (srv *httptest.Server, gets *int) {
 	t.Helper()
-	gets := new(int)
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	gets = new(int)
+	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		var req struct {
 			ID     json.RawMessage `json:"id"`
@@ -235,7 +235,7 @@ func TestDelegateWithABank(t *testing.T) {
 	harnesspb.RegisterHarnessCallbackServiceServer(gs, res)
 	go func() { _ = gs.Serve(lis) }()
 	defer gs.Stop()
-	//nolint:staticcheck
+	//nolint:staticcheck // grpc.DialContext is the dial call of the bufconn tests of this package
 	conn, err := grpc.DialContext(context.Background(), "bufnet",
 		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) { return lis.Dial() }),
 		grpc.WithTransportCredentials(insecure.NewCredentials()))

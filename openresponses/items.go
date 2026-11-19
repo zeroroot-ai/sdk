@@ -6,6 +6,7 @@ package openresponses
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 // Item type names of the specification.
@@ -156,16 +157,16 @@ func NewSystemMessage(text string) Message {
 
 // Text returns the text of each text part of the message, joined in order.
 func (m Message) Text() string {
-	var out string
+	var b strings.Builder
 	for _, p := range m.Content {
 		switch v := p.(type) {
 		case InputText:
-			out += v.Text
+			b.WriteString(v.Text)
 		case OutputText:
-			out += v.Text
+			b.WriteString(v.Text)
 		}
 	}
-	return out
+	return b.String()
 }
 
 // MarshalJSON writes the message with its type field.
@@ -178,7 +179,7 @@ func (m Message) MarshalJSON() ([]byte, error) {
 		}
 		parts = append(parts, raw)
 	}
-	return json.Marshal(struct {
+	return marshal(struct {
 		Type    string            `json:"type"`
 		ID      string            `json:"id,omitempty"`
 		Role    string            `json:"role"`
@@ -189,7 +190,7 @@ func (m Message) MarshalJSON() ([]byte, error) {
 
 // MarshalJSON writes the call with its type field.
 func (f FunctionCall) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
+	return marshal(struct {
 		Type      string `json:"type"`
 		ID        string `json:"id,omitempty"`
 		Status    string `json:"status,omitempty"`
@@ -201,7 +202,7 @@ func (f FunctionCall) MarshalJSON() ([]byte, error) {
 
 // MarshalJSON writes the output with its type field.
 func (o FunctionCallOutput) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
+	return marshal(struct {
 		Type   string `json:"type"`
 		ID     string `json:"id,omitempty"`
 		CallID string `json:"call_id"`
@@ -232,7 +233,7 @@ func (r Reasoning) MarshalJSON() ([]byte, error) {
 		Content          []textPart `json:"content,omitempty"`
 		EncryptedContent string     `json:"encrypted_content,omitempty"`
 	}{TypeReasoning, r.ID, r.Status, summary, content, r.EncryptedContent}
-	return json.Marshal(out)
+	return marshal(out)
 }
 
 // MarshalJSON writes the JSON that the item held.
@@ -248,15 +249,15 @@ func rawOrError(raw json.RawMessage, what string) ([]byte, error) {
 func marshalPart(p ContentPart) (json.RawMessage, error) {
 	switch v := p.(type) {
 	case InputText:
-		return json.Marshal(textPart{PartInputText, v.Text})
+		return marshal(textPart{PartInputText, v.Text})
 	case *InputText:
-		return json.Marshal(textPart{PartInputText, v.Text})
+		return marshal(textPart{PartInputText, v.Text})
 	case OutputText:
 		return marshalOutputText(v)
 	case *OutputText:
 		return marshalOutputText(*v)
 	case Refusal:
-		return json.Marshal(struct {
+		return marshal(struct {
 			Type    string `json:"type"`
 			Refusal string `json:"refusal"`
 		}{PartRefusal, v.Refusal})
@@ -272,7 +273,7 @@ func marshalOutputText(v OutputText) (json.RawMessage, error) {
 	if ann == nil {
 		ann = []json.RawMessage{}
 	}
-	return json.Marshal(struct {
+	return marshal(struct {
 		Type        string            `json:"type"`
 		Text        string            `json:"text"`
 		Annotations []json.RawMessage `json:"annotations"`
@@ -413,4 +414,13 @@ func unmarshalReasoning(data []byte) (Item, error) {
 		r.EncryptedContent = *w.EncryptedContent
 	}
 	return r, nil
+}
+
+// marshal encodes v as JSON and wraps the error with the package name.
+func marshal(v any) ([]byte, error) {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return nil, fmt.Errorf("openresponses: encode JSON: %w", err)
+	}
+	return b, nil
 }

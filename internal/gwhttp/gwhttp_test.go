@@ -32,7 +32,7 @@ func TestTransportBadBundle(t *testing.T) {
 func TestClientAddsHeadersAndTrustsTheBundle(t *testing.T) {
 	var got http.Header
 	var path string
-	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		got, path = r.Header.Clone(), r.URL.Path
 	}))
 	defer srv.Close()
