@@ -25,8 +25,11 @@ message CapabilityManifest {
   repeated ComponentCapability agents = 11;
   repeated ComponentCapability tools = 12;
   repeated ComponentCapability plugins = 13;
-  LimitsAndQuotas limits = 30;
   MemoryPermissions memory = 32;
+
+  // 30 was limits (LimitsAndQuotas). The product has no commercial limit.
+  reserved 30;
+  reserved "limits";
 
   // Field 100/101 are reserved platform-wide: 100 for gibson.graphrag.DiscoveryResult
   // on tool response messages. Signature payload moved to 200/201 in v1.0.0.
@@ -83,19 +86,6 @@ message ComponentCapability {
   reserved "plugin_contract";
   reserved 40;
   reserved "principal_kind";
-}
-
-// LimitsAndQuotas carries the tier-derived resource ceilings applied to
-// the subject's session. max_spend_usd is a decimal string to avoid
-// floating-point rounding at quota boundaries.
-message LimitsAndQuotas {
-  uint64 max_tokens_per_call = 1;
-  reserved 2;
-  reserved "max_tokens_per_session";
-  reserved 3;
-  reserved "rate_limit_per_minute";
-  reserved 4;
-  reserved "max_spend_usd";
 }
 
 // MemoryPermissions expresses per-tier memory access (e.g. "ro", "rw", "").

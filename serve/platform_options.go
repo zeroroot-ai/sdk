@@ -22,7 +22,7 @@ func WithPlatformLogger(l *slog.Logger) PlatformHarnessOption {
 }
 
 // WithPlatformWorkID sets the work item identifier that routes platform
-// billing and callbacks for this harness instance.
+// callbacks for this harness instance.
 func WithPlatformWorkID(id string) PlatformHarnessOption {
 	return func(h *PlatformHarness) {
 		h.workID = id

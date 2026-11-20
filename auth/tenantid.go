@@ -132,7 +132,7 @@ func MustNewTenantID(s string) TenantID {
 }
 
 // SystemTenant is the reserved tenant identifier used by platform-operator
-// code paths (cross-tenant analytics, billing aggregation, fleet metrics).
+// code paths (cross-tenant analytics, fleet metrics).
 // It is the only TenantID whose underlying string equals
 // sysconst.Reserved (`_system`). All such code paths live under
 // `gibson/internal/admin/` per the data-plane spec; the SystemTenant

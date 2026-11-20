@@ -64,9 +64,9 @@ const (
 	// short-circuits FGA when the CG-JWT covers the requested method.
 	IdentityClass_IDENTITY_CLASS_COMPONENT IdentityClass = 4
 	// IDENTITY_CLASS_PLATFORM_OPERATOR is a platform-operator service account
-	// with cross-tenant authority (e.g. tenant-operator on its admin RPCs,
-	// billing aggregators). FGA gates these RPCs on the platform_operator
-	// relation against the system tenant.
+	// with cross-tenant authority (e.g. tenant-operator on its admin RPCs).
+	// FGA gates these RPCs on the platform_operator relation against the
+	// system tenant.
 	IdentityClass_IDENTITY_CLASS_PLATFORM_OPERATOR IdentityClass = 8
 )
 

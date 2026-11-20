@@ -44,7 +44,7 @@ var _ agent.Harness = (*PlatformHarness)(nil)
 // and never mutated, so no locking is required for reads of the context fields.
 type PlatformHarness struct {
 	client  *PlatformClient
-	workID  string // identifies the active work item for platform routing/billing
+	workID  string // identifies the active work item for platform routing
 	mission types.MissionContext
 	target  types.TargetInfo
 	logger  *slog.Logger
