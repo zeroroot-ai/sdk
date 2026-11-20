@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.212.0](https://github.com/zeroroot-ai/sdk/compare/v0.211.0...v0.212.0) (2026-11-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **manifest:** delete LimitsAndQuotas from the capability manifest ([#357](https://github.com/zeroroot-ai/sdk/issues/357))
+
+### Features
+
+* **manifest:** delete LimitsAndQuotas from the capability manifest ([#357](https://github.com/zeroroot-ai/sdk/issues/357)) ([488c112](https://github.com/zeroroot-ai/sdk/commit/488c112eb93c4bc0a57244243499eded2433056f))
+
+
+### Bug Fixes
+
+* **rework:** delete the schema cache invalidate that nothing reads ([#360](https://github.com/zeroroot-ai/sdk/issues/360)) ([5a8e5d4](https://github.com/zeroroot-ai/sdk/commit/5a8e5d4384a1679ae0ead03e9f0be80af712c07a))
+
 ## [0.211.0](https://github.com/zeroroot-ai/sdk/compare/v0.210.0...v0.211.0) (2026-11-19)
 
 
