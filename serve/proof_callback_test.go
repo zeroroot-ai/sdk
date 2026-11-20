@@ -120,7 +120,7 @@ func TestCallbackClientRequestDestructiveAuthorization_TransportError(t *testing
 func TestCallbackClientProofCallsNotConnected(t *testing.T) {
 	client, err := NewCallbackClient("localhost:50051")
 	require.NoError(t, err)
-	client.Close()
+	_ = client.Close()
 
 	_, err = client.SubmitProof(context.Background(), &harnesspb.SubmitProofRequest{})
 	require.Error(t, err)
