@@ -225,8 +225,8 @@ type DaemonServiceClient interface {
 	// GetCapabilityManifest returns the signed, versioned capability manifest
 	// for the calling principal in their resolved tenant. SDKs call this on
 	// session start and on invalidation events. The ADK calls it at scaffold
-	// time to discover what components, permissions, cross-component rules,
-	// and runtime limits apply.
+	// time to discover what components, permissions and cross-component rules
+	// apply.
 	GetCapabilityManifest(ctx context.Context, in *v1.GetCapabilityManifestRequest, opts ...grpc.CallOption) (*v1.GetCapabilityManifestResponse, error)
 	// WatchManifestInvalidations streams ManifestInvalidationEvents to the
 	// caller whenever their resolved tenant's manifest is invalidated (FGA
@@ -931,8 +931,8 @@ type DaemonServiceServer interface {
 	// GetCapabilityManifest returns the signed, versioned capability manifest
 	// for the calling principal in their resolved tenant. SDKs call this on
 	// session start and on invalidation events. The ADK calls it at scaffold
-	// time to discover what components, permissions, cross-component rules,
-	// and runtime limits apply.
+	// time to discover what components, permissions and cross-component rules
+	// apply.
 	GetCapabilityManifest(context.Context, *v1.GetCapabilityManifestRequest) (*v1.GetCapabilityManifestResponse, error)
 	// WatchManifestInvalidations streams ManifestInvalidationEvents to the
 	// caller whenever their resolved tenant's manifest is invalidated (FGA
