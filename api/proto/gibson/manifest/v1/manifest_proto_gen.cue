@@ -16,7 +16,6 @@ import "time"
 	agents?: [...#ComponentCapability] @protobuf(11,ComponentCapability)
 	tools?: [...#ComponentCapability] @protobuf(12,ComponentCapability)
 	plugins?: [...#ComponentCapability] @protobuf(13,ComponentCapability)
-	limits?: #LimitsAndQuotas   @protobuf(30,LimitsAndQuotas)
 	memory?: #MemoryPermissions @protobuf(32,MemoryPermissions)
 
 	// Signature payload (Ed25519 over body with signature/kid cleared).
@@ -45,13 +44,6 @@ import "time"
 	ownerTenant?:  string @protobuf(7,string,name=owner_tenant)
 	permissions?: [...string] @protobuf(10,string)
 	liveness?: #ComponentLiveness @protobuf(30,ComponentLiveness)
-}
-
-// LimitsAndQuotas carries the tier-derived resource ceilings applied to
-// the subject's session. max_spend_usd is a decimal string to avoid
-// floating-point rounding at quota boundaries.
-#LimitsAndQuotas: {
-	maxTokensPerCall?: uint64 @protobuf(1,uint64,name=max_tokens_per_call)
 }
 
 // MemoryPermissions expresses per-tier memory access (e.g. "ro", "rw", "").
