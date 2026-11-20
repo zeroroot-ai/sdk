@@ -99,6 +99,10 @@ MissionConstraints declares the operational limits baked into a mission definiti
 | `allowed_techniques` | `repeated string` | 10 | allowed_techniques is the allowlist of attack technique IDs (taxonomy) that agents may use during the mission. Empty list means no allowlist (any technique may be used unless blocked). |
 | `blocked_techniques` | `repeated string` | 11 | blocked_techniques is the blocklist of attack technique IDs that agents must not use, regardless of allowed_techniques. Empty list means no blocklist. |
 | `max_tokens_per_call` | `int32` | 12 | max_tokens_per_call is the per-invocation cap on LLM tokens for any single LLM call within this mission. Applied by the daemon before every provider call; the provider never sees more than this many output tokens.  Precedence cascade (highest → lowest): 1. Per-node *NodeConfig.max_tokens_per_call (when set on a specific node) 2. This field (mission-level default) 3. 0 — no cap from this mechanism  When a per-node override is set it completely supersedes this field for that node (including 0, which explicitly disables the cap for that node while this field may still apply to all other nodes).  This field is different from max_tokens: max_tokens is a cumulative budget for the entire mission; max_tokens_per_call is a ceiling on each individual LLM call.  0 means unlimited at this level. Spec: mission-schema-canonicalization Requirement 5. Enforced by EffectivePerCallCap() (wired in M4). |
+| `health_hold` | `google.protobuf.Duration` | 13 | health_hold is how long the health signal of a service must hold after a fix. The hold time starts after a restart ends, not at the start of the fix. Absent or zero means the platform default. A negative value is invalid. |
+| `restart_policy` | `gibson.mission.v1.RestartPolicy` | 14 | restart_policy states if an agent may restart a host. Absent or RESTART_POLICY_UNSPECIFIED means RESTART_POLICY_FORBIDDEN. When the policy forbids a restart and a patch needs one, the agent installs the patch and does not restart. |
+| `restart_limit` | `google.protobuf.Duration` | 15 | restart_limit is how long a restart can take before it counts as a failed health signal. Absent or zero means the platform default. A negative value is invalid. |
+| `restart_window` | `gibson.mission.v1.RestartWindow` | 16 | restart_window is the daily window in which a restart may start. It is set when restart_policy is RESTART_POLICY_IN_WINDOW, and in no other case. |
 
 ## `gibson.mission.v1.MissionDefinition`
 
@@ -220,6 +224,15 @@ RepositoryConfig defines a single repository to clone. Maps directly to the SDK'
 | `credential_name` | `string` | 4 | CredentialName references a credential in the credential store. Optional — public repos don't need credentials. |
 | `shallow` | `bool` | 5 | Shallow enables `git clone --depth 1`. |
 | `depends_on` | `repeated string` | 6 | DependsOn lists repository names that must clone first. Enables topological ordering for multi-repo missions. |
+
+## `gibson.mission.v1.RestartWindow`
+
+RestartWindow is a daily time range in UTC. A restart may start inside the range. If end is before start, the range crosses midnight.
+
+| Field | Type | Tag | Description |
+|---|---|---|---|
+| `start` | `string` | 1 | start is the first minute of the range, in the form "HH:MM" (24 hours). |
+| `end` | `string` | 2 | end is the last minute of the range, in the form "HH:MM" (24 hours). |
 
 ## `gibson.mission.v1.RetryPolicy`
 

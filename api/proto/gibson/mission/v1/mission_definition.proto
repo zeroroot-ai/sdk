@@ -269,6 +269,64 @@ message MissionConstraints {
     // 0 means unlimited at this level. Spec: mission-schema-canonicalization
     // Requirement 5. Enforced by EffectivePerCallCap() (wired in M4).
     int32 max_tokens_per_call = 12 [(buf.validate.field).int32 = { gte: 0 }];
+
+    // Fields 13-16 are the fix loop settings (zeroroot-ai/gibson#1507). A fix
+    // changes a service, and the health signal of the service can fail while a
+    // host restarts. These settings tell the agent how long the health signal
+    // must hold and if, when and for how long a host may restart.
+    option (buf.validate.message).cel = {
+        id: "mission_constraints.restart_window"
+        message: "restart_window must be set when restart_policy is RESTART_POLICY_IN_WINDOW, and in no other case"
+        expression: "(this.restart_policy == 3) == has(this.restart_window)"
+    };
+
+    // health_hold is how long the health signal of a service must hold after a
+    // fix. The hold time starts after a restart ends, not at the start of the
+    // fix. Absent or zero means the platform default. A negative value is
+    // invalid.
+    google.protobuf.Duration health_hold = 13 [(buf.validate.field).duration = { gte: {} }];
+
+    // restart_policy states if an agent may restart a host. Absent or
+    // RESTART_POLICY_UNSPECIFIED means RESTART_POLICY_FORBIDDEN. When the
+    // policy forbids a restart and a patch needs one, the agent installs the
+    // patch and does not restart.
+    RestartPolicy restart_policy = 14 [(buf.validate.field).enum = { defined_only: true }];
+
+    // restart_limit is how long a restart can take before it counts as a
+    // failed health signal. Absent or zero means the platform default. A
+    // negative value is invalid.
+    google.protobuf.Duration restart_limit = 15 [(buf.validate.field).duration = { gte: {} }];
+
+    // restart_window is the daily window in which a restart may start. It is
+    // set when restart_policy is RESTART_POLICY_IN_WINDOW, and in no other
+    // case.
+    RestartWindow restart_window = 16;
+}
+
+// RestartPolicy states if an agent may restart a host to finish a fix.
+enum RestartPolicy {
+    // Sentinel value. The daemon reads it as RESTART_POLICY_FORBIDDEN.
+    RESTART_POLICY_UNSPECIFIED = 0;
+
+    // RESTART_POLICY_ALLOWED means the agent may restart a host at any time.
+    RESTART_POLICY_ALLOWED = 1;
+
+    // RESTART_POLICY_FORBIDDEN means the agent never restarts a host.
+    RESTART_POLICY_FORBIDDEN = 2;
+
+    // RESTART_POLICY_IN_WINDOW means the agent may start a restart only inside
+    // the restart_window of the constraints.
+    RESTART_POLICY_IN_WINDOW = 3;
+}
+
+// RestartWindow is a daily time range in UTC. A restart may start inside the
+// range. If end is before start, the range crosses midnight.
+message RestartWindow {
+    // start is the first minute of the range, in the form "HH:MM" (24 hours).
+    string start = 1 [(buf.validate.field).string = { pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }];
+
+    // end is the last minute of the range, in the form "HH:MM" (24 hours).
+    string end = 2 [(buf.validate.field).string = { pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }];
 }
 
 // MissionDependencies specifies required components for a mission
