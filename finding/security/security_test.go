@@ -125,7 +125,6 @@ func TestMetadataKeyConstants(t *testing.T) {
 		value string
 	}{
 		{"MetaKeyMitreAttack", MetaKeyMitreAttack},
-		{"MetaKeyMitreAtlas", MetaKeyMitreAtlas},
 	}
 
 	for _, key := range keys {

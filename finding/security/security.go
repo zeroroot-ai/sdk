@@ -10,7 +10,6 @@ import (
 // Well-known metadata keys for security domain
 const (
 	MetaKeyMitreAttack = finding.MetaKeyMitreAttack
-	MetaKeyMitreAtlas  = finding.MetaKeyMitreAtlas
 )
 
 // MitreMapping represents a mapping to a MITRE framework (ATT&CK or ATLAS).

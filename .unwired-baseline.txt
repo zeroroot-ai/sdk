@@ -15,3 +15,10 @@
 # generated component lives outside every first-party repo, so no scan can
 # load it as a consumer. Delete this entry only with the template call.
 func serve.Tool	# serve/tool.go:31
+
+# Decision: owner, 2026-11-20 (zeroroot-ai/gibson#1511). The red agent is the
+# one consumer of these two calls. The owner writes that agent by hand, in the
+# public repo zeroroot-ai/red-agent, so no first-party consumer reads them yet.
+# Delete these entries when red-agent calls them.
+method serve.CallbackClient.RequestDestructiveAuthorization	# serve/callback_client.go:654
+method serve.CallbackClient.SubmitProof	# serve/callback_client.go:637
