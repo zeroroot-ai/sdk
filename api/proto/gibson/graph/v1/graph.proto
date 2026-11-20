@@ -403,6 +403,56 @@ message Finding {
   map<string, string> properties = 8;
   // Distinguishes :Finding from :Vulnerability and any future label split.
   repeated string labels = 9;
+
+  // status is where the finding stands in the fix loop. The finding is the
+  // unit of work, so the status belongs to the finding. The daemon always sets
+  // it. FINDING_LIFECYCLE_STATUS_UNSPECIFIED means the daemon did not report a
+  // status, and a reader must not show it as OPEN.
+  FindingLifecycleStatus status = 10;
+
+  // assets names the place of the finding: each host, service, repo or other
+  // asset that the finding affects. Empty means the daemon knows no place.
+  repeated string assets = 11;
+
+  // priority is the rank of the finding, "P1" (most urgent) to "P4". Empty
+  // means no triage has decided a priority yet. A reader must not show an
+  // empty priority as "unimportant".
+  string priority = 12 [(buf.validate.field).string = { pattern: "^(P[1-4])?$" }];
+
+  // priority_rule names the triage rule that set the priority. Empty means
+  // no rule has set one.
+  string priority_rule = 13 [(buf.validate.field).string = { max_len: 4096 }];
+
+  // confidence is how sure the platform is that the finding is real, from 0.0
+  // to 1.0. The field is absent when the platform has no value. Absent is not
+  // the same as 0.0.
+  optional double confidence = 14 [(buf.validate.field).double = { gte: 0.0, lte: 1.0 }];
+
+  // merge_request_url links to the merge request of the fix. Empty means no
+  // merge request exists for the finding.
+  string merge_request_url = 15 [(buf.validate.field).string = { max_len: 4096 }];
+}
+
+// FindingLifecycleStatus is where a finding stands in the fix loop. A fix
+// moves a finding from OPEN to FIXING to FIXED. The check that raised the
+// finding then moves it to VERIFIED, or back to OPEN if the check fails.
+enum FindingLifecycleStatus {
+  // Sentinel value. The daemon did not report a status.
+  FINDING_LIFECYCLE_STATUS_UNSPECIFIED = 0;
+
+  // FINDING_LIFECYCLE_STATUS_OPEN means no fix is under way.
+  FINDING_LIFECYCLE_STATUS_OPEN = 1;
+
+  // FINDING_LIFECYCLE_STATUS_FIXING means an agent works on a fix.
+  FINDING_LIFECYCLE_STATUS_FIXING = 2;
+
+  // FINDING_LIFECYCLE_STATUS_FIXED means a fix is in place. The check that
+  // raised the finding has not yet confirmed it.
+  FINDING_LIFECYCLE_STATUS_FIXED = 3;
+
+  // FINDING_LIFECYCLE_STATUS_VERIFIED means the check that raised the finding
+  // confirmed the fix.
+  FINDING_LIFECYCLE_STATUS_VERIFIED = 4;
 }
 
 message GetFindingsRequest {
