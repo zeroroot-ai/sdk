@@ -20,10 +20,6 @@
 //	if files, ok := cache.Get("my-tool"); ok {
 //	    // Use cached files
 //	}
-//
-//	// Check cache performance
-//	stats := cache.Stats()
-//	hitRate := float64(stats.Hits) / float64(stats.Hits + stats.Misses)
 package protoresolver
 
 import (
@@ -45,9 +41,6 @@ type FileDescriptorCache interface {
 	// Put stores a FileDescriptorSet in the cache.
 	// If the cache is at capacity, the least recently used entry is evicted.
 	Put(toolName string, files *protoregistry.Files)
-
-	// Invalidate removes a specific entry from the cache.
-	Invalidate(toolName string)
 }
 
 // cacheEntry represents a single entry in the LRU cache.
@@ -151,17 +144,6 @@ func (c *lruCache) Put(toolName string, files *protoregistry.Files) {
 	// Evict oldest entry if over capacity
 	if c.lruList.Len() > c.maxEntries {
 		c.evictOldest()
-	}
-}
-
-// Invalidate removes a specific entry from the cache.
-func (c *lruCache) Invalidate(toolName string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if element, exists := c.entries[toolName]; exists {
-		c.lruList.Remove(element)
-		delete(c.entries, toolName)
 	}
 }
 
