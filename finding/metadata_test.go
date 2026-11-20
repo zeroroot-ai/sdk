@@ -14,7 +14,6 @@ func TestMetadataKeyConstants(t *testing.T) {
 		expected string
 	}{
 		{MetaKeyMitreAttack, "mitre_attack"},
-		{MetaKeyMitreAtlas, "mitre_atlas"},
 	}
 
 	for _, tt := range tests {

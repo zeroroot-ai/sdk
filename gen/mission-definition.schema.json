@@ -286,6 +286,10 @@
           },
           "type": "array"
         },
+        "healthHold": {
+          "description": "health_hold is how long the health signal of a service must hold after a fix. The hold time starts after a restart ends, not at the start of the fix. Absent or zero means the platform default. A negative value is invalid.",
+          "type": "string"
+        },
         "maxCost": {
           "description": "max_cost is the cumulative LLM cost ceiling in USD across all agent nodes. 0.0 means unlimited.",
           "format": "double",
@@ -322,6 +326,23 @@
         "requireEvidence": {
           "description": "require_evidence indicates whether all findings must include proof-of-concept evidence before being recorded.",
           "type": "boolean"
+        },
+        "restartLimit": {
+          "description": "restart_limit is how long a restart can take before it counts as a failed health signal. Absent or zero means the platform default. A negative value is invalid.",
+          "type": "string"
+        },
+        "restartPolicy": {
+          "description": "restart_policy states if an agent may restart a host. Absent or RESTART_POLICY_UNSPECIFIED means RESTART_POLICY_FORBIDDEN. When the policy forbids a restart and a patch needs one, the agent installs the patch and does not restart.",
+          "enum": [
+            "RESTART_POLICY_ALLOWED",
+            "RESTART_POLICY_FORBIDDEN",
+            "RESTART_POLICY_IN_WINDOW"
+          ],
+          "type": "string"
+        },
+        "restartWindow": {
+          "$ref": "#/$defs/RestartWindow",
+          "description": "restart_window is the daily window in which a restart may start. It is set when restart_policy is RESTART_POLICY_IN_WINDOW, and in no other case."
         },
         "severityThreshold": {
           "description": "severity_threshold is the minimum severity level required to record a finding. Common values: \"low\", \"medium\", \"high\", \"critical\". Empty string means accept all severities.",
@@ -711,6 +732,23 @@
         "project": {
           "description": "project is the project path on the forge, for example \"group/repo\". Required.",
           "minLength": 1,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "RestartWindow": {
+      "additionalProperties": false,
+      "description": "RestartWindow is a daily time range in UTC. A restart may start inside the range. If end is before start, the range crosses midnight.",
+      "properties": {
+        "end": {
+          "description": "end is the last minute of the range, in the form \"HH:MM\" (24 hours).",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+          "type": "string"
+        },
+        "start": {
+          "description": "start is the first minute of the range, in the form \"HH:MM\" (24 hours).",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
           "type": "string"
         }
       },

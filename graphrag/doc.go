@@ -10,7 +10,7 @@
 // and never query or traverse the graph back; the brain is the sole reader and
 // the relevant world state is ambiently projected to agents. The recall/query/
 // traversal surface (Query, Result, TraversalOptions, TraversalResult,
-// AttackPattern, FindingNode, AttackChain, IntelligenceQueries) was removed in
+// FindingNode, IntelligenceQueries) was removed in
 // the ECS-brain cutover (sdk#341).
 //
 // # Core Capabilities

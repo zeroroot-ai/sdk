@@ -630,6 +630,43 @@ func (c *CallbackClient) PlaceBet(ctx context.Context, req *harnesspb.PlaceBetRe
 	return resp, nil
 }
 
+// SubmitProof sends the raw evidence of an agent to settle the Bet on a
+// Hypothesis (ADR-0131). The daemon decides the settlement with a typed
+// predicate. A proof that needs approval returns the outcome
+// SETTLEMENT_OUTCOME_PENDING_AUTHORIZATION and does not block (ADR-0132).
+func (c *CallbackClient) SubmitProof(ctx context.Context, req *harnesspb.SubmitProofRequest) (*harnesspb.SubmitProofResponse, error) {
+	if !c.IsConnected() {
+		return nil, errors.New("SubmitProof: client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.SubmitProof(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("SubmitProof: %w", err)
+	}
+	return resp, nil
+}
+
+// RequestDestructiveAuthorization asks a person to approve an action that
+// cannot be undone, before the agent does the action (ADR-0132). The call
+// returns at once and does not wait for the decision.
+func (c *CallbackClient) RequestDestructiveAuthorization(
+	ctx context.Context, req *harnesspb.RequestDestructiveAuthorizationRequest,
+) (*harnesspb.RequestDestructiveAuthorizationResponse, error) {
+	if !c.IsConnected() {
+		return nil, errors.New("RequestDestructiveAuthorization: client not connected")
+	}
+
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.RequestDestructiveAuthorization(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("RequestDestructiveAuthorization: %w", err)
+	}
+	return resp, nil
+}
+
 // WorldView fetches the caller's slice of the tenant World (ADR-0112). The
 // context is stamped here, as on every other callback: it addresses the harness
 // the daemon should consult, and the daemon reads tenant and scope off that
@@ -913,34 +950,6 @@ func (c *CallbackClient) QueryNodes(ctx context.Context, req *harnesspb.QueryNod
 	resp, err := c.client.QueryNodes(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("QueryNodes: %w", err)
-	}
-	return resp, nil
-}
-
-// FindSimilarAttacks returns attack patterns semantically close to content over the task-scoped callback transport.
-func (c *CallbackClient) FindSimilarAttacks(ctx context.Context, req *harnesspb.FindSimilarAttacksRequest) (*harnesspb.FindSimilarAttacksResponse, error) {
-	if !c.IsConnected() {
-		return nil, errors.New("FindSimilarAttacks: client not connected")
-	}
-	req.Context = c.contextInfo()
-	ctx = c.contextWithMetadata(ctx)
-	resp, err := c.client.FindSimilarAttacks(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("FindSimilarAttacks: %w", err)
-	}
-	return resp, nil
-}
-
-// GetAttackChains returns multi-hop technique paths from a starting technique over the task-scoped callback transport.
-func (c *CallbackClient) GetAttackChains(ctx context.Context, req *harnesspb.GetAttackChainsRequest) (*harnesspb.GetAttackChainsResponse, error) {
-	if !c.IsConnected() {
-		return nil, errors.New("GetAttackChains: client not connected")
-	}
-	req.Context = c.contextInfo()
-	ctx = c.contextWithMetadata(ctx)
-	resp, err := c.client.GetAttackChains(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("GetAttackChains: %w", err)
 	}
 	return resp, nil
 }

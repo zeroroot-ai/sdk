@@ -49,12 +49,11 @@ func TestHarnessMethodSetUnchanged(t *testing.T) {
 		"PlanContext", "ReportStepHints",
 		"Workspace", "Workspaces",
 		"WorldView",
-		// KnowledgeReader, added deliberately — the nine reads a dispatched
+		// KnowledgeReader, added deliberately — the seven reads a dispatched
 		// agent needs to see what earlier work established (sdk#489), plus the
 		// one lifecycle traversal the search-shaped reads cannot answer
 		// (ApplicationFindings, sdk#537).
-		"QueryNodes", "FindSimilarAttacks", "GetAttackChains",
-		"FindSimilarFindings", "GetRelatedFindings",
+		"QueryNodes", "FindSimilarFindings", "GetRelatedFindings",
 		"GetFindings", "GetRunFindings", "GetMissionRunHistory",
 		"ApplicationFindings",
 	}

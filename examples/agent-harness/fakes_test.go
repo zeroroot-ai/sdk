@@ -292,16 +292,6 @@ func (d *callbackDaemon) QueryNodes(context.Context, *harnesspb.QueryNodesReques
 	return &harnesspb.QueryNodesResponse{Results: []*graphragpb.QueryResult{{Score: 0.5}, {Score: 0.4}}}, nil
 }
 
-func (d *callbackDaemon) FindSimilarAttacks(
-	context.Context, *harnesspb.FindSimilarAttacksRequest,
-) (*harnesspb.FindSimilarAttacksResponse, error) {
-	return &harnesspb.FindSimilarAttacksResponse{Results: []*graphragpb.AttackPattern{{Id: "ap-1"}}}, nil
-}
-
-func (d *callbackDaemon) GetAttackChains(context.Context, *harnesspb.GetAttackChainsRequest) (*harnesspb.GetAttackChainsResponse, error) {
-	return &harnesspb.GetAttackChainsResponse{Results: []*graphragpb.AttackChain{{Id: "ac-1"}, {Id: "ac-2"}}}, nil
-}
-
 func (d *callbackDaemon) FindSimilarFindings(
 	context.Context, *harnesspb.FindSimilarFindingsRequest,
 ) (*harnesspb.FindSimilarFindingsResponse, error) {

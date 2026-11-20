@@ -375,7 +375,7 @@ message OntologyExtension {
 // ============================================================================
 //
 // These were carried as `bytes results_json` whose only schema definition was a
-// comment ("a JSON-encoded []graphrag.AttackPattern"). That comment was the
+// comment ("a JSON-encoded []graphrag.FindingNode"). That comment was the
 // entire contract between the enterprise producer and every OSS consumer, and
 // nothing checked it. Their Go originals live in gibson/internal/, which the SDK
 // cannot import — proto is how the open-core seam is crossed, and it is already
@@ -383,48 +383,6 @@ message OntologyExtension {
 //
 // The wire shape is chosen, not inherited. `embedding` is deliberately absent:
 // no agent has a use for a raw vector, and shipping one would be pure weight.
-
-// AttackPattern is a MITRE ATT&CK-shaped technique record from the tenant graph.
-message AttackPattern {
-  string id = 1;
-  // technique_id is the ATT&CK identifier, e.g. "T1566".
-  string technique_id = 2;
-  string name = 3;
-  string description = 4;
-  repeated string references = 8;
-  int64 created_at = 20;
-  int64 updated_at = 21;
-  reserved 5;
-  reserved "tactics";
-  reserved 6;
-  reserved "platforms";
-  reserved 7;
-  reserved "data_sources";
-}
-
-// AttackStep is one hop in an AttackChain.
-message AttackStep {
-  int32 order = 1;
-  string technique_id = 2;
-  string node_id = 3;
-  string description = 4;
-  // evidence names the findings supporting this step.
-  repeated string evidence = 5;
-  double confidence = 6;
-}
-
-// AttackChain is a multi-hop technique sequence discovered by graph traversal.
-message AttackChain {
-  string id = 1;
-  string name = 2;
-  repeated AttackStep steps = 3;
-  string mission_id = 4;
-  // confidence for the chain as a whole.
-  double confidence = 5;
-  string severity = 6;
-  int64 created_at = 20;
-  int64 updated_at = 21;
-}
 
 // FindingNode is a finding as it appears in the knowledge graph.
 //

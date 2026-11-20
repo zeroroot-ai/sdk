@@ -431,12 +431,6 @@ func callKnowledge(ctx context.Context, h agent.Harness, rep *Report) {
 	nodes, err := h.QueryNodes(ctx, &graphragpb.GraphQuery{})
 	record(rep, "QueryNodes", nodes, err, func(v []*graphragpb.QueryResult) string { return strconv.Itoa(len(v)) })
 
-	attacks, err := h.FindSimilarAttacks(ctx, "sql injection", 3)
-	record(rep, "FindSimilarAttacks", attacks, err, func(v []*graphragpb.AttackPattern) string { return strconv.Itoa(len(v)) })
-
-	chains, err := h.GetAttackChains(ctx, "T1190", 2)
-	record(rep, "GetAttackChains", chains, err, func(v []*graphragpb.AttackChain) string { return strconv.Itoa(len(v)) })
-
 	similar, err := h.FindSimilarFindings(ctx, "f-1", 4)
 	record(rep, "FindSimilarFindings", similar, err, func(v []*graphragpb.FindingNode) string { return strconv.Itoa(len(v)) })
 

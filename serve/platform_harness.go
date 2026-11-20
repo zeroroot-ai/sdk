@@ -777,16 +777,6 @@ func (h *PlatformHarness) QueryNodes(context.Context, *graphragpb.GraphQuery) ([
 	return nil, fmt.Errorf("QueryNodes in platform pull-mode: %w", agent.ErrKnowledgeUnavailable)
 }
 
-// FindSimilarAttacks is not wired in platform pull-mode; it reports ErrKnowledgeUnavailable.
-func (h *PlatformHarness) FindSimilarAttacks(context.Context, string, int) ([]*graphragpb.AttackPattern, error) {
-	return nil, fmt.Errorf("FindSimilarAttacks in platform pull-mode: %w", agent.ErrKnowledgeUnavailable)
-}
-
-// GetAttackChains is not wired in platform pull-mode; it reports ErrKnowledgeUnavailable.
-func (h *PlatformHarness) GetAttackChains(context.Context, string, int) ([]*graphragpb.AttackChain, error) {
-	return nil, fmt.Errorf("GetAttackChains in platform pull-mode: %w", agent.ErrKnowledgeUnavailable)
-}
-
 // FindSimilarFindings is not wired in platform pull-mode; it reports ErrKnowledgeUnavailable.
 func (h *PlatformHarness) FindSimilarFindings(context.Context, string, int) ([]*graphragpb.FindingNode, error) {
 	return nil, fmt.Errorf("FindSimilarFindings in platform pull-mode: %w", agent.ErrKnowledgeUnavailable)

@@ -31,6 +31,10 @@ func everyConstraint() *missionpb.MissionConstraints {
 		AllowedTechniques: []string{"T1595"},
 		BlockedTechniques: []string{"T1485"},
 		MaxTokensPerCall:  4096,
+		HealthHold:        durationpb.New(10 * time.Minute),
+		RestartPolicy:     missionpb.RestartPolicy_RESTART_POLICY_IN_WINDOW,
+		RestartLimit:      durationpb.New(5 * time.Minute),
+		RestartWindow:     &missionpb.RestartWindow{Start: "02:00", End: "04:00"},
 	}
 }
 

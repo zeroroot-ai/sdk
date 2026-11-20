@@ -235,13 +235,6 @@ func TestCallbackHarness_EveryCallReachesTheDaemon(t *testing.T) {
 	t.Run("knowledge", func(t *testing.T) {
 		only[*harnesspb.QueryNodesRequest](t, &d.recorder, "QueryNodes")
 		assert.Equal(t, "2", mustStep(t, rep, "QueryNodes").Summary)
-		fa := only[*harnesspb.FindSimilarAttacksRequest](t, &d.recorder, "FindSimilarAttacks")
-		assert.Equal(t, "sql injection", fa.GetContent())
-		assert.Equal(t, int32(3), fa.GetTopK())
-		ac := only[*harnesspb.GetAttackChainsRequest](t, &d.recorder, "GetAttackChains")
-		assert.Equal(t, "T1190", ac.GetTechniqueId())
-		assert.Equal(t, int32(2), ac.GetMaxDepth())
-		assert.Equal(t, "2", mustStep(t, rep, "GetAttackChains").Summary)
 		sf := only[*harnesspb.FindSimilarFindingsRequest](t, &d.recorder, "FindSimilarFindings")
 		assert.Equal(t, "f-1", sf.GetFindingId())
 		assert.Equal(t, int32(4), sf.GetTopK())
@@ -453,8 +446,8 @@ func TestPlatformHarness_EveryCallReachesTheDaemon(t *testing.T) {
 
 	// The pull transport has no WorldView, Observe, PlaceBet or knowledge reads. The agent records that.
 	unavailable := map[string]bool{
-		"Observe": true, "PlaceBet": true, "WorldView": true, "QueryNodes": true, "FindSimilarAttacks": true,
-		"GetAttackChains": true, "FindSimilarFindings": true, "GetRelatedFindings": true, "GetFindings": true,
+		"Observe": true, "PlaceBet": true, "WorldView": true, "QueryNodes": true,
+		"FindSimilarFindings": true, "GetRelatedFindings": true, "GetFindings": true,
 		"GetRunFindings": true, "GetMissionRunHistory": true, "ApplicationFindings": true,
 	}
 	// The test client has no capability grant. The four calls to the gateway fail on that.

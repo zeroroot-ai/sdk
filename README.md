@@ -142,7 +142,7 @@ composed of capability groups, declared in [`agent/harness.go`](agent/harness.go
 | `Delegator` | `Delegate` |
 | `WorldEmitter` | `SubmitFinding`, `Observe` |
 | `WorldReader` | `WorldView` |
-| `KnowledgeReader` | `QueryNodes`, `FindSimilarFindings`, `GetAttackChains`, and the other read-only graph queries |
+| `KnowledgeReader` | `QueryNodes`, `FindSimilarFindings`, and the other read-only graph queries |
 | `Planner` | `PlanContext`, `ReportStepHints` |
 | `WorkspaceAccess` | `Workspace`, `Workspaces` |
 | `MissionManager` | `CreateMission`, `RunMission`, `GetMissionStatus`, `WaitForMission`, `ListMissions`, `CancelMission`, `GetMissionResults` |

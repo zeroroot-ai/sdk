@@ -221,22 +221,6 @@ service HarnessCallbackService {
         allowed_identities: 4  // COMPONENT
       };
     }
-    rpc FindSimilarAttacks(FindSimilarAttacksRequest) returns (FindSimilarAttacksResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "can_use"
-        object_type: "component"
-        object_deriver: "system_tenant"
-        allowed_identities: 4  // COMPONENT
-      };
-    }
-    rpc GetAttackChains(GetAttackChainsRequest) returns (GetAttackChainsResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "can_use"
-        object_type: "component"
-        object_deriver: "system_tenant"
-        allowed_identities: 4  // COMPONENT
-      };
-    }
     rpc FindSimilarFindings(FindSimilarFindingsRequest) returns (FindSimilarFindingsResponse) {
       option (gibson.auth.v1.authz) = {
         relation: "can_use"
@@ -1162,32 +1146,6 @@ message QueryNodesRequest {
 // QueryNodesResponse carries knowledge graph query results.
 message QueryNodesResponse {
     repeated gibson.graphrag.v1.QueryResult results = 1;
-    HarnessError error = 2;
-}
-
-// FindSimilarAttacksRequest searches for attack patterns similar to the given content.
-message FindSimilarAttacksRequest {
-    ContextInfo context = 1;
-    string content = 2 [(buf.validate.field).string = { max_len: 16777216 }];
-    int32 top_k = 3;
-}
-
-// FindSimilarAttacksResponse carries matching attack patterns.
-message FindSimilarAttacksResponse {
-    repeated gibson.graphrag.v1.AttackPattern results = 1;
-    HarnessError error = 2;
-}
-
-// GetAttackChainsRequest requests multi-hop attack paths from a technique.
-message GetAttackChainsRequest {
-    ContextInfo context = 1;
-    string technique_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
-    int32 max_depth = 3;
-}
-
-// GetAttackChainsResponse carries attack chain results.
-message GetAttackChainsResponse {
-    repeated gibson.graphrag.v1.AttackChain results = 1;
     HarnessError error = 2;
 }
 

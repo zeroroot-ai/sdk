@@ -21,6 +21,8 @@ package contract_test
 //   - ToolNodeConfig.max_tokens_per_call     int32 gte: 0
 //   - PluginNodeConfig.max_tokens_per_call   int32 gte: 0
 //   - JoinNodeConfig.wait_for                repeated string min_items: 1
+//   - MissionConstraints fix loop fields     duration gte: 0, enum defined_only,
+//     restart_window pattern and the rule that ties it to restart_policy
 //
 // As future buf.validate annotations land in mission/v1, extend this file
 // in the same shape: one sub-test per known-good case and one per
@@ -29,8 +31,10 @@ package contract_test
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"buf.build/go/protovalidate"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	missionpb "github.com/zeroroot-ai/sdk/api/gen/gibson/mission/v1"
 )
@@ -167,4 +171,85 @@ func TestMissionV1_JoinNodeConfig_WaitFor(t *testing.T) {
 			t.Errorf("error should name the offending field: %v", err)
 		}
 	})
+}
+
+func TestMissionV1_MissionConstraints_FixLoop(t *testing.T) {
+	v := newValidator(t)
+	window := &missionpb.RestartWindow{Start: "02:00", End: "04:30"}
+
+	accepted := map[string]*missionpb.MissionConstraints{
+		"empty constraints": {},
+		"restarts allowed": {
+			HealthHold:    durationpb.New(10 * time.Minute),
+			RestartPolicy: missionpb.RestartPolicy_RESTART_POLICY_ALLOWED,
+			RestartLimit:  durationpb.New(5 * time.Minute),
+		},
+		"restarts forbidden": {RestartPolicy: missionpb.RestartPolicy_RESTART_POLICY_FORBIDDEN},
+		"restarts in a window": {
+			RestartPolicy: missionpb.RestartPolicy_RESTART_POLICY_IN_WINDOW,
+			RestartWindow: window,
+		},
+		"a window that crosses midnight": {
+			RestartPolicy: missionpb.RestartPolicy_RESTART_POLICY_IN_WINDOW,
+			RestartWindow: &missionpb.RestartWindow{Start: "23:00", End: "01:00"},
+		},
+	}
+	for name, c := range accepted {
+		t.Run("accepts "+name, func(t *testing.T) {
+			if err := v.Validate(c); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		})
+	}
+
+	rejected := map[string]struct {
+		c    *missionpb.MissionConstraints
+		want string
+	}{
+		"a negative health_hold": {
+			&missionpb.MissionConstraints{HealthHold: durationpb.New(-time.Second)}, "health_hold",
+		},
+		"a negative restart_limit": {
+			&missionpb.MissionConstraints{RestartLimit: durationpb.New(-time.Second)}, "restart_limit",
+		},
+		"an unknown restart_policy": {
+			&missionpb.MissionConstraints{RestartPolicy: missionpb.RestartPolicy(9)}, "restart_policy",
+		},
+		"the window policy with no window": {
+			&missionpb.MissionConstraints{RestartPolicy: missionpb.RestartPolicy_RESTART_POLICY_IN_WINDOW},
+			"restart_window",
+		},
+		"a window with another policy": {
+			&missionpb.MissionConstraints{
+				RestartPolicy: missionpb.RestartPolicy_RESTART_POLICY_ALLOWED,
+				RestartWindow: window,
+			},
+			"restart_window",
+		},
+		"a window with a bad time": {
+			&missionpb.MissionConstraints{
+				RestartPolicy: missionpb.RestartPolicy_RESTART_POLICY_IN_WINDOW,
+				RestartWindow: &missionpb.RestartWindow{Start: "25:00", End: "04:00"},
+			},
+			"start",
+		},
+		"a window with no end": {
+			&missionpb.MissionConstraints{
+				RestartPolicy: missionpb.RestartPolicy_RESTART_POLICY_IN_WINDOW,
+				RestartWindow: &missionpb.RestartWindow{Start: "02:00"},
+			},
+			"end",
+		},
+	}
+	for name, tc := range rejected {
+		t.Run("rejects "+name, func(t *testing.T) {
+			err := v.Validate(tc.c)
+			if err == nil {
+				t.Fatal("expected a validation error, got nil")
+			}
+			if !strings.Contains(err.Error(), tc.want) {
+				t.Errorf("error should name %q: %v", tc.want, err)
+			}
+		})
+	}
 }
