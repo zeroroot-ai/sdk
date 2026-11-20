@@ -399,8 +399,21 @@ func TestTheFakeEdgeRefusesAnotherPathAndAReplay(t *testing.T) {
 	require.ErrorContains(t, e.verify(token, "/a2a/inbound/recon"), "already used")
 	require.ErrorContains(t, e.verify("", "/a2a/inbound/recon"), "no capability grant")
 
-	tampered := token[:len(token)-2] + "AA"
-	require.ErrorContains(t, e.verify(tampered, "/a2a/inbound/recon"), "signature")
+	require.ErrorContains(t, e.verify(tamperSignature(t, token), "/a2a/inbound/recon"), "signature")
+}
+
+// tamperSignature flips one bit of the decoded signature, so the result always
+// differs from the original. Text edits of the encoded signature can decode to
+// the same bytes: the last byte of an Ed25519 signature is below 0x10, so a
+// suffix of "AA" leaves it unchanged in about 1 run in 16.
+func tamperSignature(t *testing.T, token string) string {
+	t.Helper()
+	parts := strings.Split(token, ".")
+	require.Len(t, parts, 3)
+	sig, err := base64.RawURLEncoding.DecodeString(parts[2])
+	require.NoError(t, err)
+	sig[0] ^= 0x01
+	return parts[0] + "." + parts[1] + "." + base64.RawURLEncoding.EncodeToString(sig)
 }
 
 func TestARefusedCallerGetsTheA2AError(t *testing.T) {
