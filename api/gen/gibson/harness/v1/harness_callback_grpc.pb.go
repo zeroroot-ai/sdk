@@ -36,8 +36,6 @@ const (
 	HarnessCallbackService_RequestDestructiveAuthorization_FullMethodName = "/gibson.harness.v1.HarnessCallbackService/RequestDestructiveAuthorization"
 	HarnessCallbackService_WorldView_FullMethodName                       = "/gibson.harness.v1.HarnessCallbackService/WorldView"
 	HarnessCallbackService_QueryNodes_FullMethodName                      = "/gibson.harness.v1.HarnessCallbackService/QueryNodes"
-	HarnessCallbackService_FindSimilarAttacks_FullMethodName              = "/gibson.harness.v1.HarnessCallbackService/FindSimilarAttacks"
-	HarnessCallbackService_GetAttackChains_FullMethodName                 = "/gibson.harness.v1.HarnessCallbackService/GetAttackChains"
 	HarnessCallbackService_FindSimilarFindings_FullMethodName             = "/gibson.harness.v1.HarnessCallbackService/FindSimilarFindings"
 	HarnessCallbackService_GetRelatedFindings_FullMethodName              = "/gibson.harness.v1.HarnessCallbackService/GetRelatedFindings"
 	HarnessCallbackService_GetFindings_FullMethodName                     = "/gibson.harness.v1.HarnessCallbackService/GetFindings"
@@ -172,8 +170,6 @@ type HarnessCallbackServiceClient interface {
 	// is the sole graph writer (ADR-0112), and ComponentService no longer
 	// has a generic graph-write RPC.
 	QueryNodes(ctx context.Context, in *QueryNodesRequest, opts ...grpc.CallOption) (*QueryNodesResponse, error)
-	FindSimilarAttacks(ctx context.Context, in *FindSimilarAttacksRequest, opts ...grpc.CallOption) (*FindSimilarAttacksResponse, error)
-	GetAttackChains(ctx context.Context, in *GetAttackChainsRequest, opts ...grpc.CallOption) (*GetAttackChainsResponse, error)
 	FindSimilarFindings(ctx context.Context, in *FindSimilarFindingsRequest, opts ...grpc.CallOption) (*FindSimilarFindingsResponse, error)
 	GetRelatedFindings(ctx context.Context, in *GetRelatedFindingsRequest, opts ...grpc.CallOption) (*GetRelatedFindingsResponse, error)
 	GetFindings(ctx context.Context, in *GetFindingsRequest, opts ...grpc.CallOption) (*GetFindingsResponse, error)
@@ -507,26 +503,6 @@ func (c *harnessCallbackServiceClient) QueryNodes(ctx context.Context, in *Query
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(QueryNodesResponse)
 	err := c.cc.Invoke(ctx, HarnessCallbackService_QueryNodes_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *harnessCallbackServiceClient) FindSimilarAttacks(ctx context.Context, in *FindSimilarAttacksRequest, opts ...grpc.CallOption) (*FindSimilarAttacksResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(FindSimilarAttacksResponse)
-	err := c.cc.Invoke(ctx, HarnessCallbackService_FindSimilarAttacks_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *harnessCallbackServiceClient) GetAttackChains(ctx context.Context, in *GetAttackChainsRequest, opts ...grpc.CallOption) (*GetAttackChainsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetAttackChainsResponse)
-	err := c.cc.Invoke(ctx, HarnessCallbackService_GetAttackChains_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1079,8 +1055,6 @@ type HarnessCallbackServiceServer interface {
 	// is the sole graph writer (ADR-0112), and ComponentService no longer
 	// has a generic graph-write RPC.
 	QueryNodes(context.Context, *QueryNodesRequest) (*QueryNodesResponse, error)
-	FindSimilarAttacks(context.Context, *FindSimilarAttacksRequest) (*FindSimilarAttacksResponse, error)
-	GetAttackChains(context.Context, *GetAttackChainsRequest) (*GetAttackChainsResponse, error)
 	FindSimilarFindings(context.Context, *FindSimilarFindingsRequest) (*FindSimilarFindingsResponse, error)
 	GetRelatedFindings(context.Context, *GetRelatedFindingsRequest) (*GetRelatedFindingsResponse, error)
 	GetFindings(context.Context, *GetFindingsRequest) (*GetFindingsResponse, error)
@@ -1282,12 +1256,6 @@ func (UnimplementedHarnessCallbackServiceServer) WorldView(context.Context, *Wor
 }
 func (UnimplementedHarnessCallbackServiceServer) QueryNodes(context.Context, *QueryNodesRequest) (*QueryNodesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryNodes not implemented")
-}
-func (UnimplementedHarnessCallbackServiceServer) FindSimilarAttacks(context.Context, *FindSimilarAttacksRequest) (*FindSimilarAttacksResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method FindSimilarAttacks not implemented")
-}
-func (UnimplementedHarnessCallbackServiceServer) GetAttackChains(context.Context, *GetAttackChainsRequest) (*GetAttackChainsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetAttackChains not implemented")
 }
 func (UnimplementedHarnessCallbackServiceServer) FindSimilarFindings(context.Context, *FindSimilarFindingsRequest) (*FindSimilarFindingsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FindSimilarFindings not implemented")
@@ -1731,42 +1699,6 @@ func _HarnessCallbackService_QueryNodes_Handler(srv interface{}, ctx context.Con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(HarnessCallbackServiceServer).QueryNodes(ctx, req.(*QueryNodesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HarnessCallbackService_FindSimilarAttacks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FindSimilarAttacksRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HarnessCallbackServiceServer).FindSimilarAttacks(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HarnessCallbackService_FindSimilarAttacks_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HarnessCallbackServiceServer).FindSimilarAttacks(ctx, req.(*FindSimilarAttacksRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HarnessCallbackService_GetAttackChains_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetAttackChainsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HarnessCallbackServiceServer).GetAttackChains(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HarnessCallbackService_GetAttackChains_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HarnessCallbackServiceServer).GetAttackChains(ctx, req.(*GetAttackChainsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2615,14 +2547,6 @@ var HarnessCallbackService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "QueryNodes",
 			Handler:    _HarnessCallbackService_QueryNodes_Handler,
-		},
-		{
-			MethodName: "FindSimilarAttacks",
-			Handler:    _HarnessCallbackService_FindSimilarAttacks_Handler,
-		},
-		{
-			MethodName: "GetAttackChains",
-			Handler:    _HarnessCallbackService_GetAttackChains_Handler,
 		},
 		{
 			MethodName: "FindSimilarFindings",

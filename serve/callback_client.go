@@ -917,34 +917,6 @@ func (c *CallbackClient) QueryNodes(ctx context.Context, req *harnesspb.QueryNod
 	return resp, nil
 }
 
-// FindSimilarAttacks returns attack patterns semantically close to content over the task-scoped callback transport.
-func (c *CallbackClient) FindSimilarAttacks(ctx context.Context, req *harnesspb.FindSimilarAttacksRequest) (*harnesspb.FindSimilarAttacksResponse, error) {
-	if !c.IsConnected() {
-		return nil, errors.New("FindSimilarAttacks: client not connected")
-	}
-	req.Context = c.contextInfo()
-	ctx = c.contextWithMetadata(ctx)
-	resp, err := c.client.FindSimilarAttacks(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("FindSimilarAttacks: %w", err)
-	}
-	return resp, nil
-}
-
-// GetAttackChains returns multi-hop technique paths from a starting technique over the task-scoped callback transport.
-func (c *CallbackClient) GetAttackChains(ctx context.Context, req *harnesspb.GetAttackChainsRequest) (*harnesspb.GetAttackChainsResponse, error) {
-	if !c.IsConnected() {
-		return nil, errors.New("GetAttackChains: client not connected")
-	}
-	req.Context = c.contextInfo()
-	ctx = c.contextWithMetadata(ctx)
-	resp, err := c.client.GetAttackChains(ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("GetAttackChains: %w", err)
-	}
-	return resp, nil
-}
-
 // FindSimilarFindings returns findings semantically close to the given one over the task-scoped callback transport.
 func (c *CallbackClient) FindSimilarFindings(ctx context.Context, req *harnesspb.FindSimilarFindingsRequest) (*harnesspb.FindSimilarFindingsResponse, error) {
 	if !c.IsConnected() {

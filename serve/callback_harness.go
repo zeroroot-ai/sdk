@@ -1356,34 +1356,6 @@ func (h *CallbackHarness) QueryNodes(ctx context.Context, query *graphragpb.Grap
 	return resp.GetResults(), nil
 }
 
-// FindSimilarAttacks returns attack patterns semantically close to content for a dispatched agent.
-func (h *CallbackHarness) FindSimilarAttacks(ctx context.Context, content string, topK int) ([]*graphragpb.AttackPattern, error) {
-	resp, err := h.client.FindSimilarAttacks(ctx, &harnesspb.FindSimilarAttacksRequest{
-		Content: content, TopK: boundedInt32(topK),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("find similar attacks callback failed: %w", err)
-	}
-	if e := resp.GetError(); e != nil && e.GetMessage() != "" {
-		return nil, fmt.Errorf("find similar attacks rejected: %s", e.GetMessage())
-	}
-	return resp.GetResults(), nil
-}
-
-// GetAttackChains returns multi-hop technique paths from a starting technique for a dispatched agent.
-func (h *CallbackHarness) GetAttackChains(ctx context.Context, techniqueID string, maxDepth int) ([]*graphragpb.AttackChain, error) {
-	resp, err := h.client.GetAttackChains(ctx, &harnesspb.GetAttackChainsRequest{
-		TechniqueId: techniqueID, MaxDepth: boundedInt32(maxDepth),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("get attack chains callback failed: %w", err)
-	}
-	if e := resp.GetError(); e != nil && e.GetMessage() != "" {
-		return nil, fmt.Errorf("get attack chains rejected: %s", e.GetMessage())
-	}
-	return resp.GetResults(), nil
-}
-
 // FindSimilarFindings returns findings semantically close to the given one for a dispatched agent.
 func (h *CallbackHarness) FindSimilarFindings(ctx context.Context, findingID string, topK int) ([]*graphragpb.FindingNode, error) {
 	resp, err := h.client.FindSimilarFindings(ctx, &harnesspb.FindSimilarFindingsRequest{

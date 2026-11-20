@@ -361,26 +361,6 @@ service ComponentService {
       };
     }
 
-    // FindSimilarAttacks returns attack patterns semantically similar to the given content.
-    rpc FindSimilarAttacks(FindSimilarAttacksRequest) returns (FindSimilarAttacksResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "can_execute"
-        object_type: "component"
-        object_deriver: "system_tenant"
-        allowed_identities: 4  // COMPONENT
-      };
-    }
-
-    // GetAttackChains returns multi-hop attack paths from a starting technique.
-    rpc GetAttackChains(GetAttackChainsRequest) returns (GetAttackChainsResponse) {
-      option (gibson.auth.v1.authz) = {
-        relation: "can_execute"
-        object_type: "component"
-        object_deriver: "system_tenant"
-        allowed_identities: 4  // COMPONENT
-      };
-    }
-
     // FindSimilarFindings returns findings semantically similar to the given finding.
     rpc FindSimilarFindings(FindSimilarFindingsRequest) returns (FindSimilarFindingsResponse) {
       option (gibson.auth.v1.authz) = {
@@ -1158,32 +1138,6 @@ message QueryNodesRequest {
 // QueryNodesResponse carries knowledge graph query results.
 message QueryNodesResponse {
     repeated gibson.graphrag.v1.QueryResult results = 1;
-}
-
-// FindSimilarAttacksRequest searches for attack patterns similar to the given content.
-message FindSimilarAttacksRequest {
-    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
-    string content = 2 [(buf.validate.field).string = { max_len: 16777216 }];
-    int32 top_k = 3;
-}
-
-// FindSimilarAttacksResponse carries matching attack patterns.
-message FindSimilarAttacksResponse {
-    // results_json is a JSON-encoded []graphrag.AttackPattern.
-    bytes results_json = 1;
-}
-
-// GetAttackChainsRequest requests multi-hop attack paths from a technique.
-message GetAttackChainsRequest {
-    string work_id = 1 [(buf.validate.field).string = { max_len: 1024 }];
-    string technique_id = 2 [(buf.validate.field).string = { max_len: 1024 }];
-    int32 max_depth = 3;
-}
-
-// GetAttackChainsResponse carries attack chain results.
-message GetAttackChainsResponse {
-    // results_json is a JSON-encoded []graphrag.AttackChain.
-    bytes results_json = 1;
 }
 
 // FindSimilarFindingsRequest searches for findings similar to the given one.

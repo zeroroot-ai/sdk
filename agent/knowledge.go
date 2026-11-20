@@ -99,12 +99,6 @@ type KnowledgeReader interface {
 	// construction — an agent cannot query another tenant's graph.
 	QueryNodes(ctx context.Context, query *graphragpb.GraphQuery) ([]*graphragpb.QueryResult, error)
 
-	// FindSimilarAttacks returns attack patterns semantically close to content.
-	FindSimilarAttacks(ctx context.Context, content string, topK int) ([]*graphragpb.AttackPattern, error)
-
-	// GetAttackChains returns multi-hop technique paths from a starting technique.
-	GetAttackChains(ctx context.Context, techniqueID string, maxDepth int) ([]*graphragpb.AttackChain, error)
-
 	// FindSimilarFindings returns findings semantically close to the given one.
 	FindSimilarFindings(ctx context.Context, findingID string, topK int) ([]*graphragpb.FindingNode, error)
 

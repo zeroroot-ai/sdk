@@ -41,8 +41,6 @@ const (
 	ComponentService_ListTools_FullMethodName            = "/gibson.component.v1.ComponentService/ListTools"
 	ComponentService_ResolveAgent_FullMethodName         = "/gibson.component.v1.ComponentService/ResolveAgent"
 	ComponentService_QueryNodes_FullMethodName           = "/gibson.component.v1.ComponentService/QueryNodes"
-	ComponentService_FindSimilarAttacks_FullMethodName   = "/gibson.component.v1.ComponentService/FindSimilarAttacks"
-	ComponentService_GetAttackChains_FullMethodName      = "/gibson.component.v1.ComponentService/GetAttackChains"
 	ComponentService_FindSimilarFindings_FullMethodName  = "/gibson.component.v1.ComponentService/FindSimilarFindings"
 	ComponentService_GetRelatedFindings_FullMethodName   = "/gibson.component.v1.ComponentService/GetRelatedFindings"
 	ComponentService_GetFindings_FullMethodName          = "/gibson.component.v1.ComponentService/GetFindings"
@@ -154,10 +152,6 @@ type ComponentServiceClient interface {
 	ResolveAgent(ctx context.Context, in *ResolveAgentRequest, opts ...grpc.CallOption) (*ResolveAgentResponse, error)
 	// QueryNodes searches the knowledge graph using hybrid vector + graph scoring.
 	QueryNodes(ctx context.Context, in *QueryNodesRequest, opts ...grpc.CallOption) (*QueryNodesResponse, error)
-	// FindSimilarAttacks returns attack patterns semantically similar to the given content.
-	FindSimilarAttacks(ctx context.Context, in *FindSimilarAttacksRequest, opts ...grpc.CallOption) (*FindSimilarAttacksResponse, error)
-	// GetAttackChains returns multi-hop attack paths from a starting technique.
-	GetAttackChains(ctx context.Context, in *GetAttackChainsRequest, opts ...grpc.CallOption) (*GetAttackChainsResponse, error)
 	// FindSimilarFindings returns findings semantically similar to the given finding.
 	FindSimilarFindings(ctx context.Context, in *FindSimilarFindingsRequest, opts ...grpc.CallOption) (*FindSimilarFindingsResponse, error)
 	// GetRelatedFindings returns findings related to the given finding via graph edges.
@@ -449,26 +443,6 @@ func (c *componentServiceClient) QueryNodes(ctx context.Context, in *QueryNodesR
 	return out, nil
 }
 
-func (c *componentServiceClient) FindSimilarAttacks(ctx context.Context, in *FindSimilarAttacksRequest, opts ...grpc.CallOption) (*FindSimilarAttacksResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(FindSimilarAttacksResponse)
-	err := c.cc.Invoke(ctx, ComponentService_FindSimilarAttacks_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *componentServiceClient) GetAttackChains(ctx context.Context, in *GetAttackChainsRequest, opts ...grpc.CallOption) (*GetAttackChainsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetAttackChainsResponse)
-	err := c.cc.Invoke(ctx, ComponentService_GetAttackChains_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *componentServiceClient) FindSimilarFindings(ctx context.Context, in *FindSimilarFindingsRequest, opts ...grpc.CallOption) (*FindSimilarFindingsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(FindSimilarFindingsResponse)
@@ -740,10 +714,6 @@ type ComponentServiceServer interface {
 	ResolveAgent(context.Context, *ResolveAgentRequest) (*ResolveAgentResponse, error)
 	// QueryNodes searches the knowledge graph using hybrid vector + graph scoring.
 	QueryNodes(context.Context, *QueryNodesRequest) (*QueryNodesResponse, error)
-	// FindSimilarAttacks returns attack patterns semantically similar to the given content.
-	FindSimilarAttacks(context.Context, *FindSimilarAttacksRequest) (*FindSimilarAttacksResponse, error)
-	// GetAttackChains returns multi-hop attack paths from a starting technique.
-	GetAttackChains(context.Context, *GetAttackChainsRequest) (*GetAttackChainsResponse, error)
 	// FindSimilarFindings returns findings semantically similar to the given finding.
 	FindSimilarFindings(context.Context, *FindSimilarFindingsRequest) (*FindSimilarFindingsResponse, error)
 	// GetRelatedFindings returns findings related to the given finding via graph edges.
@@ -862,12 +832,6 @@ func (UnimplementedComponentServiceServer) ResolveAgent(context.Context, *Resolv
 }
 func (UnimplementedComponentServiceServer) QueryNodes(context.Context, *QueryNodesRequest) (*QueryNodesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryNodes not implemented")
-}
-func (UnimplementedComponentServiceServer) FindSimilarAttacks(context.Context, *FindSimilarAttacksRequest) (*FindSimilarAttacksResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method FindSimilarAttacks not implemented")
-}
-func (UnimplementedComponentServiceServer) GetAttackChains(context.Context, *GetAttackChainsRequest) (*GetAttackChainsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetAttackChains not implemented")
 }
 func (UnimplementedComponentServiceServer) FindSimilarFindings(context.Context, *FindSimilarFindingsRequest) (*FindSimilarFindingsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FindSimilarFindings not implemented")
@@ -1323,42 +1287,6 @@ func _ComponentService_QueryNodes_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ComponentService_FindSimilarAttacks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FindSimilarAttacksRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ComponentServiceServer).FindSimilarAttacks(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ComponentService_FindSimilarAttacks_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ComponentServiceServer).FindSimilarAttacks(ctx, req.(*FindSimilarAttacksRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ComponentService_GetAttackChains_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetAttackChainsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ComponentServiceServer).GetAttackChains(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ComponentService_GetAttackChains_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ComponentServiceServer).GetAttackChains(ctx, req.(*GetAttackChainsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _ComponentService_FindSimilarFindings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(FindSimilarFindingsRequest)
 	if err := dec(in); err != nil {
@@ -1744,14 +1672,6 @@ var ComponentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "QueryNodes",
 			Handler:    _ComponentService_QueryNodes_Handler,
-		},
-		{
-			MethodName: "FindSimilarAttacks",
-			Handler:    _ComponentService_FindSimilarAttacks_Handler,
-		},
-		{
-			MethodName: "GetAttackChains",
-			Handler:    _ComponentService_GetAttackChains_Handler,
 		},
 		{
 			MethodName: "FindSimilarFindings",
