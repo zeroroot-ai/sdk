@@ -404,11 +404,19 @@ message Finding {
   // Distinguishes :Finding from :Vulnerability and any future label split.
   repeated string labels = 9;
 
-  // status is where the finding stands in the fix loop. The finding is the
-  // unit of work, so the status belongs to the finding. The daemon always sets
-  // it. FINDING_LIFECYCLE_STATUS_UNSPECIFIED means the daemon did not report a
-  // status, and a reader must not show it as OPEN.
-  FindingLifecycleStatus status = 10;
+  // lifecycle_status is where the finding stands in the fix loop. The finding
+  // is the unit of work, so the status belongs to the finding. The daemon
+  // always sets it. FINDING_LIFECYCLE_STATUS_UNSPECIFIED means the daemon did
+  // not report a status, and a reader must not show it as OPEN. The name is
+  // not "status", because gibson.types.v1.Finding.status uses the value set
+  // of FindingStatus, which is a different set.
+  //
+  // Number 10 held this field under the name "status" before any release
+  // read it. The wire contract is append-only (ADR-0028), so the field moved
+  // to number 16 and 10 is reserved.
+  FindingLifecycleStatus lifecycle_status = 16;
+  reserved 10;
+  reserved "status";
 
   // assets names the place of the finding: each host, service, repo or other
   // asset that the finding affects. Empty means the daemon knows no place.

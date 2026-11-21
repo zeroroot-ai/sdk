@@ -287,7 +287,7 @@
           "type": "array"
         },
         "healthHold": {
-          "description": "health_hold is how long the health signal of a service must hold after a fix. The hold time starts after a restart ends, not at the start of the fix. Absent or zero means the platform default. A negative value is invalid.",
+          "description": "health_hold is how long the health signal of a service must hold after a fix. The hold time starts after a restart ends, not at the start of the fix. Absent or zero means the platform default. A negative value is invalid. The upper bound is 24 hours, so a typing error cannot keep a finding in the fix loop for days.",
           "type": "string"
         },
         "maxCost": {
@@ -328,7 +328,7 @@
           "type": "boolean"
         },
         "restartLimit": {
-          "description": "restart_limit is how long a restart can take before it counts as a failed health signal. Absent or zero means the platform default. A negative value is invalid.",
+          "description": "restart_limit is how long a restart can take before it counts as a failed health signal. Absent or zero means the platform default. A negative value is invalid. The upper bound is one hour. A restart that takes longer is a failed health signal.",
           "type": "string"
         },
         "restartPolicy": {

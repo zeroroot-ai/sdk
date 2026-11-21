@@ -374,8 +374,8 @@ message OntologyExtension {
 // Knowledge read results
 // ============================================================================
 //
-// These were carried as `bytes results_json` whose only schema definition was a
-// comment ("a JSON-encoded []graphrag.FindingNode"). That comment was the
+// These were carried as `bytes results_json`. The only schema of that field
+// was a comment that named a JSON-encoded Go slice. That comment was the
 // entire contract between the enterprise producer and every OSS consumer, and
 // nothing checked it. Their Go originals live in gibson/internal/, which the SDK
 // cannot import — proto is how the open-core seam is crossed, and it is already
