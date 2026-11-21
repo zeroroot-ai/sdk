@@ -1011,6 +1011,41 @@ func (c *CallbackClient) ApplicationFindings(ctx context.Context, req *harnesspb
 	return resp, nil
 }
 
+// WriteReadMarker records how far the agent read the results of one Connector.
+// The daemon stores the marker as a Timeline event of the tenant.
+func (c *CallbackClient) WriteReadMarker(
+	ctx context.Context, req *harnesspb.WriteReadMarkerRequest,
+) (*harnesspb.WriteReadMarkerResponse, error) {
+	if !c.IsConnected() {
+		return nil, errors.New("WriteReadMarker: client not connected")
+	}
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.WriteReadMarker(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("WriteReadMarker: %w", err)
+	}
+	return resp, nil
+}
+
+// LastReadMarker returns the last marker of one Connector. After a restart, the
+// agent continues from this marker. found is false when the Connector has no
+// marker yet.
+func (c *CallbackClient) LastReadMarker(
+	ctx context.Context, req *harnesspb.LastReadMarkerRequest,
+) (*harnesspb.LastReadMarkerResponse, error) {
+	if !c.IsConnected() {
+		return nil, errors.New("LastReadMarker: client not connected")
+	}
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.LastReadMarker(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("LastReadMarker: %w", err)
+	}
+	return resp, nil
+}
+
 // GetRunFindings returns findings from earlier runs of this mission over the task-scoped callback transport.
 func (c *CallbackClient) GetRunFindings(ctx context.Context, req *harnesspb.GetRunFindingsRequest) (*harnesspb.GetRunFindingsResponse, error) {
 	if !c.IsConnected() {

@@ -42,6 +42,8 @@ const (
 	HarnessCallbackService_ApplicationFindings_FullMethodName             = "/gibson.harness.v1.HarnessCallbackService/ApplicationFindings"
 	HarnessCallbackService_GetRunFindings_FullMethodName                  = "/gibson.harness.v1.HarnessCallbackService/GetRunFindings"
 	HarnessCallbackService_GetMissionRunHistory_FullMethodName            = "/gibson.harness.v1.HarnessCallbackService/GetMissionRunHistory"
+	HarnessCallbackService_WriteReadMarker_FullMethodName                 = "/gibson.harness.v1.HarnessCallbackService/WriteReadMarker"
+	HarnessCallbackService_LastReadMarker_FullMethodName                  = "/gibson.harness.v1.HarnessCallbackService/LastReadMarker"
 	HarnessCallbackService_GetPlanContext_FullMethodName                  = "/gibson.harness.v1.HarnessCallbackService/GetPlanContext"
 	HarnessCallbackService_ReportStepHints_FullMethodName                 = "/gibson.harness.v1.HarnessCallbackService/ReportStepHints"
 	HarnessCallbackService_RecordSpan_FullMethodName                      = "/gibson.harness.v1.HarnessCallbackService/RecordSpan"
@@ -188,6 +190,15 @@ type HarnessCallbackServiceClient interface {
 	ApplicationFindings(ctx context.Context, in *ApplicationFindingsRequest, opts ...grpc.CallOption) (*ApplicationFindingsResponse, error)
 	GetRunFindings(ctx context.Context, in *GetRunFindingsRequest, opts ...grpc.CallOption) (*GetRunFindingsResponse, error)
 	GetMissionRunHistory(ctx context.Context, in *GetMissionRunHistoryRequest, opts ...grpc.CallOption) (*GetMissionRunHistoryResponse, error)
+	// Read markers. An agent that reads the results of a Connector in a loop
+	// records how far it read. The daemon stores each marker as a Timeline
+	// event of the tenant. After a restart, the agent reads the last marker
+	// and continues from it, so it reads no result twice and skips none.
+	//
+	// WriteReadMarker records a marker for one Connector.
+	WriteReadMarker(ctx context.Context, in *WriteReadMarkerRequest, opts ...grpc.CallOption) (*WriteReadMarkerResponse, error)
+	// LastReadMarker returns the last marker of one Connector.
+	LastReadMarker(ctx context.Context, in *LastReadMarkerRequest, opts ...grpc.CallOption) (*LastReadMarkerResponse, error)
 	// Planning Operations
 	GetPlanContext(ctx context.Context, in *GetPlanContextRequest, opts ...grpc.CallOption) (*GetPlanContextResponse, error)
 	ReportStepHints(ctx context.Context, in *ReportStepHintsRequest, opts ...grpc.CallOption) (*ReportStepHintsResponse, error)
@@ -563,6 +574,26 @@ func (c *harnessCallbackServiceClient) GetMissionRunHistory(ctx context.Context,
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetMissionRunHistoryResponse)
 	err := c.cc.Invoke(ctx, HarnessCallbackService_GetMissionRunHistory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *harnessCallbackServiceClient) WriteReadMarker(ctx context.Context, in *WriteReadMarkerRequest, opts ...grpc.CallOption) (*WriteReadMarkerResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(WriteReadMarkerResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_WriteReadMarker_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *harnessCallbackServiceClient) LastReadMarker(ctx context.Context, in *LastReadMarkerRequest, opts ...grpc.CallOption) (*LastReadMarkerResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LastReadMarkerResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_LastReadMarker_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1073,6 +1104,15 @@ type HarnessCallbackServiceServer interface {
 	ApplicationFindings(context.Context, *ApplicationFindingsRequest) (*ApplicationFindingsResponse, error)
 	GetRunFindings(context.Context, *GetRunFindingsRequest) (*GetRunFindingsResponse, error)
 	GetMissionRunHistory(context.Context, *GetMissionRunHistoryRequest) (*GetMissionRunHistoryResponse, error)
+	// Read markers. An agent that reads the results of a Connector in a loop
+	// records how far it read. The daemon stores each marker as a Timeline
+	// event of the tenant. After a restart, the agent reads the last marker
+	// and continues from it, so it reads no result twice and skips none.
+	//
+	// WriteReadMarker records a marker for one Connector.
+	WriteReadMarker(context.Context, *WriteReadMarkerRequest) (*WriteReadMarkerResponse, error)
+	// LastReadMarker returns the last marker of one Connector.
+	LastReadMarker(context.Context, *LastReadMarkerRequest) (*LastReadMarkerResponse, error)
 	// Planning Operations
 	GetPlanContext(context.Context, *GetPlanContextRequest) (*GetPlanContextResponse, error)
 	ReportStepHints(context.Context, *ReportStepHintsRequest) (*ReportStepHintsResponse, error)
@@ -1274,6 +1314,12 @@ func (UnimplementedHarnessCallbackServiceServer) GetRunFindings(context.Context,
 }
 func (UnimplementedHarnessCallbackServiceServer) GetMissionRunHistory(context.Context, *GetMissionRunHistoryRequest) (*GetMissionRunHistoryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetMissionRunHistory not implemented")
+}
+func (UnimplementedHarnessCallbackServiceServer) WriteReadMarker(context.Context, *WriteReadMarkerRequest) (*WriteReadMarkerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method WriteReadMarker not implemented")
+}
+func (UnimplementedHarnessCallbackServiceServer) LastReadMarker(context.Context, *LastReadMarkerRequest) (*LastReadMarkerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LastReadMarker not implemented")
 }
 func (UnimplementedHarnessCallbackServiceServer) GetPlanContext(context.Context, *GetPlanContextRequest) (*GetPlanContextResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPlanContext not implemented")
@@ -1807,6 +1853,42 @@ func _HarnessCallbackService_GetMissionRunHistory_Handler(srv interface{}, ctx c
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(HarnessCallbackServiceServer).GetMissionRunHistory(ctx, req.(*GetMissionRunHistoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HarnessCallbackService_WriteReadMarker_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WriteReadMarkerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HarnessCallbackServiceServer).WriteReadMarker(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HarnessCallbackService_WriteReadMarker_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HarnessCallbackServiceServer).WriteReadMarker(ctx, req.(*WriteReadMarkerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HarnessCallbackService_LastReadMarker_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LastReadMarkerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HarnessCallbackServiceServer).LastReadMarker(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HarnessCallbackService_LastReadMarker_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HarnessCallbackServiceServer).LastReadMarker(ctx, req.(*LastReadMarkerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2571,6 +2653,14 @@ var HarnessCallbackService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetMissionRunHistory",
 			Handler:    _HarnessCallbackService_GetMissionRunHistory_Handler,
+		},
+		{
+			MethodName: "WriteReadMarker",
+			Handler:    _HarnessCallbackService_WriteReadMarker_Handler,
+		},
+		{
+			MethodName: "LastReadMarker",
+			Handler:    _HarnessCallbackService_LastReadMarker_Handler,
 		},
 		{
 			MethodName: "GetPlanContext",

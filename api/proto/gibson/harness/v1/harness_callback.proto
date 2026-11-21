@@ -10,6 +10,7 @@ import "gibson/graphrag/v1/graphrag.proto";
 import "gibson/mission/v1/mission_definition.proto";
 import "gibson/job/v1/job.proto";
 import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
 
 import "gibson/auth/v1/options.proto";
 // HarnessCallbackService provides the harness interface for agents executing in standalone mode.
@@ -274,6 +275,30 @@ service HarnessCallbackService {
       };
     }
     rpc GetMissionRunHistory(GetMissionRunHistoryRequest) returns (GetMissionRunHistoryResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+
+    // Read markers. An agent that reads the results of a Connector in a loop
+    // records how far it read. The daemon stores each marker as a Timeline
+    // event of the tenant. After a restart, the agent reads the last marker
+    // and continues from it, so it reads no result twice and skips none.
+    //
+    // WriteReadMarker records a marker for one Connector.
+    rpc WriteReadMarker(WriteReadMarkerRequest) returns (WriteReadMarkerResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
+    // LastReadMarker returns the last marker of one Connector.
+    rpc LastReadMarker(LastReadMarkerRequest) returns (LastReadMarkerResponse) {
       option (gibson.auth.v1.authz) = {
         relation: "can_use"
         object_type: "component"
@@ -1264,6 +1289,15 @@ message ApplicationFinding {
     string priority = 11;
     string priority_rule = 12;
     string priority_reason = 13;
+    // fix_blocked_reason is why the fix agent did not fix this Finding. The
+    // next pass reads it and does not try the same fix again. Empty means no
+    // fix agent has given up on the Finding.
+    string fix_blocked_reason = 14;
+    // merge_request is the key of the merge request of the current fix (the
+    // FIXED_BY edge). merge_request_url links to it. Both are empty when no
+    // fix of the Finding has a merge request.
+    string merge_request = 15;
+    string merge_request_url = 16;
 }
 
 // ApplicationFindingsResponse carries the Application's Findings.
@@ -1274,6 +1308,58 @@ message ApplicationFinding {
 message ApplicationFindingsResponse {
     repeated ApplicationFinding findings = 1;
     HarnessError error = 2;
+}
+
+// ReadMarker records how far an agent read the results of one Connector.
+message ReadMarker {
+    // connector is the name of the ConnectorInstance that the agent read.
+    string connector = 1;
+    // cursor is the position in the results of the Connector, in the format of
+    // that Connector. The daemon does not read it.
+    string cursor = 2;
+    // result_ids names the results that the agent read at the cursor. A
+    // Connector can give many results with the same cursor value, so the
+    // agent skips these results when it reads from the cursor again.
+    repeated string result_ids = 3;
+    // at is the time at which the daemon recorded the marker.
+    google.protobuf.Timestamp at = 4;
+}
+
+// WriteReadMarkerRequest records a marker for one Connector.
+//
+// It carries NO tenant field. The tenant comes from the call context, as on
+// every other call of this service.
+message WriteReadMarkerRequest {
+    ContextInfo context = 1;
+    // connector is the name of the ConnectorInstance. Required.
+    string connector = 2 [(buf.validate.field).string = { min_len: 1, max_len: 4096 }];
+    // cursor is the position in the results of the Connector.
+    string cursor = 3 [(buf.validate.field).string = { max_len: 4096 }];
+    // result_ids names the results that the agent read at the cursor.
+    repeated string result_ids = 4 [(buf.validate.field).repeated = { max_items: 1000, items: { string: { max_len: 4096 } } }];
+}
+
+// WriteReadMarkerResponse reports the result of a write.
+message WriteReadMarkerResponse {
+    HarnessError error = 1;
+}
+
+// LastReadMarkerRequest asks for the last marker of one Connector.
+message LastReadMarkerRequest {
+    ContextInfo context = 1;
+    // connector is the name of the ConnectorInstance. Required.
+    string connector = 2 [(buf.validate.field).string = { min_len: 1, max_len: 4096 }];
+}
+
+// LastReadMarkerResponse carries the last marker of one Connector.
+//
+// found is false when the Connector has no marker yet. Then the agent reads
+// from the start. A read that fails reports error, and never found = false
+// with no error: the agent would read every result again.
+message LastReadMarkerResponse {
+    ReadMarker marker = 1;
+    bool found = 2;
+    HarnessError error = 3;
 }
 
 // RunScope selects which mission runs GetRunFindings reads.
