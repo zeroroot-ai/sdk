@@ -951,6 +951,10 @@ message SearchToolsCandidate {
     string description = 5;
     // input_schema_json is the JSON-Schema input document, when known.
     string input_schema_json = 6;
+    // tool_class is the tool class that the manifest of the connector states
+    // (ADR-0177), for example scanner or siem. An agent uses it to pick the
+    // tool for its job. Empty means no catalog connector serves the tool.
+    string tool_class = 7;
 }
 
 // QueueToolWorkRequest initiates parallel execution of multiple tool invocations.
