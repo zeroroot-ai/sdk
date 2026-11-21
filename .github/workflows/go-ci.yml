@@ -240,9 +240,11 @@ jobs:
       # wrong answer. The only record of what a number used to mean is history,
       # so this compares against the base revision of core.yaml. A depth-1 fetch
       # of main is enough -- the guard reads one file at one revision.
+      # The refspec is forced (+). The checkout can leave a ref that is not an
+      # ancestor of a newer main, and a plain fetch then refuses it.
       - name: taxonomy enum numbers still mean what they did
         run: |
-          git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main
+          git fetch --no-tags --depth=1 origin +main:refs/remotes/origin/main
           python3 scripts/check-taxonomy-numbers.py
 
       - name: taxonomy enum number guard selftest
