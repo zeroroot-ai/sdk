@@ -33,6 +33,9 @@ gibson plugins/gitlab
 adk gibson
 gibson-executor .
 cve-triage .
+fix-agent .
+intake-agent .
+incident-agent .
 '
 
 remote="${UNWIRED_CONSUMERS_REMOTE:-https://github.com/zeroroot-ai}"

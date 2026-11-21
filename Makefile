@@ -690,7 +690,8 @@ unwired-version:
 
 # D77: a declaration that no first-party repo reads is dead. The readers live
 # in other repos, so scripts/unwired-consumers.sh clones the public consumer
-# modules (gibson and its plugins, adk, gibson-executor, cve-triage) at main
+# modules (gibson and its plugins, adk, gibson-executor, cve-triage, and the three
+# blue team agents) at main
 # and the scan counts their production files. A consumer that does not
 # type-check against this tree fails the scan: the change breaks a
 # first-party user.

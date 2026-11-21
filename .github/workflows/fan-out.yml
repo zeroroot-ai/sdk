@@ -154,6 +154,16 @@ jobs:
           - consumer: cve-triage
             mod_dir: ""
             regen_authz: "false"
+          # The blue team agents (gibson#1426): one Go module at the root of each repo.
+          - consumer: fix-agent
+            mod_dir: ""
+            regen_authz: "false"
+          - consumer: intake-agent
+            mod_dir: ""
+            regen_authz: "false"
+          - consumer: incident-agent
+            mod_dir: ""
+            regen_authz: "false"
           - consumer: sdk
             mod_dir: examples/minimal-agent
             regen_authz: "false"
