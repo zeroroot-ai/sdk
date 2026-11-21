@@ -4,7 +4,7 @@ go 1.27.4
 
 require (
 	github.com/a2aproject/a2a-go/v2 v2.9.0
-	github.com/zeroroot-ai/sdk v0.211.0
+	github.com/zeroroot-ai/sdk v0.213.0
 )
 
 require (
