@@ -119,8 +119,7 @@ type ComponentServiceClient interface {
 	// the caller and a short-lived bootstrap token for that identity only.
 	// The person who owns the calling agent owns the new component. The
 	// platform assigns its trust: a produced component is never trusted, so
-	// a catalog name is refused. A quota for each tenant bounds how many
-	// components agents enroll. Each enrollment writes an audit record.
+	// a catalog name is refused. Each enrollment writes an audit record.
 	EnrollComponent(ctx context.Context, in *EnrollComponentRequest, opts ...grpc.CallOption) (*EnrollComponentResponse, error)
 	// ResolveModel turns a slot into one exact model name (ADR-0172). The agent
 	// then calls the model gateway with the Open Responses client of the SDK.
@@ -681,8 +680,7 @@ type ComponentServiceServer interface {
 	// the caller and a short-lived bootstrap token for that identity only.
 	// The person who owns the calling agent owns the new component. The
 	// platform assigns its trust: a produced component is never trusted, so
-	// a catalog name is refused. A quota for each tenant bounds how many
-	// components agents enroll. Each enrollment writes an audit record.
+	// a catalog name is refused. Each enrollment writes an audit record.
 	EnrollComponent(context.Context, *EnrollComponentRequest) (*EnrollComponentResponse, error)
 	// ResolveModel turns a slot into one exact model name (ADR-0172). The agent
 	// then calls the model gateway with the Open Responses client of the SDK.
