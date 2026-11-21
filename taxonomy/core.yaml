@@ -610,7 +610,7 @@ node_types:
         description: "Technique name"
       - name: taxonomy
         type: string
-        enum: [mitre_attack, mitre_atlas, gibson]
+        enum: [mitre_attack, gibson]
         description: "Source taxonomy"
       - name: tactic
         type: string

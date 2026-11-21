@@ -16,19 +16,22 @@ import (
 // which would pass on a zero value silently mapped from the wrong field.
 func TestApplicationFindingsFromProto_MapsEveryField(t *testing.T) {
 	out := applicationFindingsFromProto([]*harnesspb.ApplicationFinding{{
-		FindingId:       "brain-1",
-		Status:          "open",
-		Severity:        "critical",
-		VulnerabilityId: "CVE-2025-1234",
-		PlaceLabel:      "Package",
-		PlaceKey:        "pkg:npm/lodash@4.17.20",
-		Reachable:       true,
-		Exposed:         true,
-		DeploymentKey:   "examplebank/customer-portal",
-		ImageKey:        "sha256:abc",
-		Priority:        "P1",
-		PriorityRule:    "R01",
-		PriorityReason:  "listed in CISA KEV",
+		FindingId:        "brain-1",
+		Status:           "open",
+		Severity:         "critical",
+		VulnerabilityId:  "CVE-2025-1234",
+		PlaceLabel:       "Package",
+		PlaceKey:         "pkg:npm/lodash@4.17.20",
+		Reachable:        true,
+		Exposed:          true,
+		DeploymentKey:    "examplebank/customer-portal",
+		ImageKey:         "sha256:abc",
+		Priority:         "P1",
+		PriorityRule:     "R01",
+		PriorityReason:   "listed in CISA KEV",
+		FixBlockedReason: "the flaw is on a host",
+		MergeRequest:     "mr-7",
+		MergeRequestUrl:  "https://git.example.com/org/repo/-/merge_requests/7",
 	}})
 	if len(out) != 1 {
 		t.Fatalf("expected 1 finding, got %d", len(out))
@@ -46,6 +49,9 @@ func TestApplicationFindingsFromProto_MapsEveryField(t *testing.T) {
 		{"Priority", f.Priority, "P1"},
 		{"PriorityRule", f.PriorityRule, "R01"},
 		{"PriorityReason", f.PriorityReason, "listed in CISA KEV"},
+		{"FixBlockedReason", f.FixBlockedReason, "the flaw is on a host"},
+		{"MergeRequest", f.MergeRequest, "mr-7"},
+		{"MergeRequestURL", f.MergeRequestURL, "https://git.example.com/org/repo/-/merge_requests/7"},
 	} {
 		if c.got != c.want {
 			t.Errorf("%s: got %q, want %q", c.name, c.got, c.want)

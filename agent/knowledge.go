@@ -186,4 +186,13 @@ type ApplicationFinding struct {
 	Priority       string
 	PriorityRule   string
 	PriorityReason string
+	// FixBlockedReason is why the fix agent did not fix this Finding. The next
+	// pass reads it and does not try the same fix again. Empty means no fix
+	// agent has given up on the Finding.
+	FixBlockedReason string
+	// MergeRequest is the key of the merge request of the current fix (the
+	// FIXED_BY edge), and MergeRequestURL links to it. Both are empty when no
+	// fix of the Finding has a merge request.
+	MergeRequest    string
+	MergeRequestURL string
 }

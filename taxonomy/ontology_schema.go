@@ -5,7 +5,7 @@
 //
 // Ontology files are YAML documents that extend the Gibson security graph
 // with external vocabulary hierarchies (MITRE ATT&CK, CWE, SOC2, NIST AI
-// RMF, ATLAS, and author-contributed hierarchies). The format uses a simple
+// RMF, and author-contributed hierarchies). The format uses a simple
 // prefix:localname IRI scheme to keep authoring approachable without
 // requiring Turtle expertise.
 //

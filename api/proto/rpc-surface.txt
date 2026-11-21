@@ -132,6 +132,7 @@ gibson.harness.v1.HarnessCallbackService/GetRelatedFindings
 gibson.harness.v1.HarnessCallbackService/GetRunFindings
 gibson.harness.v1.HarnessCallbackService/GetSessionContext
 gibson.harness.v1.HarnessCallbackService/GetTaxonomySchema
+gibson.harness.v1.HarnessCallbackService/LastReadMarker
 gibson.harness.v1.HarnessCallbackService/ListMissions
 gibson.harness.v1.HarnessCallbackService/ListPlugins
 gibson.harness.v1.HarnessCallbackService/ListTools
@@ -170,6 +171,7 @@ gibson.harness.v1.HarnessCallbackService/WorkspaceListFiles
 gibson.harness.v1.HarnessCallbackService/WorkspacePush
 gibson.harness.v1.HarnessCallbackService/WorkspaceReadFile
 gibson.harness.v1.HarnessCallbackService/WorkspaceWriteFile
+gibson.harness.v1.HarnessCallbackService/WriteReadMarker
 gibson.harness.v1.HarnessCallbackService/WorldView
 gibson.identity.v1.IdentityService/WhoAmI
 gibson.job.v1.JobService/CloseJob

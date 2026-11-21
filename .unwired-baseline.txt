@@ -22,3 +22,14 @@ func serve.Tool	# serve/tool.go:31
 # Delete these entries when red-agent calls them.
 method serve.CallbackClient.RequestDestructiveAuthorization	# serve/callback_client.go:654
 method serve.CallbackClient.SubmitProof	# serve/callback_client.go:637
+
+# Decision: owner, 2026-11-20. consumer: intake-agent and fix-agent, after
+# this release (zeroroot-ai/gibson#1449, zeroroot-ai/gibson#1506). The intake
+# agent records and reads its read marker for each Connector. The fix agent
+# reads why a fix was blocked and the merge request of the current fix. No
+# consumer branch calls them yet. Delete these entries when the agents do.
+field agent.ApplicationFinding.FixBlockedReason	# agent/knowledge.go:192
+field agent.ApplicationFinding.MergeRequest	# agent/knowledge.go:196
+field agent.ApplicationFinding.MergeRequestURL	# agent/knowledge.go:197
+method serve.CallbackClient.LastReadMarker	# serve/callback_client.go:1034
+method serve.CallbackClient.WriteReadMarker	# serve/callback_client.go:1016

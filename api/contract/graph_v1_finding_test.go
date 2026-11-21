@@ -19,7 +19,7 @@ func TestGraphV1_Finding_FixLoopFields(t *testing.T) {
 	t.Run("a finding with every fix loop field is accepted and survives the wire", func(t *testing.T) {
 		in := &graphpb.Finding{
 			Id:              "f-1",
-			Status:          graphpb.FindingLifecycleStatus_FINDING_LIFECYCLE_STATUS_FIXING,
+			LifecycleStatus: graphpb.FindingLifecycleStatus_FINDING_LIFECYCLE_STATUS_FIXING,
 			Assets:          []string{"host-1", "svc-api"},
 			Priority:        "P2",
 			PriorityRule:    "exposed-and-exploited",

@@ -2,16 +2,16 @@
 // Copyright 2026 Zero Root AI
 
 // Package finding provides types and utilities for representing security findings
-// discovered during AI/LLM security testing missions.
+// discovered during security testing missions.
 //
 // The package includes comprehensive types for documenting vulnerabilities,
-// evidence collection, MITRE ATT&CK/ATLAS mappings, and risk scoring.
+// evidence collection, MITRE ATT&CK mappings, and risk scoring.
 //
 // # Core Types
 //
 // Finding represents a discovered security vulnerability with full context:
 //   - Severity and risk scoring
-//   - MITRE ATT&CK and ATLAS mappings
+//   - MITRE ATT&CK mappings
 //   - Evidence collection and reproduction steps
 //   - Status tracking and remediation guidance
 //

@@ -1452,19 +1452,22 @@ func applicationFindingsFromProto(pfs []*harnesspb.ApplicationFinding) []agent.A
 			continue
 		}
 		out = append(out, agent.ApplicationFinding{
-			FindingID:       pf.GetFindingId(),
-			Status:          pf.GetStatus(),
-			Severity:        pf.GetSeverity(),
-			VulnerabilityID: pf.GetVulnerabilityId(),
-			PlaceLabel:      pf.GetPlaceLabel(),
-			PlaceKey:        pf.GetPlaceKey(),
-			Reachable:       pf.GetReachable(),
-			Exposed:         pf.GetExposed(),
-			DeploymentKey:   pf.GetDeploymentKey(),
-			ImageKey:        pf.GetImageKey(),
-			Priority:        pf.GetPriority(),
-			PriorityRule:    pf.GetPriorityRule(),
-			PriorityReason:  pf.GetPriorityReason(),
+			FindingID:        pf.GetFindingId(),
+			Status:           pf.GetStatus(),
+			Severity:         pf.GetSeverity(),
+			VulnerabilityID:  pf.GetVulnerabilityId(),
+			PlaceLabel:       pf.GetPlaceLabel(),
+			PlaceKey:         pf.GetPlaceKey(),
+			Reachable:        pf.GetReachable(),
+			Exposed:          pf.GetExposed(),
+			DeploymentKey:    pf.GetDeploymentKey(),
+			ImageKey:         pf.GetImageKey(),
+			Priority:         pf.GetPriority(),
+			PriorityRule:     pf.GetPriorityRule(),
+			PriorityReason:   pf.GetPriorityReason(),
+			FixBlockedReason: pf.GetFixBlockedReason(),
+			MergeRequest:     pf.GetMergeRequest(),
+			MergeRequestURL:  pf.GetMergeRequestUrl(),
 		})
 	}
 	return out

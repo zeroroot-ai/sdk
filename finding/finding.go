@@ -43,9 +43,6 @@ type Finding struct {
 	// MitreAttack maps the finding to MITRE ATT&CK framework.
 	MitreAttack *MitreMapping `json:"mitre_attack,omitempty"`
 
-	// MitreAtlas maps the finding to MITRE ATLAS framework.
-	MitreAtlas *MitreMapping `json:"mitre_atlas,omitempty"`
-
 	// Evidence contains supporting evidence for the finding.
 	Evidence []Evidence `json:"evidence,omitempty"`
 
@@ -95,7 +92,7 @@ type Finding struct {
 	// ComplianceMappings links this finding to compliance framework controls.
 	// Multiple mappings per finding are supported — one finding often
 	// evidences controls from multiple frameworks (SOC2, NIST AI RMF,
-	// MITRE ATLAS). See compliance_mapping.go for the helpers.
+	// MITRE ATT&CK). See compliance_mapping.go for the helpers.
 	// Added by audit-finding-compliance-mappings.
 	ComplianceMappings []ComplianceMapping `json:"compliance_mappings,omitempty"`
 }
@@ -112,9 +109,9 @@ func (f *Finding) CiteToolCalls(ids ...string) {
 	}
 }
 
-// MitreMapping represents a mapping to a MITRE framework (ATT&CK or ATLAS).
+// MitreMapping represents a mapping to the MITRE ATT&CK framework.
 type MitreMapping struct {
-	// Matrix identifies the MITRE matrix (e.g., "enterprise", "mobile", "atlas").
+	// Matrix identifies the MITRE ATT&CK matrix (e.g., "enterprise", "mobile").
 	Matrix string `json:"matrix"`
 
 	// TacticID is the MITRE tactic identifier (e.g., "TA0001").

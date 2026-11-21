@@ -283,8 +283,9 @@ message MissionConstraints {
     // health_hold is how long the health signal of a service must hold after a
     // fix. The hold time starts after a restart ends, not at the start of the
     // fix. Absent or zero means the platform default. A negative value is
-    // invalid.
-    google.protobuf.Duration health_hold = 13 [(buf.validate.field).duration = { gte: {} }];
+    // invalid. The upper bound is 24 hours, so a typing error cannot keep a
+    // finding in the fix loop for days.
+    google.protobuf.Duration health_hold = 13 [(buf.validate.field).duration = { gte: {}, lte: { seconds: 86400 } }];
 
     // restart_policy states if an agent may restart a host. Absent or
     // RESTART_POLICY_UNSPECIFIED means RESTART_POLICY_FORBIDDEN. When the
@@ -294,8 +295,9 @@ message MissionConstraints {
 
     // restart_limit is how long a restart can take before it counts as a
     // failed health signal. Absent or zero means the platform default. A
-    // negative value is invalid.
-    google.protobuf.Duration restart_limit = 15 [(buf.validate.field).duration = { gte: {} }];
+    // negative value is invalid. The upper bound is one hour. A restart that
+    // takes longer is a failed health signal.
+    google.protobuf.Duration restart_limit = 15 [(buf.validate.field).duration = { gte: {}, lte: { seconds: 3600 } }];
 
     // restart_window is the daily window in which a restart may start. It is
     // set when restart_policy is RESTART_POLICY_IN_WINDOW, and in no other

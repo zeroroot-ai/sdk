@@ -21,8 +21,9 @@ package contract_test
 //   - ToolNodeConfig.max_tokens_per_call     int32 gte: 0
 //   - PluginNodeConfig.max_tokens_per_call   int32 gte: 0
 //   - JoinNodeConfig.wait_for                repeated string min_items: 1
-//   - MissionConstraints fix loop fields     duration gte: 0, enum defined_only,
-//     restart_window pattern and the rule that ties it to restart_policy
+//   - MissionConstraints fix loop fields     duration gte: 0, health_hold lte: 24h,
+//     restart_limit lte: 1h, enum defined_only, restart_window pattern and the
+//     rule that ties it to restart_policy
 //
 // As future buf.validate annotations land in mission/v1, extend this file
 // in the same shape: one sub-test per known-good case and one per
@@ -184,6 +185,10 @@ func TestMissionV1_MissionConstraints_FixLoop(t *testing.T) {
 			RestartPolicy: missionpb.RestartPolicy_RESTART_POLICY_ALLOWED,
 			RestartLimit:  durationpb.New(5 * time.Minute),
 		},
+		"the upper bound of each duration": {
+			HealthHold:   durationpb.New(24 * time.Hour),
+			RestartLimit: durationpb.New(time.Hour),
+		},
 		"restarts forbidden": {RestartPolicy: missionpb.RestartPolicy_RESTART_POLICY_FORBIDDEN},
 		"restarts in a window": {
 			RestartPolicy: missionpb.RestartPolicy_RESTART_POLICY_IN_WINDOW,
@@ -211,6 +216,12 @@ func TestMissionV1_MissionConstraints_FixLoop(t *testing.T) {
 		},
 		"a negative restart_limit": {
 			&missionpb.MissionConstraints{RestartLimit: durationpb.New(-time.Second)}, "restart_limit",
+		},
+		"a health_hold above 24 hours": {
+			&missionpb.MissionConstraints{HealthHold: durationpb.New(24*time.Hour + time.Second)}, "health_hold",
+		},
+		"a restart_limit above one hour": {
+			&missionpb.MissionConstraints{RestartLimit: durationpb.New(time.Hour + time.Second)}, "restart_limit",
 		},
 		"an unknown restart_policy": {
 			&missionpb.MissionConstraints{RestartPolicy: missionpb.RestartPolicy(9)}, "restart_policy",

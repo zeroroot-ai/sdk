@@ -37,11 +37,11 @@ func TestMitreMapping_JSONSerialization(t *testing.T) {
 		{
 			name: "empty sub-techniques",
 			mapping: MitreMapping{
-				Matrix:        "atlas",
-				TacticID:      "AML.TA0000",
-				TacticName:    "ML Model Access",
-				TechniqueID:   "AML.T0000",
-				TechniqueName: "Craft Adversarial Input",
+				Matrix:        "enterprise",
+				TacticID:      "TA0001",
+				TacticName:    "Initial Access",
+				TechniqueID:   "T1190",
+				TechniqueName: "Exploit Public-Facing Application",
 				SubTechniques: []string{},
 			},
 		},

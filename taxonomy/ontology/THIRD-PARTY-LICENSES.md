@@ -24,6 +24,6 @@ Notes:    <any usage restrictions or attribution requirements>
 
 _No external files vendored yet. This file is a placeholder._
 
-When the MITRE ATT&CK and ATLAS Turtle files are added (tracked in issue #28),
-their entries will appear here with CC BY 4.0 attribution. CWE entries will
+When the MITRE ATT&CK Turtle file is added (tracked in issue #28),
+its entries will appear here with CC BY 4.0 attribution. CWE entries will
 use the MITRE Terms of Use.

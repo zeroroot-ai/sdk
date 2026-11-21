@@ -291,7 +291,8 @@ import (
 	// health_hold is how long the health signal of a service must hold after a
 	// fix. The hold time starts after a restart ends, not at the start of the
 	// fix. Absent or zero means the platform default. A negative value is
-	// invalid.
+	// invalid. The upper bound is 24 hours, so a typing error cannot keep a
+	// finding in the fix loop for days.
 	healthHold?: time.Duration @protobuf(13,google.protobuf.Duration,name=health_hold,"(buf.validate.field).duration=")
 
 	// restart_policy states if an agent may restart a host. Absent or
@@ -302,7 +303,8 @@ import (
 
 	// restart_limit is how long a restart can take before it counts as a
 	// failed health signal. Absent or zero means the platform default. A
-	// negative value is invalid.
+	// negative value is invalid. The upper bound is one hour. A restart that
+	// takes longer is a failed health signal.
 	restartLimit?: time.Duration @protobuf(15,google.protobuf.Duration,name=restart_limit,"(buf.validate.field).duration=")
 
 	// restart_window is the daily window in which a restart may start. It is
