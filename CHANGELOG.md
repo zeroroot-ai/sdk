@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.213.0](https://github.com/zeroroot-ai/sdk/compare/v0.212.0...v0.213.0) (2026-11-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* blue team SDK changes, part 2 (read markers, fix fields, tool class, no ATLAS) ([#365](https://github.com/zeroroot-ai/sdk/issues/365))
+* blue team SDK changes (fix loop settings, finding fields, proof client) ([#359](https://github.com/zeroroot-ai/sdk/issues/359))
+
+### Features
+
+* blue team SDK changes (fix loop settings, finding fields, proof client) ([#359](https://github.com/zeroroot-ai/sdk/issues/359)) ([12708d1](https://github.com/zeroroot-ai/sdk/commit/12708d11d04504bb9ca41438e24e1567d9f1a018))
+* blue team SDK changes, part 2 (read markers, fix fields, tool class, no ATLAS) ([#365](https://github.com/zeroroot-ai/sdk/issues/365)) ([9d1d4c2](https://github.com/zeroroot-ai/sdk/commit/9d1d4c2e25863b88e14721f8242051ac28410e56))
+
 ## [0.212.0](https://github.com/zeroroot-ai/sdk/compare/v0.211.0...v0.212.0) (2026-11-20)
 
 
