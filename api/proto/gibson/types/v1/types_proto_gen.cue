@@ -208,7 +208,6 @@ import (
 	confidence?:    float64          @protobuf(10,double)
 	status?:        #FindingStatus   @protobuf(11,FindingStatus)
 	mitreAttack?:   #MitreMapping    @protobuf(12,MitreMapping,name=mitre_attack)
-	mitreAtlas?:    #MitreMapping    @protobuf(13,MitreMapping,name=mitre_atlas)
 	evidence?: [...#Evidence] @protobuf(14,Evidence)
 	reproduction?: [...#ReproStep] @protobuf(15,ReproStep)
 	cvssScore?:   float64 @protobuf(16,double,name=cvss_score)
@@ -222,7 +221,7 @@ import (
 	updatedAt?: int64 @protobuf(24,int64,name=updated_at) // Unix timestamp in milliseconds
 }
 
-// MitreMapping represents a mapping to MITRE ATT&CK or ATLAS framework.
+// MitreMapping represents a mapping to the MITRE ATT&CK framework.
 #MitreMapping: {
 	matrix?:        string @protobuf(1,string)
 	tacticId?:      string @protobuf(2,string,name=tactic_id)

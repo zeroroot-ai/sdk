@@ -16,8 +16,6 @@ author-contributed hierarchies consumed by the Gibson security graph.
 
 - **MITRE ATT&CK** — enterprise technique hierarchy in Turtle (`mitre-attack.ttl`).
   License: CC BY 4.0. Vendoring is owner work tracked in the follow-up milestone.
-- **MITRE ATLAS** — AI/ML threat techniques (`mitre-atlas.ttl`).
-  License: CC BY 4.0. Same milestone.
 - **CWE subset** — weakness entries relevant to the Gibson taxonomy (`cwe-subset.ttl`).
   License: public domain / MITRE terms. Same milestone.
 - **SOC2 controls** — authored hierarchy, not a third-party file (`soc2-controls.yaml`).

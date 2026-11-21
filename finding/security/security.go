@@ -12,9 +12,9 @@ const (
 	MetaKeyMitreAttack = finding.MetaKeyMitreAttack
 )
 
-// MitreMapping represents a mapping to a MITRE framework (ATT&CK or ATLAS).
+// MitreMapping represents a mapping to the MITRE ATT&CK framework.
 type MitreMapping struct {
-	// Matrix identifies the MITRE matrix (e.g., "enterprise", "mobile", "atlas").
+	// Matrix identifies the MITRE ATT&CK matrix (e.g., "enterprise", "mobile").
 	Matrix string `json:"matrix"`
 
 	// TacticID is the MITRE tactic identifier (e.g., "TA0001").

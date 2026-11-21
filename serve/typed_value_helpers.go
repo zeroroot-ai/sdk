@@ -280,9 +280,6 @@ func FindingToProto(f *finding.Finding) *typespb.Finding {
 	if f.MitreAttack != nil {
 		protoFinding.MitreAttack = mitreToProto(f.MitreAttack)
 	}
-	if f.MitreAtlas != nil {
-		protoFinding.MitreAtlas = mitreToProto(f.MitreAtlas)
-	}
 
 	// Convert evidence
 	protoFinding.Evidence = make([]*typespb.Evidence, len(f.Evidence))
@@ -357,9 +354,6 @@ func FindingFromProto(pf *typespb.Finding) *finding.Finding {
 	// Convert MITRE mappings
 	if pf.MitreAttack != nil {
 		f.MitreAttack = mitreFromProto(pf.MitreAttack)
-	}
-	if pf.MitreAtlas != nil {
-		f.MitreAtlas = mitreFromProto(pf.MitreAtlas)
 	}
 
 	// Convert evidence

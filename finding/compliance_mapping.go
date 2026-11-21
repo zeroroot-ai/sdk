@@ -4,8 +4,8 @@
 package finding
 
 // ComplianceMapping links a Finding to a specific compliance framework
-// control (e.g., SOC2 CC7.1, NIST AI RMF MEASURE.2.7, MITRE ATLAS
-// AML.T0051). Multiple mappings per finding are allowed — one finding
+// control (e.g., SOC2 CC7.1, NIST AI RMF MEASURE.2.7, MITRE ATT&CK
+// T1190). Multiple mappings per finding are allowed — one finding
 // often evidences controls from multiple frameworks simultaneously.
 //
 // Framework and ControlID are required. Rationale (a human-readable
@@ -20,13 +20,13 @@ package finding
 type ComplianceMapping struct {
 	// Framework is the compliance framework identifier.
 	// Convention: SCREAMING_SNAKE_CASE matching the rule catalog
-	// frameworks block (SOC2, NIST_AI_RMF, MITRE_ATLAS, MITRE_ATTACK,
+	// frameworks block (SOC2, NIST_AI_RMF, MITRE_ATTACK,
 	// PLATFORM, or a tenant-scoped custom framework).
 	Framework string `json:"framework"`
 
 	// ControlID is the control identifier within the framework.
 	// Format varies by framework: SOC2 uses "CC7.1", NIST AI RMF uses
-	// "MEASURE.2.7", MITRE ATLAS uses "AML.T0051", etc. The value is
+	// "MEASURE.2.7", MITRE ATT&CK uses "T1190", etc. The value is
 	// copied verbatim into SARIF exports and Cypher queries.
 	ControlID string `json:"control_id"`
 

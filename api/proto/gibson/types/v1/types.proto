@@ -132,7 +132,6 @@ message Finding {
   double confidence = 10;
   FindingStatus status = 11;
   MitreMapping mitre_attack = 12;
-  MitreMapping mitre_atlas = 13;
   repeated Evidence evidence = 14;
   repeated ReproStep reproduction = 15;
   double cvss_score = 16;
@@ -147,9 +146,13 @@ message Finding {
 
   reserved 25;
   reserved "compliance_mappings";
+  // Number 13 held mitre_atlas, the MITRE ATLAS mapping for attacks on AI
+  // systems. The product does not test AI systems, so the field went away.
+  reserved 13;
+  reserved "mitre_atlas";
 }
 
-// MitreMapping represents a mapping to MITRE ATT&CK or ATLAS framework.
+// MitreMapping represents a mapping to the MITRE ATT&CK framework.
 message MitreMapping {
   string matrix = 1;
   string tactic_id = 2;
