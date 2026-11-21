@@ -43,6 +43,9 @@ mkremote gibson . plugins/github plugins/gitlab
 mkremote adk gibson
 mkremote gibson-executor .
 mkremote cve-triage .
+mkremote fix-agent .
+mkremote intake-agent .
+mkremote incident-agent .
 pair gibson epic/pair . plugins/github plugins/gitlab
 
 run() { # run <ref file content> <cache name>
