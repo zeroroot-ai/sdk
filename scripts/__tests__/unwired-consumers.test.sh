@@ -54,8 +54,10 @@ run() { # run <ref file content> <cache name>
     UNWIRED_CONSUMERS_DIR="$tmp/$2" bash scripts/unwired-consumers.sh 2>"$tmp/err"
 }
 
+# The count comes from the list in the script, so a new consumer needs no edit here.
+want="$(sed -n "/^consumers='/,/^'\$/p" scripts/unwired-consumers.sh | grep -cv "'")"
 out="$(run "" c1)"; rc=$?
-if [ "$rc" -eq 0 ] && [ "$(cat "$tmp/c1/gibson/marker")" = main ] && [ "$(tr ',' '\n' <<<"$out" | wc -l)" -eq 6 ]; then
+if [ "$rc" -eq 0 ] && [ "$(cat "$tmp/c1/gibson/marker")" = main ] && [ "$(tr ',' '\n' <<<"$out" | wc -l)" -eq "$want" ]; then
   ok "an empty ref file measures each consumer at main"
 else bad "empty ref file (rc=$rc): $out $(cat "$tmp/err")"; fi
 
