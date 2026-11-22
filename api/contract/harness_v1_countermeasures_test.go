@@ -117,3 +117,25 @@ func TestHarnessV1_FixFiles_Validation(t *testing.T) {
 		}
 	}
 }
+
+// TestHarnessV1_FixFileMode_Validation: the mode of a fix file is a git file
+// mode, or empty.
+func TestHarnessV1_FixFileMode_Validation(t *testing.T) {
+	v := newValidator(t)
+	file := func(mode string) *harnesspb.FixFile {
+		return &harnesspb.FixFile{
+			Path: "a.go", Change: harnesspb.FixFileChange_FIX_FILE_CHANGE_MODIFIED,
+			BlobSha: strings.Repeat("a", 40), Mode: mode,
+		}
+	}
+	for _, ok := range []string{"", "100644", "100755", "120000", "160000"} {
+		if err := v.Validate(file(ok)); err != nil {
+			t.Errorf("mode %q: unexpected error: %v", ok, err)
+		}
+	}
+	for _, bad := range []string{"644", "100666", "100644 ", "0100644", "rwxr-xr-x", "1006440"} {
+		if err := v.Validate(file(bad)); err == nil {
+			t.Errorf("mode %q accepted", bad)
+		}
+	}
+}

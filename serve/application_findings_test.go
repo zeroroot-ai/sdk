@@ -38,7 +38,7 @@ func TestApplicationFindingsFromProto_MapsEveryField(t *testing.T) {
 		FixHeadSha:       "cccccccccccccccccccccccccccccccccccccccc",
 		FixFiles: []*harnesspb.FixFile{
 			nil,
-			{Path: "b.go", Change: harnesspb.FixFileChange_FIX_FILE_CHANGE_RENAMED, PreviousPath: "a.go", BlobSha: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},
+			{Path: "b.go", Change: harnesspb.FixFileChange_FIX_FILE_CHANGE_RENAMED, PreviousPath: "a.go", BlobSha: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", Mode: "100755"},
 		},
 	}})
 	if len(out) != 1 {
@@ -71,7 +71,7 @@ func TestApplicationFindingsFromProto_MapsEveryField(t *testing.T) {
 		t.Errorf("reachable/exposed not mapped: %+v", f)
 	}
 	if len(f.FixFiles) != 1 || f.FixFiles[0] != (agent.FixFile{
-		Path: "b.go", Change: "renamed", PreviousPath: "a.go", BlobSHA: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+		Path: "b.go", Change: "renamed", PreviousPath: "a.go", BlobSHA: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", Mode: "100755",
 	}) {
 		t.Errorf("fix files = %+v, want one renamed file and the nil entry skipped", f.FixFiles)
 	}

@@ -1551,6 +1551,7 @@ func fixFilesFromProto(pfs []*harnesspb.FixFile) []agent.FixFile {
 		}
 		out = append(out, agent.FixFile{
 			Path: pf.GetPath(), Change: fixChange(pf.GetChange()), PreviousPath: pf.GetPreviousPath(), BlobSHA: pf.GetBlobSha(),
+			Mode: pf.GetMode(),
 		})
 	}
 	return out
