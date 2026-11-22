@@ -1322,7 +1322,7 @@ message ApplicationFinding {
     // for example "T1190" or "T1059.001". Empty means that the Finding names no
     // technique, which is a fact about the Finding and not a failure of the
     // read. A fix agent passes it to GetCountermeasures.
-    string technique = 17;
+    string technique = 17 [(buf.validate.field).string = { pattern: "^(T\\d{4}(\\.\\d{3})?)?$" }];
 }
 
 // GetCountermeasuresRequest asks for the countermeasures that counter one
@@ -1331,7 +1331,7 @@ message GetCountermeasuresRequest {
     ContextInfo context = 1;
     // technique is the id of an ATT&CK technique, for example "T1190" or
     // "T1059.001".
-    string technique = 2 [(buf.validate.field).string = { max_len: 32 }];
+    string technique = 2 [(buf.validate.field).string = { pattern: "^(T\\d{4}(\\.\\d{3})?)?$" }];
 }
 
 // Countermeasure is one defensive technique of the D3FEND pack.

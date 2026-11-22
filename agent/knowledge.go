@@ -147,9 +147,9 @@ type KnowledgeReader interface {
 	// as the other reads do.
 	//
 	// A fix agent names the countermeasure that its fix applies in the context
-	// of the fix job, under the key "countermeasure", and the daemon links the
-	// merge request to it. A Finding with no technique gets a fix with no
-	// countermeasure, and the write does not fail.
+	// of the fix job, under the key "countermeasure". The daemon side is
+	// zeroroot-ai/gibson#1487. A Finding with no technique gets a fix with no
+	// countermeasure.
 	Countermeasures(ctx context.Context, technique string) ([]Countermeasure, error)
 }
 

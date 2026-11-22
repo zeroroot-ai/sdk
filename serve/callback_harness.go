@@ -12,6 +12,7 @@ import (
 	"io"
 	"log/slog"
 	"math"
+	"regexp"
 	"sync"
 	"time"
 
@@ -1443,10 +1444,17 @@ func (h *CallbackHarness) ApplicationFindings(ctx context.Context, application s
 	return applicationFindingsFromProto(resp.GetFindings()), nil
 }
 
+// techniqueID is the form of an ATT&CK technique id, for example "T1190" or
+// "T1059.001". It is the pattern of the proto field technique.
+var techniqueID = regexp.MustCompile(`^T\d{4}(\.\d{3})?$`)
+
 // Countermeasures returns the D3FEND countermeasures of one ATT&CK technique,
 // for a dispatched agent. A failed read returns an error and never an empty
 // slice: an empty slice means that no countermeasure counters the technique.
 func (h *CallbackHarness) Countermeasures(ctx context.Context, technique string) ([]agent.Countermeasure, error) {
+	if !techniqueID.MatchString(technique) {
+		return []agent.Countermeasure{}, nil // not an ATT&CK technique id, so nothing counters it
+	}
 	resp, err := h.client.GetCountermeasures(ctx, &harnesspb.GetCountermeasuresRequest{Technique: technique})
 	if err != nil {
 		return nil, fmt.Errorf("countermeasures callback failed: %w", err)
