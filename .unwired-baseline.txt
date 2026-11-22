@@ -33,3 +33,9 @@ field agent.ApplicationFinding.MergeRequest	# agent/knowledge.go:196
 field agent.ApplicationFinding.MergeRequestURL	# agent/knowledge.go:197
 method serve.CallbackClient.LastReadMarker	# serve/callback_client.go:1034
 method serve.CallbackClient.WriteReadMarker	# serve/callback_client.go:1016
+# The fix agent and the incident agent read the code of a refused tool call
+# (gibson#1575). The consumers use these after the next SDK release. Delete
+# these entries when they do.
+const agent.ToolErrPermissionDenied	# agent/tool_call_error.go:18
+func agent.IsToolCallError	# agent/tool_call_error.go:43
+method agent.ToolCallError.Retryable	# agent/tool_call_error.go:40
