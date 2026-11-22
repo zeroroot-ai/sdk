@@ -228,7 +228,7 @@ func (h *CallbackHarness) CallToolProto(
 	agent.ApplyToolCallOptions(opts).SetToolCallID(resp.GetToolCallId())
 
 	if resp.Error != nil {
-		err := fmt.Errorf("CallToolProto error: %s", resp.Error.Message)
+		err := &agent.ToolCallError{Code: resp.Error.Code.String(), Message: resp.Error.Message}
 		span.RecordError(err)
 		span.SetStatus(codes.Error, resp.Error.Message)
 		return err
