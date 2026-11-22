@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.215.0](https://github.com/zeroroot-ai/sdk/compare/v0.214.0...v0.215.0) (2026-11-22)
+
+
+### Features
+
+* **harness:** add the file mode to FixFile ([#378](https://github.com/zeroroot-ai/sdk/issues/378)) ([665ffb3](https://github.com/zeroroot-ai/sdk/commit/665ffb364ecb233d0bdc22a4c12c40ab531f0dff))
+
 ## [0.214.0](https://github.com/zeroroot-ai/sdk/compare/v0.213.0...v0.214.0) (2026-11-22)
 
 
