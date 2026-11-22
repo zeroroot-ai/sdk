@@ -36,8 +36,10 @@ type ToolCallError struct {
 	Message string
 }
 
-// Error returns the message of the daemon in the form that earlier versions
-// returned.
+// Error returns the message of the daemon with the prefix "CallToolProto
+// error: ". A unary call returned this text before ToolCallError. A streaming
+// call returned the bare message, and it now has the same prefix, so a caller
+// that matched the bare text of a streaming error must match the code.
 func (e *ToolCallError) Error() string { return "CallToolProto error: " + e.Message }
 
 // Retryable reports whether a later call can succeed.

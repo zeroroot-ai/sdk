@@ -36,5 +36,5 @@ method serve.CallbackClient.WriteReadMarker	# serve/callback_client.go:1016
 # Decision: ADR-0058 (zeroroot-ai/gibson#1575). consumer: fix-agent
 # and incident-agent, after the next SDK release. They read the code of a
 # refused tool call with errors.As. Delete these entries when they do.
-const agent.ToolErrPermissionDenied	# agent/tool_call_error.go:18
-method agent.ToolCallError.Retryable	# agent/tool_call_error.go:40
+const agent.ToolErrPermissionDenied	# agent/tool_call_error.go:16
+method agent.ToolCallError.Retryable	# agent/tool_call_error.go:46
