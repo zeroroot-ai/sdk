@@ -141,10 +141,12 @@ type KnowledgeReader interface {
 	// is the id of the technique, for example "T1190", and a fix agent takes it
 	// from ApplicationFinding.Technique.
 	//
-	// A technique that no countermeasure counters, and a value that is not an
-	// ATT&CK technique id, return an empty slice and a nil error. That is a fact
-	// about the technique. An unavailable read returns ErrKnowledgeUnavailable,
-	// as the other reads do.
+	// A technique that no countermeasure counters returns an empty slice and a
+	// nil error. That is a fact about the technique. An empty technique also
+	// returns an empty slice, with no call, because a Finding with no technique
+	// has nothing to read. A value that is not an ATT&CK technique id returns an
+	// error and makes no call. An unavailable read returns
+	// ErrKnowledgeUnavailable, as the other reads do.
 	//
 	// A fix agent names the countermeasure that its fix applies in the context
 	// of the fix job, under the key "countermeasure". The daemon side is
@@ -230,10 +232,17 @@ type ApplicationFinding struct {
 	// which is a fact about the Finding and not a failure of the read. Pass it
 	// to Countermeasures.
 	Technique string
-	// FixHeadSHA is the commit that the fix job pushed for the merge request of
-	// the current fix, and FixFiles are the files of that commit, with no
-	// content. The driver of the job records both. They are empty when no fix of
-	// the Finding has a merge request.
+	// FixHeadSHA is the head commit of the merge request of the current fix, and
+	// FixFiles are the files that the merge request changes, with no content.
+	// The daemon fills both from its own read of the fix merge request through
+	// the connector of the tenant, when it links the Finding to the merge request
+	// (FIXED_BY), after its checks that the merge request is open, was created
+	// after the claim of the job and has the branch of the job. A caller cannot
+	// set them, and no agent claim feeds them. They are empty when no fix of the
+	// Finding has a merge request.
+	//
+	// One window stays: a commit that a person pushes between the end of the job
+	// and the link is in both values, so a caller cannot see it.
 	FixHeadSHA string
 	FixFiles   []FixFile
 }
@@ -244,7 +253,7 @@ type FixFile struct {
 	Path string
 	// Change is added, modified, deleted or renamed.
 	Change string
-	// PreviousPath is the path before the change. It is set for a rename.
+	// PreviousPath is the path before the change. It is set for a rename only.
 	PreviousPath string
 	// BlobSHA is the git object id of the file after the change. It is empty
 	// for a deleted file.

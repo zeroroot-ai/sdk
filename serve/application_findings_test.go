@@ -8,7 +8,6 @@ import (
 
 	"github.com/zeroroot-ai/sdk/agent"
 	harnesspb "github.com/zeroroot-ai/sdk/api/gen/gibson/harness/v1"
-	jobpb "github.com/zeroroot-ai/sdk/api/gen/gibson/job/v1"
 )
 
 // TestApplicationFindingsFromProto_MapsEveryField: a field dropped here is not a
@@ -35,10 +34,10 @@ func TestApplicationFindingsFromProto_MapsEveryField(t *testing.T) {
 		MergeRequest:     "mr-7",
 		MergeRequestUrl:  "https://git.example.com/org/repo/-/merge_requests/7",
 		Technique:        "T1190",
-		FixHeadSha:       "abc123",
-		FixFiles: []*jobpb.ChangedFile{
+		FixHeadSha:       "cccccccccccccccccccccccccccccccccccccccc",
+		FixFiles: []*harnesspb.FixFile{
 			nil,
-			{Path: "b.go", Change: "renamed", PreviousPath: "a.go", BlobSha: "blob-b"},
+			{Path: "b.go", Change: harnesspb.FixFileChange_FIX_FILE_CHANGE_RENAMED, PreviousPath: "a.go", BlobSha: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},
 		},
 	}})
 	if len(out) != 1 {
@@ -61,7 +60,7 @@ func TestApplicationFindingsFromProto_MapsEveryField(t *testing.T) {
 		{"MergeRequest", f.MergeRequest, "mr-7"},
 		{"MergeRequestURL", f.MergeRequestURL, "https://git.example.com/org/repo/-/merge_requests/7"},
 		{"Technique", f.Technique, "T1190"},
-		{"FixHeadSHA", f.FixHeadSHA, "abc123"},
+		{"FixHeadSHA", f.FixHeadSHA, "cccccccccccccccccccccccccccccccccccccccc"},
 	} {
 		if c.got != c.want {
 			t.Errorf("%s: got %q, want %q", c.name, c.got, c.want)
@@ -71,7 +70,7 @@ func TestApplicationFindingsFromProto_MapsEveryField(t *testing.T) {
 		t.Errorf("reachable/exposed not mapped: %+v", f)
 	}
 	if len(f.FixFiles) != 1 || f.FixFiles[0] != (agent.FixFile{
-		Path: "b.go", Change: "renamed", PreviousPath: "a.go", BlobSHA: "blob-b",
+		Path: "b.go", Change: "renamed", PreviousPath: "a.go", BlobSHA: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
 	}) {
 		t.Errorf("fix files = %+v, want one renamed file and the nil entry skipped", f.FixFiles)
 	}

@@ -195,8 +195,10 @@ type HarnessCallbackServiceClient interface {
 	// it names the one that the fix applies in the context of the fix job.
 	//
 	// The catalog is the same for every tenant, so the request carries no tenant
-	// field. A technique that no countermeasure counters, and a value that is
-	// not an ATT&CK technique id, return an empty list and no error.
+	// field. A technique that no countermeasure counters returns an empty list
+	// and no error. A value that is not an ATT&CK technique id is refused by
+	// the validation of the request. An empty value passes validation, and the
+	// SDK makes no call for it.
 	GetCountermeasures(ctx context.Context, in *GetCountermeasuresRequest, opts ...grpc.CallOption) (*GetCountermeasuresResponse, error)
 	GetRunFindings(ctx context.Context, in *GetRunFindingsRequest, opts ...grpc.CallOption) (*GetRunFindingsResponse, error)
 	GetMissionRunHistory(ctx context.Context, in *GetMissionRunHistoryRequest, opts ...grpc.CallOption) (*GetMissionRunHistoryResponse, error)
@@ -1128,8 +1130,10 @@ type HarnessCallbackServiceServer interface {
 	// it names the one that the fix applies in the context of the fix job.
 	//
 	// The catalog is the same for every tenant, so the request carries no tenant
-	// field. A technique that no countermeasure counters, and a value that is
-	// not an ATT&CK technique id, return an empty list and no error.
+	// field. A technique that no countermeasure counters returns an empty list
+	// and no error. A value that is not an ATT&CK technique id is refused by
+	// the validation of the request. An empty value passes validation, and the
+	// SDK makes no call for it.
 	GetCountermeasures(context.Context, *GetCountermeasuresRequest) (*GetCountermeasuresResponse, error)
 	GetRunFindings(context.Context, *GetRunFindingsRequest) (*GetRunFindingsResponse, error)
 	GetMissionRunHistory(context.Context, *GetMissionRunHistoryRequest) (*GetMissionRunHistoryResponse, error)

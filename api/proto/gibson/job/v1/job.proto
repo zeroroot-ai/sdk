@@ -238,27 +238,6 @@ message Deliverable {
     string ref = 2;
     // url is where a person opens the deliverable.
     string url = 3;
-    // head_sha is the commit that the driver pushed on the branch of the
-    // deliverable. It is set for the kinds that push a branch. A caller that
-    // merges the change passes it to the host as the head that it expects.
-    string head_sha = 4;
-    // files are the files that the driver changed in that commit, with no file
-    // content. Together with head_sha they let a caller check that the branch
-    // holds the change of the job and nothing else.
-    repeated ChangedFile files = 5;
-}
-
-// ChangedFile is one file that a commit of a job changes. It holds no content.
-message ChangedFile {
-    // path is the path of the file after the change.
-    string path = 1;
-    // change is added, modified, deleted or renamed.
-    string change = 2;
-    // previous_path is the path before the change. It is set for a rename.
-    string previous_path = 3;
-    // blob_sha is the git object id of the file after the change. It is empty
-    // for a deleted file.
-    string blob_sha = 4;
 }
 
 // Job is one persistent Claude Code session on a bank member with its own

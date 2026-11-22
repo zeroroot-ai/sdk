@@ -30,7 +30,6 @@ import (
 	"github.com/zeroroot-ai/sdk/agent"
 	graphragpb "github.com/zeroroot-ai/sdk/api/gen/gibson/graphrag/v1"
 	harnesspb "github.com/zeroroot-ai/sdk/api/gen/gibson/harness/v1"
-	jobpb "github.com/zeroroot-ai/sdk/api/gen/gibson/job/v1"
 	typespb "github.com/zeroroot-ai/sdk/api/gen/gibson/types/v1"
 	"github.com/zeroroot-ai/sdk/codegen/workspace"
 	"github.com/zeroroot-ai/sdk/finding"
@@ -1492,8 +1491,26 @@ func countermeasuresFromProto(pcs []*harnesspb.Countermeasure) []agent.Counterme
 	return out
 }
 
+// fixChange returns the change of a fix file as a lower case word: added,
+// modified, deleted or renamed. A change that the SDK does not know returns "".
+func fixChange(c harnesspb.FixFileChange) string {
+	switch c {
+	case harnesspb.FixFileChange_FIX_FILE_CHANGE_ADDED:
+		return "added"
+	case harnesspb.FixFileChange_FIX_FILE_CHANGE_MODIFIED:
+		return "modified"
+	case harnesspb.FixFileChange_FIX_FILE_CHANGE_DELETED:
+		return "deleted"
+	case harnesspb.FixFileChange_FIX_FILE_CHANGE_RENAMED:
+		return "renamed"
+	case harnesspb.FixFileChange_FIX_FILE_CHANGE_UNSPECIFIED:
+		return ""
+	}
+	return ""
+}
+
 // fixFilesFromProto maps the files of a fix commit. A nil entry is skipped.
-func fixFilesFromProto(pfs []*jobpb.ChangedFile) []agent.FixFile {
+func fixFilesFromProto(pfs []*harnesspb.FixFile) []agent.FixFile {
 	if len(pfs) == 0 {
 		return nil
 	}
@@ -1503,7 +1520,7 @@ func fixFilesFromProto(pfs []*jobpb.ChangedFile) []agent.FixFile {
 			continue
 		}
 		out = append(out, agent.FixFile{
-			Path: pf.GetPath(), Change: pf.GetChange(), PreviousPath: pf.GetPreviousPath(), BlobSHA: pf.GetBlobSha(),
+			Path: pf.GetPath(), Change: fixChange(pf.GetChange()), PreviousPath: pf.GetPreviousPath(), BlobSHA: pf.GetBlobSha(),
 		})
 	}
 	return out
