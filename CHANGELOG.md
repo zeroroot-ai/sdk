@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.214.0](https://github.com/zeroroot-ai/sdk/compare/v0.213.0...v0.214.0) (2026-11-22)
+
+
+### Features
+
+* **a2ainbound:** send a whole message ([#375](https://github.com/zeroroot-ai/sdk/issues/375)) ([5b90fb2](https://github.com/zeroroot-ai/sdk/commit/5b90fb2253bf172314964bbc6f104d88c52f9363))
+* **agent:** pass the error code of a refused tool call ([#374](https://github.com/zeroroot-ai/sdk/issues/374)) ([ae7078d](https://github.com/zeroroot-ai/sdk/commit/ae7078d74ab7ed3cd14b15b2aec437f50fd27c72))
+* **fanout:** bump the SDK in the three blue team agent repos ([#370](https://github.com/zeroroot-ai/sdk/issues/370)) ([0ede1ac](https://github.com/zeroroot-ai/sdk/commit/0ede1ac0ac87517c446d1d9f8e12ccdcaa768b30))
+* **harness:** read the countermeasures of a technique and the technique of a finding ([#373](https://github.com/zeroroot-ai/sdk/issues/373)) ([b8c209d](https://github.com/zeroroot-ai/sdk/commit/b8c209dd11926ba96a11e45e2ebef9f17b006697))
+
+
+### Bug Fixes
+
+* **ci:** force the main refspec in the taxonomy number guard ([#371](https://github.com/zeroroot-ai/sdk/issues/371)) ([41b4e37](https://github.com/zeroroot-ai/sdk/commit/41b4e3769dc2636dc24be342d294749b010e68c0))
+
 ## [0.213.0](https://github.com/zeroroot-ai/sdk/compare/v0.212.0...v0.213.0) (2026-11-21)
 
 
