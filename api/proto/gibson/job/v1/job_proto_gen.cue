@@ -255,6 +255,32 @@ import (
 
 	// url is where a person opens the deliverable.
 	url?: string @protobuf(3,string)
+
+	// head_sha is the commit that the driver pushed on the branch of the
+	// deliverable. It is set for the kinds that push a branch. A caller that
+	// merges the change passes it to the host as the head that it expects.
+	headSha?: string @protobuf(4,string,name=head_sha)
+
+	// files are the files that the driver changed in that commit, with no file
+	// content. Together with head_sha they let a caller check that the branch
+	// holds the change of the job and nothing else.
+	files?: [...#ChangedFile] @protobuf(5,ChangedFile)
+}
+
+// ChangedFile is one file that a commit of a job changes. It holds no content.
+#ChangedFile: {
+	// path is the path of the file after the change.
+	path?: string @protobuf(1,string)
+
+	// change is added, modified, deleted or renamed.
+	change?: string @protobuf(2,string)
+
+	// previous_path is the path before the change. It is set for a rename.
+	previousPath?: string @protobuf(3,string,name=previous_path)
+
+	// blob_sha is the git object id of the file after the change. It is empty
+	// for a deleted file.
+	blobSha?: string @protobuf(4,string,name=blob_sha)
 }
 
 // Job is one persistent Claude Code session on a bank member with its own
