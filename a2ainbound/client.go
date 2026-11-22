@@ -191,9 +191,34 @@ func (c *Client) SendMessage(ctx context.Context, agent, text string, targets ..
 		}
 		parts = append(parts, a2a.NewDataPart(map[string]any{TargetsKey: ids}))
 	}
-	msg := a2a.NewMessage(a2a.MessageRoleUser, parts...)
+	return c.Send(ctx, agent, a2a.NewMessage(a2a.MessageRoleUser, parts...))
+}
+
+// Send sends a whole message to a published agent and returns the Task of the
+// mission that the message started. It is the one send path: SendMessage builds
+// a message and calls it.
+//
+// The caller sets the message id, the metadata and the parts. An empty message
+// id gets a new one, and an empty role becomes the role user. Send changes a copy
+// and never the message of the caller. The platform reads a target list only from
+// a data part under TargetsKey, as for SendMessage. A caller that puts data of
+// another origin in a data part must keep that data under its own key, so that
+// no key of it reads as TargetsKey.
+//
+// The answers and errors are those of SendMessage.
+func (c *Client) Send(ctx context.Context, agent string, msg *a2a.Message) (*a2a.Task, error) {
+	if msg == nil || len(msg.Parts) == 0 {
+		return nil, errors.New("a2ainbound: the message needs at least one part")
+	}
+	out := *msg
+	if out.ID == "" {
+		out.ID = a2a.NewMessageID()
+	}
+	if out.Role == "" {
+		out.Role = a2a.MessageRoleUser
+	}
 	return c.rpc(ctx, agent, func(client *a2aclient.Client) (*a2a.Task, error) {
-		res, err := client.SendMessage(ctx, &a2a.SendMessageRequest{Message: msg})
+		res, err := client.SendMessage(ctx, &a2a.SendMessageRequest{Message: &out})
 		if err != nil {
 			return nil, fmt.Errorf("a2ainbound: send a message to %s: %w", agent, err)
 		}
