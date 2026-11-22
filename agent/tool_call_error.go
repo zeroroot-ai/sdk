@@ -1,0 +1,46 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Zero Root AI
+
+package agent
+
+// The codes of a ToolCallError that an agent acts on. The value is the name of
+// the daemon error code (gibson.common.v1.ErrorCode).
+const (
+	// ToolErrUnavailable means that the daemon did not run the call now and a
+	// later call can succeed. Examples are a merge slot that is not granted, a
+	// call that waits for approval, and an audit store that is down.
+	ToolErrUnavailable = "ERROR_CODE_UNAVAILABLE"
+	// ToolErrPermissionDenied means that the daemon refused the call and the
+	// refusal is final. Examples are a failed can_execute check and a tool that
+	// the mission policy blocks.
+	ToolErrPermissionDenied = "ERROR_CODE_PERMISSION_DENIED"
+)
+
+// ToolCallError is the error of a tool call that the daemon refused or that
+// failed. It carries the code of the daemon, so an agent tells a refusal that
+// can pass (ToolErrUnavailable) from a final refusal (ToolErrPermissionDenied)
+// without a match on words.
+//
+// The code is coarse. The daemon gives the code ToolErrUnavailable to a merge
+// slot that is not granted, to a call that waits for approval and to an audit
+// store that is down, so the code does not tell these apart. A split into more
+// kinds needs more codes from the daemon (gibson#1575).
+//
+// Read it with errors.As. A call that did not reach the daemon returns another
+// error type.
+type ToolCallError struct {
+	// Code is the name of the daemon error code, for example
+	// ToolErrUnavailable.
+	Code string
+	// Message is the message of the daemon.
+	Message string
+}
+
+// Error returns the message of the daemon with the prefix "CallToolProto
+// error: ". A unary call returned this text before ToolCallError. A streaming
+// call returned the bare message, and it now has the same prefix, so a caller
+// that matched the bare text of a streaming error must match the code.
+func (e *ToolCallError) Error() string { return "CallToolProto error: " + e.Message }
+
+// Retryable reports whether a later call can succeed.
+func (e *ToolCallError) Retryable() bool { return e.Code == ToolErrUnavailable }
