@@ -1323,6 +1323,14 @@ message ApplicationFinding {
     // technique, which is a fact about the Finding and not a failure of the
     // read. A fix agent passes it to GetCountermeasures.
     string technique = 17 [(buf.validate.field).string = { pattern: "^(T\\d{4}(\\.\\d{3})?)?$" }];
+    // fix_head_sha is the commit that the fix job pushed for the merge request
+    // of the current fix, and fix_files are the files of that commit. The
+    // driver records both at wrap-up (gibson.job.v1.Deliverable). They are empty
+    // when no fix of the Finding has a merge request. The fix agent passes the
+    // head to the host as the head that it expects, and it merges only when the
+    // files of the merge request equal fix_files.
+    string fix_head_sha = 18;
+    repeated gibson.job.v1.ChangedFile fix_files = 19;
 }
 
 // GetCountermeasuresRequest asks for the countermeasures that counter one

@@ -482,6 +482,9 @@ func describeApplicationFindings(fs []agent.ApplicationFinding) string {
 		if f.Technique != "" {
 			out[len(out)-1] += " technique=" + f.Technique
 		}
+		for _, ff := range f.FixFiles {
+			out[len(out)-1] += fmt.Sprintf(" fix=%s@%s:%s:%s<%s", f.FixHeadSHA, ff.Path, ff.Change, ff.BlobSHA, ff.PreviousPath)
+		}
 	}
 	return strings.Join(out, "; ")
 }

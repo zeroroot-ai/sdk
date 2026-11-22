@@ -261,6 +261,7 @@ func TestCallbackHarness_EveryCallReachesTheDaemon(t *testing.T) {
 			FindingID: "af-1", Status: "open", Severity: "high", VulnerabilityID: "CVE-1", PlaceLabel: "Service",
 			PlaceKey: "pay", Reachable: true, Exposed: true, DeploymentKey: "dep-1", ImageKey: "img-1",
 			Priority: "p1", PriorityRule: "rule-1", PriorityReason: "exposed", Technique: "T1190",
+			FixHeadSHA: "h1", FixFiles: []agent.FixFile{{Path: "a.go", Change: "modified", BlobSHA: "b1"}},
 		}, af)
 
 		cm := only[*harnesspb.GetCountermeasuresRequest](t, &d.recorder, "GetCountermeasures")

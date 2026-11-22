@@ -136,19 +136,26 @@ func TestPlatformHarnessCountermeasuresAreUnavailable(t *testing.T) {
 	assert.ErrorIs(t, err, agent.ErrKnowledgeUnavailable)
 }
 
-// TestCallbackHarnessCountermeasures_NotATechniqueIDMakesNoCall: a value that is
-// not an ATT&CK technique id returns an empty slice and no error, and the daemon
-// is not called.
-func TestCallbackHarnessCountermeasures_NotATechniqueIDMakesNoCall(t *testing.T) {
+// TestCallbackHarnessCountermeasures_EmptyIsEmptyAndMalformedIsAnError: a
+// Finding with no technique has no countermeasure to read, so the call returns
+// an empty list. A value that is not an ATT&CK technique id is a fault of the
+// caller. It returns an error, by the rule of the proto. The daemon is not
+// called in either case.
+func TestCallbackHarnessCountermeasures_EmptyIsEmptyAndMalformedIsAnError(t *testing.T) {
 	srv := &countermeasureServer{resp: &harnesspb.GetCountermeasuresResponse{
 		Countermeasures: []*harnesspb.Countermeasure{{Id: "D3-FA"}},
 	}}
 	h := &CallbackHarness{client: newCountermeasureClient(t, srv)}
 
-	for _, bad := range []string{"", "d3-fa", "T11", "T1190.1"} {
+	got, err := h.Countermeasures(context.Background(), "")
+	require.NoError(t, err)
+	assert.Empty(t, got)
+
+	for _, bad := range []string{"d3-fa", "T11", "T1190.1"} {
 		got, err := h.Countermeasures(context.Background(), bad)
-		require.NoError(t, err, bad)
-		assert.Empty(t, got, bad)
+		require.Error(t, err, bad)
+		assert.Nil(t, got, bad)
+		assert.Contains(t, err.Error(), "not an ATT&CK technique id")
 	}
 	assert.Nil(t, srv.got, "the daemon must not be called")
 }

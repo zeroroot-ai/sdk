@@ -230,4 +230,23 @@ type ApplicationFinding struct {
 	// which is a fact about the Finding and not a failure of the read. Pass it
 	// to Countermeasures.
 	Technique string
+	// FixHeadSHA is the commit that the fix job pushed for the merge request of
+	// the current fix, and FixFiles are the files of that commit, with no
+	// content. The driver of the job records both. They are empty when no fix of
+	// the Finding has a merge request.
+	FixHeadSHA string
+	FixFiles   []FixFile
+}
+
+// FixFile is one file that the commit of a fix job changes.
+type FixFile struct {
+	// Path is the path of the file after the change.
+	Path string
+	// Change is added, modified, deleted or renamed.
+	Change string
+	// PreviousPath is the path before the change. It is set for a rename.
+	PreviousPath string
+	// BlobSHA is the git object id of the file after the change. It is empty
+	// for a deleted file.
+	BlobSHA string
 }

@@ -12,10 +12,10 @@ import (
 	"io"
 	"log/slog"
 	"math"
-	"regexp"
 	"sync"
 	"time"
 
+	"buf.build/go/protovalidate"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -30,6 +30,7 @@ import (
 	"github.com/zeroroot-ai/sdk/agent"
 	graphragpb "github.com/zeroroot-ai/sdk/api/gen/gibson/graphrag/v1"
 	harnesspb "github.com/zeroroot-ai/sdk/api/gen/gibson/harness/v1"
+	jobpb "github.com/zeroroot-ai/sdk/api/gen/gibson/job/v1"
 	typespb "github.com/zeroroot-ai/sdk/api/gen/gibson/types/v1"
 	"github.com/zeroroot-ai/sdk/codegen/workspace"
 	"github.com/zeroroot-ai/sdk/finding"
@@ -1444,18 +1445,29 @@ func (h *CallbackHarness) ApplicationFindings(ctx context.Context, application s
 	return applicationFindingsFromProto(resp.GetFindings()), nil
 }
 
-// techniqueID is the form of an ATT&CK technique id, for example "T1190" or
-// "T1059.001". It is the pattern of the proto field technique.
-var techniqueID = regexp.MustCompile(`^T\d{4}(\.\d{3})?$`)
+// requestValidator validates a request with the rules of its proto. The form of
+// a technique id is one rule, in the proto, and this is the one place that
+// reads it.
+var requestValidator = sync.OnceValues(func() (protovalidate.Validator, error) {
+	return protovalidate.New() //nolint:wrapcheck // wrapped by the caller
+})
 
 // Countermeasures returns the D3FEND countermeasures of one ATT&CK technique,
 // for a dispatched agent. A failed read returns an error and never an empty
 // slice: an empty slice means that no countermeasure counters the technique.
 func (h *CallbackHarness) Countermeasures(ctx context.Context, technique string) ([]agent.Countermeasure, error) {
-	if !techniqueID.MatchString(technique) {
-		return []agent.Countermeasure{}, nil // not an ATT&CK technique id, so nothing counters it
+	if technique == "" {
+		return []agent.Countermeasure{}, nil // a Finding with no technique has no countermeasure to read
 	}
-	resp, err := h.client.GetCountermeasures(ctx, &harnesspb.GetCountermeasuresRequest{Technique: technique})
+	req := &harnesspb.GetCountermeasuresRequest{Technique: technique}
+	v, err := requestValidator()
+	if err != nil {
+		return nil, fmt.Errorf("countermeasures: build the validator: %w", err)
+	}
+	if verr := v.Validate(req); verr != nil {
+		return nil, fmt.Errorf("countermeasures: %q is not an ATT&CK technique id: %w", technique, verr)
+	}
+	resp, err := h.client.GetCountermeasures(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("countermeasures callback failed: %w", err)
 	}
@@ -1475,6 +1487,23 @@ func countermeasuresFromProto(pcs []*harnesspb.Countermeasure) []agent.Counterme
 		}
 		out = append(out, agent.Countermeasure{
 			ID: pc.GetId(), Name: pc.GetName(), Tactic: pc.GetTactic(), NISTControls: pc.GetNistControls(),
+		})
+	}
+	return out
+}
+
+// fixFilesFromProto maps the files of a fix commit. A nil entry is skipped.
+func fixFilesFromProto(pfs []*jobpb.ChangedFile) []agent.FixFile {
+	if len(pfs) == 0 {
+		return nil
+	}
+	out := make([]agent.FixFile, 0, len(pfs))
+	for _, pf := range pfs {
+		if pf == nil {
+			continue
+		}
+		out = append(out, agent.FixFile{
+			Path: pf.GetPath(), Change: pf.GetChange(), PreviousPath: pf.GetPreviousPath(), BlobSHA: pf.GetBlobSha(),
 		})
 	}
 	return out
@@ -1506,6 +1535,8 @@ func applicationFindingsFromProto(pfs []*harnesspb.ApplicationFinding) []agent.A
 			MergeRequest:     pf.GetMergeRequest(),
 			MergeRequestURL:  pf.GetMergeRequestUrl(),
 			Technique:        pf.GetTechnique(),
+			FixHeadSHA:       pf.GetFixHeadSha(),
+			FixFiles:         fixFilesFromProto(pf.GetFixFiles()),
 		})
 	}
 	return out

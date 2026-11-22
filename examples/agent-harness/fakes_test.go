@@ -33,6 +33,7 @@ import (
 	componentpb "github.com/zeroroot-ai/sdk/api/gen/gibson/component/v1"
 	graphragpb "github.com/zeroroot-ai/sdk/api/gen/gibson/graphrag/v1"
 	harnesspb "github.com/zeroroot-ai/sdk/api/gen/gibson/harness/v1"
+	jobpb "github.com/zeroroot-ai/sdk/api/gen/gibson/job/v1"
 	typespb "github.com/zeroroot-ai/sdk/api/gen/gibson/types/v1"
 	"github.com/zeroroot-ai/sdk/fork"
 	"github.com/zeroroot-ai/sdk/mission"
@@ -327,6 +328,7 @@ func (d *callbackDaemon) ApplicationFindings(
 		FindingId: "af-1", Status: "open", Severity: "high", VulnerabilityId: "CVE-1", PlaceLabel: "Service",
 		PlaceKey: "pay", Reachable: true, Exposed: true, DeploymentKey: "dep-1", ImageKey: "img-1",
 		Priority: "p1", PriorityRule: "rule-1", PriorityReason: "exposed", Technique: "T1190",
+		FixHeadSha: "h1", FixFiles: []*jobpb.ChangedFile{{Path: "a.go", Change: "modified", BlobSha: "b1"}},
 	}}}, nil
 }
 
