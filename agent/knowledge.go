@@ -135,6 +135,38 @@ type KnowledgeReader interface {
 	// hardest here — unavailability returns ErrKnowledgeUnavailable, never an
 	// empty slice with a nil error.
 	ApplicationFindings(ctx context.Context, application string, statuses []string, limit int) ([]ApplicationFinding, error)
+
+	// Countermeasures returns the defensive countermeasures that counter one
+	// ATT&CK technique, from the D3FEND pack of the platform catalog. technique
+	// is the id of the technique, for example "T1190", and a fix agent takes it
+	// from ApplicationFinding.Technique.
+	//
+	// A technique that no countermeasure counters returns an empty slice and a
+	// nil error. That is a fact about the technique. An empty technique also
+	// returns an empty slice, with no call, because a Finding with no technique
+	// has nothing to read. A value that is not an ATT&CK technique id returns an
+	// error and makes no call. An unavailable read returns
+	// ErrKnowledgeUnavailable, as the other reads do.
+	//
+	// A fix agent names the countermeasure that its fix applies in the context
+	// of the fix job, under the key "countermeasure". The daemon side is
+	// zeroroot-ai/gibson#1487. A Finding with no technique gets a fix with no
+	// countermeasure.
+	Countermeasures(ctx context.Context, technique string) ([]Countermeasure, error)
+}
+
+// Countermeasure is one defensive technique of the D3FEND pack.
+type Countermeasure struct {
+	// ID is the id of the countermeasure in its framework, for example "D3-FA".
+	// A fix job names this value.
+	ID string
+	// Name is the name that the framework gives the countermeasure.
+	Name string
+	// Tactic is the tactic of the countermeasure, for example "Harden".
+	Tactic string
+	// NISTControls are the ids of the NIST SP 800-53 rev 5 controls that the
+	// framework maps to the countermeasure.
+	NISTControls []string
 }
 
 // ApplicationFinding is one Finding of an Application, with the lifecycle
@@ -195,4 +227,36 @@ type ApplicationFinding struct {
 	// fix of the Finding has a merge request.
 	MergeRequest    string
 	MergeRequestURL string
+	// Technique is the id of the ATT&CK technique that the Finding exercises,
+	// for example "T1190". Empty means that the Finding names no technique,
+	// which is a fact about the Finding and not a failure of the read. Pass it
+	// to Countermeasures.
+	Technique string
+	// FixHeadSHA is the head commit of the merge request of the current fix, and
+	// FixFiles are the files that the merge request changes, with no content.
+	// The daemon fills both from its own read of the fix merge request through
+	// the connector of the tenant, when it links the Finding to the merge request
+	// (FIXED_BY), after its checks that the merge request is open, was created
+	// after the claim of the job and has the branch of the job. A caller cannot
+	// set them, and no agent claim feeds them. They are empty when no fix of the
+	// Finding has a merge request.
+	//
+	// One window stays: a commit that a person pushes between the end of the job
+	// and the link is in both values, so a caller cannot see it.
+	FixHeadSHA string
+	FixFiles   []FixFile
+}
+
+// FixFile is one file that the fix merge request changes.
+type FixFile struct {
+	// Path is the path of the file after the change.
+	Path string
+	// Change is added, modified, deleted or renamed. A change that the SDK does
+	// not know maps to "".
+	Change string
+	// PreviousPath is the path before the change. It is set for a rename only.
+	PreviousPath string
+	// BlobSHA is the git object id of the file after the change. It is empty
+	// for a deleted file.
+	BlobSHA string
 }

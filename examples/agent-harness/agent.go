@@ -452,6 +452,17 @@ func callFindings(ctx context.Context, h agent.Harness, rep *Report) {
 
 	apps, err := h.ApplicationFindings(ctx, "payments", []string{"open"}, 10)
 	record(rep, "ApplicationFindings", apps, err, describeApplicationFindings)
+
+	cms, err := h.Countermeasures(ctx, "T1190")
+	record(rep, "Countermeasures", cms, err, describeCountermeasures)
+}
+
+func describeCountermeasures(cs []agent.Countermeasure) string {
+	out := make([]string, 0, len(cs))
+	for _, c := range cs {
+		out = append(out, c.ID+" "+c.Name+" "+c.Tactic+" "+strings.Join(c.NISTControls, ","))
+	}
+	return strings.Join(out, "; ")
 }
 
 func describeFindings(fs []*finding.Finding) string {
@@ -468,6 +479,12 @@ func describeApplicationFindings(fs []agent.ApplicationFinding) string {
 		out = append(out, fmt.Sprintf("%s %s %s %s place=%s/%s reach=%t exposed=%t deploy=%s image=%s prio=%s/%s/%s",
 			f.FindingID, f.Status, f.Severity, f.VulnerabilityID, f.PlaceLabel, f.PlaceKey,
 			f.Reachable, f.Exposed, f.DeploymentKey, f.ImageKey, f.Priority, f.PriorityRule, f.PriorityReason))
+		if f.Technique != "" {
+			out[len(out)-1] += " technique=" + f.Technique
+		}
+		for _, ff := range f.FixFiles {
+			out[len(out)-1] += fmt.Sprintf(" fix=%s@%s:%s:%s<%s", f.FixHeadSHA, ff.Path, ff.Change, ff.BlobSHA, ff.PreviousPath)
+		}
 	}
 	return strings.Join(out, "; ")
 }

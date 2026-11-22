@@ -326,7 +326,16 @@ func (d *callbackDaemon) ApplicationFindings(
 	return &harnesspb.ApplicationFindingsResponse{Findings: []*harnesspb.ApplicationFinding{{
 		FindingId: "af-1", Status: "open", Severity: "high", VulnerabilityId: "CVE-1", PlaceLabel: "Service",
 		PlaceKey: "pay", Reachable: true, Exposed: true, DeploymentKey: "dep-1", ImageKey: "img-1",
-		Priority: "p1", PriorityRule: "rule-1", PriorityReason: "exposed",
+		Priority: "p1", PriorityRule: "rule-1", PriorityReason: "exposed", Technique: "T1190",
+		FixHeadSha: "dddddddddddddddddddddddddddddddddddddddd", FixFiles: []*harnesspb.FixFile{{Path: "a.go", Change: harnesspb.FixFileChange_FIX_FILE_CHANGE_MODIFIED, BlobSha: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}},
+	}}}, nil
+}
+
+func (d *callbackDaemon) GetCountermeasures(
+	context.Context, *harnesspb.GetCountermeasuresRequest,
+) (*harnesspb.GetCountermeasuresResponse, error) {
+	return &harnesspb.GetCountermeasuresResponse{Countermeasures: []*harnesspb.Countermeasure{{
+		Id: "D3-FA", Name: "File Analysis", Tactic: "Detect", NistControls: []string{"si-3"},
 	}}}, nil
 }
 

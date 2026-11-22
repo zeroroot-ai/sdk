@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"buf.build/go/protovalidate"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -1442,7 +1443,117 @@ func (h *CallbackHarness) ApplicationFindings(ctx context.Context, application s
 	if e := resp.GetError(); e != nil && e.GetMessage() != "" {
 		return nil, fmt.Errorf("application findings rejected: %s", e.GetMessage())
 	}
-	return applicationFindingsFromProto(resp.GetFindings()), nil
+	v, err := requestValidator()
+	if err != nil {
+		return nil, fmt.Errorf("application findings: build the validator: %w", err)
+	}
+	return applicationFindingsFromProto(dropInvalidFixFields(v, resp.GetFindings(), h.logger)), nil
+}
+
+// dropInvalidFixFields validates each finding of a response with the rules of
+// its proto. A finding that breaks a rule loses fix_head_sha and fix_files and
+// keeps the rest, so that an agent never merges on values that break the
+// contract. The input is not changed.
+func dropInvalidFixFields(v protovalidate.Validator, pfs []*harnesspb.ApplicationFinding, log *slog.Logger) []*harnesspb.ApplicationFinding {
+	out := make([]*harnesspb.ApplicationFinding, len(pfs))
+	for i, pf := range pfs {
+		out[i] = pf
+		if pf == nil {
+			continue
+		}
+		if verr := v.Validate(pf); verr != nil {
+			c := protolib.Clone(pf).(*harnesspb.ApplicationFinding) //nolint:errcheck,forcetypeassert // Clone returns the same type
+			c.FixHeadSha, c.FixFiles = "", nil
+			out[i] = c
+			if log != nil {
+				log.Warn("application finding breaks the contract: its fix head and files are dropped",
+					"finding", pf.GetFindingId(), "error", verr.Error())
+			}
+		}
+	}
+	return out
+}
+
+// requestValidator validates a request with the rules of its proto. The form of
+// a technique id is one rule, in the proto, and this is the one place that
+// reads it.
+var requestValidator = sync.OnceValues(func() (protovalidate.Validator, error) {
+	return protovalidate.New() //nolint:wrapcheck // wrapped by the caller
+})
+
+// Countermeasures returns the D3FEND countermeasures of one ATT&CK technique,
+// for a dispatched agent. A failed read returns an error and never an empty
+// slice: an empty slice means that no countermeasure counters the technique.
+func (h *CallbackHarness) Countermeasures(ctx context.Context, technique string) ([]agent.Countermeasure, error) {
+	if technique == "" {
+		return []agent.Countermeasure{}, nil // a Finding with no technique has no countermeasure to read
+	}
+	req := &harnesspb.GetCountermeasuresRequest{Technique: technique}
+	v, err := requestValidator()
+	if err != nil {
+		return nil, fmt.Errorf("countermeasures: build the validator: %w", err)
+	}
+	if verr := v.Validate(req); verr != nil {
+		return nil, fmt.Errorf("countermeasures: %q is not an ATT&CK technique id: %w", technique, verr)
+	}
+	resp, err := h.client.GetCountermeasures(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("countermeasures callback failed: %w", err)
+	}
+	if e := resp.GetError(); e != nil && e.GetMessage() != "" {
+		return nil, fmt.Errorf("countermeasures rejected: %s", e.GetMessage())
+	}
+	return countermeasuresFromProto(resp.GetCountermeasures()), nil
+}
+
+// countermeasuresFromProto maps the wire slice to the SDK-native type. A nil
+// entry is skipped, so it never becomes a countermeasure with no id.
+func countermeasuresFromProto(pcs []*harnesspb.Countermeasure) []agent.Countermeasure {
+	out := make([]agent.Countermeasure, 0, len(pcs))
+	for _, pc := range pcs {
+		if pc == nil {
+			continue
+		}
+		out = append(out, agent.Countermeasure{
+			ID: pc.GetId(), Name: pc.GetName(), Tactic: pc.GetTactic(), NISTControls: pc.GetNistControls(),
+		})
+	}
+	return out
+}
+
+// fixChange returns the change of a fix file as a lower case word: added,
+// modified, deleted or renamed. An unspecified or unknown change returns "".
+func fixChange(c harnesspb.FixFileChange) string {
+	switch c {
+	case harnesspb.FixFileChange_FIX_FILE_CHANGE_ADDED:
+		return "added"
+	case harnesspb.FixFileChange_FIX_FILE_CHANGE_MODIFIED:
+		return "modified"
+	case harnesspb.FixFileChange_FIX_FILE_CHANGE_DELETED:
+		return "deleted"
+	case harnesspb.FixFileChange_FIX_FILE_CHANGE_RENAMED:
+		return "renamed"
+	case harnesspb.FixFileChange_FIX_FILE_CHANGE_UNSPECIFIED:
+		return ""
+	}
+	return ""
+}
+
+// fixFilesFromProto maps the files of a fix merge request. A nil entry is skipped.
+func fixFilesFromProto(pfs []*harnesspb.FixFile) []agent.FixFile {
+	if len(pfs) == 0 {
+		return nil
+	}
+	out := make([]agent.FixFile, 0, len(pfs))
+	for _, pf := range pfs {
+		if pf == nil {
+			continue
+		}
+		out = append(out, agent.FixFile{
+			Path: pf.GetPath(), Change: fixChange(pf.GetChange()), PreviousPath: pf.GetPreviousPath(), BlobSHA: pf.GetBlobSha(),
+		})
+	}
+	return out
 }
 
 // applicationFindingsFromProto maps the wire slice to the SDK-native type, once,
@@ -1470,6 +1581,9 @@ func applicationFindingsFromProto(pfs []*harnesspb.ApplicationFinding) []agent.A
 			FixBlockedReason: pf.GetFixBlockedReason(),
 			MergeRequest:     pf.GetMergeRequest(),
 			MergeRequestURL:  pf.GetMergeRequestUrl(),
+			Technique:        pf.GetTechnique(),
+			FixHeadSHA:       pf.GetFixHeadSha(),
+			FixFiles:         fixFilesFromProto(pf.GetFixFiles()),
 		})
 	}
 	return out

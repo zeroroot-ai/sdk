@@ -260,8 +260,15 @@ func TestCallbackHarness_EveryCallReachesTheDaemon(t *testing.T) {
 		assert.Equal(t, agent.ApplicationFinding{
 			FindingID: "af-1", Status: "open", Severity: "high", VulnerabilityID: "CVE-1", PlaceLabel: "Service",
 			PlaceKey: "pay", Reachable: true, Exposed: true, DeploymentKey: "dep-1", ImageKey: "img-1",
-			Priority: "p1", PriorityRule: "rule-1", PriorityReason: "exposed",
+			Priority: "p1", PriorityRule: "rule-1", PriorityReason: "exposed", Technique: "T1190",
+			FixHeadSHA: "dddddddddddddddddddddddddddddddddddddddd", FixFiles: []agent.FixFile{{Path: "a.go", Change: "modified", BlobSHA: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}},
 		}, af)
+
+		cm := only[*harnesspb.GetCountermeasuresRequest](t, &d.recorder, "GetCountermeasures")
+		assert.Equal(t, "T1190", cm.GetTechnique())
+		assert.Equal(t, []agent.Countermeasure{
+			{ID: "D3-FA", Name: "File Analysis", Tactic: "Detect", NISTControls: []string{"si-3"}},
+		}, value[[]agent.Countermeasure](t, rep, "Countermeasures"))
 	})
 
 	t.Run("missions", func(t *testing.T) {
@@ -448,7 +455,7 @@ func TestPlatformHarness_EveryCallReachesTheDaemon(t *testing.T) {
 	unavailable := map[string]bool{
 		"Observe": true, "PlaceBet": true, "WorldView": true, "QueryNodes": true,
 		"FindSimilarFindings": true, "GetRelatedFindings": true, "GetFindings": true,
-		"GetRunFindings": true, "GetMissionRunHistory": true, "ApplicationFindings": true,
+		"GetRunFindings": true, "GetMissionRunHistory": true, "ApplicationFindings": true, "Countermeasures": true,
 	}
 	// The test client has no capability grant. The four calls to the gateway fail on that.
 	noGrant := map[string]bool{"Create": true, "CreateWithTools": true, "CreateStructured": true, "Stream": true, "Delegate": true, "DelegateToBank": true}

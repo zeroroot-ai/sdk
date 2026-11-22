@@ -266,6 +266,24 @@ service HarnessCallbackService {
         allowed_identities: 4  // COMPONENT
       };
     }
+    // GetCountermeasures returns the defensive countermeasures that counter one
+    // ATT&CK technique, from the D3FEND pack of the platform catalog
+    // (zeroroot-ai/gibson#1487). A fix agent reads them when it plans a fix, and
+    // it names the one that the fix applies in the context of the fix job.
+    //
+    // The catalog is the same for every tenant, so the request carries no tenant
+    // field. A technique that no countermeasure counters returns an empty list
+    // and no error. A value that is not an ATT&CK technique id is refused by
+    // the validation of the request. An empty value passes validation, and the
+    // SDK makes no call for it.
+    rpc GetCountermeasures(GetCountermeasuresRequest) returns (GetCountermeasuresResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
     rpc GetRunFindings(GetRunFindingsRequest) returns (GetRunFindingsResponse) {
       option (gibson.auth.v1.authz) = {
         relation: "can_use"
@@ -1302,6 +1320,88 @@ message ApplicationFinding {
     // fix of the Finding has a merge request.
     string merge_request = 15;
     string merge_request_url = 16;
+    // technique is the id of the ATT&CK technique that the Finding exercises,
+    // for example "T1190" or "T1059.001". Empty means that the Finding names no
+    // technique, which is a fact about the Finding and not a failure of the
+    // read. A fix agent passes it to GetCountermeasures.
+    string technique = 17 [(buf.validate.field).string = { pattern: "^(T\\d{4}(\\.\\d{3})?)?$" }];
+    // fix_head_sha is the head commit of the merge request of the current fix,
+    // and fix_files are the files that the merge request changes, with no
+    // content. The daemon fills both from its own read of the fix merge request
+    // through the connector of the tenant, when it links the Finding to the merge
+    // request (FIXED_BY), after its checks that the merge request is open, was
+    // created after the claim of the job and has the branch of the job. They are
+    // empty when no fix of the Finding has a merge request. A caller cannot set
+    // them, and no agent claim feeds them.
+    //
+    // The fix agent passes the head to the host as the head that it expects, and
+    // it merges only when the files of the merge request equal fix_files. One
+    // window stays: a commit that a person pushes between the end of the job and
+    // the link is in both values, so the agent cannot see it.
+    string fix_head_sha = 18 [(buf.validate.field).string = { pattern: "^([0-9a-f]{40}|[0-9a-f]{64})?$" }];
+    repeated FixFile fix_files = 19 [(buf.validate.field).repeated = { max_items: 100 }];
+}
+
+// FixFile is one file that a fix merge request changes. It holds no content.
+message FixFile {
+    option (buf.validate.message).cel = {
+        id: "fix_file.previous_path"
+        message: "previous_path must be set when change is FIX_FILE_CHANGE_RENAMED, and in no other case"
+        expression: "(this.change == 4) == (this.previous_path != '')"
+    };
+    option (buf.validate.message).cel = {
+        id: "fix_file.blob_sha"
+        message: "blob_sha must be empty when change is FIX_FILE_CHANGE_DELETED, and set in every other case"
+        expression: "(this.change == 3) == (this.blob_sha == '')"
+    };
+
+    // path is the path of the file after the change.
+    string path = 1 [(buf.validate.field).string = { min_len: 1, max_len: 4096 }];
+    FixFileChange change = 2 [(buf.validate.field).enum = { defined_only: true, not_in: [0] }];
+    // previous_path is the path before the change. It is set for a rename only.
+    string previous_path = 3 [(buf.validate.field).string = { max_len: 4096 }];
+    // blob_sha is the git object id of the file after the change. It is empty
+    // for a deleted file, and set for every other change.
+    string blob_sha = 4 [(buf.validate.field).string = { pattern: "^([0-9a-f]{40}|[0-9a-f]{64})?$" }];
+}
+
+// FixFileChange is how a merge request changes a file.
+enum FixFileChange {
+    FIX_FILE_CHANGE_UNSPECIFIED = 0;
+    FIX_FILE_CHANGE_ADDED = 1;
+    FIX_FILE_CHANGE_MODIFIED = 2;
+    FIX_FILE_CHANGE_DELETED = 3;
+    FIX_FILE_CHANGE_RENAMED = 4;
+}
+
+// GetCountermeasuresRequest asks for the countermeasures that counter one
+// ATT&CK technique.
+message GetCountermeasuresRequest {
+    ContextInfo context = 1;
+    // technique is the id of an ATT&CK technique, for example "T1190" or
+    // "T1059.001".
+    string technique = 2 [(buf.validate.field).string = { pattern: "^(T\\d{4}(\\.\\d{3})?)?$" }];
+}
+
+// Countermeasure is one defensive technique of the D3FEND pack.
+message Countermeasure {
+    // id is the id of the countermeasure in its framework, for example
+    // "D3-FA". A fix job names this value.
+    string id = 1;
+    // name is the name that the framework gives the countermeasure.
+    string name = 2;
+    // tactic is the tactic of the countermeasure, for example "Harden".
+    string tactic = 3;
+    // nist_controls are the ids of the NIST SP 800-53 rev 5 controls that the
+    // framework maps to the countermeasure.
+    repeated string nist_controls = 4;
+}
+
+// GetCountermeasuresResponse carries the countermeasures of one technique, in
+// the order of the pack.
+message GetCountermeasuresResponse {
+    repeated Countermeasure countermeasures = 1;
+    HarnessError error = 2;
 }
 
 // ApplicationFindingsResponse carries the Application's Findings.

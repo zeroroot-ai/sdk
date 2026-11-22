@@ -1011,6 +1011,21 @@ func (c *CallbackClient) ApplicationFindings(ctx context.Context, req *harnesspb
 	return resp, nil
 }
 
+// GetCountermeasures returns the countermeasures that counter one ATT&CK
+// technique.
+func (c *CallbackClient) GetCountermeasures(ctx context.Context, req *harnesspb.GetCountermeasuresRequest) (*harnesspb.GetCountermeasuresResponse, error) {
+	if !c.IsConnected() {
+		return nil, errors.New("GetCountermeasures: client not connected")
+	}
+	req.Context = c.contextInfo()
+	ctx = c.contextWithMetadata(ctx)
+	resp, err := c.client.GetCountermeasures(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("GetCountermeasures: %w", err)
+	}
+	return resp, nil
+}
+
 // WriteReadMarker records how far the agent read the results of one Connector.
 // The daemon stores the marker as a Timeline event of the tenant.
 func (c *CallbackClient) WriteReadMarker(

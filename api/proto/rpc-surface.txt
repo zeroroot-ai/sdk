@@ -122,6 +122,7 @@ gibson.harness.v1.HarnessCallbackService/DeleteSessionContext
 gibson.harness.v1.HarnessCallbackService/DevboxExec
 gibson.harness.v1.HarnessCallbackService/FindSimilarFindings
 gibson.harness.v1.HarnessCallbackService/GenerateNodeID
+gibson.harness.v1.HarnessCallbackService/GetCountermeasures
 gibson.harness.v1.HarnessCallbackService/GetCredential
 gibson.harness.v1.HarnessCallbackService/GetFindings
 gibson.harness.v1.HarnessCallbackService/GetMissionResults
