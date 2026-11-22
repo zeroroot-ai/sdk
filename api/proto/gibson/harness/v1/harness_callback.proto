@@ -1363,6 +1363,12 @@ message FixFile {
     // blob_sha is the git object id of the file after the change. It is empty
     // for a deleted file, and set for every other change.
     string blob_sha = 4 [(buf.validate.field).string = { pattern: "^([0-9a-f]{40}|[0-9a-f]{64})?$" }];
+    // mode is the git file mode at the head: 100644, 100755, 120000 or 160000.
+    // The daemon fills it from the mode that its connector read of the merge
+    // request gives. It is empty when the host gives none (GitHub gives no mode
+    // in the list of files). The fix agent compares it with the mode in the
+    // state of the merge request when both are set.
+    string mode = 5 [(buf.validate.field).string = { pattern: "^(100644|100755|120000|160000)?$" }];
 }
 
 // FixFileChange is how a merge request changes a file.

@@ -259,4 +259,8 @@ type FixFile struct {
 	// BlobSHA is the git object id of the file after the change. It is empty
 	// for a deleted file.
 	BlobSHA string
+	// Mode is the git file mode at the head: 100644, 100755, 120000 or 160000.
+	// The daemon fills it from the mode that its connector read of the merge
+	// request gives. It is empty when the host gives none.
+	Mode string
 }
