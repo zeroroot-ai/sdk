@@ -4,6 +4,7 @@
 package serve
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/zeroroot-ai/sdk/agent"
@@ -200,5 +201,45 @@ func TestCountermeasuresFromProto_NilEntryIsSkipped(t *testing.T) {
 func TestCountermeasuresFromProto_EmptyIsEmpty(t *testing.T) {
 	if out := countermeasuresFromProto(nil); len(out) != 0 {
 		t.Fatalf("expected empty, got %+v", out)
+	}
+}
+
+// TestDropInvalidFixFields: a finding that breaks a rule of its proto loses the
+// fix head and the fix files and keeps the rest. A valid finding is untouched.
+// The input is not changed.
+func TestDropInvalidFixFields(t *testing.T) {
+	v, err := requestValidator()
+	if err != nil {
+		t.Fatal(err)
+	}
+	sha := strings.Repeat("a", 40)
+	good := &harnesspb.ApplicationFinding{
+		FindingId: "ok", Status: "open", FixHeadSha: sha,
+		FixFiles: []*harnesspb.FixFile{{Path: "a.go", Change: harnesspb.FixFileChange_FIX_FILE_CHANGE_MODIFIED, BlobSha: sha}},
+	}
+	badHead := &harnesspb.ApplicationFinding{FindingId: "bad-head", Status: "open", Priority: "P1", FixHeadSha: "abc", FixFiles: good.FixFiles}
+	badFile := &harnesspb.ApplicationFinding{
+		FindingId: "bad-file", Status: "open", FixHeadSha: sha,
+		FixFiles: []*harnesspb.FixFile{{Path: "a.go", Change: harnesspb.FixFileChange_FIX_FILE_CHANGE_DELETED, BlobSha: sha}},
+	}
+
+	out := dropInvalidFixFields(v, []*harnesspb.ApplicationFinding{good, nil, badHead, badFile}, nil)
+
+	if out[0] != good || out[0].GetFixHeadSha() != sha || len(out[0].GetFixFiles()) != 1 {
+		t.Errorf("a valid finding changed: %+v", out[0])
+	}
+	if out[1] != nil {
+		t.Errorf("a nil entry changed: %+v", out[1])
+	}
+	for _, i := range []int{2, 3} {
+		if out[i].GetFixHeadSha() != "" || len(out[i].GetFixFiles()) != 0 {
+			t.Errorf("entry %d kept its fix fields: %+v", i, out[i])
+		}
+	}
+	if out[2].GetFindingId() != "bad-head" || out[2].GetPriority() != "P1" || out[2].GetStatus() != "open" {
+		t.Errorf("the rest of the finding was lost: %+v", out[2])
+	}
+	if badHead.GetFixHeadSha() != "abc" || len(badFile.GetFixFiles()) != 1 {
+		t.Error("the input was changed")
 	}
 }

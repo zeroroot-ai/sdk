@@ -86,6 +86,10 @@ func TestHarnessV1_FixFiles_Validation(t *testing.T) {
 	prevOnModify.PreviousPath = "old.go"
 	renameNoPrev := renamed()
 	renameNoPrev.PreviousPath = ""
+	deletedWithBlob := good()
+	deletedWithBlob.Change = harnesspb.FixFileChange_FIX_FILE_CHANGE_DELETED
+	addedNoBlob := good()
+	addedNoBlob.Change, addedNoBlob.BlobSha = harnesspb.FixFileChange_FIX_FILE_CHANGE_ADDED, ""
 	badBlob := good()
 	badBlob.BlobSha = "ABC"
 	upperBlob := good()
@@ -103,6 +107,8 @@ func TestHarnessV1_FixFiles_Validation(t *testing.T) {
 		"an unknown change":              unknownChange,
 		"a previous path on a modify":    prevOnModify,
 		"a rename with no previous path": renameNoPrev,
+		"a deleted file with a blob sha": deletedWithBlob,
+		"an added file with no blob sha": addedNoBlob,
 		"a short blob sha":               badBlob,
 		"an upper case blob sha":         upperBlob,
 	} {

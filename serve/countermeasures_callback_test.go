@@ -159,3 +159,16 @@ func TestCallbackHarnessCountermeasures_EmptyIsEmptyAndMalformedIsAnError(t *tes
 	}
 	assert.Nil(t, srv.got, "the daemon must not be called")
 }
+
+func TestFixChange(t *testing.T) {
+	for c, want := range map[harnesspb.FixFileChange]string{
+		harnesspb.FixFileChange_FIX_FILE_CHANGE_ADDED:       "added",
+		harnesspb.FixFileChange_FIX_FILE_CHANGE_MODIFIED:    "modified",
+		harnesspb.FixFileChange_FIX_FILE_CHANGE_DELETED:     "deleted",
+		harnesspb.FixFileChange_FIX_FILE_CHANGE_RENAMED:     "renamed",
+		harnesspb.FixFileChange_FIX_FILE_CHANGE_UNSPECIFIED: "",
+		harnesspb.FixFileChange(99):                         "",
+	} {
+		assert.Equal(t, want, fixChange(c), c.String())
+	}
+}

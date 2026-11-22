@@ -1441,7 +1441,35 @@ func (h *CallbackHarness) ApplicationFindings(ctx context.Context, application s
 	if e := resp.GetError(); e != nil && e.GetMessage() != "" {
 		return nil, fmt.Errorf("application findings rejected: %s", e.GetMessage())
 	}
-	return applicationFindingsFromProto(resp.GetFindings()), nil
+	v, err := requestValidator()
+	if err != nil {
+		return nil, fmt.Errorf("application findings: build the validator: %w", err)
+	}
+	return applicationFindingsFromProto(dropInvalidFixFields(v, resp.GetFindings(), h.logger)), nil
+}
+
+// dropInvalidFixFields validates each finding of a response with the rules of
+// its proto. A finding that breaks a rule loses fix_head_sha and fix_files and
+// keeps the rest, so that an agent never merges on values that break the
+// contract. The input is not changed.
+func dropInvalidFixFields(v protovalidate.Validator, pfs []*harnesspb.ApplicationFinding, log *slog.Logger) []*harnesspb.ApplicationFinding {
+	out := make([]*harnesspb.ApplicationFinding, len(pfs))
+	for i, pf := range pfs {
+		out[i] = pf
+		if pf == nil {
+			continue
+		}
+		if verr := v.Validate(pf); verr != nil {
+			c := protolib.Clone(pf).(*harnesspb.ApplicationFinding) //nolint:errcheck,forcetypeassert // Clone returns the same type
+			c.FixHeadSha, c.FixFiles = "", nil
+			out[i] = c
+			if log != nil {
+				log.Warn("application finding breaks the contract: its fix head and files are dropped",
+					"finding", pf.GetFindingId(), "error", verr.Error())
+			}
+		}
+	}
+	return out
 }
 
 // requestValidator validates a request with the rules of its proto. The form of
@@ -1492,7 +1520,7 @@ func countermeasuresFromProto(pcs []*harnesspb.Countermeasure) []agent.Counterme
 }
 
 // fixChange returns the change of a fix file as a lower case word: added,
-// modified, deleted or renamed. A change that the SDK does not know returns "".
+// modified, deleted or renamed. An unspecified or unknown change returns "".
 func fixChange(c harnesspb.FixFileChange) string {
 	switch c {
 	case harnesspb.FixFileChange_FIX_FILE_CHANGE_ADDED:
@@ -1509,7 +1537,7 @@ func fixChange(c harnesspb.FixFileChange) string {
 	return ""
 }
 
-// fixFilesFromProto maps the files of a fix commit. A nil entry is skipped.
+// fixFilesFromProto maps the files of a fix merge request. A nil entry is skipped.
 func fixFilesFromProto(pfs []*harnesspb.FixFile) []agent.FixFile {
 	if len(pfs) == 0 {
 		return nil

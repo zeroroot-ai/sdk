@@ -1349,6 +1349,11 @@ message FixFile {
         message: "previous_path must be set when change is FIX_FILE_CHANGE_RENAMED, and in no other case"
         expression: "(this.change == 4) == (this.previous_path != '')"
     };
+    option (buf.validate.message).cel = {
+        id: "fix_file.blob_sha"
+        message: "blob_sha must be empty when change is FIX_FILE_CHANGE_DELETED, and set in every other case"
+        expression: "(this.change == 3) == (this.blob_sha == '')"
+    };
 
     // path is the path of the file after the change.
     string path = 1 [(buf.validate.field).string = { min_len: 1, max_len: 4096 }];
@@ -1356,7 +1361,7 @@ message FixFile {
     // previous_path is the path before the change. It is set for a rename only.
     string previous_path = 3 [(buf.validate.field).string = { max_len: 4096 }];
     // blob_sha is the git object id of the file after the change. It is empty
-    // for a deleted file.
+    // for a deleted file, and set for every other change.
     string blob_sha = 4 [(buf.validate.field).string = { pattern: "^([0-9a-f]{40}|[0-9a-f]{64})?$" }];
 }
 

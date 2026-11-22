@@ -247,11 +247,12 @@ type ApplicationFinding struct {
 	FixFiles   []FixFile
 }
 
-// FixFile is one file that the commit of a fix job changes.
+// FixFile is one file that the fix merge request changes.
 type FixFile struct {
 	// Path is the path of the file after the change.
 	Path string
-	// Change is added, modified, deleted or renamed.
+	// Change is added, modified, deleted or renamed. A change that the SDK does
+	// not know maps to "".
 	Change string
 	// PreviousPath is the path before the change. It is set for a rename only.
 	PreviousPath string
