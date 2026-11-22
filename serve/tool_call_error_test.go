@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/encoding/protojson"
+	protolib "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/zeroroot-ai/sdk/agent"
@@ -50,11 +52,37 @@ func TestCallToolProto_RefusalCarriesTheCode(t *testing.T) {
 
 			err := h.CallToolProto(context.Background(), "invoke_tool", &structpb.Struct{}, &structpb.Struct{})
 			require.Error(t, err)
-			tce, ok := agent.IsToolCallError(err)
-			require.True(t, ok, "err = %v", err)
+			var tce *agent.ToolCallError
+			require.ErrorAs(t, err, &tce)
 			assert.Equal(t, tc.want, tce.Code)
 			assert.Equal(t, tc.retry, tce.Retryable())
 			assert.Equal(t, "CallToolProto error: the daemon said no", err.Error())
 		})
 	}
+}
+
+type errCallback struct{ got error }
+
+func (c *errCallback) OnProgress(int, string, string)    {}
+func (c *errCallback) OnPartial(protolib.Message, bool)  {}
+func (c *errCallback) OnWarning(string, string)          {}
+func (c *errCallback) OnError(err error, _ bool)         { c.got = err }
+func (c *errCallback) OnComplete(protolib.Message, bool) {}
+
+// TestStreamError_CarriesTheCode: the streaming path returns the same typed
+// error as the unary path.
+func TestStreamError_CarriesTheCode(t *testing.T) {
+	msg := &harnesspb.CallToolProtoStreamResponse{Payload: &harnesspb.CallToolProtoStreamResponse_Error{
+		Error: &harnesspb.ToolErrorEvent{
+			Error: &harnesspb.HarnessError{Code: commonpb.ErrorCode_ERROR_CODE_PERMISSION_DENIED, Message: "no"},
+			Fatal: true,
+		},
+	}}
+	cb := &errCallback{}
+	err := dispatchToolStreamMessage(msg, &structpb.Struct{}, cb, protojson.UnmarshalOptions{})
+	var tce *agent.ToolCallError
+	require.ErrorAs(t, err, &tce)
+	assert.Equal(t, agent.ToolErrPermissionDenied, tce.Code)
+	assert.Equal(t, "no", tce.Message)
+	assert.Same(t, err, cb.got)
 }

@@ -11,7 +11,8 @@ import (
 
 func TestToolCallError(t *testing.T) {
 	err := fmt.Errorf("invoke: %w", &ToolCallError{Code: ToolErrUnavailable, Message: "merge not granted yet"})
-	tce, ok := IsToolCallError(err)
+	var tce *ToolCallError
+	ok := errors.As(err, &tce)
 	if !ok || tce.Code != ToolErrUnavailable || !tce.Retryable() {
 		t.Fatalf("got %+v %v, want a retryable unavailable error", tce, ok)
 	}
@@ -22,7 +23,8 @@ func TestToolCallError(t *testing.T) {
 	if denied.Retryable() {
 		t.Error("a permission denial is final")
 	}
-	if _, ok := IsToolCallError(errors.New("CallToolProto callback failed")); ok {
+	var other *ToolCallError
+	if errors.As(errors.New("CallToolProto callback failed"), &other) {
 		t.Error("a transport error is not a ToolCallError")
 	}
 }

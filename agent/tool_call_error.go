@@ -3,8 +3,6 @@
 
 package agent
 
-import "errors"
-
 // The codes of a ToolCallError that an agent acts on. The value is the name of
 // the daemon error code (gibson.common.v1.ErrorCode).
 const (
@@ -20,10 +18,16 @@ const (
 
 // ToolCallError is the error of a tool call that the daemon refused or that
 // failed. It carries the code of the daemon, so an agent tells a refusal that
-// can pass from a final refusal without a match on words (gibson#1575).
+// can pass (ToolErrUnavailable) from a final refusal (ToolErrPermissionDenied)
+// without a match on words.
 //
-// Use errors.As to read it. A call that did not reach the daemon returns
-// another error type.
+// The code is coarse. The daemon gives the code ToolErrUnavailable to a merge
+// slot that is not granted, to a call that waits for approval and to an audit
+// store that is down, so the code does not tell these apart. A split into more
+// kinds needs more codes from the daemon (gibson#1575).
+//
+// Read it with errors.As. A call that did not reach the daemon returns another
+// error type.
 type ToolCallError struct {
 	// Code is the name of the daemon error code, for example
 	// ToolErrUnavailable.
@@ -38,12 +42,3 @@ func (e *ToolCallError) Error() string { return "CallToolProto error: " + e.Mess
 
 // Retryable reports whether a later call can succeed.
 func (e *ToolCallError) Retryable() bool { return e.Code == ToolErrUnavailable }
-
-// IsToolCallError returns the ToolCallError in the chain of err, if any.
-func IsToolCallError(err error) (*ToolCallError, bool) {
-	var tce *ToolCallError
-	if errors.As(err, &tce) {
-		return tce, true
-	}
-	return nil, false
-}

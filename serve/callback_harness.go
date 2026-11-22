@@ -361,7 +361,9 @@ func dispatchToolStreamMessage(
 
 	case *harnesspb.CallToolProtoStreamResponse_Error:
 		ev := payload.Error
-		callbackErr := errors.New(ev.GetError().GetMessage())
+		callbackErr := &agent.ToolCallError{
+			Code: ev.GetError().GetCode().String(), Message: ev.GetError().GetMessage(),
+		}
 		callback.OnError(callbackErr, ev.GetFatal())
 		if ev.GetFatal() {
 			return callbackErr
