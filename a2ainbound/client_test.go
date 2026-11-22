@@ -513,3 +513,71 @@ func TestNewClientRefusals(t *testing.T) {
 	_, err := NewClient(Config{BaseURL: "https://api.example.com/", Signer: signer})
 	require.NoError(t, err)
 }
+
+func TestSendCarriesTheWholeMessage(t *testing.T) {
+	e := newFakeEdge(t)
+	msg := a2a.NewMessage(a2a.MessageRoleUser,
+		a2a.NewTextPart("a fixed note"),
+		a2a.NewDataPart(map[string]any{"webhook": map[string]any{"id": "evt-1", "body": map[string]any{"k": "v"}}}))
+	msg.ID = "webhook:edr:evt-1"
+	msg.Metadata = map[string]any{"webhook_id": "evt-1"}
+
+	task, err := e.client(t).Send(context.Background(), "recon", msg)
+	require.NoError(t, err)
+	assert.Equal(t, a2a.TaskID("mission-1"), task.ID)
+
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	require.Len(t, e.messages, 1)
+	got := e.messages[0]
+	assert.Equal(t, "webhook:edr:evt-1", got.ID)
+	assert.Equal(t, map[string]any{"webhook_id": "evt-1"}, got.Metadata)
+	require.Len(t, got.Parts, 2)
+	assert.Equal(t, "a fixed note", got.Parts[0].Text())
+	wantData := map[string]any{"webhook": map[string]any{"id": "evt-1", "body": map[string]any{"k": "v"}}}
+	assert.Equal(t, wantData, got.Parts[1].Data())
+	// The call carries a grant that is bound to its path, as every call does.
+	assert.Equal(t, []string{"/a2a/inbound/recon"}, e.paths)
+}
+
+func TestSendFillsAnEmptyIDAndRoleOnACopy(t *testing.T) {
+	e := newFakeEdge(t)
+	msg := &a2a.Message{Parts: a2a.ContentParts{a2a.NewTextPart("scan")}}
+	_, err := e.client(t).Send(context.Background(), "recon", msg)
+	require.NoError(t, err)
+
+	assert.Empty(t, msg.ID, "Send must not change the message of the caller")
+	assert.Empty(t, msg.Role)
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	require.Len(t, e.messages, 1)
+	assert.NotEmpty(t, e.messages[0].ID)
+	assert.Equal(t, a2a.MessageRoleUser, e.messages[0].Role)
+}
+
+func TestSendRefusesAMessageWithNoPart(t *testing.T) {
+	e := newFakeEdge(t)
+	c := e.client(t)
+	_, err := c.Send(context.Background(), "recon", nil)
+	require.Error(t, err)
+	_, err = c.Send(context.Background(), "recon", &a2a.Message{})
+	require.Error(t, err)
+	_, err = c.Send(context.Background(), "recon", &a2a.Message{Parts: a2a.ContentParts{a2a.NewTextPart("x"), nil}})
+	require.ErrorContains(t, err, "nil part")
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	assert.Empty(t, e.messages)
+	assert.Empty(t, e.paths, "a refused message must send no request")
+}
+
+func TestSendRefusesABadAgentNameAndASignerError(t *testing.T) {
+	e := newFakeEdge(t)
+	msg := a2a.NewMessage(a2a.MessageRoleUser, a2a.NewTextPart("scan"))
+	_, err := e.client(t).Send(context.Background(), "Not A Label", msg)
+	require.Error(t, err)
+
+	c, err := NewClient(Config{BaseURL: e.srv.URL, Signer: failingSigner{}, CAPEM: e.caPEM()})
+	require.NoError(t, err)
+	_, err = c.Send(context.Background(), "recon", msg)
+	require.ErrorContains(t, err, "no key")
+}
