@@ -135,6 +135,36 @@ type KnowledgeReader interface {
 	// hardest here — unavailability returns ErrKnowledgeUnavailable, never an
 	// empty slice with a nil error.
 	ApplicationFindings(ctx context.Context, application string, statuses []string, limit int) ([]ApplicationFinding, error)
+
+	// Countermeasures returns the defensive countermeasures that counter one
+	// ATT&CK technique, from the D3FEND pack of the platform catalog. technique
+	// is the id of the technique, for example "T1190", and a fix agent takes it
+	// from ApplicationFinding.Technique.
+	//
+	// A technique that no countermeasure counters, and a value that is not an
+	// ATT&CK technique id, return an empty slice and a nil error. That is a fact
+	// about the technique. An unavailable read returns ErrKnowledgeUnavailable,
+	// as the other reads do.
+	//
+	// A fix agent names the countermeasure that its fix applies in the context
+	// of the fix job, under the key "countermeasure", and the daemon links the
+	// merge request to it. A Finding with no technique gets a fix with no
+	// countermeasure, and the write does not fail.
+	Countermeasures(ctx context.Context, technique string) ([]Countermeasure, error)
+}
+
+// Countermeasure is one defensive technique of the D3FEND pack.
+type Countermeasure struct {
+	// ID is the id of the countermeasure in its framework, for example "D3-FA".
+	// A fix job names this value.
+	ID string
+	// Name is the name that the framework gives the countermeasure.
+	Name string
+	// Tactic is the tactic of the countermeasure, for example "Harden".
+	Tactic string
+	// NISTControls are the ids of the NIST SP 800-53 rev 5 controls that the
+	// framework maps to the countermeasure.
+	NISTControls []string
 }
 
 // ApplicationFinding is one Finding of an Application, with the lifecycle
@@ -195,4 +225,9 @@ type ApplicationFinding struct {
 	// fix of the Finding has a merge request.
 	MergeRequest    string
 	MergeRequestURL string
+	// Technique is the id of the ATT&CK technique that the Finding exercises,
+	// for example "T1190". Empty means that the Finding names no technique,
+	// which is a fact about the Finding and not a failure of the read. Pass it
+	// to Countermeasures.
+	Technique string
 }

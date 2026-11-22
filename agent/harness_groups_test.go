@@ -55,7 +55,7 @@ func TestHarnessMethodSetUnchanged(t *testing.T) {
 		// (ApplicationFindings, sdk#537).
 		"QueryNodes", "FindSimilarFindings", "GetRelatedFindings",
 		"GetFindings", "GetRunFindings", "GetMissionRunHistory",
-		"ApplicationFindings",
+		"ApplicationFindings", "Countermeasures",
 	}
 	sort.Strings(want)
 

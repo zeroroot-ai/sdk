@@ -1443,6 +1443,35 @@ func (h *CallbackHarness) ApplicationFindings(ctx context.Context, application s
 	return applicationFindingsFromProto(resp.GetFindings()), nil
 }
 
+// Countermeasures returns the D3FEND countermeasures of one ATT&CK technique,
+// for a dispatched agent. A failed read returns an error and never an empty
+// slice: an empty slice means that no countermeasure counters the technique.
+func (h *CallbackHarness) Countermeasures(ctx context.Context, technique string) ([]agent.Countermeasure, error) {
+	resp, err := h.client.GetCountermeasures(ctx, &harnesspb.GetCountermeasuresRequest{Technique: technique})
+	if err != nil {
+		return nil, fmt.Errorf("countermeasures callback failed: %w", err)
+	}
+	if e := resp.GetError(); e != nil && e.GetMessage() != "" {
+		return nil, fmt.Errorf("countermeasures rejected: %s", e.GetMessage())
+	}
+	return countermeasuresFromProto(resp.GetCountermeasures()), nil
+}
+
+// countermeasuresFromProto maps the wire slice to the SDK-native type. A nil
+// entry is skipped, so it never becomes a countermeasure with no id.
+func countermeasuresFromProto(pcs []*harnesspb.Countermeasure) []agent.Countermeasure {
+	out := make([]agent.Countermeasure, 0, len(pcs))
+	for _, pc := range pcs {
+		if pc == nil {
+			continue
+		}
+		out = append(out, agent.Countermeasure{
+			ID: pc.GetId(), Name: pc.GetName(), Tactic: pc.GetTactic(), NISTControls: pc.GetNistControls(),
+		})
+	}
+	return out
+}
+
 // applicationFindingsFromProto maps the wire slice to the SDK-native type, once,
 // rather than at each caller.
 func applicationFindingsFromProto(pfs []*harnesspb.ApplicationFinding) []agent.ApplicationFinding {
@@ -1468,6 +1497,7 @@ func applicationFindingsFromProto(pfs []*harnesspb.ApplicationFinding) []agent.A
 			FixBlockedReason: pf.GetFixBlockedReason(),
 			MergeRequest:     pf.GetMergeRequest(),
 			MergeRequestURL:  pf.GetMergeRequestUrl(),
+			Technique:        pf.GetTechnique(),
 		})
 	}
 	return out

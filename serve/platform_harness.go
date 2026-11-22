@@ -802,6 +802,11 @@ func (h *PlatformHarness) ApplicationFindings(context.Context, string, []string,
 	return nil, fmt.Errorf("ApplicationFindings in platform pull-mode: %w", agent.ErrKnowledgeUnavailable)
 }
 
+// Countermeasures is not wired in platform pull-mode; it reports ErrKnowledgeUnavailable.
+func (h *PlatformHarness) Countermeasures(context.Context, string) ([]agent.Countermeasure, error) {
+	return nil, fmt.Errorf("Countermeasures in platform pull-mode: %w", agent.ErrKnowledgeUnavailable)
+}
+
 // GetMissionRunHistory is not wired in platform pull-mode; it reports ErrKnowledgeUnavailable.
 func (h *PlatformHarness) GetMissionRunHistory(context.Context) ([]types.MissionRunSummary, error) {
 	return nil, fmt.Errorf("GetMissionRunHistory in platform pull-mode: %w", agent.ErrKnowledgeUnavailable)

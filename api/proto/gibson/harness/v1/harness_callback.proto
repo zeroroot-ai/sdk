@@ -266,6 +266,22 @@ service HarnessCallbackService {
         allowed_identities: 4  // COMPONENT
       };
     }
+    // GetCountermeasures returns the defensive countermeasures that counter one
+    // ATT&CK technique, from the D3FEND pack of the platform catalog
+    // (zeroroot-ai/gibson#1487). A fix agent reads them when it plans a fix, and
+    // it names the one that the fix applies in the context of the fix job.
+    //
+    // The catalog is the same for every tenant, so the request carries no tenant
+    // field. A technique that no countermeasure counters, and a value that is
+    // not an ATT&CK technique id, return an empty list and no error.
+    rpc GetCountermeasures(GetCountermeasuresRequest) returns (GetCountermeasuresResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "can_use"
+        object_type: "component"
+        object_deriver: "system_tenant"
+        allowed_identities: 4  // COMPONENT
+      };
+    }
     rpc GetRunFindings(GetRunFindingsRequest) returns (GetRunFindingsResponse) {
       option (gibson.auth.v1.authz) = {
         relation: "can_use"
@@ -1302,6 +1318,41 @@ message ApplicationFinding {
     // fix of the Finding has a merge request.
     string merge_request = 15;
     string merge_request_url = 16;
+    // technique is the id of the ATT&CK technique that the Finding exercises,
+    // for example "T1190" or "T1059.001". Empty means that the Finding names no
+    // technique, which is a fact about the Finding and not a failure of the
+    // read. A fix agent passes it to GetCountermeasures.
+    string technique = 17;
+}
+
+// GetCountermeasuresRequest asks for the countermeasures that counter one
+// ATT&CK technique.
+message GetCountermeasuresRequest {
+    ContextInfo context = 1;
+    // technique is the id of an ATT&CK technique, for example "T1190" or
+    // "T1059.001".
+    string technique = 2 [(buf.validate.field).string = { max_len: 32 }];
+}
+
+// Countermeasure is one defensive technique of the D3FEND pack.
+message Countermeasure {
+    // id is the id of the countermeasure in its framework, for example
+    // "D3-FA". A fix job names this value.
+    string id = 1;
+    // name is the name that the framework gives the countermeasure.
+    string name = 2;
+    // tactic is the tactic of the countermeasure, for example "Harden".
+    string tactic = 3;
+    // nist_controls are the ids of the NIST SP 800-53 rev 5 controls that the
+    // framework maps to the countermeasure.
+    repeated string nist_controls = 4;
+}
+
+// GetCountermeasuresResponse carries the countermeasures of one technique, in
+// the order of the pack.
+message GetCountermeasuresResponse {
+    repeated Countermeasure countermeasures = 1;
+    HarnessError error = 2;
 }
 
 // ApplicationFindingsResponse carries the Application's Findings.

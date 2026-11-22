@@ -452,6 +452,17 @@ func callFindings(ctx context.Context, h agent.Harness, rep *Report) {
 
 	apps, err := h.ApplicationFindings(ctx, "payments", []string{"open"}, 10)
 	record(rep, "ApplicationFindings", apps, err, describeApplicationFindings)
+
+	cms, err := h.Countermeasures(ctx, "T1190")
+	record(rep, "Countermeasures", cms, err, describeCountermeasures)
+}
+
+func describeCountermeasures(cs []agent.Countermeasure) string {
+	out := make([]string, 0, len(cs))
+	for _, c := range cs {
+		out = append(out, c.ID+" "+c.Name+" "+c.Tactic)
+	}
+	return strings.Join(out, "; ")
 }
 
 func describeFindings(fs []*finding.Finding) string {

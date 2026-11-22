@@ -330,6 +330,14 @@ func (d *callbackDaemon) ApplicationFindings(
 	}}}, nil
 }
 
+func (d *callbackDaemon) GetCountermeasures(
+	context.Context, *harnesspb.GetCountermeasuresRequest,
+) (*harnesspb.GetCountermeasuresResponse, error) {
+	return &harnesspb.GetCountermeasuresResponse{Countermeasures: []*harnesspb.Countermeasure{{
+		Id: "D3-FA", Name: "File Analysis", Tactic: "Detect", NistControls: []string{"si-3"},
+	}}}, nil
+}
+
 func (d *callbackDaemon) CreateMission(context.Context, *harnesspb.CreateMissionRequest) (*harnesspb.CreateMissionResponse, error) {
 	return &harnesspb.CreateMissionResponse{Mission: missionInfo()}, nil
 }

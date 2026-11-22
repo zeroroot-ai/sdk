@@ -6,6 +6,7 @@ package serve
 import (
 	"testing"
 
+	"github.com/zeroroot-ai/sdk/agent"
 	harnesspb "github.com/zeroroot-ai/sdk/api/gen/gibson/harness/v1"
 )
 
@@ -32,6 +33,7 @@ func TestApplicationFindingsFromProto_MapsEveryField(t *testing.T) {
 		FixBlockedReason: "the flaw is on a host",
 		MergeRequest:     "mr-7",
 		MergeRequestUrl:  "https://git.example.com/org/repo/-/merge_requests/7",
+		Technique:        "T1190",
 	}})
 	if len(out) != 1 {
 		t.Fatalf("expected 1 finding, got %d", len(out))
@@ -52,6 +54,7 @@ func TestApplicationFindingsFromProto_MapsEveryField(t *testing.T) {
 		{"FixBlockedReason", f.FixBlockedReason, "the flaw is on a host"},
 		{"MergeRequest", f.MergeRequest, "mr-7"},
 		{"MergeRequestURL", f.MergeRequestURL, "https://git.example.com/org/repo/-/merge_requests/7"},
+		{"Technique", f.Technique, "T1190"},
 	} {
 		if c.got != c.want {
 			t.Errorf("%s: got %q, want %q", c.name, c.got, c.want)
@@ -148,5 +151,43 @@ func TestApplicationFindingsFromProto_QuietModelKeepsTheDecision(t *testing.T) {
 	}
 	if f.PriorityReason != "" {
 		t.Fatalf("expected no reason, got %q", f.PriorityReason)
+	}
+}
+
+// TestCountermeasuresFromProto maps each field, and keeps the order of the pack.
+func TestCountermeasuresFromProto(t *testing.T) {
+	out := countermeasuresFromProto([]*harnesspb.Countermeasure{
+		{Id: "D3-FA", Name: "File Analysis", Tactic: "Detect", NistControls: []string{"si-3", "si-4"}},
+		{Id: "D3-PH", Name: "Platform Hardening", Tactic: "Harden"},
+	})
+	want := []agent.Countermeasure{
+		{ID: "D3-FA", Name: "File Analysis", Tactic: "Detect", NISTControls: []string{"si-3", "si-4"}},
+		{ID: "D3-PH", Name: "Platform Hardening", Tactic: "Harden"},
+	}
+	if len(out) != len(want) {
+		t.Fatalf("got %d countermeasures, want %d: %+v", len(out), len(want), out)
+	}
+	for i := range want {
+		if out[i].ID != want[i].ID || out[i].Name != want[i].Name || out[i].Tactic != want[i].Tactic ||
+			len(out[i].NISTControls) != len(want[i].NISTControls) {
+			t.Errorf("entry %d: got %+v, want %+v", i, out[i], want[i])
+		}
+	}
+}
+
+// TestCountermeasuresFromProto_NilEntryIsSkipped: a nil element must not become a
+// countermeasure with no id. A fix job would name that empty id.
+func TestCountermeasuresFromProto_NilEntryIsSkipped(t *testing.T) {
+	out := countermeasuresFromProto([]*harnesspb.Countermeasure{nil, {Id: "D3-FA"}, nil})
+	if len(out) != 1 || out[0].ID != "D3-FA" {
+		t.Fatalf("got %+v, want only D3-FA", out)
+	}
+}
+
+// TestCountermeasuresFromProto_EmptyIsEmpty: a technique that no countermeasure
+// counters returns an empty slice. It is the one case where empty is the truth.
+func TestCountermeasuresFromProto_EmptyIsEmpty(t *testing.T) {
+	if out := countermeasuresFromProto(nil); len(out) != 0 {
+		t.Fatalf("expected empty, got %+v", out)
 	}
 }

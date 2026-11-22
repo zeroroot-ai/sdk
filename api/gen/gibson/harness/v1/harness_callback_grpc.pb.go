@@ -40,6 +40,7 @@ const (
 	HarnessCallbackService_GetRelatedFindings_FullMethodName              = "/gibson.harness.v1.HarnessCallbackService/GetRelatedFindings"
 	HarnessCallbackService_GetFindings_FullMethodName                     = "/gibson.harness.v1.HarnessCallbackService/GetFindings"
 	HarnessCallbackService_ApplicationFindings_FullMethodName             = "/gibson.harness.v1.HarnessCallbackService/ApplicationFindings"
+	HarnessCallbackService_GetCountermeasures_FullMethodName              = "/gibson.harness.v1.HarnessCallbackService/GetCountermeasures"
 	HarnessCallbackService_GetRunFindings_FullMethodName                  = "/gibson.harness.v1.HarnessCallbackService/GetRunFindings"
 	HarnessCallbackService_GetMissionRunHistory_FullMethodName            = "/gibson.harness.v1.HarnessCallbackService/GetMissionRunHistory"
 	HarnessCallbackService_WriteReadMarker_FullMethodName                 = "/gibson.harness.v1.HarnessCallbackService/WriteReadMarker"
@@ -188,6 +189,15 @@ type HarnessCallbackServiceClient interface {
 	// agent able to send arbitrary Cypher would be a second unaudited path into
 	// the tenant graph, and the traversal an agent needs is knowable in advance.
 	ApplicationFindings(ctx context.Context, in *ApplicationFindingsRequest, opts ...grpc.CallOption) (*ApplicationFindingsResponse, error)
+	// GetCountermeasures returns the defensive countermeasures that counter one
+	// ATT&CK technique, from the D3FEND pack of the platform catalog
+	// (zeroroot-ai/gibson#1487). A fix agent reads them when it plans a fix, and
+	// it names the one that the fix applies in the context of the fix job.
+	//
+	// The catalog is the same for every tenant, so the request carries no tenant
+	// field. A technique that no countermeasure counters, and a value that is
+	// not an ATT&CK technique id, return an empty list and no error.
+	GetCountermeasures(ctx context.Context, in *GetCountermeasuresRequest, opts ...grpc.CallOption) (*GetCountermeasuresResponse, error)
 	GetRunFindings(ctx context.Context, in *GetRunFindingsRequest, opts ...grpc.CallOption) (*GetRunFindingsResponse, error)
 	GetMissionRunHistory(ctx context.Context, in *GetMissionRunHistoryRequest, opts ...grpc.CallOption) (*GetMissionRunHistoryResponse, error)
 	// Read markers. An agent that reads the results of a Connector in a loop
@@ -554,6 +564,16 @@ func (c *harnessCallbackServiceClient) ApplicationFindings(ctx context.Context, 
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ApplicationFindingsResponse)
 	err := c.cc.Invoke(ctx, HarnessCallbackService_ApplicationFindings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *harnessCallbackServiceClient) GetCountermeasures(ctx context.Context, in *GetCountermeasuresRequest, opts ...grpc.CallOption) (*GetCountermeasuresResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetCountermeasuresResponse)
+	err := c.cc.Invoke(ctx, HarnessCallbackService_GetCountermeasures_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1102,6 +1122,15 @@ type HarnessCallbackServiceServer interface {
 	// agent able to send arbitrary Cypher would be a second unaudited path into
 	// the tenant graph, and the traversal an agent needs is knowable in advance.
 	ApplicationFindings(context.Context, *ApplicationFindingsRequest) (*ApplicationFindingsResponse, error)
+	// GetCountermeasures returns the defensive countermeasures that counter one
+	// ATT&CK technique, from the D3FEND pack of the platform catalog
+	// (zeroroot-ai/gibson#1487). A fix agent reads them when it plans a fix, and
+	// it names the one that the fix applies in the context of the fix job.
+	//
+	// The catalog is the same for every tenant, so the request carries no tenant
+	// field. A technique that no countermeasure counters, and a value that is
+	// not an ATT&CK technique id, return an empty list and no error.
+	GetCountermeasures(context.Context, *GetCountermeasuresRequest) (*GetCountermeasuresResponse, error)
 	GetRunFindings(context.Context, *GetRunFindingsRequest) (*GetRunFindingsResponse, error)
 	GetMissionRunHistory(context.Context, *GetMissionRunHistoryRequest) (*GetMissionRunHistoryResponse, error)
 	// Read markers. An agent that reads the results of a Connector in a loop
@@ -1308,6 +1337,9 @@ func (UnimplementedHarnessCallbackServiceServer) GetFindings(context.Context, *G
 }
 func (UnimplementedHarnessCallbackServiceServer) ApplicationFindings(context.Context, *ApplicationFindingsRequest) (*ApplicationFindingsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ApplicationFindings not implemented")
+}
+func (UnimplementedHarnessCallbackServiceServer) GetCountermeasures(context.Context, *GetCountermeasuresRequest) (*GetCountermeasuresResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCountermeasures not implemented")
 }
 func (UnimplementedHarnessCallbackServiceServer) GetRunFindings(context.Context, *GetRunFindingsRequest) (*GetRunFindingsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRunFindings not implemented")
@@ -1817,6 +1849,24 @@ func _HarnessCallbackService_ApplicationFindings_Handler(srv interface{}, ctx co
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(HarnessCallbackServiceServer).ApplicationFindings(ctx, req.(*ApplicationFindingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HarnessCallbackService_GetCountermeasures_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCountermeasuresRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HarnessCallbackServiceServer).GetCountermeasures(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HarnessCallbackService_GetCountermeasures_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HarnessCallbackServiceServer).GetCountermeasures(ctx, req.(*GetCountermeasuresRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2645,6 +2695,10 @@ var HarnessCallbackService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ApplicationFindings",
 			Handler:    _HarnessCallbackService_ApplicationFindings_Handler,
+		},
+		{
+			MethodName: "GetCountermeasures",
+			Handler:    _HarnessCallbackService_GetCountermeasures_Handler,
 		},
 		{
 			MethodName: "GetRunFindings",
