@@ -35,6 +35,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/a2aproject/a2a-go/v2/a2a"
@@ -205,10 +206,17 @@ func (c *Client) SendMessage(ctx context.Context, agent, text string, targets ..
 // another origin in a data part must keep that data under its own key, so that
 // no key of it reads as TargetsKey.
 //
+// Set no TaskID. Send starts a new mission, and Gibson refuses a message with a
+// caller-set TaskID, because it reads that message as an answer to an approval.
+// An outside caller can never answer an approval.
+//
 // The answers and errors are those of SendMessage.
 func (c *Client) Send(ctx context.Context, agent string, msg *a2a.Message) (*a2a.Task, error) {
 	if msg == nil || len(msg.Parts) == 0 {
 		return nil, errors.New("a2ainbound: the message needs at least one part")
+	}
+	if slices.Contains(msg.Parts, nil) {
+		return nil, errors.New("a2ainbound: the message has a nil part")
 	}
 	out := *msg
 	if out.ID == "" {

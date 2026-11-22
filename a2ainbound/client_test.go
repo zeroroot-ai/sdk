@@ -562,6 +562,8 @@ func TestSendRefusesAMessageWithNoPart(t *testing.T) {
 	require.Error(t, err)
 	_, err = c.Send(context.Background(), "recon", &a2a.Message{})
 	require.Error(t, err)
+	_, err = c.Send(context.Background(), "recon", &a2a.Message{Parts: a2a.ContentParts{a2a.NewTextPart("x"), nil}})
+	require.ErrorContains(t, err, "nil part")
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	assert.Empty(t, e.messages)
