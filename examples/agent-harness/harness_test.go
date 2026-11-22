@@ -260,7 +260,7 @@ func TestCallbackHarness_EveryCallReachesTheDaemon(t *testing.T) {
 		assert.Equal(t, agent.ApplicationFinding{
 			FindingID: "af-1", Status: "open", Severity: "high", VulnerabilityID: "CVE-1", PlaceLabel: "Service",
 			PlaceKey: "pay", Reachable: true, Exposed: true, DeploymentKey: "dep-1", ImageKey: "img-1",
-			Priority: "p1", PriorityRule: "rule-1", PriorityReason: "exposed",
+			Priority: "p1", PriorityRule: "rule-1", PriorityReason: "exposed", Technique: "T1190",
 		}, af)
 
 		cm := only[*harnesspb.GetCountermeasuresRequest](t, &d.recorder, "GetCountermeasures")
