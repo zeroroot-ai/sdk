@@ -1536,7 +1536,7 @@ message RenderCatalogMissionRequest {
   map<string, string> params = 2 [(buf.validate.field).map = {
     max_pairs: 64
     keys: {string: {min_len: 1, max_len: 128, pattern: "^[A-Za-z][A-Za-z0-9_.-]*$"}}
-    values: {string: {max_len: 4096}}
+    values: {string: {max_len: 65536}}
   }];
 }
 
@@ -1563,7 +1563,7 @@ message RunCatalogMissionRequest {
   map<string, string> params = 2 [(buf.validate.field).map = {
     max_pairs: 64
     keys: {string: {min_len: 1, max_len: 128, pattern: "^[A-Za-z][A-Za-z0-9_.-]*$"}}
-    values: {string: {max_len: 4096}}
+    values: {string: {max_len: 65536}}
   }];
 
   // target_id is the ID of a registered target. A mission with a runtime branch
