@@ -86,6 +86,7 @@ gibson.daemon.v1.DaemonService/PauseMission
 gibson.daemon.v1.DaemonService/Ping
 gibson.daemon.v1.DaemonService/QueryPlugin
 gibson.daemon.v1.DaemonService/RenderCatalogMission
+gibson.daemon.v1.DaemonService/RunCatalogMission
 gibson.daemon.v1.DaemonService/RenewCapabilityGrant
 gibson.daemon.v1.DaemonService/ResumeMission
 gibson.daemon.v1.DaemonService/RewindMission
