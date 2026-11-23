@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.217.0](https://github.com/zeroroot-ai/sdk/compare/v0.216.0...v0.217.0) (2026-11-23)
+
+
+### Features
+
+* **harness:** add turn_grant to PullJobResponse ([#390](https://github.com/zeroroot-ai/sdk/issues/390)) ([6f15afb](https://github.com/zeroroot-ai/sdk/commit/6f15afbef1d0c7e2a7d024fe461258a8f23d30aa))
+* **harness:** give catalog_params the caps of RunCatalogMission ([#388](https://github.com/zeroroot-ai/sdk/issues/388)) ([f1a333c](https://github.com/zeroroot-ai/sdk/commit/f1a333c5a54f1e114f9696f33db996a011bdbddc))
+
 ## [0.216.0](https://github.com/zeroroot-ai/sdk/compare/v0.215.0...v0.216.0) (2026-11-23)
 
 
