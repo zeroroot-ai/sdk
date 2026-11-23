@@ -2903,11 +2903,11 @@ message PullJobResponse {
     // is empty.
     gibson.job.v1.Job job = 1;
     HarnessError error = 2;
-    // turn_grant is a turn grant for the pulled job: GrantTaskID is the job
-    // id. It is the same grant that a SubscribeInput input carries
-    // (inputWithTurnGrant). The member sends it with the first input that it
-    // opens for the job. Unset when no job is assigned.
-    string turn_grant = 3;
+    // grant is a turn grant whose task is the job_id of job. The member uses it
+    // for the tool calls of its first turn on the job, before any input
+    // arrives. It is a secret credential: a caller must never log it. It is
+    // empty when no job is assigned or when the daemon cannot mint one.
+    string grant = 3;
 }
 
 // ReportJobStateRequest reports a job state change from the member.
