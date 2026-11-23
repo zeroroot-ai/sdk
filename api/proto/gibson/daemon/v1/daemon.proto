@@ -1527,13 +1527,17 @@ message ListCatalogMissionsResponse {
 message RenderCatalogMissionRequest {
   // name is the catalog name. An unknown name is InvalidArgument and the error
   // names what the catalog does ship.
-  string name = 1 [(buf.validate.field).string = { max_len: 1024 }];
+  string name = 1 [(buf.validate.field).string = { max_len: 64, pattern: "^[a-z][a-z0-9-]{0,63}$" }];
 
   // params carries the parameters the named mission declares, keyed by its own
   // parameter names. CLOSED: an unrecognised key is refused rather than
   // ignored, and every missing one is reported at once rather than one render
   // at a time.
-  map<string, string> params = 2;
+  map<string, string> params = 2 [(buf.validate.field).map = {
+    max_pairs: 64
+    keys: {string: {min_len: 1, max_len: 128, pattern: "^[A-Za-z][A-Za-z0-9_.-]*$"}}
+    values: {string: {max_len: 4096}}
+  }];
 }
 
 // RenderCatalogMissionResponse returns the rendered definition.
@@ -1551,12 +1555,16 @@ message RenderCatalogMissionResponse {
 message RunCatalogMissionRequest {
   // name is the catalog name. An unknown name is InvalidArgument and the error
   // names what the catalog does ship.
-  string name = 1 [(buf.validate.field).string = { min_len: 1, max_len: 1024 }];
+  string name = 1 [(buf.validate.field).string = { min_len: 1, max_len: 64, pattern: "^[a-z][a-z0-9-]{0,63}$" }];
 
   // params carries the parameters the named mission declares, keyed by its own
   // parameter names. CLOSED: an unrecognised key is refused rather than
   // ignored, as in RenderCatalogMission.
-  map<string, string> params = 2;
+  map<string, string> params = 2 [(buf.validate.field).map = {
+    max_pairs: 64
+    keys: {string: {min_len: 1, max_len: 128, pattern: "^[A-Za-z][A-Za-z0-9_.-]*$"}}
+    values: {string: {max_len: 4096}}
+  }];
 
   // target_id is the ID of a registered target. A mission with a runtime branch
   // reads its host from the target and never from a parameter. A mission with no
@@ -1564,8 +1572,9 @@ message RunCatalogMissionRequest {
   string target_id = 3 [(buf.validate.field).string = { max_len: 1024 }];
 
   // idempotency_key makes a retry safe (ADR-0028). A second request with the
-  // same key returns the result of the first request and does the work one
-  // time. An empty key turns the protection off for the call.
+  // same key returns the same mission_id and creates no second mission. A
+  // request that reuses a key with a different name or params is refused. An
+  // empty key turns the protection off for the call.
   string idempotency_key = 4 [(buf.validate.field).string = { max_len: 128 }];
 }
 
