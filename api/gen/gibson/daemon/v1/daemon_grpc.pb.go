@@ -57,6 +57,7 @@ const (
 	DaemonService_ListMissionDefinitions_FullMethodName     = "/gibson.daemon.v1.DaemonService/ListMissionDefinitions"
 	DaemonService_ListCatalogMissions_FullMethodName        = "/gibson.daemon.v1.DaemonService/ListCatalogMissions"
 	DaemonService_RenderCatalogMission_FullMethodName       = "/gibson.daemon.v1.DaemonService/RenderCatalogMission"
+	DaemonService_RunCatalogMission_FullMethodName          = "/gibson.daemon.v1.DaemonService/RunCatalogMission"
 	DaemonService_CreateMissionDefinition_FullMethodName    = "/gibson.daemon.v1.DaemonService/CreateMissionDefinition"
 	DaemonService_UpdateMissionDefinition_FullMethodName    = "/gibson.daemon.v1.DaemonService/UpdateMissionDefinition"
 	DaemonService_GetMissionDefinition_FullMethodName       = "/gibson.daemon.v1.DaemonService/GetMissionDefinition"
@@ -172,6 +173,18 @@ type DaemonServiceClient interface {
 	// way it runs any definition. That is referencing the authoritative
 	// definition, not rebuilding it: the graph came from the gibson binary.
 	RenderCatalogMission(ctx context.Context, in *RenderCatalogMissionRequest, opts ...grpc.CallOption) (*RenderCatalogMissionResponse, error)
+	// RunCatalogMission renders a checked-in mission by name with the parameters
+	// it declares, and starts it (ADR-0118). It is the way for a person or a
+	// service to run a catalog mission, with the same rules as an agent that
+	// originates one through the harness callback: the closed parameter set, the
+	// scan anchors of a scan, and the ingest of its dependency alerts. A mission
+	// that a caller built by hand and named like a catalog mission gets none of
+	// these, so this RPC is the one launch for the checked-in mission.
+	//
+	// The mission runs in the tenant of the caller and nowhere else. The call
+	// returns when the mission is created and queued. A caller reads the progress
+	// with Subscribe or GetMission.
+	RunCatalogMission(ctx context.Context, in *RunCatalogMissionRequest, opts ...grpc.CallOption) (*RunCatalogMissionResponse, error)
 	// CreateMissionDefinition registers a structured mission definition with the
 	// daemon. This is the API-only replacement for the removed InstallMission RPC:
 	// the daemon does not clone git repositories or parse YAML; callers submit a
@@ -549,6 +562,16 @@ func (c *daemonServiceClient) RenderCatalogMission(ctx context.Context, in *Rend
 	return out, nil
 }
 
+func (c *daemonServiceClient) RunCatalogMission(ctx context.Context, in *RunCatalogMissionRequest, opts ...grpc.CallOption) (*RunCatalogMissionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RunCatalogMissionResponse)
+	err := c.cc.Invoke(ctx, DaemonService_RunCatalogMission_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *daemonServiceClient) CreateMissionDefinition(ctx context.Context, in *CreateMissionDefinitionRequest, opts ...grpc.CallOption) (*CreateMissionDefinitionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateMissionDefinitionResponse)
@@ -878,6 +901,18 @@ type DaemonServiceServer interface {
 	// way it runs any definition. That is referencing the authoritative
 	// definition, not rebuilding it: the graph came from the gibson binary.
 	RenderCatalogMission(context.Context, *RenderCatalogMissionRequest) (*RenderCatalogMissionResponse, error)
+	// RunCatalogMission renders a checked-in mission by name with the parameters
+	// it declares, and starts it (ADR-0118). It is the way for a person or a
+	// service to run a catalog mission, with the same rules as an agent that
+	// originates one through the harness callback: the closed parameter set, the
+	// scan anchors of a scan, and the ingest of its dependency alerts. A mission
+	// that a caller built by hand and named like a catalog mission gets none of
+	// these, so this RPC is the one launch for the checked-in mission.
+	//
+	// The mission runs in the tenant of the caller and nowhere else. The call
+	// returns when the mission is created and queued. A caller reads the progress
+	// with Subscribe or GetMission.
+	RunCatalogMission(context.Context, *RunCatalogMissionRequest) (*RunCatalogMissionResponse, error)
 	// CreateMissionDefinition registers a structured mission definition with the
 	// daemon. This is the API-only replacement for the removed InstallMission RPC:
 	// the daemon does not clone git repositories or parse YAML; callers submit a
@@ -1080,6 +1115,9 @@ func (UnimplementedDaemonServiceServer) ListCatalogMissions(context.Context, *Li
 }
 func (UnimplementedDaemonServiceServer) RenderCatalogMission(context.Context, *RenderCatalogMissionRequest) (*RenderCatalogMissionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RenderCatalogMission not implemented")
+}
+func (UnimplementedDaemonServiceServer) RunCatalogMission(context.Context, *RunCatalogMissionRequest) (*RunCatalogMissionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RunCatalogMission not implemented")
 }
 func (UnimplementedDaemonServiceServer) CreateMissionDefinition(context.Context, *CreateMissionDefinitionRequest) (*CreateMissionDefinitionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateMissionDefinition not implemented")
@@ -1521,6 +1559,24 @@ func _DaemonService_RenderCatalogMission_Handler(srv interface{}, ctx context.Co
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DaemonServiceServer).RenderCatalogMission(ctx, req.(*RenderCatalogMissionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DaemonService_RunCatalogMission_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RunCatalogMissionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DaemonServiceServer).RunCatalogMission(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DaemonService_RunCatalogMission_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DaemonServiceServer).RunCatalogMission(ctx, req.(*RunCatalogMissionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1985,6 +2041,10 @@ var DaemonService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RenderCatalogMission",
 			Handler:    _DaemonService_RenderCatalogMission_Handler,
+		},
+		{
+			MethodName: "RunCatalogMission",
+			Handler:    _DaemonService_RunCatalogMission_Handler,
 		},
 		{
 			MethodName: "CreateMissionDefinition",
