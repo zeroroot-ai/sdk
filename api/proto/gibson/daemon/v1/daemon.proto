@@ -306,6 +306,26 @@ service DaemonService {
       };
     }
 
+  // RunCatalogMission renders a checked-in mission by name with the parameters
+  // it declares, and starts it (ADR-0118). It is the way for a person or a
+  // service to run a catalog mission, with the same rules as an agent that
+  // originates one through the harness callback: the closed parameter set, the
+  // scan anchors of a scan, and the ingest of its dependency alerts. A mission
+  // that a caller built by hand and named like a catalog mission gets none of
+  // these, so this RPC is the one launch for the checked-in mission.
+  //
+  // The mission runs in the tenant of the caller and nowhere else. The call
+  // returns when the mission is created and queued. A caller reads the progress
+  // with Subscribe or GetMission.
+  rpc RunCatalogMission(RunCatalogMissionRequest) returns (RunCatalogMissionResponse) {
+      option (gibson.auth.v1.authz) = {
+        relation: "writer"
+        object_type: "tenant"
+        object_deriver: "tenant_from_identity"
+        allowed_identities: 3  // USER | SERVICE
+      };
+    }
+
   // CreateMissionDefinition registers a structured mission definition with the
   // daemon. This is the API-only replacement for the removed InstallMission RPC:
   // the daemon does not clone git repositories or parse YAML; callers submit a
@@ -1507,13 +1527,17 @@ message ListCatalogMissionsResponse {
 message RenderCatalogMissionRequest {
   // name is the catalog name. An unknown name is InvalidArgument and the error
   // names what the catalog does ship.
-  string name = 1 [(buf.validate.field).string = { max_len: 1024 }];
+  string name = 1 [(buf.validate.field).string = { max_len: 64, pattern: "^[a-z][a-z0-9-]{0,63}$" }];
 
   // params carries the parameters the named mission declares, keyed by its own
   // parameter names. CLOSED: an unrecognised key is refused rather than
   // ignored, and every missing one is reported at once rather than one render
   // at a time.
-  map<string, string> params = 2;
+  map<string, string> params = 2 [(buf.validate.field).map = {
+    max_pairs: 64
+    keys: {string: {min_len: 1, max_len: 128, pattern: "^[A-Za-z][A-Za-z0-9_.-]*$"}}
+    values: {string: {max_len: 65536}}
+  }];
 }
 
 // RenderCatalogMissionResponse returns the rendered definition.
@@ -1525,6 +1549,39 @@ message RenderCatalogMissionResponse {
   // source is the mission's CUE, verbatim, so a person can read what the daemon
   // will run rather than trusting a rendered summary.
   string source = 2;
+}
+
+// RunCatalogMissionRequest names a checked-in mission and its parameters.
+message RunCatalogMissionRequest {
+  // name is the catalog name. An unknown name is InvalidArgument and the error
+  // names what the catalog does ship.
+  string name = 1 [(buf.validate.field).string = { min_len: 1, max_len: 64, pattern: "^[a-z][a-z0-9-]{0,63}$" }];
+
+  // params carries the parameters the named mission declares, keyed by its own
+  // parameter names. CLOSED: an unrecognised key is refused rather than
+  // ignored, as in RenderCatalogMission.
+  map<string, string> params = 2 [(buf.validate.field).map = {
+    max_pairs: 64
+    keys: {string: {min_len: 1, max_len: 128, pattern: "^[A-Za-z][A-Za-z0-9_.-]*$"}}
+    values: {string: {max_len: 65536}}
+  }];
+
+  // target_id is the ID of a registered target. A mission with a runtime branch
+  // reads its host from the target and never from a parameter. A mission with no
+  // runtime branch (a scan with only the alerts branch) needs none.
+  string target_id = 3 [(buf.validate.field).string = { max_len: 1024 }];
+
+  // idempotency_key makes a retry safe (ADR-0028). A second request with the
+  // same key returns the same mission_id and creates no second mission. A
+  // request that reuses a key with a different name or params is refused. An
+  // empty key turns the protection off for the call.
+  string idempotency_key = 4 [(buf.validate.field).string = { max_len: 128 }];
+}
+
+// RunCatalogMissionResponse returns the mission that the call started.
+message RunCatalogMissionResponse {
+  // mission_id is the ID of the mission that the call created and queued.
+  string mission_id = 1;
 }
 
 // CreateMissionResponse returns the result of creating a mission.

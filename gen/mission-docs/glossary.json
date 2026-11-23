@@ -129,6 +129,8 @@
   "ReusePolicy": "ReusePolicy declares how a node's I/O is scoped + reused across mission runs.  Deprecated: superseded by the ECS brain (ADR-0101). Reuse is implicit in the event-sourced World and scoping flows from scope-relative identity (ADR-0102) + ambient projection, so node-declared reuse/scoping no longer has meaning. Retained wire-compatibly; ignored by the engine.",
   "RewindMissionRequest": "RewindMissionRequest asks for a new mission run that starts at a checkpoint of an earlier run.",
   "RewindMissionResponse": "RewindMissionResponse returns the new mission run.",
+  "RunCatalogMissionRequest": "RunCatalogMissionRequest names a checked-in mission and its parameters.",
+  "RunCatalogMissionResponse": "RunCatalogMissionResponse returns the mission that the call started.",
   "RunMissionRequest": "RunMissionRequest starts a mission execution. API-only: missions are invoked by reference — no YAML, no file paths.",
   "RunMissionResponse": "RunMissionResponse wraps a MissionEvent for the RunMission streaming RPC.",
   "SaveMissionLayoutRequest": "SaveMissionLayoutRequest persists a hand-arranged layout.",
