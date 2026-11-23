@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.216.0](https://github.com/zeroroot-ai/sdk/compare/v0.215.0...v0.216.0) (2026-11-23)
+
+
+### Features
+
+* **daemon:** add RunCatalogMission to run a checked-in mission by name ([#384](https://github.com/zeroroot-ai/sdk/issues/384)) ([d7c7f18](https://github.com/zeroroot-ai/sdk/commit/d7c7f18659c01fbcde344f7ce2d057a5b7f4fd85))
+
 ## [0.215.0](https://github.com/zeroroot-ai/sdk/compare/v0.214.0...v0.215.0) (2026-11-22)
 
 
