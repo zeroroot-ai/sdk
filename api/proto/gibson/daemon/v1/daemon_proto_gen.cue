@@ -934,9 +934,10 @@ import (
 		[string]: string
 	} @protobuf(2,map[string]string,"(buf.validate.field).map=")
 
-	// target_id is the ID of a registered target. A mission with a runtime branch
-	// reads its host from the target and never from a parameter. A mission with no
-	// runtime branch (a scan with only the alerts branch) needs none.
+	// target_id is the ID of a registered target of the tenant. It is required: the
+	// mission binds to the target, and a runtime branch reads its host from the
+	// target and never from a parameter. A scan with only the alerts branch reads
+	// no host, but the mission still names a target.
 	targetId?: string @protobuf(3,string,name=target_id,"(buf.validate.field).string=")
 
 	// idempotency_key makes a retry safe (ADR-0028). A second request with the

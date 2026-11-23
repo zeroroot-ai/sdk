@@ -2507,7 +2507,15 @@ message CreateMissionRequest {
     //
     // Every missing parameter is reported at once rather than one render at a
     // time. Only meaningful when catalog_mission is set.
-    map<string, string> catalog_params = 10;
+    //
+    // The caps are the ones of RunCatalogMissionRequest.params, so the agent path
+    // and the person path accept the same input: at most 64 pairs, a key of 1 to
+    // 128 characters from a bounded set, and a value of at most 65536 bytes.
+    map<string, string> catalog_params = 10 [(buf.validate.field).map = {
+      max_pairs: 64
+      keys: {string: {min_len: 1, max_len: 128, pattern: "^[A-Za-z][A-Za-z0-9_.-]*$"}}
+      values: {string: {max_len: 65536}}
+    }];
 
     // starts_from selects the state that the new mission starts from
     // (ADR-0169). An agent forks at run time when it originates a child

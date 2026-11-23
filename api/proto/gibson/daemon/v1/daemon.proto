@@ -1566,10 +1566,11 @@ message RunCatalogMissionRequest {
     values: {string: {max_len: 65536}}
   }];
 
-  // target_id is the ID of a registered target. A mission with a runtime branch
-  // reads its host from the target and never from a parameter. A mission with no
-  // runtime branch (a scan with only the alerts branch) needs none.
-  string target_id = 3 [(buf.validate.field).string = { max_len: 1024 }];
+  // target_id is the ID of a registered target of the tenant. It is required: the
+  // mission binds to the target, and a runtime branch reads its host from the
+  // target and never from a parameter. A scan with only the alerts branch reads
+  // no host, but the mission still names a target.
+  string target_id = 3 [(buf.validate.field).string = { min_len: 1, max_len: 1024 }];
 
   // idempotency_key makes a retry safe (ADR-0028). A second request with the
   // same key returns the same mission_id and creates no second mission. A
