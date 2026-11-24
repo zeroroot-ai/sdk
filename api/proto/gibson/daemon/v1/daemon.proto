@@ -1532,7 +1532,8 @@ message RenderCatalogMissionRequest {
   // params carries the parameters the named mission declares, keyed by its own
   // parameter names. CLOSED: an unrecognised key is refused rather than
   // ignored, and every missing one is reported at once rather than one render
-  // at a time.
+  // at a time. A value is at most 65536 characters, counted as characters and
+  // not as bytes.
   map<string, string> params = 2 [(buf.validate.field).map = {
     max_pairs: 64
     keys: {string: {min_len: 1, max_len: 128, pattern: "^[A-Za-z][A-Za-z0-9_.-]*$"}}
@@ -1559,7 +1560,8 @@ message RunCatalogMissionRequest {
 
   // params carries the parameters the named mission declares, keyed by its own
   // parameter names. CLOSED: an unrecognised key is refused rather than
-  // ignored, as in RenderCatalogMission.
+  // ignored, as in RenderCatalogMission. A value is at most 65536 characters,
+  // counted as characters and not as bytes.
   map<string, string> params = 2 [(buf.validate.field).map = {
     max_pairs: 64
     keys: {string: {min_len: 1, max_len: 128, pattern: "^[A-Za-z][A-Za-z0-9_.-]*$"}}

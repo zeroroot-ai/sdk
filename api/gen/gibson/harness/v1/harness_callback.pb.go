@@ -10545,7 +10545,7 @@ type CreateMissionRequest struct {
 	//
 	// The caps are the ones of RunCatalogMissionRequest.params, so the agent path
 	// and the person path accept the same input: at most 64 pairs, a key of 1 to
-	// 128 characters from a bounded set, and a value of at most 65536 bytes.
+	// 128 characters from a bounded set, and a value of at most 65536 characters.
 	CatalogParams map[string]string `protobuf:"bytes,10,rep,name=catalog_params,json=catalogParams,proto3" json:"catalog_params,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// starts_from selects the state that the new mission starts from
 	// (ADR-0169). An agent forks at run time when it originates a child

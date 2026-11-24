@@ -2510,7 +2510,7 @@ message CreateMissionRequest {
     //
     // The caps are the ones of RunCatalogMissionRequest.params, so the agent path
     // and the person path accept the same input: at most 64 pairs, a key of 1 to
-    // 128 characters from a bounded set, and a value of at most 65536 bytes.
+    // 128 characters from a bounded set, and a value of at most 65536 characters.
     map<string, string> catalog_params = 10 [(buf.validate.field).map = {
       max_pairs: 64
       keys: {string: {min_len: 1, max_len: 128, pattern: "^[A-Za-z][A-Za-z0-9_.-]*$"}}
