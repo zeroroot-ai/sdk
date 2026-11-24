@@ -904,7 +904,8 @@ import (
 	// params carries the parameters the named mission declares, keyed by its own
 	// parameter names. CLOSED: an unrecognised key is refused rather than
 	// ignored, and every missing one is reported at once rather than one render
-	// at a time.
+	// at a time. A value is at most 65536 characters, counted as characters and
+	// not as bytes.
 	params?: {
 		[string]: string
 	} @protobuf(2,map[string]string,"(buf.validate.field).map=")
@@ -929,7 +930,8 @@ import (
 
 	// params carries the parameters the named mission declares, keyed by its own
 	// parameter names. CLOSED: an unrecognised key is refused rather than
-	// ignored, as in RenderCatalogMission.
+	// ignored, as in RenderCatalogMission. A value is at most 65536 characters,
+	// counted as characters and not as bytes.
 	params?: {
 		[string]: string
 	} @protobuf(2,map[string]string,"(buf.validate.field).map=")
